@@ -2,7 +2,7 @@
 parallel-dag is a package that allows parallel execution of a set of functions written in Python
 isort:skip_file
 """
-__version__ = "0.1.0"
+__version__ = "0.1.2"
 
 # todo change format to inslcude precise time because here we are dealing with parallel programming
 import logging

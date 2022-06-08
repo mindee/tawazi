@@ -45,7 +45,6 @@ def test_priority():
         ]
 
         g = DAG(l, 1, behaviour=ErrorStrategy.strict, logger=logging.getLogger())
-        g.build()
         g.execute()
         assert pytest.comp_str == "abcd", f"during {_i}th iteration"
 

@@ -4,7 +4,14 @@
 
 <!-- put a link explaining what a DAG is-->
 
-This library helps you execute a set of functions in a **DAG** dependency structure in **parallel**.
+This library helps you execute a set of functions in a **DAG** dependency structure in **parallel**. It aims at providing
+This in a production environment; hence it satisfies (will satisfy in the near future):
+* Stable, Robust, well tested
+* lightweight
+* Thread Safety
+* Low to no dependencies
+* Legacy python versions support
+* pypy support
 
 In the context of the DAG, these functions are called `ExecNode`s.
 
@@ -53,6 +60,9 @@ if __name__ == "__main__":
   print(g.results_dict)
 ```
 
+## Reason for the name
+The libraries name is inspired from the arabic word تَوَازٍ which means parallel.
+
 
 ## Future developments
 This library is still in development. Breaking changes are expected.
@@ -75,3 +85,8 @@ in an object and then decide the dependencies using that
 or to run the same ops between different DAGs with no side effects what so ever
 * run subset of execnodes only
 * clean the new DAG interface and document it
+* document dagster interface and correct the tests
+* put documentation about different cases where it is advantageous to use it 
+  * in methods not only in functions
+  * in a gunicorn application
+  * for getting information from multiple resources

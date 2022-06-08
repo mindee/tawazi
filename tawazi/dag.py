@@ -96,6 +96,10 @@ class ExecNode:
         # todo remove and make ExecNode immutable
         self.result = None
 
+    @property
+    def calculated_dependencies(self):
+        return isinstance(self.depends_on, list)
+
     # this is breaking change however
     def execute(self, node_dict: Dict[Hashable, "ExecNode"]) -> Dict[str, Any]:
         """

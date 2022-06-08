@@ -1,13 +1,11 @@
 from threading import Lock
 from typing import Callable, Any
 import inspect
-import functools
 
 from tawazi import DAG, ExecNode
 
 # todo replace exec_nodes with dict
-# a variable used to pass in exec_nodes to the DAG during building
-# making the dag isn't thread safe
+# a temporary variable used to pass in exec_nodes to the DAG during building
 exec_nodes = []
 exec_nodes_lock = Lock()
 
@@ -20,10 +18,11 @@ class PrecalculatedExecNode(ExecNode):
                          argument_name=argument_name,
                          is_sequential=False)
         self.id = f"{argument_name}@{id(self)}"
-        self.calculated_dependencies = True
-
 
 class ReplaceExecNode(ExecNode):
+    """
+    A lazy function simulator that records the dependencies to build the DAG
+    """
     def __init__(self, func: Callable, priority=0, argument_name=None, is_sequential=True):
         # todo change the id_ of the execNode. Maybe remove it completely!
         super().__init__(
@@ -35,12 +34,11 @@ class ReplaceExecNode(ExecNode):
             is_sequential=is_sequential
         )
 
-    @property
-    def calculated_dependencies(self):
-        return isinstance(self.depends_on, list)
-
     def __call__(self, *args, **kwargs):
-        # record the dependencies in a list of execnodes ? or a dict of execnodes for ex.
+        """
+        Record the dependencies in a global variable to be called later in DAG.
+        Returns: ReplaceExecNode
+        """
 
         # 0. if dependencies are already calculated, there is no need to recalculate them
         if self.calculated_dependencies and self in exec_nodes:
@@ -79,6 +77,19 @@ class ReplaceExecNode(ExecNode):
 # todo add the documentation of the replaced function!
 # todo modify is_sequential's default value according to the preused default
 def op(func=None, *, priority=0, argument_name=None, is_sequential=True):
+    """
+    Decorate a function to make it an ExecNode. When the decorated function is called, you are actually calling
+    an ExecNode. This way we can record the dependencies in order to build the actual DAG. Check the example in the README
+    for a guide to the usage.
+    Args:
+        func: a Callable that will be executed in the DAG
+        priority: priority of the execution with respect to other ExecNodes
+        argument_name: the name of the argument to be used by other ExecNodes when referring to the returned value of **this** ExecNode
+        is_sequential: whether to allow the execution of this ExecNode with others or not
+
+    Returns:
+        ReplaceExecNode
+    """
     def my_custom_op(_func: Callable):
 
         return ReplaceExecNode(_func, priority, argument_name, is_sequential)
@@ -88,11 +99,11 @@ def op(func=None, *, priority=0, argument_name=None, is_sequential=True):
         #
         # return rep_exec_node
 
+    # if args are provided to the decorator
     if func is None:
-        # keyworded arguments are provided for the decorators
         return my_custom_op
+    # if no argument is provided
     else:
-        # there is no argument provided
         return my_custom_op(func)
 
 
@@ -102,7 +113,10 @@ def to_dag(declare_dag_function: Callable):
     The same DAG can be executed multiple times
 
     Args:
-        declare_dag_function: a function that contains the
+        declare_dag_function: a function that contains functions decorated with @op decorator.
+        The execution of this function must be really fast because almost no calculation happens here.
+        Note: to_dag is thread safe because it uses an internal lock. If you need to construct lots of DAGs in multiple threads,
+        it is best to construct your dag once and then consume it as much as you like in multiple threads.
 
     Returns: a DAG instance
 
@@ -110,11 +124,11 @@ def to_dag(declare_dag_function: Callable):
 
     def wrapped(*args, **kwargs):
         # todo modify this pattern! this is horrible!
-        # temporary List containing ExecNodes for the DAG only
         global exec_nodes
         with exec_nodes_lock:
             exec_nodes = []
 
+            #
             declare_dag_function(*args, **kwargs)
 
             d = DAG(exec_nodes)
