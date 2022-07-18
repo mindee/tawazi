@@ -12,14 +12,23 @@ exec_nodes_lock = Lock()
 
 class PrecalculatedExecNode(ExecNode):
     def __init__(self, argument_name: str, value: Any):
-        super().__init__(id_="temporary",
+        super().__init__(id_=argument_name,
                          exec_function=lambda: value,
                          depends_on=[],
                          argument_name=argument_name,
                          is_sequential=False)
-        self.id = f"{argument_name}@{id(self)}"
 
-class ReplaceExecNode(ExecNode):
+
+def get_default_args(func):
+    signature = inspect.signature(func)
+    return {
+        k: v.default
+        for k, v in signature.parameters.items()
+        if v.default is not inspect.Parameter.empty
+    }
+
+
+class LazyExecNode(ExecNode):
     """
     A lazy function simulator that records the dependencies to build the DAG
     """
@@ -45,11 +54,12 @@ class ReplaceExecNode(ExecNode):
             return self
 
         dependencies = []
+        provided_arguments_names = set()
 
         # todo refactor this part!!
         function_arguments_names = inspect.getfullargspec(self.exec_function)[0]
         for i, arg in enumerate(args):
-            if isinstance(arg, ReplaceExecNode):
+            if isinstance(arg, LazyExecNode):
                 dependencies.append(arg.id)
             else:
                 # if the argument is a custom or constant
@@ -57,14 +67,26 @@ class ReplaceExecNode(ExecNode):
                 exec_nodes.append(prec_exec_node)
                 dependencies.append(prec_exec_node.id)
 
+            provided_arguments_names.add(function_arguments_names[i])
+
         for argument_name, arg in kwargs.items():
-            if isinstance(arg, ReplaceExecNode):
+            if isinstance(arg, LazyExecNode):
                 dependencies.append(arg.id)
             else:
                 # if the argument is a custom or constant
                 prec_exec_node = PrecalculatedExecNode(argument_name, arg)
                 exec_nodes.append(prec_exec_node)
                 dependencies.append(prec_exec_node.id)
+
+            provided_arguments_names.add(argument_name)
+
+        # Fill default valued parameters with default values if they aren't provided by the user
+        default_valued_params = get_default_args(self.exec_function)
+        for argument_name in set(function_arguments_names) - provided_arguments_names:
+            # if the argument is a custom or constant
+            prec_exec_node = PrecalculatedExecNode(argument_name, default_valued_params[argument_name])
+            exec_nodes.append(prec_exec_node)
+            dependencies.append(prec_exec_node.id)
 
         self.depends_on = dependencies
 
@@ -92,7 +114,7 @@ def op(func=None, *, priority=0, argument_name=None, is_sequential=True):
     """
     def my_custom_op(_func: Callable):
 
-        return ReplaceExecNode(_func, priority, argument_name, is_sequential)
+        return LazyExecNode(_func, priority, argument_name, is_sequential)
         # to have the help and the name of the origianl function
         # rep_exec_node = ReplaceExecNode(func, priority, argument_name, is_sequential)
         # functools.update_wrapper(rep_exec_node, func)

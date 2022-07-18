@@ -90,3 +90,7 @@ or to run the same ops between different DAGs with no side effects what so ever
   * in methods not only in functions
   * in a gunicorn application
   * for getting information from multiple resources
+* properly support methods to remove self from the arguments
+* support constants by resolving the error in the tests
+* put link to code on github
+* 
