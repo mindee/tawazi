@@ -60,7 +60,7 @@ if __name__ == "__main__":
   print(g.results_dict)
 ```
 
-## Reason for the name
+## Name explanation
 The libraries name is inspired from the arabic word تَوَازٍ which means parallel.
 
 
@@ -80,7 +80,6 @@ A couple of features will be released soon:
 * decide whether to identify the ExecNode by a Hashable ID or by its own Python ID. This is breaking change and must change to 0.2.1
 * support multiple return of a function!? this is rather complicated!? I have to wrap every returned value 
 in an object and then decide the dependencies using that
-* change the name of the library to tawazi
 * the goal of this library is to run the DAG nodes in parallel and to run the same DAG in parallel in multiple threads
 or to run the same ops between different DAGs with no side effects what so ever
 * run subset of execnodes only
@@ -90,7 +89,6 @@ or to run the same ops between different DAGs with no side effects what so ever
   * in methods not only in functions
   * in a gunicorn application
   * for getting information from multiple resources
-* properly support methods to remove self from the arguments
 * support constants by resolving the error in the tests
 * put link to code on github
-* 
+* Remove the global object and maybe replace it with an attribute to the creating function

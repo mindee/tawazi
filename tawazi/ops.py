@@ -1,3 +1,4 @@
+import types
 from threading import Lock
 from typing import Callable, Any
 import inspect
@@ -95,6 +96,18 @@ class LazyExecNode(ExecNode):
             exec_nodes.append(self)
         return self
 
+
+    def __get__(self, instance, owner_cls=None):
+        "Simulate func_descr_get() in Objects/funcobject.c"
+        if instance is None:
+            # this is the case when we call the method on the class instead of an instance of the class
+            # In this case, we must return a "function" hence an instance of this class
+            # https://stackoverflow.com/questions/3798835/understanding-get-and-set-and-python-descriptors
+            return self
+        return types.MethodType(
+            self,  # func=self
+            instance  # obj=instance
+            )
 
 # todo add the documentation of the replaced function!
 # todo modify is_sequential's default value according to the preused default
