@@ -1,0 +1,3 @@
+# contains the same dependencies in pyproject.toml for compatibility with markdwon-embed-code github action.
+
+networkx>=2.6.3
