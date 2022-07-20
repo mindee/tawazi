@@ -49,3 +49,8 @@ jobs:
       with:
         pytest-coverage-path: ./pytest-coverage.txt
         junitxml-path: ./pytest-junit.xml
+
+    - name: Markdown Embed Code From File
+      uses: tokusumi/markdown-embed-code@v1.0.0
+      with:
+        markdown: "README.md"
