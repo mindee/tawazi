@@ -1,9 +1,10 @@
-from tawazi import ExecNode, DAG, ErrorStrategy
 import logging
-from time import time
-from time import sleep
+from time import sleep, time
 
-T = .1
+from tawazi import DAG, ErrorStrategy, ExecNode
+
+T = 0.1
+
 
 def a():
     sleep(T)
@@ -39,6 +40,7 @@ def g(e):
     sleep(T)
     return e + "g"
 
+
 # ExecNodes can be identified using the actual function or an identification string
 l = [
     ExecNode(a, a, is_sequential=True),
@@ -50,6 +52,7 @@ l = [
     ExecNode(g, g, [e], is_sequential=False),
 ]
 
+
 def test_dag_build():
     g = DAG(l, 2, behaviour=ErrorStrategy.strict, logger=logging.getLogger())
     t0 = time()
@@ -57,4 +60,3 @@ def test_dag_build():
     print(time() - t0)
     for k, v in g.node_dict.items():
         print(g, v, v.result)
-

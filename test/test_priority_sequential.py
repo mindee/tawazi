@@ -1,9 +1,11 @@
-from tawazi import ExecNode, DAG, ErrorStrategy
 import logging
 from time import sleep
+
 import pytest
 
-T = .001
+from tawazi import DAG, ErrorStrategy, ExecNode
+
+T = 0.001
 # global comp_str
 pytest.comp_str = ""
 
@@ -27,6 +29,7 @@ def d(**results_dict):
     sleep(T)
     pytest.comp_str += "d"
 
+
 def e(**results_dict):
     sleep(T)
     pytest.comp_str += "e"
@@ -47,6 +50,7 @@ def test_priority():
         g = DAG(l, 1, behaviour=ErrorStrategy.strict, logger=logging.getLogger())
         g.execute()
         assert pytest.comp_str == "abcd", f"during {_i}th iteration"
+
 
 def test_sequentiality():
     for _i in range(100):
@@ -72,6 +76,3 @@ def test_sequentiality():
         assert ind_d > ind_b, f"during {_i}th iteration"
         assert ind_b > ind_a, f"during {_i}th iteration"
         assert ind_c > ind_a, f"during {_i}th iteration"
-
-
-

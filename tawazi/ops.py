@@ -1,7 +1,7 @@
+import inspect
 import types
 from threading import Lock
-from typing import Callable, Any
-import inspect
+from typing import Any, Callable
 
 from tawazi import DAG, ExecNode
 
@@ -13,11 +13,13 @@ exec_nodes_lock = Lock()
 
 class PrecalculatedExecNode(ExecNode):
     def __init__(self, argument_name: str, value: Any):
-        super().__init__(id_=argument_name,
-                         exec_function=lambda: value,
-                         depends_on=[],
-                         argument_name=argument_name,
-                         is_sequential=False)
+        super().__init__(
+            id_=argument_name,
+            exec_function=lambda: value,
+            depends_on=[],
+            argument_name=argument_name,
+            is_sequential=False,
+        )
 
 
 def get_default_args(func):
@@ -33,7 +35,10 @@ class LazyExecNode(ExecNode):
     """
     A lazy function simulator that records the dependencies to build the DAG
     """
-    def __init__(self, func: Callable, priority=0, argument_name=None, is_sequential=True):
+
+    def __init__(
+        self, func: Callable, priority=0, argument_name=None, is_sequential=True
+    ):
         # todo change the id_ of the execNode. Maybe remove it completely!
         super().__init__(
             id_=func,
@@ -41,7 +46,7 @@ class LazyExecNode(ExecNode):
             depends_on=None,
             priority=priority,
             argument_name=argument_name,
-            is_sequential=is_sequential
+            is_sequential=is_sequential,
         )
 
     def __call__(self, *args, **kwargs):
@@ -85,7 +90,9 @@ class LazyExecNode(ExecNode):
         default_valued_params = get_default_args(self.exec_function)
         for argument_name in set(function_arguments_names) - provided_arguments_names:
             # if the argument is a custom or constant
-            prec_exec_node = PrecalculatedExecNode(argument_name, default_valued_params[argument_name])
+            prec_exec_node = PrecalculatedExecNode(
+                argument_name, default_valued_params[argument_name]
+            )
             exec_nodes.append(prec_exec_node)
             dependencies.append(prec_exec_node.id)
 
@@ -96,7 +103,6 @@ class LazyExecNode(ExecNode):
             exec_nodes.append(self)
         return self
 
-
     def __get__(self, instance, owner_cls=None):
         "Simulate func_descr_get() in Objects/funcobject.c"
         if instance is None:
@@ -104,10 +110,8 @@ class LazyExecNode(ExecNode):
             # In this case, we must return a "function" hence an instance of this class
             # https://stackoverflow.com/questions/3798835/understanding-get-and-set-and-python-descriptors
             return self
-        return types.MethodType(
-            self,  # func=self
-            instance  # obj=instance
-            )
+        return types.MethodType(self, instance)  # func=self  # obj=instance
+
 
 # todo add the documentation of the replaced function!
 # todo modify is_sequential's default value according to the preused default
@@ -125,6 +129,7 @@ def op(func=None, *, priority=0, argument_name=None, is_sequential=True):
     Returns:
         ReplaceExecNode
     """
+
     def my_custom_op(_func: Callable):
 
         return LazyExecNode(_func, priority, argument_name, is_sequential)

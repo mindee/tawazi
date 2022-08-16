@@ -1,19 +1,25 @@
 import concurrent
 import copy
 import logging
-from concurrent.futures import (ALL_COMPLETED, FIRST_COMPLETED,
-                                ThreadPoolExecutor, wait, Future)
+from concurrent.futures import (
+    ALL_COMPLETED,
+    FIRST_COMPLETED,
+    Future,
+    ThreadPoolExecutor,
+    wait,
+)
 from copy import deepcopy
 from logging import Logger
 from types import FunctionType
-from typing import Any, Callable, Dict, Hashable, List, Tuple, Union, Set, Optional
+from typing import Any, Callable, Dict, Hashable, List, Optional, Set, Tuple, Union
 
 import networkx as nx
 from networkx import find_cycle
 from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 
-from .errors import ErrorStrategy
 import tawazi
+
+from .errors import ErrorStrategy
 
 
 # todo remove reliance on DiGraph!
@@ -91,7 +97,9 @@ class ExecNode:
         if isinstance(argument_name, str) and argument_name != "":
             self.argument_name = argument_name
         else:
-            self.argument_name = self.id.__name__ if isinstance(self.id, FunctionType) else str(self.id)
+            self.argument_name = (
+                self.id.__name__ if isinstance(self.id, FunctionType) else str(self.id)
+            )
 
         # todo remove and make ExecNode immutable
         self.result = None
@@ -113,15 +121,21 @@ class ExecNode:
         # 1. fabricate the arguments for this ExecNode
         self.logger.debug(f"Start executing {self.id} with task {self.exec_function}")
 
-        kwargs = {node_dict[dep_hash].argument_name: node_dict[dep_hash].result for dep_hash in self.depends_on}
+        kwargs = {
+            node_dict[dep_hash].argument_name: node_dict[dep_hash].result
+            for dep_hash in self.depends_on
+        }
         result = self.exec_function(**kwargs)
 
         # 2. write the result
         self.result = result
 
         # 3. useless return value
-        self.logger.debug(f"Finished executing {self.id} with task {self.exec_function}")
+        self.logger.debug(
+            f"Finished executing {self.id} with task {self.exec_function}"
+        )
         return result
+
 
 class DAG:
     """
@@ -130,6 +144,7 @@ class DAG:
         * Limited number of threads.
         * Parallelization constraint of each ExecNode (is_sequential attribute)
     """
+
     def __init__(
         self,
         exec_nodes: List[ExecNode],
@@ -153,11 +168,14 @@ class DAG:
         self.exec_nodes = exec_nodes
 
         self.max_concurrency = int(max_concurrency)
-        assert max_concurrency >= 1, "Invalid maximum number of threads! Must be a positive integer"
+        assert (
+            max_concurrency >= 1
+        ), "Invalid maximum number of threads! Must be a positive integer"
 
         # variables necessary for DAG construction
-        self.hierarchy: Dict[Hashable, List[Hashable]] = \
-            {exec_node.id: exec_node.depends_on for exec_node in self.exec_nodes}
+        self.hierarchy: Dict[Hashable, List[Hashable]] = {
+            exec_node.id: exec_node.depends_on for exec_node in self.exec_nodes
+        }
         self.node_dict: Dict[Hashable, ExecNode] = {
             exec_node.id: exec_node for exec_node in self.exec_nodes
         }
@@ -208,7 +226,9 @@ class DAG:
             )
             raise NetworkXUnfeasible
 
-        self.exec_node_sequence = [self.node_dict[node_name] for node_name in topological_order]
+        self.exec_node_sequence = [
+            self.node_dict[node_name] for node_name in topological_order
+        ]
 
     def draw(self, k=0.8) -> None:
         """
@@ -217,6 +237,7 @@ class DAG:
             k: parameter for the layout of the graph, the higher, the further the nodes apart
         """
         import matplotlib.pyplot as plt
+
         # todo use graphviz instead! it is much more elegant
 
         pos = nx.spring_layout(self.graph, seed=42069, k=k, iterations=20)
@@ -244,7 +265,9 @@ class DAG:
         done: Set[Future] = set()
         running: Set[Future] = set()
 
-        def get_num_running_threads(_futures: Dict[Hashable, concurrent.futures.Future]):
+        def get_num_running_threads(
+            _futures: Dict[Hashable, concurrent.futures.Future]
+        ):
             # use not future.done() because there is no guarantee that Thread pool will directly execute
             # the submitted thread
             return sum([not future.done() for future in _futures.values()])
@@ -264,10 +287,15 @@ class DAG:
                 #       => a new root node will be available
                 num_running_threads = get_num_running_threads(futures)
                 num_runnable_nodes = len(runnable_nodes)
-                if num_running_threads == self.max_concurrency or num_runnable_nodes == 0:
+                if (
+                    num_running_threads == self.max_concurrency
+                    or num_runnable_nodes == 0
+                ):
                     # must wait and not submit any workers before a worker ends
                     # (that might create a new more prioritized node) to be executed
-                    self.logger.debug(f"Waiting for ExecNodes {running} to finish. Finished running {done}")
+                    self.logger.debug(
+                        f"Waiting for ExecNodes {running} to finish. Finished running {done}"
+                    )
                     done_, running = wait(running, return_when=FIRST_COMPLETED)
                     done = done.union(done_)
 
@@ -291,7 +319,9 @@ class DAG:
 
                 # 4. choose a node to run
                 # 4.1 get the most prioritized runnable node
-                node_id = sorted(runnable_nodes, key=lambda n: node_dict[n].priority)[-1]
+                node_id = sorted(runnable_nodes, key=lambda n: node_dict[n].priority)[
+                    -1
+                ]
 
                 exec_node = node_dict[node_id]
                 self.logger.info(f"{node_id} will run!")
@@ -303,8 +333,10 @@ class DAG:
                 #       before the exec_node gets submitted
                 num_running_threads = get_num_running_threads(futures)
                 if exec_node.is_sequential and num_running_threads != 0:
-                    self.logger.debug(f"{node_id} must run without parallelisme. "
-                                      f"Wait for the end of a node in {running}")
+                    self.logger.debug(
+                        f"{node_id} must run without parallelisme. "
+                        f"Wait for the end of a node in {running}"
+                    )
                     done_, running = wait(running, return_when=FIRST_COMPLETED)
                     continue  # go to step 6
 
@@ -327,7 +359,9 @@ class DAG:
         for node_id in self.topological_sort():
             node_dict[node_id].execute(node_dict)
 
-    def handle_exception(self, graph: DiGraphEx, fut: concurrent.futures.Future, id_: Hashable):
+    def handle_exception(
+        self, graph: DiGraphEx, fut: concurrent.futures.Future, id_: Hashable
+    ):
         """
         checks if futures have produced exceptions, and handles them
         according to the specified behaviour
@@ -349,10 +383,14 @@ class DAG:
                 _res = fut.result()
 
             except Exception as _exc:
-                self.logger.exception(f"The feature {id_} encountered the following error:")
+                self.logger.exception(
+                    f"The feature {id_} encountered the following error:"
+                )
 
                 if self.behaviour == ErrorStrategy.permissive:
-                    self.logger.warning("Ignoring exception as the behaviour is set to permissive")
+                    self.logger.warning(
+                        "Ignoring exception as the behaviour is set to permissive"
+                    )
 
                 elif self.behaviour == ErrorStrategy.all_children:
                     # remove all its children. Current node will be removed directly afterwards
@@ -361,4 +399,6 @@ class DAG:
                         graph.remove_recursively(children_ids)
 
                 else:
-                    raise NotImplementedError(f"Unknown behaviour name: {self.behaviour}")
+                    raise NotImplementedError(
+                        f"Unknown behaviour name: {self.behaviour}"
+                    )
