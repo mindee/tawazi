@@ -98,6 +98,10 @@ class ExecNode:
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} {self.id} ~ | <{hex(id(self))}>"
 
+        # a string that identifies the ExecNode.
+        # It is either the name of the identifying function or the identifying string id_
+        self.__name__ = self.exec_function.__name__ if not isinstance(id_, str) else id_
+
     @property
     def computed_dependencies(self) -> bool:
         return isinstance(self.depends_on, list)
@@ -167,6 +171,10 @@ class DAG:
         }
         self.node_dict: Dict[Hashable, ExecNode] = {
             exec_node.id: exec_node for exec_node in self.exec_nodes
+        }
+
+        self.node_dict_by_name: Dict[str, ExecNode] = {
+            exec_node.__name__: exec_node for exec_node in self.exec_nodes
         }
 
         # a sequence of execution to be applied in a for loop
