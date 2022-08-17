@@ -17,8 +17,6 @@ def a():
 
 def b(a):
     raise NotImplementedError
-    sleep(T)
-    pytest.comp_str += "b"
 
 
 def c(b):
