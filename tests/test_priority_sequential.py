@@ -48,7 +48,12 @@ def test_priority():
             ExecNode(d, d, [a], priority=1, is_sequential=False),
         ]
 
-        g = DAG(list_execnodes, 1, behaviour=ErrorStrategy.strict, logger=logging.getLogger())
+        g = DAG(
+            list_execnodes,
+            1,
+            behaviour=ErrorStrategy.strict,
+            logger=logging.getLogger(),
+        )
         g.execute()
         assert pytest.comp_str == "abcd", f"during {_i}th iteration"
 
@@ -65,7 +70,12 @@ def test_sequentiality():
             ExecNode(e, e, [a], priority=1, is_sequential=True),
         ]
 
-        g = DAG(list_execnodes, 2, behaviour=ErrorStrategy.strict, logger=logging.getLogger())
+        g = DAG(
+            list_execnodes,
+            2,
+            behaviour=ErrorStrategy.strict,
+            logger=logging.getLogger(),
+        )
         g.execute()
         ind_a = pytest.comp_str.index("a")
         ind_b = pytest.comp_str.index("b")

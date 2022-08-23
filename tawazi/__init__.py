@@ -1,6 +1,7 @@
 from .dag import ExecNode, DAG
 from .ops import op, to_dag
 from .errors import ErrorStrategy
+
 """
 parallel-dag is a package that allows parallel execution of a set of functions written in Python
 isort:skip_file
@@ -16,4 +17,4 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.CRITICAL)
 
-__all__ = ['ExecNode', "DAG", 'op', 'to_dag', 'ErrorStrategy']
+__all__ = ["ExecNode", "DAG", "op", "to_dag", "ErrorStrategy"]
