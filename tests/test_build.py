@@ -42,7 +42,7 @@ def g(e):
 
 
 # ExecNodes can be identified using the actual function or an identification string
-l = [
+list_execnodes = [
     ExecNode(a, a, is_sequential=True),
     ExecNode("b", b, [a], priority=2, is_sequential=False),
     ExecNode(c, c, [a], priority=1, is_sequential=False),
@@ -54,7 +54,7 @@ l = [
 
 
 def test_dag_build():
-    g = DAG(l, 2, behaviour=ErrorStrategy.strict, logger=logging.getLogger())
+    g = DAG(list_execnodes, 2, behaviour=ErrorStrategy.strict, logger=logging.getLogger())
     t0 = time()
     g.execute()  # must never fail!
     print(time() - t0)

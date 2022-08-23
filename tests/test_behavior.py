@@ -29,7 +29,7 @@ def d(a):
     pytest.comp_str += "d"
 
 
-l = [
+list_execnodes = [
     ExecNode(a, a, priority=1, is_sequential=False),
     ExecNode(b, b, [a], priority=2, is_sequential=False),
     ExecNode(c, c, [b], priority=2, is_sequential=False),
@@ -39,7 +39,7 @@ l = [
 
 def test_strict_error_behavior():
     pytest.comp_str = ""
-    g = DAG(l, 1, behaviour=ErrorStrategy.strict, logger=logging.getLogger())
+    g = DAG(list_execnodes, 1, behaviour=ErrorStrategy.strict, logger=logging.getLogger())
     try:
         g.execute()
     except NotImplementedError:
@@ -48,14 +48,14 @@ def test_strict_error_behavior():
 
 def test_all_children_behavior():
     pytest.comp_str = ""
-    g = DAG(l, 1, behaviour=ErrorStrategy.all_children, logger=logging.getLogger())
+    g = DAG(list_execnodes, 1, behaviour=ErrorStrategy.all_children, logger=logging.getLogger())
     g.execute()
     assert pytest.comp_str == "ad"
 
 
 def test_permissive_behavior():
     pytest.comp_str = ""
-    g = DAG(l, 1, behaviour=ErrorStrategy.permissive, logger=logging.getLogger())
+    g = DAG(list_execnodes, 1, behaviour=ErrorStrategy.permissive, logger=logging.getLogger())
     g.execute()
     assert pytest.comp_str == "acd"
 

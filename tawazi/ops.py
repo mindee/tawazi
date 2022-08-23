@@ -118,12 +118,16 @@ class LazyExecNode(ExecNode):
 def op(func=None, *, priority=0, argument_name=None, is_sequential=True):
     """
     Decorate a function to make it an ExecNode. When the decorated function is called, you are actually calling
-    an ExecNode. This way we can record the dependencies in order to build the actual DAG. Check the example in the README
-    for a guide to the usage.
+    an ExecNode. This way we can record the dependencies in order to build the actual DAG.
+    Check the example in the README for a guide to the usage.
     Args:
         func: a Callable that will be executed in the DAG
         priority: priority of the execution with respect to other ExecNodes
-        argument_name: the name of the argument to be used by other ExecNodes when referring to the returned value of **this** ExecNode
+        argument_name: name of the argument used by other ExecNodes referring to the returned value.
+             Explanation:
+             This ExecNode will return a value.
+             This value will be used by other ExecNodes via their arguments.
+             The name of the argument to be used is specified by this value.
         is_sequential: whether to allow the execution of this ExecNode with others or not
 
     Returns:
@@ -155,7 +159,8 @@ def to_dag(declare_dag_function: Callable):
     Args:
         declare_dag_function: a function that contains functions decorated with @op decorator.
         The execution of this function must be really fast because almost no calculation happens here.
-        Note: to_dag is thread safe because it uses an internal lock. If you need to construct lots of DAGs in multiple threads,
+        Note: to_dag is thread safe because it uses an internal lock.
+            If you need to construct lots of DAGs in multiple threads,
         it is best to construct your dag once and then consume it as much as you like in multiple threads.
 
     Returns: a DAG instance

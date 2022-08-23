@@ -33,7 +33,7 @@ def d(b, c, third_argument: Union[str, int] = 1234, fourth_argument=6789):
     pytest.third_argument = third_argument
     print(f"fourth argument is {fourth_argument}")
     pytest.fourth_argument = fourth_argument
-    print(f"ran d")
+    print("ran d")
     # print(f"ran d {some_constant} {keyworded_arg}")
     return "d"
 
@@ -43,7 +43,7 @@ def my_custom_dag():
     vara = a()
     varb = b(vara)
     varc = c(vara)
-    vard = d(varb, c=varc, fourth_argument=1111)
+    _vard = d(varb, c=varc, fourth_argument=1111)
 
 
 @op
@@ -69,15 +69,15 @@ def my_other_custom_dag():
     varc = c(vara)
     vard = d(varb, c=varc, fourth_argument=2222, third_argument="blabla")
     vare = e()
-    varf = f(vara, varb, varc, vard, vare)
+    _varf = f(vara, varb, varc, vard, vare)
 
 
 d1 = my_custom_dag()
-print(f"\n1st execution of dag")
+print("\n1st execution of dag")
 d1.execute()
 assert pytest.third_argument == 1234
 assert pytest.fourth_argument == 1111
-print(f"\n2nd execution of dag")
+print("\n2nd execution of dag")
 d1.execute()
 
 d2 = my_other_custom_dag()
@@ -88,7 +88,7 @@ assert pytest.fourth_argument == 2222
 print("\n2nd execution of other dag")
 d2.execute()
 
-print(f"\n3rd execution of dag")
+print("\n3rd execution of dag")
 d1.execute()
 assert pytest.third_argument == 1234
 assert pytest.fourth_argument == 1111

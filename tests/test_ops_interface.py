@@ -34,7 +34,7 @@ def test_ops_interface():
         pytest.third_argument = third_argument
         logger.debug(f"fourth argument is {fourth_argument}")
         pytest.fourth_argument = fourth_argument
-        logger.debug(f"ran d")
+        logger.debug("ran d")
         # logger.debug(f"ran d {some_constant} {keyworded_arg}")
         return "d"
 
@@ -43,7 +43,7 @@ def test_ops_interface():
         vara = a()
         varb = b(vara)
         varc = c(vara)
-        vard = d(varb, c=varc, fourth_argument=1111)
+        _vard = d(varb, c=varc, fourth_argument=1111)
 
     @op
     def e():
@@ -66,14 +66,14 @@ def test_ops_interface():
         varc = c(vara)
         vard = d(varb, c=varc, fourth_argument=2222, third_argument="blabla")
         vare = e()
-        varf = f(vara, varb, varc, vard, vare)
+        _varf = f(vara, varb, varc, vard, vare)
 
     d1 = my_custom_dag()
-    logger.debug(f"\n1st execution of dag")
+    logger.debug("\n1st execution of dag")
     d1.execute()
     assert pytest.third_argument == 1234
     assert pytest.fourth_argument == 1111
-    logger.debug(f"\n2nd execution of dag")
+    logger.debug("\n2nd execution of dag")
     d1.execute()
 
     d2 = my_other_custom_dag()
@@ -84,7 +84,7 @@ def test_ops_interface():
     logger.debug("\n2nd execution of other dag")
     d2.execute()
 
-    logger.debug(f"\n3rd execution of dag")
+    logger.debug("\n3rd execution of dag")
     d1.execute()
     assert pytest.third_argument == 1234
     assert pytest.fourth_argument == 1111
