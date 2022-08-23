@@ -14,7 +14,5 @@ import logging
 logging.basicConfig(
     format="%(name)s >>> %(asctime)s %(levelname)s %(threadName)s %(message)s"
 )
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.CRITICAL)
 
 __all__ = ["ExecNode", "DAG", "op", "to_dag", "ErrorStrategy"]
