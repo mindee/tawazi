@@ -36,7 +36,7 @@ jobs:
 
     - name: extract files from README.md
       run: |
-        mkcodes --github --safe --output tests/test_md.py README.md
+        poetry run mkcodes --github --safe --output tests/test_md.py README.md
 
     - name: Run pre-commit
       run : |
