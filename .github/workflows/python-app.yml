@@ -54,4 +54,4 @@ jobs:
         set -o pipefail
         poetry run pytest | tee pytest-coverage.txt
         # test extracted python code from markdown
-        python tests/test_md.py 
+         poetry run python tests/test_md.py
