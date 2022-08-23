@@ -9,6 +9,7 @@ T = 0.001
 # global comp_str
 pytest.comp_str = ""
 
+
 # pass *kwargs because different the same function is used in multiple deps
 def a(**results_dict):
     sleep(T)
@@ -40,14 +41,14 @@ def test_priority():
     # Priority test
     for _i in range(100):
         pytest.comp_str = ""
-        l = [
+        list_execnodes = [
             ExecNode(a, a, priority=1, is_sequential=False),
             ExecNode(b, b, [a], priority=2, is_sequential=False),
             ExecNode(c, c, [b], priority=2, is_sequential=False),
             ExecNode(d, d, [a], priority=1, is_sequential=False),
         ]
 
-        g = DAG(l, 1, behaviour=ErrorStrategy.strict, logger=logging.getLogger())
+        g = DAG(list_execnodes, 1, behaviour=ErrorStrategy.strict, logger=logging.getLogger())
         g.execute()
         assert pytest.comp_str == "abcd", f"during {_i}th iteration"
 
@@ -56,7 +57,7 @@ def test_sequentiality():
     for _i in range(100):
         # Sequentiality test
         pytest.comp_str = ""
-        l = [
+        list_execnodes = [
             ExecNode(a, a, is_sequential=False),
             ExecNode(b, b, [a], priority=2, is_sequential=False),
             ExecNode(c, c, [a], priority=2, is_sequential=False),
@@ -64,7 +65,7 @@ def test_sequentiality():
             ExecNode(e, e, [a], priority=1, is_sequential=True),
         ]
 
-        g = DAG(l, 2, behaviour=ErrorStrategy.strict, logger=logging.getLogger())
+        g = DAG(list_execnodes, 2, behaviour=ErrorStrategy.strict, logger=logging.getLogger())
         g.execute()
         ind_a = pytest.comp_str.index("a")
         ind_b = pytest.comp_str.index("b")

@@ -1,6 +1,4 @@
 import concurrent
-import copy
-import logging
 from concurrent.futures import (
     ALL_COMPLETED,
     FIRST_COMPLETED,

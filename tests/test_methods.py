@@ -34,7 +34,7 @@ class MyClass:
         pytest.third_argument = third_argument
         logger.debug(f"fourth argument is {fourth_argument}")
         pytest.fourth_argument = fourth_argument
-        logger.debug(f"ran d")
+        logger.debug("ran d")
         # logger.debug(f"ran d {some_constant} {keyworded_arg}")
         return "d"
 
@@ -43,16 +43,16 @@ class MyClass:
         vara = self.a()
         varb = self.b(vara)
         varc = self.c(vara)
-        vard = self.d(varb, c=varc, fourth_argument=1111)
+        _vard = self.d(varb, c=varc, fourth_argument=1111)
 
 
 def test_ops_interface():
     c = MyClass()
 
     d1 = c.my_custom_dag()
-    logger.debug(f"\n1st execution of dag")
+    logger.debug("\n1st execution of dag")
     d1.execute()
     assert pytest.third_argument == 1234
     assert pytest.fourth_argument == 1111
-    logger.debug(f"\n2nd execution of dag")
+    logger.debug("\n2nd execution of dag")
     d1.execute()
