@@ -1,4 +1,5 @@
 import concurrent
+import logging
 from concurrent.futures import (
     ALL_COMPLETED,
     FIRST_COMPLETED,
@@ -18,7 +19,7 @@ from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 import tawazi
 
 from .errors import ErrorStrategy
-import logging
+
 logger = logging.getLogger(__name__)
 
 # todo remove reliance on DiGraph!
