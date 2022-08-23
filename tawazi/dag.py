@@ -1,4 +1,5 @@
 import concurrent
+import logging
 from concurrent.futures import (
     ALL_COMPLETED,
     FIRST_COMPLETED,
@@ -19,6 +20,7 @@ import tawazi
 
 from .errors import ErrorStrategy
 
+logger = logging.getLogger(__name__)
 
 # todo remove reliance on DiGraph!
 class DiGraphEx(nx.DiGraph):
@@ -69,7 +71,7 @@ class ExecNode:
         argument_name: Optional[str] = None,
         priority: int = 0,
         is_sequential: bool = True,
-        logger: Logger = tawazi.logger,  # type: ignore
+        logger: Logger = logger,  # type: ignore
     ):
         """
         Args:
@@ -148,7 +150,7 @@ class DAG:
         exec_nodes: List[ExecNode],
         max_concurrency: int = 1,
         behaviour: ErrorStrategy = ErrorStrategy.strict,
-        logger: Logger = tawazi.logger,  # type: ignore
+        logger: Logger = logger,  # type: ignore
     ):
         """
         Args:
