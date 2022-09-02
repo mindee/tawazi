@@ -5,7 +5,7 @@
 <!-- put a link explaining what a DAG is-->
 
 The tawazi library enables **parallel** execution of functions in a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) dependency structure.
-This library satisifies the following:
+This library satisfies the following:
 * Stable, robust, well tested
 * lightweight
 * Thread Safety
@@ -70,24 +70,24 @@ A couple of features will be released soon:
 * support multiprocessing
 * simulation of the execution using a DAG stored ledger
 * support more python versions
-* Try the library on windows machine
+* Try the library on Windows machine
 * Include python, mypy, black etc. in the README
 * Disallow execution in parallel of some threads in parallel with some other threads
   * maybe by making a group of threads that are CPU bound and a group of threads that are IO bound?
 * Remove dependency on networkx !?
 * add line maximum columns
 * decide whether to identify the ExecNode by a Hashable ID or by its own Python ID. This is breaking change and must change to 0.2.1
-* support multiple return of a function!? this is rather complicated!? I have to wrap every returned value 
+* support multiple return of a function!? this is rather complicated!? I have to wrap every returned value
 in an object and then decide the dependencies using that
 * the goal of this library is to run the DAG nodes in parallel and to run the same DAG in parallel in multiple threads
-or to run the same ops between different DAGs with no side effects what so ever
-* run subset of execnodes only
+or to run the same ops between different DAGs with no side effects whatsoever
+* run subset of exec nodes only
 * clean the new DAG interface and document it
 * document dagster interface and correct the tests
-* put documentation about different cases where it is advantageous to use it 
+* put documentation about different cases where it is advantageous to use it
   * in methods not only in functions
   * in a gunicorn application
   * for getting information from multiple resources
 * support constants by resolving the error in the tests
-* put link to code on github
+* put link to code on GitHub
 * Remove the global object and maybe replace it with an attribute to the creating function
