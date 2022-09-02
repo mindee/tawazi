@@ -53,7 +53,7 @@ class LazyExecNode(ExecNode):
     ):
         # TODO: change the id_ of the execNode. Maybe remove it completely
         super().__init__(
-            id_=hash(func),
+            id_=func,
             exec_function=func,
             depends_on=None,
             priority=priority,

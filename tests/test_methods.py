@@ -35,7 +35,6 @@ class MyClass:
         logger.debug(f"fourth argument is {fourth_argument}")
         pytest.fourth_argument = fourth_argument
         logger.debug("ran d")
-        # logger.debug(f"ran d {some_constant} {keyworded_arg}")
         return "d"
 
     @to_dag
