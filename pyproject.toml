@@ -19,6 +19,7 @@ flake8 = "^5.0.4"
 pytest = "^7.1.2"
 pytest-cov = "^3.0.0"
 mkcodes = "*"
+mypy = "^0.971"
 
 [tool.pytest.ini_options]
 addopts = "--cov-report=term-missing:skip-covered --junit-xml=pytest-junit.xml --cov=tawazi tests"
@@ -26,3 +27,22 @@ addopts = "--cov-report=term-missing:skip-covered --junit-xml=pytest-junit.xml -
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.mypy]
+python_version = "3.8"
+exclude = ["tests"]
+# --strict
+disallow_any_generics = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+implicit_reexport = false
+strict_equality = true
+# --strict end
+
+[[tool.mypy.overrides]]
+module = "matplotlib.*,networkx.*"
+ignore_missing_imports = true
