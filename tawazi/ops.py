@@ -1,17 +1,17 @@
 import inspect
 import types
 from threading import Lock
-from typing import Any, Callable
+from typing import Any, Callable, Dict, List, Optional
 
 from tawazi import DAG, ExecNode
 
-# todo replace exec_nodes with dict
+# TODO: replace exec_nodes with dict
 # a temporary variable used to pass in exec_nodes to the DAG during building
-exec_nodes = []
+exec_nodes: List[ExecNode] = []
 exec_nodes_lock = Lock()
 
 
-class PrecalculatedExecNode(ExecNode):
+class PreComputedExecNode(ExecNode):
     def __init__(self, argument_name: str, value: Any):
         super().__init__(
             id_=argument_name,
@@ -22,7 +22,15 @@ class PrecalculatedExecNode(ExecNode):
         )
 
 
-def get_default_args(func):
+def get_default_args(func: Callable[..., Any]) -> Dict[str, Any]:
+    """
+    retrieves the default arguments of a function
+    Args:
+        func: the function with unknown defaults
+
+    Returns:
+        the mapping between the arguments and their default value
+    """
     signature = inspect.signature(func)
     return {
         k: v.default
@@ -37,11 +45,15 @@ class LazyExecNode(ExecNode):
     """
 
     def __init__(
-        self, func: Callable, priority=0, argument_name=None, is_sequential=True
+        self,
+        func: Callable[..., Any],
+        priority: int = 0,
+        argument_name: Optional[str] = None,
+        is_sequential: bool = True,
     ):
-        # todo change the id_ of the execNode. Maybe remove it completely!
+        # TODO: change the id_ of the execNode. Maybe remove it completely
         super().__init__(
-            id_=func,
+            id_=hash(func),
             exec_function=func,
             depends_on=None,
             priority=priority,
@@ -49,27 +61,27 @@ class LazyExecNode(ExecNode):
             is_sequential=is_sequential,
         )
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> "LazyExecNode":
         """
         Record the dependencies in a global variable to be called later in DAG.
-        Returns: ReplaceExecNode
+        Returns: LazyExecNode
         """
 
         # 0. if dependencies are already calculated, there is no need to recalculate them
-        if self.calculated_dependencies and self in exec_nodes:
+        if self.computed_dependencies and self in exec_nodes:
             return self
 
         dependencies = []
         provided_arguments_names = set()
 
-        # todo refactor this part!!
+        # TODO: refactor this part.
         function_arguments_names = inspect.getfullargspec(self.exec_function)[0]
         for i, arg in enumerate(args):
             if isinstance(arg, LazyExecNode):
                 dependencies.append(arg.id)
             else:
                 # if the argument is a custom or constant
-                prec_exec_node = PrecalculatedExecNode(function_arguments_names[i], arg)
+                prec_exec_node = PreComputedExecNode(function_arguments_names[i], arg)
                 exec_nodes.append(prec_exec_node)
                 dependencies.append(prec_exec_node.id)
 
@@ -80,7 +92,7 @@ class LazyExecNode(ExecNode):
                 dependencies.append(arg.id)
             else:
                 # if the argument is a custom or constant
-                prec_exec_node = PrecalculatedExecNode(argument_name, arg)
+                prec_exec_node = PreComputedExecNode(argument_name, arg)
                 exec_nodes.append(prec_exec_node)
                 dependencies.append(prec_exec_node.id)
 
@@ -90,7 +102,7 @@ class LazyExecNode(ExecNode):
         default_valued_params = get_default_args(self.exec_function)
         for argument_name in set(function_arguments_names) - provided_arguments_names:
             # if the argument is a custom or constant
-            prec_exec_node = PrecalculatedExecNode(
+            prec_exec_node = PreComputedExecNode(
                 argument_name, default_valued_params[argument_name]
             )
             exec_nodes.append(prec_exec_node)
@@ -103,8 +115,16 @@ class LazyExecNode(ExecNode):
             exec_nodes.append(self)
         return self
 
-    def __get__(self, instance, owner_cls=None):
-        "Simulate func_descr_get() in Objects/funcobject.c"
+    def __get__(self, instance: "LazyExecNode", owner_cls: Optional[Any] = None) -> Any:
+        """
+        Simulate func_descr_get() in Objects/funcobject.c
+        Args:
+            instance:
+            owner_cls:
+
+        Returns:
+
+        """
         if instance is None:
             # this is the case when we call the method on the class instead of an instance of the class
             # In this case, we must return a "function" hence an instance of this class
@@ -113,9 +133,15 @@ class LazyExecNode(ExecNode):
         return types.MethodType(self, instance)  # func=self  # obj=instance
 
 
-# todo add the documentation of the replaced function!
-# todo modify is_sequential's default value according to the preused default
-def op(func=None, *, priority=0, argument_name=None, is_sequential=True):
+# TODO: add the documentation of the replaced function!
+# TODO: modify is_sequential's default value according to the pre used default
+def op(
+    func: Optional[Callable[..., Any]] = None,
+    *,
+    priority: int = 0,
+    argument_name: Optional[str] = None,
+    is_sequential: bool = True
+) -> "LazyExecNode":
     """
     Decorate a function to make it an ExecNode. When the decorated function is called, you are actually calling
     an ExecNode. This way we can record the dependencies in order to build the actual DAG.
@@ -131,27 +157,21 @@ def op(func=None, *, priority=0, argument_name=None, is_sequential=True):
         is_sequential: whether to allow the execution of this ExecNode with others or not
 
     Returns:
-        ReplaceExecNode
+        LazyExecNode
     """
 
-    def my_custom_op(_func: Callable):
-
+    def my_custom_op(_func: Callable[..., Any]) -> "LazyExecNode":
         return LazyExecNode(_func, priority, argument_name, is_sequential)
-        # to have the help and the name of the origianl function
-        # rep_exec_node = ReplaceExecNode(func, priority, argument_name, is_sequential)
-        # functools.update_wrapper(rep_exec_node, func)
-        #
-        # return rep_exec_node
 
     # if args are provided to the decorator
     if func is None:
-        return my_custom_op
+        return my_custom_op  # type: ignore
     # if no argument is provided
     else:
         return my_custom_op(func)
 
 
-def to_dag(declare_dag_function: Callable):
+def to_dag(declare_dag_function: Callable[..., Any]) -> Callable[..., Any]:
     """
     Transform the declared ops into a DAG that can be executed.
     The same DAG can be executed multiple times
@@ -167,15 +187,12 @@ def to_dag(declare_dag_function: Callable):
 
     """
 
-    def wrapped(*args, **kwargs):
-        # todo modify this pattern! this is horrible!
+    def wrapped(*args: Any, **kwargs: Any) -> DAG:
+        # TODO: modify this horrible pattern
         global exec_nodes
         with exec_nodes_lock:
             exec_nodes = []
-
-            #
             declare_dag_function(*args, **kwargs)
-
             d = DAG(exec_nodes)
             exec_nodes = []
 
