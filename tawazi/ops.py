@@ -161,6 +161,10 @@ def op(
     """
 
     def my_custom_op(_func: Callable[..., Any]) -> "LazyExecNode":
+        # rep_exec_node = ReplaceExecNode(func, priority, argument_name, is_sequential)
+        # functools.update_wrapper(rep_exec_node, func)
+        #
+        # return rep_exec_node
         return LazyExecNode(_func, priority, argument_name, is_sequential)
 
     # if args are provided to the decorator
