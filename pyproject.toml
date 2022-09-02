@@ -19,7 +19,6 @@ flake8 = "^5.0.4"
 pytest = "^7.1.2"
 pytest-cov = "^3.0.0"
 mkcodes = "*"
-mypy = "^0.971"
 
 [tool.pytest.ini_options]
 addopts = "--cov-report=term-missing:skip-covered --junit-xml=pytest-junit.xml --cov=tawazi tests"
