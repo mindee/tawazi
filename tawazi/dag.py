@@ -10,19 +10,18 @@ from concurrent.futures import (
 from copy import deepcopy
 from logging import Logger
 from types import FunctionType
-from typing import Any, Callable, Dict, Hashable, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Hashable, List, Optional, Set, Tuple
 
 import networkx as nx
 from networkx import find_cycle
 from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 
-import tawazi
-
 from .errors import ErrorStrategy
 
 logger = logging.getLogger(__name__)
 
-# todo remove reliance on DiGraph!
+
+# todo remove dependency on DiGraph!
 class DiGraphEx(nx.DiGraph):
     """
     Extends the DiGraph with some methods
@@ -36,7 +35,7 @@ class DiGraphEx(nx.DiGraph):
         """
         return [n for n, d in self.in_degree if d == 0]
 
-    def remove_recursively(self, root_node: Hashable):
+    def remove_recursively(self, root_node: "ExecNode") -> None:
         """
         Recursively removes all the nodes that depend on the provided one
         Args:
@@ -44,7 +43,7 @@ class DiGraphEx(nx.DiGraph):
         """
         nodes_to_remove: Set[ExecNode] = set()
 
-        def dfs(n, graph, visited):
+        def dfs(n: ExecNode, graph: DiGraphEx, visited: Set[ExecNode]) -> None:
             if n in visited:
                 return
             else:
@@ -57,7 +56,6 @@ class DiGraphEx(nx.DiGraph):
             self.remove_node(node)
 
 
-# todo look into the typing of the id_
 class ExecNode:
     """
     This class is the base executable node of the Directed Acyclic Execution Graph
@@ -66,12 +64,12 @@ class ExecNode:
     def __init__(
         self,
         id_: Hashable,
-        exec_function: Callable = lambda **kwargs: None,
-        depends_on: List[Hashable] = None,
+        exec_function: Callable[..., Any] = lambda **kwargs: None,
+        depends_on: Optional[List[Hashable]] = None,
         argument_name: Optional[str] = None,
         priority: int = 0,
         is_sequential: bool = True,
-        logger: Logger = logger,  # type: ignore
+        logger: Logger = logger,
     ):
         """
         Args:
@@ -87,7 +85,7 @@ class ExecNode:
              Defaults to False.
         """
 
-        self.id = id_
+        self.id = id_  # TODO: look into the typing of the id_
         self.exec_function = exec_function
         self.depends_on = depends_on if depends_on else []
         self.priority = priority
@@ -102,14 +100,16 @@ class ExecNode:
             )
 
         # todo remove and make ExecNode immutable
-        self.result = None
+        self.result: Optional[Dict[str, Any]] = None
 
     @property
-    def calculated_dependencies(self):
+    def calculated_dependencies(self) -> bool:
         return isinstance(self.depends_on, list)
 
     # this is breaking change however
-    def execute(self, node_dict: Dict[Hashable, "ExecNode"]) -> Dict[str, Any]:
+    def execute(
+        self, node_dict: Dict[Hashable, "ExecNode"]
+    ) -> Optional[Dict[str, Any]]:
         """
         Execute the ExecNode directly or according to an execution graph.
         Args:
@@ -125,16 +125,15 @@ class ExecNode:
             node_dict[dep_hash].argument_name: node_dict[dep_hash].result
             for dep_hash in self.depends_on
         }
-        result = self.exec_function(**kwargs)
 
         # 2. write the result
-        self.result = result
+        self.result = self.exec_function(**kwargs)
 
         # 3. useless return value
         self.logger.debug(
             f"Finished executing {self.id} with task {self.exec_function}"
         )
-        return result
+        return self.result
 
 
 class DAG:
@@ -150,7 +149,7 @@ class DAG:
         exec_nodes: List[ExecNode],
         max_concurrency: int = 1,
         behaviour: ErrorStrategy = ErrorStrategy.strict,
-        logger: Logger = logger,  # type: ignore
+        logger: Logger = logger,
     ):
         """
         Args:
@@ -188,7 +187,7 @@ class DAG:
 
         self._build()
 
-    def find_cycle(self) -> Union[List[Tuple[str, str]], None]:
+    def find_cycle(self) -> Optional[List[Tuple[str, str]]]:
         """
         A DAG doesn't have any dependency cycle.
         This method returns the cycles if found.
@@ -197,7 +196,8 @@ class DAG:
         return example: [('taxes', 'amount_reconciliation'),('amount_reconciliation', 'taxes')]
         """
         try:
-            return find_cycle(self.graph)
+            cycle: List[Tuple[str, str]] = find_cycle(self.graph)
+            return cycle
         except NetworkXNoCycle:
             return None
 
@@ -230,7 +230,7 @@ class DAG:
             self.node_dict[node_name] for node_name in topological_order
         ]
 
-    def draw(self, k=0.8) -> None:
+    def draw(self, k: float = 0.8) -> None:
         """
         Draws the Networkx directed graph.
         Args:
@@ -256,18 +256,18 @@ class DAG:
         Returns:
             node_dict: dictionary with keys the name of the function and value the result after the execution
         """
-        # todo is it possible to avoid mutable state, hence avoid doing deep copies ?
+        # TODO: avoid mutable state, hence avoid doing deep copies ?
         graph = deepcopy(self.graph)
         node_dict = deepcopy(self.node_dict)
 
         # variables related to futures
-        futures: Dict[Hashable, concurrent.futures.Future] = {}
-        done: Set[Future] = set()
-        running: Set[Future] = set()
+        futures: Dict[Hashable, concurrent.futures.Future[Any]] = {}
+        done: Set[Future[Any]] = set()
+        running: Set[Future[Any]] = set()
 
         def get_num_running_threads(
-            _futures: Dict[Hashable, concurrent.futures.Future]
-        ):
+            _futures: Dict[Hashable, concurrent.futures.Future[Any]]
+        ) -> int:
             # use not future.done() because there is no guarantee that Thread pool will directly execute
             # the submitted thread
             return sum([not future.done() for future in _futures.values()])
@@ -346,12 +346,12 @@ class DAG:
                 futures[exec_node.id] = exec_future
 
                 # 5.2 wait for the sequential node to finish
-                # todo I don't think this code ever runs maybe must delete it
+                # TODO: not sure this code ever runs
                 if exec_node.is_sequential:
                     wait(futures.values(), return_when=ALL_COMPLETED)
         return node_dict
 
-    def safe_execute(self):
+    def safe_execute(self) -> None:
         """
         Execute the ExecNodes in topological order without priority in for loop manner for debugging purposes
         """
@@ -360,8 +360,8 @@ class DAG:
             node_dict[node_id].execute(node_dict)
 
     def handle_exception(
-        self, graph: DiGraphEx, fut: concurrent.futures.Future, id_: Hashable
-    ):
+        self, graph: DiGraphEx, fut: concurrent.futures.Future[Any], id_: Hashable
+    ) -> None:
         """
         checks if futures have produced exceptions, and handles them
         according to the specified behaviour
