@@ -102,6 +102,9 @@ class ExecNode:
         # todo remove and make ExecNode immutable
         self.result: Optional[Dict[str, Any]] = None
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__} {self.id} ~ | <{hex(id(self))}>"
+
     @property
     def computed_dependencies(self) -> bool:
         return isinstance(self.depends_on, list)
@@ -261,13 +264,11 @@ class DAG:
         node_dict = deepcopy(self.node_dict)
 
         # variables related to futures
-        futures: Dict[Hashable, concurrent.futures.Future[Any]] = {}
-        done: Set[Future[Any]] = set()
-        running: Set[Future[Any]] = set()
+        futures: Dict[Hashable, "Future[Any]"] = {}
+        done: Set["Future[Any]"] = set()
+        running: Set["Future[Any]"] = set()
 
-        def get_num_running_threads(
-            _futures: Dict[Hashable, concurrent.futures.Future[Any]]
-        ) -> int:
+        def get_num_running_threads(_futures: Dict[Hashable, "Future[Any]"]) -> int:
             # use not future.done() because there is no guarantee that Thread pool will directly execute
             # the submitted thread
             return sum([not future.done() for future in _futures.values()])
@@ -360,7 +361,7 @@ class DAG:
             node_dict[node_id].execute(node_dict)
 
     def handle_exception(
-        self, graph: DiGraphEx, fut: concurrent.futures.Future[Any], id_: Hashable
+        self, graph: DiGraphEx, fut: "Future[Any]", id_: Hashable
     ) -> None:
         """
         checks if futures have produced exceptions, and handles them
