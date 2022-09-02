@@ -103,7 +103,7 @@ class ExecNode:
         self.result: Optional[Dict[str, Any]] = None
 
     @property
-    def calculated_dependencies(self) -> bool:
+    def computed_dependencies(self) -> bool:
         return isinstance(self.depends_on, list)
 
     # this is breaking change however
