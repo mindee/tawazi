@@ -7,6 +7,6 @@ class DAGBaseException(BaseException):
 
 class ErrorStrategy(Enum):
     # supported behavior following a raised error
-    strict = "strict"
-    all_children = "all-children"
-    permissive = "premissive"
+    strict: str = "strict"
+    all_children: str = "all-children"
+    permissive: str = "permissive"
