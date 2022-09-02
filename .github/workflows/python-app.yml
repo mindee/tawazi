@@ -49,6 +49,10 @@ jobs:
         # exit-zero treats all errors as warnings. Be compatible with black
         poetry run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --extend-ignore=E203 --statistics
 
+    - name: Run mypy on the code
+      run: |
+        poetry run mypy -p tawazi
+
     - name: Run tests
       run: |
         set -o pipefail
