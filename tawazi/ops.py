@@ -175,13 +175,12 @@ def to_dag(declare_dag_function: Callable[..., Any]) -> Callable[..., Any]:
     """
     Transform the declared ops into a DAG that can be executed.
     The same DAG can be executed multiple times
-
+    Note: to_dag is thread safe because it uses an internal lock.
+        If you need to construct lots of DAGs in multiple threads,
+        it is best to construct your dag once and then consume it as much as you like in multiple threads.
     Args:
         declare_dag_function: a function that contains functions decorated with @op decorator.
         The execution of this function must be really fast because almost no calculation happens here.
-        Note: to_dag is thread safe because it uses an internal lock.
-            If you need to construct lots of DAGs in multiple threads,
-        it is best to construct your dag once and then consume it as much as you like in multiple threads.
 
     Returns: a DAG instance
 
