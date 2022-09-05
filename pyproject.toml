@@ -45,3 +45,11 @@ strict_equality = true
 [[tool.mypy.overrides]]
 module = "matplotlib.*,networkx.*"
 ignore_missing_imports = true
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.black]
+skip-magic-trailing-comma = true
+line-length = 100
