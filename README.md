@@ -67,6 +67,8 @@ The libraries name is inspired from the arabic word تَوَازٍ which means p
 This library is still in development. Breaking changes are expected.
 
 A couple of features will be released soon:
+* an example of running a set of calculations with the DAG and without the DAG
+  * we can show that using tawazi is transparent and one just has to remove the decorators! Then everything is back to normal
 * support multiprocessing
 * simulation of the execution using a DAG stored ledger
 * support more python versions

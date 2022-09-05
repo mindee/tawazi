@@ -1,3 +1,4 @@
+import functools
 import inspect
 import types
 from threading import Lock
@@ -165,12 +166,15 @@ def op(
         # functools.update_wrapper(rep_exec_node, func)
         #
         # return rep_exec_node
-        return LazyExecNode(_func, priority, argument_name, is_sequential)
 
-    # if args are provided to the decorator
+        lazy_exec_node = LazyExecNode(_func, priority, argument_name, is_sequential)
+        functools.update_wrapper(lazy_exec_node, _func)
+        return lazy_exec_node
+
+    # case #1: arguments are provided to the decorator
     if func is None:
         return my_custom_op  # type: ignore
-    # if no argument is provided
+    # case #2: no argument is provided to the decorator
     else:
         return my_custom_op(func)
 
@@ -183,8 +187,9 @@ def to_dag(declare_dag_function: Callable[..., Any]) -> Callable[..., Any]:
         If you need to construct lots of DAGs in multiple threads,
         it is best to construct your dag once and then consume it as much as you like in multiple threads.
     Args:
-        declare_dag_function: a function that contains functions decorated with @op decorator.
-        The execution of this function must be really fast because almost no calculation happens here.
+        declare_dag_function: a function that contains the execution of the DAG.
+        if the functions are decorated with @op decorator they can be executed in parallel.
+        Otherwise, they will be executed immediately. Currently mixing the two behaviors isn't supported.
 
     Returns: a DAG instance
 
