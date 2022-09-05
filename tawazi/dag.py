@@ -1,12 +1,5 @@
-import concurrent
 import logging
-from concurrent.futures import (
-    ALL_COMPLETED,
-    FIRST_COMPLETED,
-    Future,
-    ThreadPoolExecutor,
-    wait,
-)
+from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import deepcopy
 from logging import Logger
 from types import FunctionType
@@ -110,9 +103,7 @@ class ExecNode:
         return isinstance(self.depends_on, list)
 
     # this is breaking change however
-    def execute(
-        self, node_dict: Dict[Hashable, "ExecNode"]
-    ) -> Optional[Dict[str, Any]]:
+    def execute(self, node_dict: Dict[Hashable, "ExecNode"]) -> Optional[Dict[str, Any]]:
         """
         Execute the ExecNode directly or according to an execution graph.
         Args:
@@ -133,9 +124,7 @@ class ExecNode:
         self.result = self.exec_function(**kwargs)
 
         # 3. useless return value
-        self.logger.debug(
-            f"Finished executing {self.id} with task {self.exec_function}"
-        )
+        self.logger.debug(f"Finished executing {self.id} with task {self.exec_function}")
         return self.result
 
 
@@ -170,9 +159,7 @@ class DAG:
         self.exec_nodes = exec_nodes
 
         self.max_concurrency = int(max_concurrency)
-        assert (
-            max_concurrency >= 1
-        ), "Invalid maximum number of threads! Must be a positive integer"
+        assert max_concurrency >= 1, "Invalid maximum number of threads! Must be a positive integer"
 
         # variables necessary for DAG construction
         self.hierarchy: Dict[Hashable, List[Hashable]] = {
@@ -229,9 +216,7 @@ class DAG:
             )
             raise NetworkXUnfeasible
 
-        self.exec_node_sequence = [
-            self.node_dict[node_name] for node_name in topological_order
-        ]
+        self.exec_node_sequence = [self.node_dict[node_name] for node_name in topological_order]
 
     def draw(self, k: float = 0.8) -> None:
         """
@@ -288,10 +273,7 @@ class DAG:
                 #       => a new root node will be available
                 num_running_threads = get_num_running_threads(futures)
                 num_runnable_nodes = len(runnable_nodes)
-                if (
-                    num_running_threads == self.max_concurrency
-                    or num_runnable_nodes == 0
-                ):
+                if num_running_threads == self.max_concurrency or num_runnable_nodes == 0:
                     # must wait and not submit any workers before a worker ends
                     # (that might create a new more prioritized node) to be executed
                     self.logger.debug(
@@ -320,9 +302,7 @@ class DAG:
 
                 # 4. choose a node to run
                 # 4.1 get the most prioritized runnable node
-                node_id = sorted(runnable_nodes, key=lambda n: node_dict[n].priority)[
-                    -1
-                ]
+                node_id = sorted(runnable_nodes, key=lambda n: node_dict[n].priority)[-1]
 
                 exec_node = node_dict[node_id]
                 self.logger.info(f"{node_id} will run!")
@@ -360,9 +340,7 @@ class DAG:
         for node_id in self.topological_sort():
             node_dict[node_id].execute(node_dict)
 
-    def handle_exception(
-        self, graph: DiGraphEx, fut: "Future[Any]", id_: Hashable
-    ) -> None:
+    def handle_exception(self, graph: DiGraphEx, fut: "Future[Any]", id_: Hashable) -> None:
         """
         checks if futures have produced exceptions, and handles them
         according to the specified behaviour
@@ -377,21 +355,18 @@ class DAG:
 
         if self.behaviour == ErrorStrategy.strict:
             # will raise the first encountered exception if there's one
-            _res = fut.result()
+            # no simpler way to check for exception, and not supported by flake8
+            _res = fut.result()  # noqa: F841
 
         else:
             try:
-                _res = fut.result()
+                _res = fut.result()  # noqa: F841
 
-            except Exception as _exc:
-                self.logger.exception(
-                    f"The feature {id_} encountered the following error:"
-                )
+            except Exception:
+                self.logger.exception(f"The feature {id_} encountered the following error:")
 
                 if self.behaviour == ErrorStrategy.permissive:
-                    self.logger.warning(
-                        "Ignoring exception as the behaviour is set to permissive"
-                    )
+                    self.logger.warning("Ignoring exception as the behaviour is set to permissive")
 
                 elif self.behaviour == ErrorStrategy.all_children:
                     # remove all its children. Current node will be removed directly afterwards
@@ -400,6 +375,4 @@ class DAG:
                         graph.remove_recursively(children_ids)
 
                 else:
-                    raise NotImplementedError(
-                        f"Unknown behaviour name: {self.behaviour}"
-                    )
+                    raise NotImplementedError(f"Unknown behaviour name: {self.behaviour}")
