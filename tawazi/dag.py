@@ -78,12 +78,16 @@ class ExecNode:
              Defaults to False.
         """
 
-        self.id = id_  # TODO: look into the typing of the id_
+        self.id = id_
         self.exec_function = exec_function
         self.depends_on = depends_on if depends_on else []
         self.priority = priority
         self.is_sequential = is_sequential
         self.logger = logger
+
+        # a string that identifies the ExecNode.
+        # It is either the name of the identifying function or the identifying string id_
+        self.__name__ = self.exec_function.__name__ if not isinstance(id_, str) else id_
 
         if isinstance(argument_name, str) and argument_name != "":
             self.argument_name = argument_name
@@ -97,10 +101,6 @@ class ExecNode:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} {self.id} ~ | <{hex(id(self))}>"
-
-        # a string that identifies the ExecNode.
-        # It is either the name of the identifying function or the identifying string id_
-        self.__name__ = self.exec_function.__name__ if not isinstance(id_, str) else id_
 
     @property
     def computed_dependencies(self) -> bool:
