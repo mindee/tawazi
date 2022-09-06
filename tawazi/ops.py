@@ -14,9 +14,9 @@ exec_nodes_lock = Lock()
 
 class PreComputedExecNode(ExecNode):
     # todo must change this because two functions in the same DAG can use the same argument name for two constants!
-    def __init__(self, argument_name: str, value: Any):
+    def __init__(self, func: Callable[..., Any], argument_name: str, value: Any):
         super().__init__(
-            id_=argument_name,
+            id_=f"{hash(func)}_{argument_name}",
             exec_function=lambda: value,
             depends_on=[],
             argument_name=argument_name,
@@ -83,7 +83,9 @@ class LazyExecNode(ExecNode):
                 dependencies.append(arg.id)
             else:
                 # if the argument is a custom or constant
-                prec_exec_node = PreComputedExecNode(function_arguments_names[i], arg)
+                prec_exec_node = PreComputedExecNode(
+                    self.exec_function, function_arguments_names[i], arg
+                )
                 exec_nodes.append(prec_exec_node)
                 dependencies.append(prec_exec_node.id)
 
@@ -94,7 +96,7 @@ class LazyExecNode(ExecNode):
                 dependencies.append(arg.id)
             else:
                 # if the argument is a custom or constant
-                prec_exec_node = PreComputedExecNode(argument_name, arg)
+                prec_exec_node = PreComputedExecNode(self.exec_function, argument_name, arg)
                 exec_nodes.append(prec_exec_node)
                 dependencies.append(prec_exec_node.id)
 
@@ -105,7 +107,7 @@ class LazyExecNode(ExecNode):
         for argument_name in set(function_arguments_names) - provided_arguments_names:
             # if the argument is a custom or constant
             prec_exec_node = PreComputedExecNode(
-                argument_name, default_valued_params[argument_name]
+                self.exec_function, argument_name, default_valued_params[argument_name]
             )
             exec_nodes.append(prec_exec_node)
             dependencies.append(prec_exec_node.id)
@@ -142,7 +144,7 @@ def op(
     *,
     priority: int = 0,
     argument_name: Optional[str] = None,
-    is_sequential: bool = True
+    is_sequential: bool = True,
 ) -> "LazyExecNode":
     """
     Decorate a function to make it an ExecNode. When the decorated function is called, you are actually calling
