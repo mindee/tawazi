@@ -89,6 +89,7 @@ class ExecNode:
         # It is either the name of the identifying function or the identifying string id_
         self.__name__ = self.exec_function.__name__ if not isinstance(id_, str) else id_
 
+        # Attempt to automatically assign a good enough argument name
         if isinstance(argument_name, str) and argument_name != "":
             self.argument_name = argument_name
         else:
