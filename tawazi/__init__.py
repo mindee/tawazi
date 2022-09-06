@@ -3,7 +3,7 @@ from .ops import op, to_dag
 from .errors import ErrorStrategy
 
 """
-parallel-dag is a package that allows parallel execution of a set of functions written in Python
+tawazi is a package that allows parallel execution of a set of functions written in Python
 isort:skip_file
 """
 __version__ = "0.1.2"
