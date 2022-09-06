@@ -13,6 +13,7 @@ exec_nodes_lock = Lock()
 
 
 class PreComputedExecNode(ExecNode):
+    # todo must change this because two functions in the same DAG can use the same argument name for two constants!
     def __init__(self, argument_name: str, value: Any):
         super().__init__(
             id_=argument_name,
@@ -146,7 +147,7 @@ def op(
     """
     Decorate a function to make it an ExecNode. When the decorated function is called, you are actually calling
     an ExecNode. This way we can record the dependencies in order to build the actual DAG.
-    Check the example in the README for a guide to the usage.
+    Please check the example in the README for a guide to the usage.
     Args:
         func: a Callable that will be executed in the DAG
         priority: priority of the execution with respect to other ExecNodes
@@ -162,11 +163,6 @@ def op(
     """
 
     def my_custom_op(_func: Callable[..., Any]) -> "LazyExecNode":
-        # rep_exec_node = ReplaceExecNode(func, priority, argument_name, is_sequential)
-        # functools.update_wrapper(rep_exec_node, func)
-        #
-        # return rep_exec_node
-
         lazy_exec_node = LazyExecNode(_func, priority, argument_name, is_sequential)
         functools.update_wrapper(lazy_exec_node, _func)
         return lazy_exec_node
@@ -181,11 +177,12 @@ def op(
 
 def to_dag(declare_dag_function: Callable[..., Any]) -> Callable[..., Any]:
     """
-    Transform the declared ops into a DAG that can be executed.
-    The same DAG can be executed multiple times
+    Transform the declared ops into a DAG that can be executed by tawazi.
+    The same DAG can be executed multiple times.
     Note: to_dag is thread safe because it uses an internal lock.
         If you need to construct lots of DAGs in multiple threads,
         it is best to construct your dag once and then consume it as much as you like in multiple threads.
+    Please check the example in the README for a guide to the usage.
     Args:
         declare_dag_function: a function that contains the execution of the DAG.
         if the functions are decorated with @op decorator they can be executed in parallel.
