@@ -1,4 +1,5 @@
-from .dag import ExecNode, DAG
+from .node import ExecNode  # the rest child classes are hidden from the outside
+from .dag import DAG
 from .ops import op, to_dag
 from .errors import ErrorStrategy
 
