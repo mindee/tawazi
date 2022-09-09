@@ -2,16 +2,16 @@ import logging
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import deepcopy
 from logging import Logger
-from types import FunctionType
-from typing import Any, Callable, Dict, Hashable, List, Optional, Set, Tuple
+from typing import Any, Dict, Hashable, List, Optional, Set, Tuple
 
 import networkx as nx
 from networkx import find_cycle
 from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 
 from .errors import ErrorStrategy
+from .node import ExecNode
 
-logger = logging.getLogger(__name__)
+logger_ = logging.getLogger(__name__)
 
 
 # todo remove dependency on DiGraph!
@@ -49,90 +49,6 @@ class DiGraphEx(nx.DiGraph):
             self.remove_node(node)
 
 
-class ExecNode:
-    """
-    This class is the base executable node of the Directed Acyclic Execution Graph
-    """
-
-    def __init__(
-        self,
-        id_: Hashable,
-        exec_function: Callable[..., Any] = lambda **kwargs: None,
-        depends_on: Optional[List[Hashable]] = None,
-        argument_name: Optional[str] = None,
-        priority: int = 0,
-        is_sequential: bool = True,
-        logger: Logger = logger,
-    ):
-        """
-        Args:
-            id_ (Hashable): identifier of ExecNode.
-            exec_function (Callable, optional): a callable will be executed in the graph.
-            This is useful to make Joining ExecNodes (Nodes that enforce dependencies on the graph)
-            depends_on (list): a list of ExecNodes' ids that must be executed beforehand.
-            argument_name (str): The name of the argument used by ExecNodes that depend on this ExecNode.
-            priority (int, optional): priority compared to other ExecNodes;
-                the higher the number the higher the priority.
-            is_sequential (bool, optional): whether to execute this ExecNode in sequential order with respect to others.
-             When this ExecNode must be executed, all other nodes are waited to finish before starting execution.
-             Defaults to False.
-        """
-
-        self.id = id_
-        self.exec_function = exec_function
-        self.depends_on = depends_on if depends_on else []
-        self.priority = priority
-        self.is_sequential = is_sequential
-        self.logger = logger
-
-        # a string that identifies the ExecNode.
-        # It is either the name of the identifying function or the identifying string id_
-        self.__name__ = self.exec_function.__name__ if not isinstance(id_, str) else id_
-
-        # Attempt to automatically assign a good enough argument name
-        if isinstance(argument_name, str) and argument_name != "":
-            self.argument_name = argument_name
-        else:
-            self.argument_name = (
-                self.id.__name__ if isinstance(self.id, FunctionType) else str(self.id)
-            )
-
-        # todo remove and make ExecNode immutable
-        self.result: Optional[Dict[str, Any]] = None
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__} {self.id} ~ | <{hex(id(self))}>"
-
-    @property
-    def computed_dependencies(self) -> bool:
-        return isinstance(self.depends_on, list)
-
-    # this is breaking change however
-    def execute(self, node_dict: Dict[Hashable, "ExecNode"]) -> Optional[Dict[str, Any]]:
-        """
-        Execute the ExecNode directly or according to an execution graph.
-        Args:
-            node_dict (Dict[Hashable, ExecNode]): A shared dictionary containing the other ExecNodes in the DAG;
-                                                the key is the id of the ExecNode.
-
-        Returns: the result of the execution of the current ExecNode
-        """
-        # 1. fabricate the arguments for this ExecNode
-        self.logger.debug(f"Start executing {self.id} with task {self.exec_function}")
-
-        kwargs = {
-            node_dict[dep_hash].argument_name: node_dict[dep_hash].result
-            for dep_hash in self.depends_on
-        }
-
-        # 2. write the result
-        self.result = self.exec_function(**kwargs)
-
-        # 3. useless return value
-        self.logger.debug(f"Finished executing {self.id} with task {self.exec_function}")
-        return self.result
-
-
 class DAG:
     """
     Data Structure containing ExecNodes with interdependencies.
@@ -146,7 +62,7 @@ class DAG:
         exec_nodes: List[ExecNode],
         max_concurrency: int = 1,
         behaviour: ErrorStrategy = ErrorStrategy.strict,
-        logger: Logger = logger,
+        logger: Logger = logger_,
     ):
         """
         Args:
