@@ -26,7 +26,16 @@ class DiGraphEx(nx.DiGraph):
         Returns:
             the root nodes
         """
-        return [n for n, d in self.in_degree if d == 0]
+        return [node for node, degree in self.in_degree if degree == 0]
+
+    def leaf_nodes(self) -> List[Hashable]:
+        """
+        Safely gets the leaf nodes
+        Returns:
+            the leaf nodes
+        """
+        return [node for node, degree in self.out_degree if degree == 0]
+
 
     def remove_recursively(self, root_node: "ExecNode") -> None:
         """
@@ -83,7 +92,7 @@ class DAG:
         assert max_concurrency >= 1, "Invalid maximum number of threads! Must be a positive integer"
 
         # variables necessary for DAG construction
-        self.hierarchy: Dict[Hashable, List[Hashable]] = {
+        self.upwards_hierarchy: Dict[Hashable, List[Hashable]] = {
             exec_node.id: exec_node.depends_on for exec_node in self.exec_nodes
         }
         self.node_dict: Dict[Hashable, ExecNode] = {
@@ -121,11 +130,11 @@ class DAG:
         Builds the graph and the sequence order for the computation.
         """
         # add nodes
-        for node_id in self.hierarchy.keys():
+        for node_id in self.upwards_hierarchy.keys():
             self.graph.add_node(node_id)
 
         # add edges
-        for node_id, dependencies in self.hierarchy.items():
+        for node_id, dependencies in self.upwards_hierarchy.items():
             if dependencies is not None:
                 edges = [(dep, node_id) for dep in dependencies]
                 self.graph.add_edges_from(edges)
@@ -141,7 +150,38 @@ class DAG:
             )
             raise NetworkXUnfeasible
 
+        # calculate the sum of priorities of all recursive children
+        self.assign_recursive_children_compound_priority()
+
+
         self.exec_node_sequence = [self.node_dict[node_name] for node_name in topological_order]
+
+    def assign_recursive_children_compound_priority(self) -> None:
+        """
+        Assigns a compound priority to all nodees in the graph.
+        The compound priority is the sum of the priorities of all children recursively.
+        """
+        # if there was a forward dependency recorded, this would have been much easier
+        graph = deepcopy(self.graph)
+        
+        leaf_ids = graph.leaf_nodes()
+
+        for leaf_id in leaf_ids:
+            node = self.node_dict[leaf_id]
+            node.compound_priority = node.priority
+        
+        while len(graph) > 0:
+            for leaf_id in leaf_ids:
+                for parent in self.upwards_hierarchy[leaf_id]:
+                    parent_node = self.node_dict[parent]
+                    leaf_node = self.node_dict[leaf_id]
+                    if parent_node.compound_priority is None:
+                        parent_node.compound_priority = parent_node.priority 
+                    
+                    parent_node.compound_priority += leaf_node.compound_priority
+
+                graph.remove_node(leaf_id)    
+            leaf_ids = graph.leaf_nodes()
 
     def draw(self, k: float = 0.8) -> None:
         """
