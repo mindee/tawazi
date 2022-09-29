@@ -267,7 +267,7 @@ class DAG:
 
                 # 4. choose a node to run
                 # 4.1 get the most prioritized runnable node
-                node_id = sorted(runnable_nodes, key=lambda n: node_dict[n].priority)[-1]
+                node_id = sorted(runnable_nodes, key=lambda n: node_dict[n].compound_priority)[-1]
 
                 exec_node = node_dict[node_id]
                 self.logger.info(f"{node_id} will run!")
