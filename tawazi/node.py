@@ -46,6 +46,7 @@ class ExecNode:
         self.exec_function = exec_function
         self.depends_on = depends_on if depends_on else []
         self.priority = priority
+        self.compound_priority = None
         self.is_sequential = is_sequential
         self.logger = logger
 
