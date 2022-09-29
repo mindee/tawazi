@@ -1,27 +1,34 @@
 from tawazi import op, to_dag
+from time import sleep
+import pytest
+
+pytest.compound_priority_str: str = ""
+T = 1e-3
 
 @op(priority=1)
 def a():
-    return "a"
+    sleep(T)
+    pytest.compound_priority_str += "a"
 
 @op(priority=1)
 def b(a):
-    print(f"{a=}")
-    return "b"
+    sleep(T)
+    pytest.compound_priority_str += "b"
 
 @op(priority=1)
 def c(a):
-    print(f"{a=}")
-    return "c"
+    sleep(T)
+    pytest.compound_priority_str += "c"
 
 @op(priority=1)
 def d(b):
-    print(f"{b=}")
-    return "d"
+    sleep(T)
+    pytest.compound_priority_str += "d"
 
 @op(priority=1)
 def e():
-    print(f"{e=}")
+    sleep(T)
+    pytest.compound_priority_str += "e"
 
 @to_dag
 def dependency_describer():
@@ -39,3 +46,16 @@ def test_compound_priority():
     assert dag.node_dict_by_name["c"].compound_priority == 1
     assert dag.node_dict_by_name["d"].compound_priority == 1
     assert dag.node_dict_by_name["e"].compound_priority == 1
+
+
+
+def test_compound_priority():
+    dag = dependency_describer()
+    pytest.compound_priority_str: str
+
+    assert pytest.compound_priority_str == ""
+    
+    dag.execute()
+    
+    assert pytest.compound_priority_str.startswith("ab")
+    assert len(pytest.compound_priority_str) == 5
