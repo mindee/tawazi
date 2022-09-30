@@ -1,8 +1,10 @@
 # tawazi
 
+![Tawazi GIF](documentation/tawazi_GIF.gif)
+
 ## Introduction
 
-<!-- put a link explaining what a DAG is-->
+<!-- TODO: put a link explaining what a DAG is-->
 
 The tawazi library enables **parallel** execution of functions in a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) dependency structure.
 This library satisfies the following:
