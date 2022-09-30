@@ -126,7 +126,7 @@ class DAG:
                 2. DAG.ALL_CHILDREN: do not execute all children ExecNodes, and continue execution of the DAG
                 2. DAG.PERMISSIVE: continue execution of the DAG and ignore the error
         """
-        self.graph = DiGraphEx()
+        self.graph_ids = DiGraphEx()
 
         # since ExecNodes are modified they must be copied
         self.exec_nodes = exec_nodes
@@ -163,7 +163,7 @@ class DAG:
         return example: [('taxes', 'amount_reconciliation'),('amount_reconciliation', 'taxes')]
         """
         try:
-            cycle: List[Tuple[str, str]] = find_cycle(self.graph)
+            cycle: List[Tuple[str, str]] = find_cycle(self.graph_ids)
             return cycle
         except NetworkXNoCycle:
             return None
@@ -174,13 +174,13 @@ class DAG:
         """
         # add nodes
         for node_id in self.upwards_hierarchy.keys():
-            self.graph.add_node(node_id)
+            self.graph_ids.add_node(node_id)
 
         # add edges
         for node_id, dependencies in self.upwards_hierarchy.items():
             if dependencies is not None:
                 edges = [(dep, node_id) for dep in dependencies]
-                self.graph.add_edges_from(edges)
+                self.graph_ids.add_edges_from(edges)
 
         # set sequence order and check for circular dependencies
         try:
@@ -204,15 +204,15 @@ class DAG:
         The compound priority is the sum of the priorities of all children recursively.
         """
         # if there was a forward dependency recorded, this would have been much easier
-        graph = deepcopy(self.graph)
+        graph_ids = deepcopy(self.graph_ids)
 
-        leaf_ids = graph.leaf_nodes()
+        leaf_ids = graph_ids.leaf_nodes()
 
         for leaf_id in leaf_ids:
             node = self.node_dict[leaf_id]
             node.compound_priority = node.priority
 
-        while len(graph) > 0:
+        while len(graph_ids) > 0:
             for leaf_id in leaf_ids:
                 for parent in self.upwards_hierarchy[leaf_id]:
                     parent_node = self.node_dict[parent]
@@ -222,8 +222,8 @@ class DAG:
 
                     parent_node.compound_priority += leaf_node.compound_priority
 
-                graph.remove_node(leaf_id)
-            leaf_ids = graph.leaf_nodes()
+                graph_ids.remove_node(leaf_id)
+            leaf_ids = graph_ids.leaf_nodes()
 
     def draw(self, k: float = 0.8) -> None:
         """
@@ -235,36 +235,36 @@ class DAG:
 
         # todo use graphviz instead! it is much more elegant
 
-        pos = nx.spring_layout(self.graph, seed=42069, k=k, iterations=20)
-        nx.draw(self.graph, pos, with_labels=True)
+        pos = nx.spring_layout(self.graph_ids, seed=42069, k=k, iterations=20)
+        nx.draw(self.graph_ids, pos, with_labels=True)
         plt.show()
 
     def topological_sort(self) -> List[Hashable]:
         """
         Makes the simple topological sort of the graph nodes
         """
-        return list(nx.topological_sort(self.graph))
+        return list(nx.topological_sort(self.graph_ids))
 
     def execute(
-        self, nodes_ids: Optional[List[Union[Hashable, ExecNode]]] = None
+        self, leaves_ids: Optional[List[Union[Hashable, ExecNode]]] = None
     ) -> Dict[Hashable, Any]:
         """
         Thread safe execution of the DAG.
         Args:
-            nodes_ids: The nodes (or the ids of the nodes) to be executed
+            leaves_ids: The nodes (or the ids of the nodes) to be executed
         Returns:
             node_dict: dictionary with keys the name of the function and value the result after the execution
         """
         # TODO: avoid mutable state, hence avoid doing deep copies ?
-        graph = deepcopy(self.graph)
+        graph = deepcopy(self.graph_ids)
 
-        # todo: make the creation of subgraph possible directly from initialization
-        if nodes_ids is not None:
+        # TODO: make the creation of subgraph possible directly from initialization
+        if leaves_ids is not None:
             # In Case the user created the DAG using functions only
-            if all([isinstance(node_id, ExecNode) for node_id in nodes_ids]):
-                nodes_ids = [node_id.id for node_id in nodes_ids]
+            if all([isinstance(node_id, ExecNode) for node_id in leaves_ids]):
+                leaves_ids = [node_id.id for node_id in leaves_ids]
 
-            graph.subgraph_leafes(nodes_ids)
+            graph.subgraph_leafes(leaves_ids)
 
         node_dict = deepcopy(self.node_dict)
 
@@ -273,13 +273,18 @@ class DAG:
         done: Set["Future[Any]"] = set()
         running: Set["Future[Any]"] = set()
 
+        # helpers functions encapsulated from the outside
         def get_num_running_threads(_futures: Dict[Hashable, "Future[Any]"]) -> int:
             # use not future.done() because there is no guarantee that Thread pool will directly execute
             # the submitted thread
             return sum([not future.done() for future in _futures.values()])
 
+        def get_highest_priority_nodes(nodes: List[ExecNode]) -> List[ExecNode]:
+            highest_priority = max(node.priority for node in nodes)
+            return [node for node in nodes if node.priority == highest_priority]
+
         # will be empty if all root nodes are running
-        runnable_nodes = graph.root_nodes()
+        runnable_nodes_ids = graph.root_nodes()
 
         with ThreadPoolExecutor(max_workers=self.max_concurrency) as executor:
             while len(graph):
@@ -292,8 +297,8 @@ class DAG:
                 #    in both cases: block until a node finishes
                 #       => a new root node will be available
                 num_running_threads = get_num_running_threads(futures)
-                num_runnable_nodes = len(runnable_nodes)
-                if num_running_threads == self.max_concurrency or num_runnable_nodes == 0:
+                num_runnable_nodes_ids = len(runnable_nodes_ids)
+                if num_running_threads == self.max_concurrency or num_runnable_nodes_ids == 0:
                     # must wait and not submit any workers before a worker ends
                     # (that might create a new more prioritized node) to be executed
                     self.logger.debug(
@@ -312,20 +317,27 @@ class DAG:
                         graph.remove_node(id_)
 
                 # 2. list the root nodes that aren't being executed
-                runnable_nodes = list(set(graph.root_nodes()) - set(futures.keys()))
+                runnable_nodes_ids = list(set(graph.root_nodes()) - set(futures.keys()))
 
                 # 3. if no runnable node exist, go to step 6 (wait for a node to finish)
                 #   (This **might** create a new root node)
-                if len(runnable_nodes) == 0:
+                if len(runnable_nodes_ids) == 0:
                     self.logger.debug("No runnable Nodes available")
                     continue
 
                 # 4. choose a node to run
-                # 4.1 get the most prioritized runnable node
-                node_id = sorted(runnable_nodes, key=lambda n: node_dict[n].compound_priority)[-1]
+                # 4.1 get the most prioritized node to run
+                # 4.1.1 get all the nodes that have the highest priority
+                runnable_nodes = [node_dict[node_id] for node_id in runnable_nodes_ids]
+                highest_priority_nodes = get_highest_priority_nodes(runnable_nodes)
 
-                exec_node = node_dict[node_id]
-                self.logger.info(f"{node_id} will run!")
+                # 4.1.2 get the node with the highest compound priority
+                # (randomly selected if multiple are suggested)
+                exec_node = sorted(highest_priority_nodes, key=lambda node: node.compound_priority)[
+                    -1
+                ]
+
+                self.logger.info(f"{exec_node.id} will run!")
 
                 # 4.2 if the current node must be run sequentially, wait for a running node to finish.
                 # in that case we must prune the graph to re-check whether a new root node
@@ -335,11 +347,12 @@ class DAG:
                 num_running_threads = get_num_running_threads(futures)
                 if exec_node.is_sequential and num_running_threads != 0:
                     self.logger.debug(
-                        f"{node_id} must run without parallelisme. "
+                        f"{exec_node.id} must run without parallelisme. "
                         f"Wait for the end of a node in {running}"
                     )
                     done_, running = wait(running, return_when=FIRST_COMPLETED)
-                    continue  # go to step 6
+                    # go to step 6
+                    continue
 
                 # 5.1 submit the exec node to the executor
                 exec_future = executor.submit(exec_node.execute, node_dict=node_dict)
