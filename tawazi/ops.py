@@ -7,7 +7,6 @@ from . import node
 from .node import LazyExecNode, exec_nodes_lock
 
 
-
 # TODO: modify is_sequential's default value according to the pre used default
 def op(
     func: Optional[Callable[..., Any]] = None,
