@@ -2,7 +2,7 @@ import logging
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import deepcopy
 from logging import Logger
-from typing import Any, Dict, Hashable, List, Optional, Set, Tuple
+from typing import Any, Dict, Hashable, List, Optional, Set, Tuple, Union
 
 import networkx as nx
 from networkx import find_cycle
@@ -36,16 +36,15 @@ class DiGraphEx(nx.DiGraph):
         """
         return [node for node, degree in self.out_degree if degree == 0]
 
-
-    def remove_recursively(self, root_node: "ExecNode") -> None:
+    def remove_recursively(self, root_node: Hashable) -> None:
         """
         Recursively removes all the nodes that depend on the provided one
         Args:
             root_node: the root node
         """
-        nodes_to_remove: Set[ExecNode] = set()
+        nodes_to_remove: Set[Hashable] = set()
 
-        def dfs(n: ExecNode, graph: DiGraphEx, visited: Set[ExecNode]) -> None:
+        def dfs(n: Hashable, graph: DiGraphEx, visited: Set[Hashable]) -> None:
             if n in visited:
                 return
             else:
@@ -56,6 +55,50 @@ class DiGraphEx(nx.DiGraph):
         dfs(root_node, self, nodes_to_remove)
         for node in nodes_to_remove:
             self.remove_node(node)
+
+    def subgraph_leafes(self, nodes: List[Hashable]):
+        """
+        Args:
+            nodes: the list of nodes to be executed
+        Returns:
+            the subgraph that contains the provied nodes as leaf nodes.
+            Impossible cases are handled using a best effort approach;
+                For example, if a node and its children are provided,
+                all those nodes will be left in the subgraph. However,
+                a warning will be issued
+        """
+
+        # works by pruning the graph until all leaf nodes
+        # are contained inside the provided "nodes"
+        # in the arguments of this method
+
+        if any([node not in self.nodes for node in nodes]):
+            raise ValueError(
+                f"The provided nodes are not in the graph. "
+                f"The provided nodes are: {nodes}."
+                f"The graph only contain: {self.nodes}."
+            )
+
+        leaf_nodes = self.leaf_nodes()
+        nodes_to_remove = set(leaf_nodes).difference(set(nodes))
+
+        while nodes_to_remove:
+            node_to_remove = nodes_to_remove.pop()
+            self.remove_node(node_to_remove)
+
+            leaf_nodes = self.leaf_nodes()
+            nodes_to_remove = set(leaf_nodes).difference(set(nodes))
+
+        leaf_nodes = self.leaf_nodes()
+        impossible_to_remove_nodes = set(nodes).difference(set(leaf_nodes))
+
+        if len(impossible_to_remove_nodes) > 0:
+            logger_.warning(
+                f"The provided nodes contain more nodes than necessary, "
+                f"please remove {impossible_to_remove_nodes} nodes"
+            )
+
+        return impossible_to_remove_nodes
 
 
 class DAG:
@@ -153,7 +196,6 @@ class DAG:
         # calculate the sum of priorities of all recursive children
         self.assign_recursive_children_compound_priority()
 
-
         self.exec_node_sequence = [self.node_dict[node_name] for node_name in topological_order]
 
     def assign_recursive_children_compound_priority(self) -> None:
@@ -163,24 +205,24 @@ class DAG:
         """
         # if there was a forward dependency recorded, this would have been much easier
         graph = deepcopy(self.graph)
-        
+
         leaf_ids = graph.leaf_nodes()
 
         for leaf_id in leaf_ids:
             node = self.node_dict[leaf_id]
             node.compound_priority = node.priority
-        
+
         while len(graph) > 0:
             for leaf_id in leaf_ids:
                 for parent in self.upwards_hierarchy[leaf_id]:
                     parent_node = self.node_dict[parent]
                     leaf_node = self.node_dict[leaf_id]
                     if parent_node.compound_priority is None:
-                        parent_node.compound_priority = parent_node.priority 
-                    
+                        parent_node.compound_priority = parent_node.priority
+
                     parent_node.compound_priority += leaf_node.compound_priority
 
-                graph.remove_node(leaf_id)    
+                graph.remove_node(leaf_id)
             leaf_ids = graph.leaf_nodes()
 
     def draw(self, k: float = 0.8) -> None:
@@ -203,14 +245,27 @@ class DAG:
         """
         return list(nx.topological_sort(self.graph))
 
-    def execute(self) -> Dict[Hashable, Any]:
+    def execute(
+        self, nodes_ids: Optional[List[Union[Hashable, ExecNode]]] = None
+    ) -> Dict[Hashable, Any]:
         """
         Thread safe execution of the DAG.
+        Args:
+            nodes_ids: The nodes (or the ids of the nodes) to be executed
         Returns:
             node_dict: dictionary with keys the name of the function and value the result after the execution
         """
         # TODO: avoid mutable state, hence avoid doing deep copies ?
         graph = deepcopy(self.graph)
+
+        # todo: make the creation of subgraph possible directly from initialization
+        if nodes_ids is not None:
+            # In Case the user created the DAG using functions only
+            if all([isinstance(node_id, ExecNode) for node_id in nodes_ids]):
+                nodes_ids = [node_id.id for node_id in nodes_ids]
+
+            graph.subgraph_leafes(nodes_ids)
+
         node_dict = deepcopy(self.node_dict)
 
         # variables related to futures
