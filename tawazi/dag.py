@@ -56,7 +56,7 @@ class DiGraphEx(nx.DiGraph):
         for node in nodes_to_remove:
             self.remove_node(node)
 
-    def subgraph_leafes(self, nodes: List[Hashable]):
+    def subgraph_leafes(self, nodes: List[Hashable]) -> Set[Hashable]:
         """
         Args:
             nodes: the list of nodes to be executed
@@ -220,6 +220,11 @@ class DAG:
                     if parent_node.compound_priority is None:
                         parent_node.compound_priority = parent_node.priority
 
+                    if leaf_node.compound_priority is None:
+                        raise TypeError(
+                            "compound_priority of leaf_node must be assigned before used."
+                            "Please report this issue on Github at https://github.com/mindee/tawazi/issues"
+                        )
                     parent_node.compound_priority += leaf_node.compound_priority
 
                 graph_ids.remove_node(leaf_id)
@@ -262,7 +267,7 @@ class DAG:
         if leaves_ids is not None:
             # In Case the user created the DAG using functions only
             if all([isinstance(node_id, ExecNode) for node_id in leaves_ids]):
-                leaves_ids = [node_id.id for node_id in leaves_ids]
+                leaves_ids = [node_id.id for node_id in leaves_ids]  # type: ignore
 
             graph.subgraph_leafes(leaves_ids)
 
@@ -333,7 +338,7 @@ class DAG:
 
                 # 4.1.2 get the node with the highest compound priority
                 # (randomly selected if multiple are suggested)
-                exec_node = sorted(highest_priority_nodes, key=lambda node: node.compound_priority)[
+                exec_node = sorted(highest_priority_nodes, key=lambda node: node.compound_priority)[  # type: ignore
                     -1
                 ]
 
