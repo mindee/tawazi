@@ -27,6 +27,7 @@ This library supports:
 ## Usage
 
 ```python
+#  type: ignore
 from time import sleep
 from tawazi import DAG, ExecNode
 

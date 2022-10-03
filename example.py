@@ -1,4 +1,5 @@
 # flake8: noqa
+# type: ignore
 
 from typing import Union
 

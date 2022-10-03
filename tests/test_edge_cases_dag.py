@@ -1,3 +1,4 @@
+#  type: ignore
 from tawazi import op, to_dag
 
 
