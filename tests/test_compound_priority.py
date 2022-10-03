@@ -1,3 +1,4 @@
+#  type: ignore
 from time import sleep
 
 import pytest

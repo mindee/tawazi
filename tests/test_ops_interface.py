@@ -1,3 +1,4 @@
+#  type: ignore
 from logging import Logger
 from typing import Union
 

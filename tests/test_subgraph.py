@@ -1,3 +1,4 @@
+#  type: ignore
 from nis import match
 
 import pytest
