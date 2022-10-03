@@ -1,11 +1,12 @@
-from enum import Enum
+from enum import Enum, unique
 
 
 class DAGBaseException(BaseException):
     pass
 
 
-class ErrorStrategy(Enum):
+@unique
+class ErrorStrategy(str, Enum):
     # supported behavior following a raised error
     strict: str = "strict"
     all_children: str = "all-children"

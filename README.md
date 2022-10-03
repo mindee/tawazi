@@ -69,6 +69,12 @@ The libraries name is inspired from the arabic word تَوَازٍ which means p
 This library is still in development. Breaking changes are expected.
 
 A couple of features will be released soon:
+* handle problems when calling ExecNodes wrongly
+  * (for example when using *args as parameters but only **kwargs are provided)
+  * Calling ExecNodes must be similar to calling the original function (must imitate the same signature otherwise raise the correct exeception)
+* support mixing ExecNodes and non ExecNodes functions
+* test the case where ExecNodes are stored in a list and then passed via * operator
+* add feature to turn off a set of nodes in the graph
 * an example of running a set of calculations with the DAG and without the DAG
   * we can show that using tawazi is transparent and one just has to remove the decorators! Then everything is back to normal
 * support multiprocessing
