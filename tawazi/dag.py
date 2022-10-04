@@ -258,24 +258,28 @@ class DAG:
             node_dict: dictionary with keys the name of the function and value the result after the execution
         """
         # TODO: avoid mutable state, hence avoid doing deep copies ?
+        # 0.0 deep copy the graph ids
         graph = deepcopy(self.graph_ids)
 
         # TODO: make the creation of subgraph possible directly from initialization
+        # 0.1 create a subgraph of the graph if necessary
         if leaves_ids is not None:
-            # In Case the user created the DAG using functions only
-            if all([isinstance(node_id, ExecNode) for node_id in leaves_ids]):
-                leaves_ids = [node_id.id for node_id in leaves_ids]  # type: ignore
+            # Extract the ids from the provieded leaves/leaves_ids
+            leaves_ids = [
+                node_id.id if isinstance(node_id, ExecNode) else node_id for node_id in leaves_ids
+            ]
 
             graph.subgraph_leafes(leaves_ids)
 
+        # 0.2 deepcopy the node_dict in order to modify the results inside every node
         node_dict = deepcopy(self.node_dict)
 
-        # variables related to futures
+        # 0.3 create variables related to futures
         futures: Dict[Hashable, "Future[Any]"] = {}
         done: Set["Future[Any]"] = set()
         running: Set["Future[Any]"] = set()
 
-        # helpers functions encapsulated from the outside
+        # 0.4 create helpers functions encapsulated from the outside
         def get_num_running_threads(_futures: Dict[Hashable, "Future[Any]"]) -> int:
             # use not future.done() because there is no guarantee that Thread pool will directly execute
             # the submitted thread
@@ -285,7 +289,8 @@ class DAG:
             highest_priority = max(node.priority for node in nodes)
             return [node for node in nodes if node.priority == highest_priority]
 
-        # will be empty if all root nodes are running
+        # 0.5 get the candidates root nodes that can be executed
+        # runnable_nodes_ids will be empty if all root nodes are running
         runnable_nodes_ids = graph.root_nodes()
 
         with ThreadPoolExecutor(max_workers=self.max_concurrency) as executor:
@@ -349,7 +354,7 @@ class DAG:
                 num_running_threads = get_num_running_threads(futures)
                 if exec_node.is_sequential and num_running_threads != 0:
                     logger.debug(
-                        f"{exec_node.id} must run without parallelisme. "
+                        f"{exec_node.id} must not run in parallel."
                         f"Wait for the end of a node in {running}"
                     )
                     done_, running = wait(running, return_when=FIRST_COMPLETED)
