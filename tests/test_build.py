@@ -1,5 +1,4 @@
 #  type: ignore
-import logging
 from time import sleep, time
 
 from tawazi import DAG, ErrorStrategy, ExecNode
@@ -55,7 +54,7 @@ list_execnodes = [
 
 
 def test_dag_build():
-    g = DAG(list_execnodes, 2, behaviour=ErrorStrategy.strict, logger=logging.getLogger())
+    g = DAG(list_execnodes, 2, behaviour=ErrorStrategy.strict)
     t0 = time()
     g.execute()  # must never fail!
     print(time() - t0)
