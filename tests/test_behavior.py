@@ -1,5 +1,4 @@
 #  type: ignore
-import logging
 from time import sleep
 
 import pytest
@@ -40,7 +39,7 @@ list_execnodes = [
 
 def test_strict_error_behavior():
     pytest.comp_str = ""
-    g = DAG(list_execnodes, 1, behaviour=ErrorStrategy.strict, logger=logging.getLogger())
+    g = DAG(list_execnodes, 1, behaviour=ErrorStrategy.strict)
     try:
         g.execute()
     except NotImplementedError:
@@ -49,14 +48,14 @@ def test_strict_error_behavior():
 
 def test_all_children_behavior():
     pytest.comp_str = ""
-    g = DAG(list_execnodes, 1, behaviour=ErrorStrategy.all_children, logger=logging.getLogger())
+    g = DAG(list_execnodes, 1, behaviour=ErrorStrategy.all_children)
     g.execute()
     assert pytest.comp_str == "ad"
 
 
 def test_permissive_behavior():
     pytest.comp_str = ""
-    g = DAG(list_execnodes, 1, behaviour=ErrorStrategy.permissive, logger=logging.getLogger())
+    g = DAG(list_execnodes, 1, behaviour=ErrorStrategy.permissive)
     g.execute()
     assert pytest.comp_str == "acd"
 
