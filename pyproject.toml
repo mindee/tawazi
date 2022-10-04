@@ -22,7 +22,7 @@ pytest-cov = "^3.0.0"
 mkcodes = "*"
 
 [tool.pytest.ini_options]
-addopts = "--cov-report=term-missing:skip-covered --junit-xml=pytest-junit.xml --cov=tawazi tests"
+addopts = "--pdbcls=IPython.terminal.debugger:TerminalPdb --cov-report=term-missing:skip-covered --junit-xml=pytest-junit.xml --cov=tawazi tests"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
