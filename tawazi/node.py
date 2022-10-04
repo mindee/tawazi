@@ -25,8 +25,8 @@ class ExecNode:
         depends_on: Optional[List[Hashable]] = None,
         argument_name: Optional[str] = None,
         priority: int = 0,
-        is_sequential: bool = True
-        ):
+        is_sequential: bool = True,
+    ):
         """
         Args:
             id_ (Hashable): identifier of ExecNode.
@@ -45,7 +45,7 @@ class ExecNode:
         self.exec_function = exec_function
         self.depends_on = depends_on if depends_on else []
         self.priority: int = priority
-        self.compound_priority: Optional[int] = None
+        self.compound_priority: int = priority
         self.is_sequential = is_sequential
 
         # a string that identifies the ExecNode.
