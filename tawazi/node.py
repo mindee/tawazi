@@ -25,9 +25,8 @@ class ExecNode:
         depends_on: Optional[List[Hashable]] = None,
         argument_name: Optional[str] = None,
         priority: int = 0,
-        is_sequential: bool = True,
-        logger: logging.Logger = logger,
-    ):
+        is_sequential: bool = True
+        ):
         """
         Args:
             id_ (Hashable): identifier of ExecNode.
@@ -48,7 +47,6 @@ class ExecNode:
         self.priority: int = priority
         self.compound_priority: Optional[int] = None
         self.is_sequential = is_sequential
-        self.logger = logger
 
         # a string that identifies the ExecNode.
         # It is either the name of the identifying function or the identifying string id_
@@ -83,7 +81,7 @@ class ExecNode:
         Returns: the result of the execution of the current ExecNode
         """
         # 1. fabricate the arguments for this ExecNode
-        self.logger.debug(f"Start executing {self.id} with task {self.exec_function}")
+        logger.debug(f"Start executing {self.id} with task {self.exec_function}")
 
         kwargs = {
             node_dict[dep_hash].argument_name: node_dict[dep_hash].result
@@ -94,7 +92,7 @@ class ExecNode:
         self.result = self.exec_function(**kwargs)
 
         # 3. useless return value
-        self.logger.debug(f"Finished executing {self.id} with task {self.exec_function}")
+        logger.debug(f"Finished executing {self.id} with task {self.exec_function}")
         return self.result
 
 

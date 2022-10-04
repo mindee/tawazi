@@ -11,7 +11,7 @@ from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 from .errors import ErrorStrategy
 from .node import ExecNode
 
-logger_ = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 # todo remove dependency on DiGraph!
@@ -93,7 +93,7 @@ class DiGraphEx(nx.DiGraph):
         impossible_to_remove_nodes = set(nodes).difference(set(leaf_nodes))
 
         if len(impossible_to_remove_nodes) > 0:
-            logger_.warning(
+            logger.warning(
                 f"The provided nodes contain more nodes than necessary, "
                 f"please remove {impossible_to_remove_nodes} nodes"
             )
@@ -113,8 +113,7 @@ class DAG:
         self,
         exec_nodes: List[ExecNode],
         max_concurrency: int = 1,
-        behaviour: ErrorStrategy = ErrorStrategy.strict,
-        logger: Logger = logger_,
+        behaviour: ErrorStrategy = ErrorStrategy.strict
     ):
         """
         Args:
@@ -149,7 +148,6 @@ class DAG:
         # a sequence of execution to be applied in a for loop
         self.exec_node_sequence: List[ExecNode] = []
 
-        self.logger = logger
         self.behaviour = behaviour
 
         self._build()
@@ -187,7 +185,7 @@ class DAG:
             topological_order = self.topological_sort()
         except NetworkXUnfeasible:
 
-            self.logger.warning(
+            logger.warning(
                 f"The graph can't be built because "
                 f"the product contains at least a circular dependency: {self.find_cycle()} "
             )
@@ -306,7 +304,7 @@ class DAG:
                 if num_running_threads == self.max_concurrency or num_runnable_nodes_ids == 0:
                     # must wait and not submit any workers before a worker ends
                     # (that might create a new more prioritized node) to be executed
-                    self.logger.debug(
+                    logger.debug(
                         f"Waiting for ExecNodes {running} to finish. Finished running {done}"
                     )
                     done_, running = wait(running, return_when=FIRST_COMPLETED)
@@ -317,7 +315,7 @@ class DAG:
                 #       2. and remove them from the graph
                 for id_, fut in futures.items():
                     if fut.done() and id_ in graph:
-                        self.logger.debug(f"Remove ExecNode {id_} from the graph")
+                        logger.debug(f"Remove ExecNode {id_} from the graph")
                         self.handle_exception(graph, fut, id_)
                         graph.remove_node(id_)
 
@@ -327,7 +325,7 @@ class DAG:
                 # 3. if no runnable node exist, go to step 6 (wait for a node to finish)
                 #   (This **might** create a new root node)
                 if len(runnable_nodes_ids) == 0:
-                    self.logger.debug("No runnable Nodes available")
+                    logger.debug("No runnable Nodes available")
                     continue
 
                 # 4. choose a node to run
@@ -342,7 +340,7 @@ class DAG:
                     -1
                 ]
 
-                self.logger.info(f"{exec_node.id} will run!")
+                logger.info(f"{exec_node.id} will run!")
 
                 # 4.2 if the current node must be run sequentially, wait for a running node to finish.
                 # in that case we must prune the graph to re-check whether a new root node
@@ -351,7 +349,7 @@ class DAG:
                 #       before the exec_node gets submitted
                 num_running_threads = get_num_running_threads(futures)
                 if exec_node.is_sequential and num_running_threads != 0:
-                    self.logger.debug(
+                    logger.debug(
                         f"{exec_node.id} must run without parallelisme. "
                         f"Wait for the end of a node in {running}"
                     )
@@ -401,10 +399,10 @@ class DAG:
                 _res = fut.result()  # noqa: F841
 
             except Exception:
-                self.logger.exception(f"The feature {id_} encountered the following error:")
+                logger.exception(f"The feature {id_} encountered the following error:")
 
                 if self.behaviour == ErrorStrategy.permissive:
-                    self.logger.warning("Ignoring exception as the behaviour is set to permissive")
+                    logger.warning("Ignoring exception as the behaviour is set to permissive")
 
                 elif self.behaviour == ErrorStrategy.all_children:
                     # remove all its children. Current node will be removed directly afterwards
