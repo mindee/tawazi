@@ -1,7 +1,6 @@
 import logging
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import deepcopy
-from logging import Logger
 from typing import Any, Dict, Hashable, List, Optional, Set, Tuple, Union
 
 import networkx as nx
@@ -76,7 +75,7 @@ class DiGraphEx(nx.DiGraph):
             raise ValueError(
                 f"The provided nodes are not in the graph. "
                 f"The provided nodes are: {nodes}."
-                f"The graph only contain: {self.nodes}."
+                f"The graph only contains: {self.nodes}."
             )
 
         leaf_nodes = self.leaf_nodes()
@@ -90,15 +89,15 @@ class DiGraphEx(nx.DiGraph):
             nodes_to_remove = set(leaf_nodes).difference(set(nodes))
 
         leaf_nodes = self.leaf_nodes()
-        impossible_to_remove_nodes = set(nodes).difference(set(leaf_nodes))
+        unremovable_nodes = set(nodes).difference(set(leaf_nodes))
 
-        if len(impossible_to_remove_nodes) > 0:
+        if len(unremovable_nodes) > 0:
             logger.warning(
                 f"The provided nodes contain more nodes than necessary, "
-                f"please remove {impossible_to_remove_nodes} nodes"
+                f"please remove {unremovable_nodes} nodes"
             )
 
-        return impossible_to_remove_nodes
+        return unremovable_nodes
 
 
 class DAG:
@@ -113,7 +112,7 @@ class DAG:
         self,
         exec_nodes: List[ExecNode],
         max_concurrency: int = 1,
-        behaviour: ErrorStrategy = ErrorStrategy.strict
+        behaviour: ErrorStrategy = ErrorStrategy.strict,
     ):
         """
         Args:
@@ -198,34 +197,34 @@ class DAG:
 
     def assign_recursive_children_compound_priority(self) -> None:
         """
-        Assigns a compound priority to all nodees in the graph.
+        Assigns a compound priority to all nodes in the graph.
         The compound priority is the sum of the priorities of all children recursively.
         """
-        # if there was a forward dependency recorded, this would have been much easier
-        graph_ids = deepcopy(self.graph_ids)
+        # Note: if there was a forward dependency recorded, this would have been much easier
 
+        graph_ids = deepcopy(self.graph_ids)
         leaf_ids = graph_ids.leaf_nodes()
 
-        for leaf_id in leaf_ids:
-            node = self.node_dict[leaf_id]
-            node.compound_priority = node.priority
-
+        # 2. assign the compound priority for all the remaining nodes in the graph:
+        # Priority assignement happens by epochs:
+        # 2.1. during every epoch, we assign the compound priority for the parents of the current leaf nodes
+        # 2.2. at the end of every epoch, we trim the graph from its leaf nodes;
+        #       hence the previous parents become the new leaf nodes
         while len(graph_ids) > 0:
-            for leaf_id in leaf_ids:
-                for parent in self.upwards_hierarchy[leaf_id]:
-                    parent_node = self.node_dict[parent]
-                    leaf_node = self.node_dict[leaf_id]
-                    if parent_node.compound_priority is None:
-                        parent_node.compound_priority = parent_node.priority
 
-                    if leaf_node.compound_priority is None:
-                        raise TypeError(
-                            "compound_priority of leaf_node must be assigned before used."
-                            "Please report this issue on Github at https://github.com/mindee/tawazi/issues"
-                        )
+            # Epoch level
+            for leaf_id in leaf_ids:
+                leaf_node = self.node_dict[leaf_id]
+
+                for parent_id in self.upwards_hierarchy[leaf_id]:
+                    # increment the compound_priority of the parent node by the leaf priority
+                    parent_node = self.node_dict[parent_id]
                     parent_node.compound_priority += leaf_node.compound_priority
 
+                # trim the graph from its leaf nodes
                 graph_ids.remove_node(leaf_id)
+
+            # assign the new leaf nodes
             leaf_ids = graph_ids.leaf_nodes()
 
     def draw(self, k: float = 0.8) -> None:
@@ -336,7 +335,7 @@ class DAG:
 
                 # 4.1.2 get the node with the highest compound priority
                 # (randomly selected if multiple are suggested)
-                exec_node = sorted(highest_priority_nodes, key=lambda node: node.compound_priority)[  # type: ignore
+                exec_node = sorted(highest_priority_nodes, key=lambda node: node.compound_priority)[
                     -1
                 ]
 
