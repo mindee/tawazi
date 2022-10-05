@@ -1,10 +1,11 @@
 import inspect
-import logging
 from threading import Lock
 from types import FunctionType, MethodType
 from typing import Any, Callable, Dict, Hashable, List, Optional
 
-logger = logging.getLogger(__name__)
+from loguru import logger
+
+from .config import Cfg
 
 # TODO: replace exec_nodes with dict
 # a temporary variable used to pass in exec_nodes to the DAG during building
@@ -25,7 +26,7 @@ class ExecNode:
         depends_on: Optional[List[Hashable]] = None,
         argument_name: Optional[str] = None,
         priority: int = 0,
-        is_sequential: bool = True,
+        is_sequential: bool = Cfg.IS_SEQUENTIAL,
     ):
         """
         Args:

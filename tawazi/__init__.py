@@ -9,9 +9,4 @@ isort:skip_file
 """
 __version__ = "0.1.2"
 
-# todo change format to include precise time because here we are dealing with parallel programming
-import logging
-
-logging.basicConfig(format="%(name)s >>> %(asctime)s %(levelname)s %(threadName)s %(message)s")
-
 __all__ = ["ExecNode", "DAG", "op", "to_dag", "ErrorStrategy"]
