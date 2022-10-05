@@ -1,5 +1,4 @@
 #  type: ignore
-import logging
 from time import sleep
 
 import pytest

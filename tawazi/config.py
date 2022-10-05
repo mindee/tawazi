@@ -1,15 +1,14 @@
-import functools
-
-from tawazi import ExecNode
+from pydantic import BaseSettings
 
 
-def change_default_exec_node_sequential_strategy(is_sequential: bool) -> None:
-    """
-    Change the default strategy of is_sequential according to your needs.
-    Changing the default strategy back and forth is not recommended
-    """
-    # TODO: Modifying the behavior of the library like this might not be best practice
+class Config(BaseSettings):
+    IS_SEQUENTIAL: bool = True
 
-    func = functools.partialmethod(ExecNode.__init__, is_sequential=is_sequential)
+    # Logger settings
+    LOGURU_LEVEL: str = "INFO"
+    LOGURU_BACKTRACE: bool = True
+    # Caution: to set to False if used in prod (exposes variable names)
+    LOGURU_DIAGNOSE: bool = False
 
-    setattr(ExecNode, "__init__", func)
+
+Cfg = Config()
