@@ -6,9 +6,12 @@ authors = ["Bashir Abdelwahed <bashir@mindee.co>, Matthias Cremieux <matthias@mi
 license = "Apache 2.0"
 readme = "README.md"
 
+
 [tool.poetry.dependencies]
 python = "^3.8"
 networkx = "^2.6.3"
+pydantic = "^1.10"
+loguru = "^0.6.0"
 
 [tool.poetry.dev-dependencies]
 pre-commit = "^2.20.0"

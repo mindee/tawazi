@@ -1,16 +1,14 @@
-import logging
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import deepcopy
 from typing import Any, Dict, Hashable, List, Optional, Set, Tuple, Union
 
 import networkx as nx
+from loguru import logger
 from networkx import find_cycle
 from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 
 from .errors import ErrorStrategy
 from .node import ExecNode
-
-logger = logging.getLogger(__name__)
 
 
 # todo remove dependency on DiGraph!
