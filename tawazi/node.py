@@ -26,7 +26,7 @@ class ExecNode:
         depends_on: Optional[List[Hashable]] = None,
         argument_name: Optional[str] = None,
         priority: int = 0,
-        is_sequential: bool = Cfg.IS_SEQUENTIAL,
+        is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
     ):
         """
         Args:
