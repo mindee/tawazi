@@ -167,11 +167,11 @@ class LazyExecNode(ExecNode):
                 dependencies.append(arg.id)
             else:
                 # if the argument is a custom or constant
-                prec_exec_node = PreComputedExecNode(
+                pre_c_exec_node = PreComputedExecNode(
                     self.exec_function, function_arguments_names[i], arg
                 )
-                exec_nodes.append(prec_exec_node)
-                dependencies.append(prec_exec_node.id)
+                exec_nodes.append(pre_c_exec_node)
+                dependencies.append(pre_c_exec_node.id)
 
             provided_arguments_names.add(function_arguments_names[i])
 
@@ -180,9 +180,9 @@ class LazyExecNode(ExecNode):
                 dependencies.append(arg.id)
             else:
                 # if the argument is a custom or constant
-                prec_exec_node = PreComputedExecNode(self.exec_function, argument_name, arg)
-                exec_nodes.append(prec_exec_node)
-                dependencies.append(prec_exec_node.id)
+                pre_c_exec_node = PreComputedExecNode(self.exec_function, argument_name, arg)
+                exec_nodes.append(pre_c_exec_node)
+                dependencies.append(pre_c_exec_node.id)
 
             provided_arguments_names.add(argument_name)
 
@@ -190,11 +190,11 @@ class LazyExecNode(ExecNode):
         default_valued_params = get_default_args(self.exec_function)
         for argument_name in set(function_arguments_names) - provided_arguments_names:
             # if the argument is a custom or constant
-            prec_exec_node = PreComputedExecNode(
+            pre_c_exec_node = PreComputedExecNode(
                 self.exec_function, argument_name, default_valued_params[argument_name]
             )
-            exec_nodes.append(prec_exec_node)
-            dependencies.append(prec_exec_node.id)
+            exec_nodes.append(pre_c_exec_node)
+            dependencies.append(pre_c_exec_node.id)
 
         self.depends_on = dependencies
 

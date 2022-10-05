@@ -54,7 +54,7 @@ list_execnodes = [
 
 
 def test_dag_build():
-    g = DAG(list_execnodes, 2, behaviour=ErrorStrategy.strict)
+    g = DAG(list_execnodes, 2, behavior=ErrorStrategy.strict)
     t0 = time()
     g.execute()  # must never fail!
     print(time() - t0)
