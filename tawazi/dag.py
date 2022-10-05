@@ -55,12 +55,12 @@ class DiGraphEx(nx.DiGraph):
         for node in nodes_to_remove:
             self.remove_node(node)
 
-    def subgraph_leafes(self, nodes: List[Hashable]) -> Set[Hashable]:
+    def subgraph_leaves(self, nodes: List[Hashable]) -> Set[Hashable]:
         """
         Args:
             nodes: the list of nodes to be executed
         Returns:
-            the subgraph that contains the provied nodes as leaf nodes.
+            the subgraph that contains the provided nodes as leaf nodes.
             Impossible cases are handled using a best effort approach;
                 For example, if a node and its children are provided,
                 all those nodes will be left in the subgraph. However,
@@ -92,7 +92,7 @@ class DiGraphEx(nx.DiGraph):
         unremovable_nodes = set(nodes).difference(set(leaf_nodes))
 
         if len(unremovable_nodes) > 0:
-            logger.warning(
+            logger.debug(
                 f"The provided nodes contain more nodes than necessary, "
                 f"please remove {unremovable_nodes} nodes"
             )
@@ -112,14 +112,14 @@ class DAG:
         self,
         exec_nodes: List[ExecNode],
         max_concurrency: int = 1,
-        behaviour: ErrorStrategy = ErrorStrategy.strict,
+        behavior: ErrorStrategy = ErrorStrategy.strict,
     ):
         """
         Args:
             exec_nodes: all the ExecNodes
             max_concurrency: the maximal number of threads running in parallel
             logger: the inferfwk logger name
-            behaviour: specify the behavior if an ExecNode raises an Error. Three option are currently supported:
+            behavior: specify the behavior if an ExecNode raises an Error. Three option are currently supported:
                 1. DAG.STRICT: stop the execution of all the DAG
                 2. DAG.ALL_CHILDREN: do not execute all children ExecNodes, and continue execution of the DAG
                 2. DAG.PERMISSIVE: continue execution of the DAG and ignore the error
@@ -133,7 +133,7 @@ class DAG:
         assert max_concurrency >= 1, "Invalid maximum number of threads! Must be a positive integer"
 
         # variables necessary for DAG construction
-        self.upwards_hierarchy: Dict[Hashable, List[Hashable]] = {
+        self.backwards_hierarchy: Dict[Hashable, List[Hashable]] = {
             exec_node.id: exec_node.depends_on for exec_node in self.exec_nodes
         }
         self.node_dict: Dict[Hashable, ExecNode] = {
@@ -147,7 +147,7 @@ class DAG:
         # a sequence of execution to be applied in a for loop
         self.exec_node_sequence: List[ExecNode] = []
 
-        self.behaviour = behaviour
+        self.behavior = behavior
 
         self._build()
 
@@ -170,11 +170,11 @@ class DAG:
         Builds the graph and the sequence order for the computation.
         """
         # add nodes
-        for node_id in self.upwards_hierarchy.keys():
+        for node_id in self.backwards_hierarchy.keys():
             self.graph_ids.add_node(node_id)
 
         # add edges
-        for node_id, dependencies in self.upwards_hierarchy.items():
+        for node_id, dependencies in self.backwards_hierarchy.items():
             if dependencies is not None:
                 edges = [(dep, node_id) for dep in dependencies]
                 self.graph_ids.add_edges_from(edges)
@@ -206,7 +206,7 @@ class DAG:
         leaf_ids = graph_ids.leaf_nodes()
 
         # 2. assign the compound priority for all the remaining nodes in the graph:
-        # Priority assignement happens by epochs:
+        # Priority assignment happens by epochs:
         # 2.1. during every epoch, we assign the compound priority for the parents of the current leaf nodes
         # 2.2. at the end of every epoch, we trim the graph from its leaf nodes;
         #       hence the previous parents become the new leaf nodes
@@ -216,7 +216,7 @@ class DAG:
             for leaf_id in leaf_ids:
                 leaf_node = self.node_dict[leaf_id]
 
-                for parent_id in self.upwards_hierarchy[leaf_id]:
+                for parent_id in self.backwards_hierarchy[leaf_id]:
                     # increment the compound_priority of the parent node by the leaf priority
                     parent_node = self.node_dict[parent_id]
                     parent_node.compound_priority += leaf_node.compound_priority
@@ -264,12 +264,12 @@ class DAG:
         # TODO: make the creation of subgraph possible directly from initialization
         # 0.1 create a subgraph of the graph if necessary
         if leaves_ids is not None:
-            # Extract the ids from the provieded leaves/leaves_ids
+            # Extract the ids from the provided leaves/leaves_ids
             leaves_ids = [
                 node_id.id if isinstance(node_id, ExecNode) else node_id for node_id in leaves_ids
             ]
 
-            graph.subgraph_leafes(leaves_ids)
+            graph.subgraph_leaves(leaves_ids)
 
         # 0.2 deepcopy the node_dict in order to modify the results inside every node
         node_dict = deepcopy(self.node_dict)
@@ -383,7 +383,7 @@ class DAG:
     def handle_exception(self, graph: DiGraphEx, fut: "Future[Any]", id_: Hashable) -> None:
         """
         checks if futures have produced exceptions, and handles them
-        according to the specified behaviour
+        according to the specified behavior
         Args:
             graph: the graph
             fut: the future
@@ -393,7 +393,7 @@ class DAG:
 
         """
 
-        if self.behaviour == ErrorStrategy.strict:
+        if self.behavior == ErrorStrategy.strict:
             # will raise the first encountered exception if there's one
             # no simpler way to check for exception, and not supported by flake8
             _res = fut.result()  # noqa: F841
@@ -405,14 +405,14 @@ class DAG:
             except Exception:
                 logger.exception(f"The feature {id_} encountered the following error:")
 
-                if self.behaviour == ErrorStrategy.permissive:
-                    logger.warning("Ignoring exception as the behaviour is set to permissive")
+                if self.behavior == ErrorStrategy.permissive:
+                    logger.warning("Ignoring exception as the behavior is set to permissive")
 
-                elif self.behaviour == ErrorStrategy.all_children:
+                elif self.behavior == ErrorStrategy.all_children:
                     # remove all its children. Current node will be removed directly afterwards
                     successors = list(graph.successors(id_))
                     for children_ids in successors:
                         graph.remove_recursively(children_ids)
 
                 else:
-                    raise NotImplementedError(f"Unknown behaviour name: {self.behaviour}")
+                    raise NotImplementedError(f"Unknown behavior name: {self.behavior}")
