@@ -2,7 +2,7 @@ from pydantic import BaseSettings
 
 
 class Config(BaseSettings):
-    TAWAZI_IS_SEQUENTIAL: bool = True
+    TAWAZI_IS_SEQUENTIAL: bool = False
 
     # Logger settings
     LOGURU_LEVEL: str = "INFO"
