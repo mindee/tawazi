@@ -55,10 +55,30 @@ class DiGraphEx(nx.DiGraph):
 
     def subgraph_leaves(self, nodes: List[Hashable]) -> Set[Hashable]:
         """
+        modifies the graph to become a subgraph
+        that contains the provided nodes as leaf nodes.
+        For example:
+        TODO: use the future print to test this function!
+        graph =
+        "
+        A
+        | \
+        B  C
+        |  |\
+        D  E F
+        "
+        subgraph_leaves(D, C, E) ->
+        "
+        A
+        | \
+        B  C
+        |  |
+        D  E
+        "
+        C is not a node that can be made into leaf nodes
         Args:
             nodes: the list of nodes to be executed
-        Returns:
-            the subgraph that contains the provided nodes as leaf nodes.
+        Returns: the nodes that are provided but can never become leaf nodes:
             Impossible cases are handled using a best effort approach;
                 For example, if a node and its children are provided,
                 all those nodes will be left in the subgraph. However,
@@ -96,6 +116,41 @@ class DiGraphEx(nx.DiGraph):
             )
 
         return unremovable_nodes
+
+    def topological_sort(self) -> List[Hashable]:
+        """
+        Makes the simple topological sort of the graph nodes
+        """
+        return list(nx.topological_sort(self))
+
+
+# TODO: transfer into a separate module (Helper functions)
+def subgraph(graph: DiGraphEx, leaves_ids: Optional[List[Union[Hashable, ExecNode]]]) -> DiGraphEx:
+    """returns a deep copy of the same graph if leaves_ids is None,
+    otherwise returns a new graph by applying `graph.subgraph_leaves`
+
+    Args:
+        graph (DiGraphEx): graph describing the DAG
+        leaves_ids (List[Union[Hashable, ExecNode]]): The leaves that must be executed
+
+    Returns:
+        DiGraphEx: The subgraph of the provided graph
+    """
+    # TODO: avoid mutable state, hence avoid doing deep copies ?
+    # 0. deep copy the graph ids
+    graph = deepcopy(graph)
+
+    # TODO: make the creation of subgraph possible directly from initialization
+    # 1. create the subgraph
+    if leaves_ids is not None:
+        # Extract the ids from the provided leaves/leaves_ids
+        leaves_ids = [
+            node_id.id if isinstance(node_id, ExecNode) else node_id for node_id in leaves_ids
+        ]
+
+        graph.subgraph_leaves(leaves_ids)
+
+    return graph
 
 
 class DAG:
@@ -179,7 +234,7 @@ class DAG:
 
         # set sequence order and check for circular dependencies
         try:
-            topological_order = self.topological_sort()
+            topological_order = self.graph_ids.topological_sort()
         except NetworkXUnfeasible:
 
             logger.warning(
@@ -239,12 +294,6 @@ class DAG:
         nx.draw(self.graph_ids, pos, with_labels=True)
         plt.show()
 
-    def topological_sort(self) -> List[Hashable]:
-        """
-        Makes the simple topological sort of the graph nodes
-        """
-        return list(nx.topological_sort(self.graph_ids))
-
     def execute(
         self, leaves_ids: Optional[List[Union[Hashable, ExecNode]]] = None
     ) -> Dict[Hashable, Any]:
@@ -255,19 +304,8 @@ class DAG:
         Returns:
             node_dict: dictionary with keys the name of the function and value the result after the execution
         """
-        # TODO: avoid mutable state, hence avoid doing deep copies ?
-        # 0.0 deep copy the graph ids
-        graph = deepcopy(self.graph_ids)
-
-        # TODO: make the creation of subgraph possible directly from initialization
         # 0.1 create a subgraph of the graph if necessary
-        if leaves_ids is not None:
-            # Extract the ids from the provided leaves/leaves_ids
-            leaves_ids = [
-                node_id.id if isinstance(node_id, ExecNode) else node_id for node_id in leaves_ids
-            ]
-
-            graph.subgraph_leaves(leaves_ids)
+        graph = subgraph(self.graph_ids, leaves_ids)
 
         # 0.2 deepcopy the node_dict in order to modify the results inside every node
         node_dict = deepcopy(self.node_dict)
@@ -370,13 +408,21 @@ class DAG:
                     wait(futures.values(), return_when=ALL_COMPLETED)
         return node_dict
 
-    def safe_execute(self) -> None:
+    def safe_execute(
+        self, leaves_ids: Optional[List[Union[Hashable, ExecNode]]] = None
+    ) -> Dict[Hashable, Any]:
         """
         Execute the ExecNodes in topological order without priority in for loop manner for debugging purposes
         """
+        # 1. create the subgraph to be executed
+        graph = subgraph(self.graph_ids, leaves_ids)
+
+        # 2. deep copy the node_dict to store the results in each node
         node_dict = deepcopy(self.node_dict)
-        for node_id in self.topological_sort():
+        for node_id in graph.topological_sort():
             node_dict[node_id].execute(node_dict)
+
+        return node_dict
 
     def handle_exception(self, graph: DiGraphEx, fut: "Future[Any]", id_: Hashable) -> None:
         """
