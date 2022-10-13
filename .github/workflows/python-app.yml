@@ -23,14 +23,18 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]  # windows-latest doesn't work well!
+        python_version: ["3.8", "3.9", "3.10"]
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Python 3.8
+    - name: Set up Python ${{ matrix.python_version}}
       uses: actions/setup-python@v4
       with:
-        python-version: "3.8"
+        python-version: ${{ matrix.python_version}}
 
     - name: Install dependencies
       run: |
