@@ -73,6 +73,7 @@ The libraries name is inspired from the arabic word تَوَازٍ which means p
 This library is still in development. Breaking changes are expected.
 
 A couple of features will be released soon:
+* transport this in a TODO file
 * handle problems when calling ExecNodes wrongly
   * (for example when using *args as parameters but only **kwargs are provided)
   * Calling ExecNodes must be similar to calling the original function (must imitate the same signature otherwise raise the correct exeception)
@@ -105,3 +106,16 @@ or to run the same ops between different DAGs with no side effects whatsoever
 * support constants by resolving the error in the tests
 * put link to code on GitHub
 * Remove the global object and maybe replace it with an attribute to the creating function
+* pretty the graph deps on the console:
+```Python
+# a code that can generate a graph from a list of deps by maintaining a spacing of 1 between
+the brothers
+A------
+|\ \   \
+B C D   E
+| | |\  |
+E F G H I
+```
+* change the behavior of the execution according to the return value of the dagger function:
+  * return all the results of the execution of all returned ExecNodes
+  * also return all the results just like it is being done at the moment!
