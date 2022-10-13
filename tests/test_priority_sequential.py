@@ -5,7 +5,7 @@ import pytest
 
 from tawazi import DAG, ErrorStrategy, ExecNode
 
-T = 0.001
+T = 0.01
 # global comp_str
 pytest.comp_str = ""
 
