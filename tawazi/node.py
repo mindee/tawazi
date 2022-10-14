@@ -136,7 +136,7 @@ class LazyExecNode(ExecNode):
         func: Callable[..., Any],
         priority: int = 0,
         argument_name: Optional[str] = None,
-        is_sequential: bool = True,
+        is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
     ):
         # TODO: change the id_ of the execNode. Maybe remove it completely
         super().__init__(

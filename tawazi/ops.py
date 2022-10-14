@@ -5,6 +5,7 @@ from tawazi import DAG
 from tawazi.errors import ErrorStrategy
 
 from . import node
+from .config import Cfg
 from .node import LazyExecNode, exec_nodes_lock
 
 
@@ -14,7 +15,7 @@ def op(
     *,
     priority: int = 0,
     argument_name: Optional[str] = None,
-    is_sequential: bool = True,
+    is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
 ) -> "LazyExecNode":
     """
     Decorate a function to make it an ExecNode. When the decorated function is called, you are actually calling
