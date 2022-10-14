@@ -124,7 +124,7 @@ class DiGraphEx(nx.DiGraph):
         return list(nx.topological_sort(self))
 
 
-# TODO: transfer into a separate module (Helper functions)
+# TODO: move into a separate module (Helper functions)
 def subgraph(graph: DiGraphEx, leaves_ids: Optional[List[Union[Hashable, ExecNode]]]) -> DiGraphEx:
     """returns a deep copy of the same graph if leaves_ids is None,
     otherwise returns a new graph by applying `graph.subgraph_leaves`

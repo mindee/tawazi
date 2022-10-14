@@ -5,7 +5,7 @@ import pytest
 
 from tawazi import op, to_dag
 
-T = 0.1
+T = 0.01
 
 
 def a():
@@ -43,7 +43,7 @@ c_op = op(c)
 def dagger():
     a_ = a_op()
     b_ = b_op()
-    c_ = c_op(a, b)
+    c_ = c_op(a_, b_)
 
 
 def test_normal_execution_without_dag():
@@ -53,11 +53,12 @@ def test_normal_execution_without_dag():
 
 
 def test_dag_execution():
-    pytest.val = ""
-    dag = dagger()
-    dag.max_concurrency = 2
-    dag.execute()
-    assert pytest.val == "ABC"
+    for i in range(10):
+        pytest.val = ""
+        dag = dagger()
+        dag.max_concurrency = 1
+        dag.execute()
+        assert pytest.val == "ABC", f"during {i}th iteration"
 
 
 def test_safe_execution():
