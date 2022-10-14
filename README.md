@@ -70,12 +70,7 @@ The libraries name is inspired from the arabic word تَوَازٍ which means p
 
 ## Building the doc
 The general documentation has no dedicated space at the moment and is being hosted offline (on your machine).
-Expect future developments on this side as well. To build it, simply run
-```shell
-mkdocs build
-mkdocs serve
-```
-at the root of the repository
+Expect future developments on this side as well. To build it, simply run `mkdocs build` and `mkdocs serve` at the root of the repository.
 
 ## Future developments
 *This library is still in development. Breaking changes are expected.*
