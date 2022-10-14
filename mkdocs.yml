@@ -1,0 +1,52 @@
+site_name: tawazi
+repo_name: mindee/tawazi
+repo_url: https://github.com/mindee/tawazi
+
+docs_dir: documentation
+
+theme:
+  name: material
+  palette:
+  - media: "(prefers-color-scheme: light)"
+    scheme: default
+    primary: blue
+    accent: indigo
+    toggle:
+      icon: material/brightness-4
+      name: "dark mode"
+  - media: "(prefers-color-scheme: dark)"
+    scheme: slate
+    primary: blue
+    accent: indigo
+    toggle:
+      icon: material/brightness-7
+      name: "light mode"
+
+nav:
+- Home: home.md
+- Future Developments: future_developments.md
+
+- Releases: https://github.com/mindee/tawazi/releases
+
+
+markdown_extensions:
+- pymdownx.highlight:
+    anchor_linenums: true
+- pymdownx.inlinehilite
+- pymdownx.snippets
+- pymdownx.superfences
+- markdown_include.include:
+    base_path: examples
+- toc:
+    permalink: True
+- admonition
+
+plugins:
+- search
+- exclude:
+    glob:
+    - requirements.txt
+
+extra:
+  version:
+    provider: mike
