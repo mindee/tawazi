@@ -2,6 +2,7 @@ import functools
 from typing import Any, Callable, Optional
 
 from tawazi import DAG
+from tawazi.errors import ErrorStrategy
 
 from . import node
 from .node import LazyExecNode, exec_nodes_lock
@@ -46,7 +47,12 @@ def op(
         return my_custom_op(func)
 
 
-def to_dag(declare_dag_function: Callable[..., Any]) -> Callable[..., Any]:
+def to_dag(
+    declare_dag_function: Optional[Callable[..., Any]] = None,
+    *,
+    max_concurrency: int = 1,
+    behavior: ErrorStrategy = ErrorStrategy.strict,
+) -> Callable[..., Any]:
     """
     Transform the declared ops into a DAG that can be executed by tawazi.
     The same DAG can be executed multiple times.
@@ -58,19 +64,28 @@ def to_dag(declare_dag_function: Callable[..., Any]) -> Callable[..., Any]:
         declare_dag_function: a function that contains the execution of the DAG.
         if the functions are decorated with @op decorator they can be executed in parallel.
         Otherwise, they will be executed immediately. Currently mixing the two behaviors isn't supported.
-
+        max_concurrency: the maximum number of concurrent threads to execute in parallel
+        behavior: the behavior of the dag when an error occurs during the execution of a function (ExecNode)
     Returns: a DAG instance
 
     """
 
-    def wrapped(*args: Any, **kwargs: Any) -> DAG:
-        # TODO: modify this horrible pattern
-        with exec_nodes_lock:
-            node.exec_nodes = []
-            declare_dag_function(*args, **kwargs)
-            d = DAG(node.exec_nodes)
-            node.exec_nodes = []
+    def intermediate_wrapper(_func: Callable[..., Any]) -> Callable[..., DAG]:
+        def wrapped(*args: Any, **kwargs: Any) -> DAG:
+            # TODO: modify this horrible pattern
+            with exec_nodes_lock:
+                node.exec_nodes = []
+                _func(*args, **kwargs)
+                d = DAG(node.exec_nodes, max_concurrency=max_concurrency, behavior=behavior)
+                node.exec_nodes = []
 
-        return d
+            return d
 
-    return wrapped
+        return wrapped
+
+    # case 1: arguments are provided to the decorator
+    if declare_dag_function is None:
+        return intermediate_wrapper
+    # case 2: arguments aren't provided to the decorator
+    else:
+        return intermediate_wrapper(declare_dag_function)
