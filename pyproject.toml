@@ -23,6 +23,12 @@ pytest = "^7.1.2"
 ipdb = "*"
 pytest-cov = "^4.0.0"
 mkcodes = "*"
+# documentation packages
+mkdocs = "^1.4.0"
+markdown-include = "0.6.0"
+mike = "1.1.2"
+mkdocs-exclude = "1.0.2"
+mkdocs-material = "8.2.8"
 
 [tool.pytest.ini_options]
 addopts = "--pdbcls=IPython.terminal.debugger:TerminalPdb --cov-report=term-missing:skip-covered --junit-xml=pytest-junit.xml --cov=tawazi tests"
