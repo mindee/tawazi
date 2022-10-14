@@ -15,6 +15,7 @@ repos:
     rev: 5.8.0
     hooks:
       - id: isort
+      # only useful for pre-commit hooked to git
         args: ["--profile", "black"]
 
   - repo: https://github.com/psf/black
