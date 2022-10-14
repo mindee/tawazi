@@ -1,3 +1,4 @@
+import time
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import deepcopy
 from typing import Any, Dict, Hashable, List, Optional, Set, Tuple, Union
@@ -232,16 +233,15 @@ class DAG:
                 edges = [(dep, node_id) for dep in dependencies]
                 self.graph_ids.add_edges_from(edges)
 
-        # set sequence order and check for circular dependencies
-        try:
-            topological_order = self.graph_ids.topological_sort()
-        except NetworkXUnfeasible:
-
-            logger.warning(
-                f"The graph can't be built because "
-                f"the product contains at least a circular dependency: {self.find_cycle()} "
+        # check for circular dependencies
+        cycle = self.find_cycle()
+        if cycle:
+            raise NetworkXUnfeasible(
+                f"the product contains at least a circular dependency: {cycle}"
             )
-            raise NetworkXUnfeasible
+
+        # set sequence order
+        topological_order = self.graph_ids.topological_sort()
 
         # calculate the sum of priorities of all recursive children
         self.assign_recursive_children_compound_priority()
@@ -280,11 +280,13 @@ class DAG:
             # assign the new leaf nodes
             leaf_ids = graph_ids.leaf_nodes()
 
-    def draw(self, k: float = 0.8) -> None:
+    def draw(self, k: float = 0.8, display: bool = True, t: int = 3) -> None:
         """
         Draws the Networkx directed graph.
         Args:
             k: parameter for the layout of the graph, the higher, the further the nodes apart
+            display: display the layout created
+            t: time to display in seconds
         """
         import matplotlib.pyplot as plt
 
@@ -292,7 +294,11 @@ class DAG:
 
         pos = nx.spring_layout(self.graph_ids, seed=42069, k=k, iterations=20)
         nx.draw(self.graph_ids, pos, with_labels=True)
-        plt.show()
+        if display:
+            plt.ion()
+            plt.show()
+            time.sleep(t)
+            plt.close()
 
     def execute(
         self, leaves_ids: Optional[List[Union[Hashable, ExecNode]]] = None

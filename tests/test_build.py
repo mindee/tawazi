@@ -41,6 +41,11 @@ def g(e):
     return e + "g"
 
 
+def fail(g):
+    toto = 10 / 0
+    return 1
+
+
 # ExecNodes can be identified using the actual function or an identification string
 list_execnodes = [
     ExecNode(a, a, is_sequential=True),
@@ -53,6 +58,9 @@ list_execnodes = [
 ]
 
 
+failing_execnodes = list_execnodes + [ExecNode(fail, fail, [g], is_sequential=False)]
+
+
 def test_dag_build():
     g = DAG(list_execnodes, 2, behavior=ErrorStrategy.strict)
     t0 = time()
@@ -60,3 +68,17 @@ def test_dag_build():
     print(time() - t0)
     for k, v in g.node_dict.items():
         print(g, v, v.result)
+
+
+def test_draw():
+    g = DAG(list_execnodes, 2, behavior=ErrorStrategy.strict)
+    g.draw(display=False)
+    g.draw(display=True)
+
+
+def test_bad_behaviour():
+    try:
+        g = DAG(failing_execnodes, 2, behavior="Such Bad Behavior")
+        g.execute()
+    except NotImplementedError:
+        pass
