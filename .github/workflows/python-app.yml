@@ -63,6 +63,6 @@ jobs:
          poetry run python tests/test_md.py
 
     - name: Run tests and collect coverage
-      run: pytest --cov tawazi tests
+      run: poetry run pytest --cov tawazi tests
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
