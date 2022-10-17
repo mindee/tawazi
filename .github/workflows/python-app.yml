@@ -58,9 +58,9 @@ jobs:
     - name: Run tests
       run: |
         set -o pipefail
-        poetry run pytest --cov=tawazi tests/ | tee pytest-coverage.txt
+        poetry run pytest --cov=tawazi --cov-report=term-missing:skip-covered tests/ | tee pytest-coverage.txt
         # test extracted python code from markdown
-         poetry run python tests/test_md.py
+        poetry run python tests/test_md.py
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
