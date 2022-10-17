@@ -62,8 +62,7 @@ jobs:
         # test extracted python code from markdown
          poetry run python tests/test_md.py
 
-    - name: Pytest coverage comment
-      uses: MishaKav/pytest-coverage-comment@main
-      with:
-        pytest-coverage-path: ./pytest-coverage.txt
-        junitxml-path: ./pytest-junit.xml
+    - name: Run tests and collect coverage
+      run: pytest --cov tawazi tests
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
