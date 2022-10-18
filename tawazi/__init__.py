@@ -8,6 +8,6 @@ from .config import Cfg
 tawazi is a package that allows parallel execution of a set of functions written in Python
 isort:skip_file
 """
-__version__ = "0.1.2"
+__version__ = "0.2.0"
 
 __all__ = ["ExecNode", "DAG", "op", "to_dag", "ErrorStrategy", "Cfg"]
