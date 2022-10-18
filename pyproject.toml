@@ -2,7 +2,7 @@
 name = "tawazi"
 version = "0.2.0"
 description = "This library helps you execute a set of functions in a Directed Acyclic Graph (DAG) dependency structure in parallel in a production environment. It aims at providing This in a production environment"
-authors = ["Bashir Abdelwahed <bashir@mindee.co>, Matthias Cremieux <matthias@mindee.co>"]
+authors = ["Bashir Abdelwahed <bashir@mindee.co>", "Matthias Cremieux <matthias@mindee.co>"]
 license = "Apache 2.0"
 readme = "README.md"
 
