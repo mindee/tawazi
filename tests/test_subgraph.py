@@ -1,9 +1,9 @@
 #  type: ignore
-from nis import match
-
 import pytest
 
 from tawazi import op, to_dag
+
+"""integration test"""
 
 pytest.subgraph_comp_str = ""
 T = 1e-3

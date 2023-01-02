@@ -1,6 +1,8 @@
 # type: ignore
 from subprocess import run
 
+"""Integration Test"""
+
 
 def test_correct_env_var():
     # Real test

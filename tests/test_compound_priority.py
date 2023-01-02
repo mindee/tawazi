@@ -5,6 +5,8 @@ import pytest
 
 from tawazi import op, to_dag
 
+"""Internal Unit Test"""
+
 pytest.compound_priority_str: str = ""
 T = 1e-3
 
