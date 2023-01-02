@@ -1,7 +1,7 @@
 import time
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import deepcopy
-from typing import Any, Dict, Hashable, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import networkx as nx
 from loguru import logger
@@ -9,7 +9,7 @@ from networkx import find_cycle
 from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 
 from .errors import ErrorStrategy
-from .node import ExecNode
+from .node import ExecNode, IdentityHash
 
 
 # todo remove dependency on DiGraph!
@@ -18,7 +18,7 @@ class DiGraphEx(nx.DiGraph):
     Extends the DiGraph with some methods
     """
 
-    def root_nodes(self) -> List[Hashable]:
+    def root_nodes(self) -> List[IdentityHash]:
         """
         Safely gets the root nodes
         Returns:
@@ -26,7 +26,7 @@ class DiGraphEx(nx.DiGraph):
         """
         return [node for node, degree in self.in_degree if degree == 0]
 
-    def leaf_nodes(self) -> List[Hashable]:
+    def leaf_nodes(self) -> List[IdentityHash]:
         """
         Safely gets the leaf nodes
         Returns:
@@ -34,15 +34,15 @@ class DiGraphEx(nx.DiGraph):
         """
         return [node for node, degree in self.out_degree if degree == 0]
 
-    def remove_recursively(self, root_node: Hashable) -> None:
+    def remove_recursively(self, root_node: IdentityHash) -> None:
         """
         Recursively removes all the nodes that depend on the provided one
         Args:
             root_node: the root node
         """
-        nodes_to_remove: Set[Hashable] = set()
+        nodes_to_remove: Set[IdentityHash] = set()
 
-        def dfs(n: Hashable, graph: DiGraphEx, visited: Set[Hashable]) -> None:
+        def dfs(n: IdentityHash, graph: DiGraphEx, visited: Set[IdentityHash]) -> None:
             if n in visited:
                 return
             else:
@@ -54,7 +54,7 @@ class DiGraphEx(nx.DiGraph):
         for node in nodes_to_remove:
             self.remove_node(node)
 
-    def subgraph_leaves(self, nodes: List[Hashable]) -> Set[Hashable]:
+    def subgraph_leaves(self, nodes: List[IdentityHash]) -> Set[IdentityHash]:
         """
         modifies the graph to become a subgraph
         that contains the provided nodes as leaf nodes.
@@ -118,7 +118,7 @@ class DiGraphEx(nx.DiGraph):
 
         return unremovable_nodes
 
-    def topological_sort(self) -> List[Hashable]:
+    def topological_sort(self) -> List[IdentityHash]:
         """
         Makes the simple topological sort of the graph nodes
         """
@@ -126,13 +126,15 @@ class DiGraphEx(nx.DiGraph):
 
 
 # TODO: move into a separate module (Helper functions)
-def subgraph(graph: DiGraphEx, leaves_ids: Optional[List[Union[Hashable, ExecNode]]]) -> DiGraphEx:
+def subgraph(
+    graph: DiGraphEx, leaves_ids: Optional[List[Union[IdentityHash, ExecNode]]]
+) -> DiGraphEx:
     """returns a deep copy of the same graph if leaves_ids is None,
     otherwise returns a new graph by applying `graph.subgraph_leaves`
 
     Args:
         graph (DiGraphEx): graph describing the DAG
-        leaves_ids (List[Union[Hashable, ExecNode]]): The leaves that must be executed
+        leaves_ids (List[Union[IdentityHash, ExecNode]]): The leaves that must be executed
 
     Returns:
         DiGraphEx: The subgraph of the provided graph
@@ -145,11 +147,11 @@ def subgraph(graph: DiGraphEx, leaves_ids: Optional[List[Union[Hashable, ExecNod
     # 1. create the subgraph
     if leaves_ids is not None:
         # Extract the ids from the provided leaves/leaves_ids
-        leaves_ids = [
+        leaves_str_ids = [
             node_id.id if isinstance(node_id, ExecNode) else node_id for node_id in leaves_ids
         ]
 
-        graph.subgraph_leaves(leaves_ids)
+        graph.subgraph_leaves(leaves_str_ids)
 
     return graph
 
@@ -187,10 +189,10 @@ class DAG:
         assert max_concurrency >= 1, "Invalid maximum number of threads! Must be a positive integer"
 
         # variables necessary for DAG construction
-        self.backwards_hierarchy: Dict[Hashable, List[Hashable]] = {
-            exec_node.id: exec_node.depends_on for exec_node in self.exec_nodes
+        self.backwards_hierarchy: Dict[IdentityHash, List[IdentityHash]] = {
+            exec_node.id: [dep[1] for dep in exec_node.depends_on] for exec_node in self.exec_nodes
         }
-        self.node_dict: Dict[Hashable, ExecNode] = {
+        self.node_dict: Dict[IdentityHash, ExecNode] = {
             exec_node.id: exec_node for exec_node in self.exec_nodes
         }
 
@@ -223,29 +225,31 @@ class DAG:
         """
         Builds the graph and the sequence order for the computation.
         """
-        # add nodes
+        # 1. Make the graph
+        # 1.1 add nodes
         for node_id in self.backwards_hierarchy.keys():
             self.graph_ids.add_node(node_id)
 
-        # add edges
+        # 1.2 add edges
         for node_id, dependencies in self.backwards_hierarchy.items():
             if dependencies is not None:
                 edges = [(dep, node_id) for dep in dependencies]
                 self.graph_ids.add_edges_from(edges)
 
-        # check for circular dependencies
+        # 2. Validate the DAG: check for circular dependencies
         cycle = self.find_cycle()
         if cycle:
             raise NetworkXUnfeasible(
                 f"the product contains at least a circular dependency: {cycle}"
             )
 
-        # set sequence order
+        # 3. set sequence order
         topological_order = self.graph_ids.topological_sort()
 
-        # calculate the sum of priorities of all recursive children
+        # 4. calculate the sum of priorities of all recursive children
         self.assign_recursive_children_compound_priority()
 
+        # 5. make a valid execution sequence to run sequentially if needed
         self.exec_node_sequence = [self.node_dict[node_name] for node_name in topological_order]
 
     def assign_recursive_children_compound_priority(self) -> None:
@@ -300,9 +304,10 @@ class DAG:
             time.sleep(t)
             plt.close()
 
+    # TODO: change the arguments in .execute to pass in arguments for the dag calculations
     def execute(
-        self, leaves_ids: Optional[List[Union[Hashable, ExecNode]]] = None
-    ) -> Dict[Hashable, Any]:
+        self, leaves_ids: Optional[List[Union[IdentityHash, ExecNode]]] = None
+    ) -> Dict[IdentityHash, Any]:
         """
         Thread safe execution of the DAG.
         Args:
@@ -317,12 +322,12 @@ class DAG:
         node_dict = deepcopy(self.node_dict)
 
         # 0.3 create variables related to futures
-        futures: Dict[Hashable, "Future[Any]"] = {}
+        futures: Dict[IdentityHash, "Future[Any]"] = {}
         done: Set["Future[Any]"] = set()
         running: Set["Future[Any]"] = set()
 
         # 0.4 create helpers functions encapsulated from the outside
-        def get_num_running_threads(_futures: Dict[Hashable, "Future[Any]"]) -> int:
+        def get_num_running_threads(_futures: Dict[IdentityHash, "Future[Any]"]) -> int:
             # use not future.done() because there is no guarantee that Thread pool will directly execute
             # the submitted thread
             return sum([not future.done() for future in _futures.values()])
@@ -415,8 +420,8 @@ class DAG:
         return node_dict
 
     def safe_execute(
-        self, leaves_ids: Optional[List[Union[Hashable, ExecNode]]] = None
-    ) -> Dict[Hashable, Any]:
+        self, leaves_ids: Optional[List[Union[IdentityHash, ExecNode]]] = None
+    ) -> Dict[IdentityHash, Any]:
         """
         Execute the ExecNodes in topological order without priority in for loop manner for debugging purposes
         """
@@ -430,7 +435,7 @@ class DAG:
 
         return node_dict
 
-    def handle_exception(self, graph: DiGraphEx, fut: "Future[Any]", id_: Hashable) -> None:
+    def handle_exception(self, graph: DiGraphEx, fut: "Future[Any]", id_: IdentityHash) -> None:
         """
         checks if futures have produced exceptions, and handles them
         according to the specified behavior
