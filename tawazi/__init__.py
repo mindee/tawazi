@@ -1,4 +1,3 @@
-from .node import ExecNode  # the rest child classes are hidden from the outside
 from .dag import DAG
 from .ops import op, to_dag
 from .errors import ErrorStrategy
@@ -10,4 +9,4 @@ isort:skip_file
 """
 __version__ = "0.2.0"
 
-__all__ = ["ExecNode", "DAG", "op", "to_dag", "ErrorStrategy", "Cfg"]
+__all__ = ["DAG", "op", "to_dag", "ErrorStrategy", "Cfg"]
