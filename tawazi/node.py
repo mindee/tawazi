@@ -96,9 +96,9 @@ class ExecNode:
 
 class PreComputedExecNode(ExecNode):
     # TODO: must change this because two functions in the same DAG can use the same argument name for two constants!
-    def __init__(self, func: Callable[..., Any], value: Any):
+    def __init__(self, argument_name: str, func: Callable[..., Any], value: Any):
         super().__init__(
-            id_="a_constant_to_be_dynamically_identified",  # f"{hash(func)}_{argument_name}",
+            id_=f"{func.__qualname__} >>> {argument_name}",  # f"{hash(func)}_{argument_name}",
             exec_function=lambda: value,
             depends_on=[],
             is_sequential=False,
@@ -163,14 +163,16 @@ class LazyExecNode(ExecNode):
         # provided_arguments_names = set()
 
         # TODO: refactor this part.
-        # function_arguments_names = inspect.getfullargspec(self.exec_function)[0]
-        for arg in args:
+        function_arguments_names = inspect.getfullargspec(self.exec_function)[0]
+        for i, arg in enumerate(args):
             if isinstance(arg, LazyExecNode):
                 # NOTE: is it possible to pass the arg itself and avoid passing the id as dependency ?
                 dependencies.append((None, arg.id))
             else:
                 # if the argument is a custom or constant
-                pre_c_exec_node = PreComputedExecNode(self.exec_function, arg)
+                pre_c_exec_node = PreComputedExecNode(
+                    function_arguments_names[i], self.exec_function, arg
+                )
                 exec_nodes.append(pre_c_exec_node)
                 dependencies.append((None, pre_c_exec_node.id))
 
@@ -181,7 +183,7 @@ class LazyExecNode(ExecNode):
                 dependencies.append((key, arg.id))
             else:
                 # if the argument is a custom or constant
-                pre_c_exec_node = PreComputedExecNode(self.exec_function, arg)
+                pre_c_exec_node = PreComputedExecNode(key, self.exec_function, arg)
                 exec_nodes.append(pre_c_exec_node)
                 dependencies.append((key, pre_c_exec_node.id))
 

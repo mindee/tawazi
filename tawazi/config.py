@@ -12,3 +12,7 @@ class Config(BaseSettings):
 
 
 Cfg = Config()
+if Cfg.LOGURU_LEVEL == "PROD":
+    from loguru import logger
+
+    logger.disable("tawazi")
