@@ -3,7 +3,10 @@ from time import sleep
 
 from networkx import NetworkXUnfeasible
 
-from tawazi import DAG, ErrorStrategy, ExecNode
+from tawazi import DAG, ErrorStrategy
+from tawazi.node import ExecNode
+
+"""integration test"""
 
 T = 0.1
 
@@ -24,9 +27,9 @@ def c(b):
 
 
 list_exec_nodes = [
-    ExecNode(a, a, [c], is_sequential=True),
-    ExecNode(b, b, [a], priority=2, is_sequential=False),
-    ExecNode(c, c, [b], priority=1, is_sequential=False),
+    ExecNode(a.__name__, a, [(None, c.__name__)], is_sequential=True),
+    ExecNode(b.__name__, b, [(None, a.__name__)], priority=2, is_sequential=False),
+    ExecNode(c.__name__, c, [(None, b.__name__)], priority=1, is_sequential=False),
 ]
 
 
