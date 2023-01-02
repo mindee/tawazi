@@ -1,7 +1,10 @@
 #  type: ignore
 from time import sleep, time
 
-from tawazi import DAG, ErrorStrategy, ExecNode
+from tawazi import DAG, ErrorStrategy
+from tawazi.node import ExecNode
+
+"""Internal Unit Test"""
 
 T = 0.1
 
@@ -48,17 +51,21 @@ def fail(g):
 
 # ExecNodes can be identified using the actual function or an identification string
 list_execnodes = [
-    ExecNode(a, a, is_sequential=True),
-    ExecNode("b", b, [a], priority=2, is_sequential=False),
-    ExecNode(c, c, [a], priority=1, is_sequential=False),
-    ExecNode(d, d, ["b", c], priority=1, is_sequential=False),
-    ExecNode(e, e, ["b"], is_sequential=False),
-    ExecNode(f, f, [e], is_sequential=False),
-    ExecNode(g, g, [e], is_sequential=False),
+    ExecNode(a.__name__, a, is_sequential=True),
+    ExecNode(b.__name__, b, [(None, a.__name__)], priority=2, is_sequential=False),
+    ExecNode(c.__name__, c, [(None, a.__name__)], priority=1, is_sequential=False),
+    ExecNode(
+        d.__name__, d, [(None, b.__name__), (None, c.__name__)], priority=1, is_sequential=False
+    ),
+    ExecNode(e.__name__, e, [(None, b.__name__)], is_sequential=False),
+    ExecNode(f.__name__, f, [(None, e.__name__)], is_sequential=False),
+    ExecNode(g.__name__, g, [(None, e.__name__)], is_sequential=False),
 ]
 
 
-failing_execnodes = list_execnodes + [ExecNode(fail, fail, [g], is_sequential=False)]
+failing_execnodes = list_execnodes + [
+    ExecNode(fail.__name__, fail, [(None, g.__name__)], is_sequential=False)
+]
 
 
 def test_dag_build():
