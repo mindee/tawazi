@@ -14,7 +14,6 @@ def op(
     func: Optional[Callable[..., Any]] = None,
     *,
     priority: int = 0,
-    argument_name: Optional[str] = None,
     is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
 ) -> "LazyExecNode":
     """
@@ -24,11 +23,6 @@ def op(
     Args:
         func: a Callable that will be executed in the DAG
         priority: priority of the execution with respect to other ExecNodes
-        argument_name: name of the argument used by other ExecNodes referring to the returned value.
-             Explanation:
-             This ExecNode will return a value.
-             This value will be used by other ExecNodes via their arguments.
-             The name of the argument to be used is specified by this value.
         is_sequential: whether to allow the execution of this ExecNode with others or not
 
     Returns:
@@ -36,7 +30,7 @@ def op(
     """
 
     def my_custom_op(_func: Callable[..., Any]) -> "LazyExecNode":
-        lazy_exec_node = LazyExecNode(_func, priority, argument_name, is_sequential)
+        lazy_exec_node = LazyExecNode(_func, priority, is_sequential)
         functools.update_wrapper(lazy_exec_node, _func)
         return lazy_exec_node
 
@@ -53,7 +47,7 @@ def to_dag(
     *,
     max_concurrency: int = 1,
     behavior: ErrorStrategy = ErrorStrategy.strict,
-) -> Callable[..., Any]:
+) -> Callable[..., DAG]:
     """
     Transform the declared ops into a DAG that can be executed by tawazi.
     The same DAG can be executed multiple times.
@@ -86,7 +80,8 @@ def to_dag(
 
     # case 1: arguments are provided to the decorator
     if declare_dag_function is None:
-        return intermediate_wrapper
+        # return a decorator
+        return intermediate_wrapper  # type: ignore
     # case 2: arguments aren't provided to the decorator
     else:
         return intermediate_wrapper(declare_dag_function)

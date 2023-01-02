@@ -1,7 +1,11 @@
 from enum import Enum, unique
 
 
-class DAGBaseException(BaseException):
+class TawaziBaseException(BaseException):
+    pass
+
+
+class UnvalidExecNodeCall(TawaziBaseException):
     pass
 
 
