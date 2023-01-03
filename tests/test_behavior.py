@@ -33,12 +33,11 @@ def d(a):
     pytest.behavior_comp_str += "d"
 
 
-list_execnodes = [
-    ExecNode(a.__name__, a, priority=1, is_sequential=False),
-    ExecNode(b.__name__, b, [(None, a.__name__)], priority=2, is_sequential=False),
-    ExecNode(c.__name__, c, [(None, b.__name__)], priority=2, is_sequential=False),
-    ExecNode(d.__name__, d, [(None, a.__name__)], priority=1, is_sequential=False),
-]
+en_a = ExecNode(a.__name__, a, priority=1, is_sequential=False)
+en_b = ExecNode(b.__name__, b, args=[en_a], priority=2, is_sequential=False)
+en_c = ExecNode(c.__name__, c, args=[en_b], priority=2, is_sequential=False)
+en_d = ExecNode(d.__name__, d, args=[en_a], priority=1, is_sequential=False)
+list_execnodes = [en_a, en_b, en_c, en_d]
 
 
 def test_strict_error_behavior():

@@ -89,8 +89,7 @@ def a():
 # optionally configure each op using the decorator:
 # is_sequential = True to prevent op from running in parallel with other ops
 # priority to choose the op in the next execution phase
-# argument_name to choose the name of the argument that will be used
-@op(is_sequential=True, priority=10, argument_name="arg_b")
+@op(is_sequential=True, priority=10)
 def b():
     print("Function 'b' is running", flush=True)
     sleep(1)

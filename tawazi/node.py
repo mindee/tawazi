@@ -105,10 +105,6 @@ class ExecNode:
 
         return deps
 
-    @property
-    def computed_dependencies(self) -> bool:
-        return isinstance(self.depends_on, list)
-
     def execute(self, node_dict: Dict[IdentityHash, "ExecNode"]) -> Optional[Dict[str, Any]]:
         """
         Execute the ExecNode directly or according to an execution graph.
@@ -143,6 +139,7 @@ class PreComputedExecNode(ExecNode):
         )
 
 
+# TODO: transfer to a helpers file
 def get_default_args(func: Callable[..., Any]) -> Dict[str, Any]:
     """
     retrieves the default arguments of a function
@@ -191,11 +188,6 @@ class LazyExecNode(ExecNode):
                 "Invoking ExecNode __call__ is only allowed inside a @to_dag decorated function"
             )
 
-        # NOTE: this might be no longer necessary !
-        # 0. if dependencies are already calculated, there is no need to recalculate them
-        if self.computed_dependencies and self in exec_nodes:
-            return self
-
         self.args = []
         self.kwargs = {}
         for i, arg in enumerate(args):
@@ -208,15 +200,22 @@ class LazyExecNode(ExecNode):
             self.args.append(arg)
 
         for arg_name, arg in kwargs.items():
+            # encapsulate the argument in PreComputedExecNode
             if not isinstance(arg, LazyExecNode):
                 arg = PreComputedExecNode(arg_name, self.exec_function, arg)
-                # Create a bew ExecNode
+                # Create a new ExecNode
                 exec_nodes.append(arg)
             self.kwargs[arg_name] = arg
 
-        # in case the same function is called twice
-        if self not in exec_nodes:
-            exec_nodes.append(self)
+        # in case the same function is called twice, it is appended twice!
+        # but this won't work correctly because we use the id of the function which is unique!
+        # TODO: fix it using an additional random number at the end or the memory address of self!
+        if self.id in [exec_node.id for exec_node in exec_nodes]:
+            raise UnvalidExecNodeCall(
+                "Invoking the same function twice is not allowed in the same DAG"
+            )
+
+        exec_nodes.append(self)
         return self
 
     def __get__(self, instance: "LazyExecNode", owner_cls: Optional[Any] = None) -> Any:
