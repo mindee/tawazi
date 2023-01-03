@@ -190,7 +190,7 @@ class DAG:
 
         # variables necessary for DAG construction
         self.backwards_hierarchy: Dict[IdentityHash, List[IdentityHash]] = {
-            exec_node.id: [dep[1] for dep in exec_node.depends_on] for exec_node in self.exec_nodes
+            exec_node.id: [dep.id for dep in exec_node.depends_on] for exec_node in self.exec_nodes
         }
         self.node_dict: Dict[IdentityHash, ExecNode] = {
             exec_node.id: exec_node for exec_node in self.exec_nodes

@@ -1,7 +1,7 @@
 import inspect
 from threading import Lock
 from types import MethodType
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 from loguru import logger
 
@@ -16,6 +16,36 @@ exec_nodes_lock = Lock()
 IdentityHash = str
 
 
+# TODO: make a helpers module and put this function in it
+def ordinal(numb: int) -> str:
+    if numb < 20:  # determining suffix for < 20
+        if numb == 1:
+            suffix = "st"
+        elif numb == 2:
+            suffix = "nd"
+        elif numb == 3:
+            suffix = "rd"
+        else:
+            suffix = "th"
+    else:  # determining suffix for > 20
+        tens = str(numb)
+        tens = tens[-2]
+        unit = str(numb)
+        unit = unit[-1]
+        if tens == "1":
+            suffix = "th"
+        else:
+            if unit == "1":
+                suffix = "st"
+            elif unit == "2":
+                suffix = "nd"
+            elif unit == "3":
+                suffix = "rd"
+            else:
+                suffix = "th"
+    return str(numb) + suffix
+
+
 class ExecNode:
     """
     This class is the base executable node of the Directed Acyclic Execution Graph
@@ -25,8 +55,9 @@ class ExecNode:
     def __init__(
         self,
         id_: IdentityHash,
-        exec_function: Callable[..., Any] = lambda **kwargs: None,
-        depends_on: Optional[List[Tuple[Optional[str], IdentityHash]]] = None,
+        exec_function: Callable[..., Any] = lambda *args, **kwargs: None,
+        args: Optional[List["ExecNode"]] = None,
+        kwargs: Optional[Dict[str, "ExecNode"]] = None,
         priority: int = 0,
         is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
     ):
@@ -34,7 +65,6 @@ class ExecNode:
         Args:
             id_ (IdentityHash): identifier of ExecNode.
             exec_function (Callable, optional): a callable will be executed in the graph.
-            TODO: must support *args, **kwargs
             This is useful to make Joining ExecNodes (Nodes that enforce dependencies on the graph)
             depends_on (list): a list of ExecNodes' ids that must be executed beforehand.
             priority (int, optional): priority compared to other ExecNodes;
@@ -46,7 +76,10 @@ class ExecNode:
 
         self.id = id_
         self.exec_function = exec_function
-        self.depends_on = depends_on if depends_on else []
+
+        self.args = args or []
+        self.kwargs = kwargs or {}
+
         self.priority: int = priority
         self.compound_priority: int = priority
         self.is_sequential = is_sequential
@@ -60,6 +93,17 @@ class ExecNode:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} {self.id} ~ | <{hex(id(self))}>"
+
+    # TODO: make cached_property ?
+    @property
+    def depends_on(self) -> List["ExecNode"]:
+        # Making the dependencies
+        # 1. from args
+        deps = self.args.copy()
+        # 2. and from kwargs
+        deps.extend(self.kwargs.values())
+
+        return deps
 
     @property
     def computed_dependencies(self) -> bool:
@@ -76,15 +120,11 @@ class ExecNode:
         """
         logger.debug(f"Start executing {self.id} with task {self.exec_function}")
 
-        # 1. fabricate the arguments for this ExecNode
-        args = [
-            node_dict[dep_hash].result for arg_name, dep_hash in self.depends_on if arg_name is None
-        ]
-        kwargs = {
-            arg_name: node_dict[dep_hash].result
-            for arg_name, dep_hash in self.depends_on
-            if arg_name is not None
-        }
+        # 1. prepare args and kwargs for usage:
+        args = [node_dict[node.id].result for node in self.args]
+        kwargs = {key: node_dict[node.id].result for key, node in self.kwargs.items()}
+        # args = [arg.result for arg in self.args]
+        # kwargs = {key: arg.result for key, arg in self.kwargs.items()}
 
         # 2. write the result
         self.result = self.exec_function(*args, **kwargs)
@@ -95,12 +135,10 @@ class ExecNode:
 
 
 class PreComputedExecNode(ExecNode):
-    # TODO: must change this because two functions in the same DAG can use the same argument name for two constants!
     def __init__(self, argument_name: str, func: Callable[..., Any], value: Any):
         super().__init__(
-            id_=f"{func.__qualname__} >>> {argument_name}",  # f"{hash(func)}_{argument_name}",
+            id_=f"{func.__qualname__} >>> {argument_name}",
             exec_function=lambda: value,
-            depends_on=[],
             is_sequential=False,
         )
 
@@ -138,7 +176,6 @@ class LazyExecNode(ExecNode):
         super().__init__(
             id_=func.__qualname__,
             exec_function=func,
-            depends_on=None,
             priority=priority,
             is_sequential=is_sequential,
         )
@@ -154,53 +191,28 @@ class LazyExecNode(ExecNode):
                 "Invoking ExecNode __call__ is only allowed inside a @to_dag decorated function"
             )
 
+        # NOTE: this might be no longer necessary !
         # 0. if dependencies are already calculated, there is no need to recalculate them
         if self.computed_dependencies and self in exec_nodes:
             return self
 
-        # the Tuple contains (name_of_argument_used, execnode_id_of_argument)
-        dependencies: List[Tuple[Optional[str], str]] = []
-        # provided_arguments_names = set()
-
-        # TODO: refactor this part.
-        function_arguments_names = inspect.getfullargspec(self.exec_function)[0]
+        self.args = []
+        self.kwargs = {}
         for i, arg in enumerate(args):
-            if isinstance(arg, LazyExecNode):
-                # NOTE: is it possible to pass the arg itself and avoid passing the id as dependency ?
-                dependencies.append((None, arg.id))
-            else:
-                # if the argument is a custom or constant
-                pre_c_exec_node = PreComputedExecNode(
-                    function_arguments_names[i], self.exec_function, arg
-                )
-                exec_nodes.append(pre_c_exec_node)
-                dependencies.append((None, pre_c_exec_node.id))
+            if not isinstance(arg, LazyExecNode):
+                # NOTE: maybe use the name of the argument instead ?
+                arg = PreComputedExecNode(f"{ordinal(i)} argument", self.exec_function, arg)
+                # Create a new ExecNode
+                exec_nodes.append(arg)
 
-            # provided_arguments_names.add(function_arguments_names[i])
+            self.args.append(arg)
 
-        for key, arg in kwargs.items():
-            if isinstance(arg, LazyExecNode):
-                dependencies.append((key, arg.id))
-            else:
-                # if the argument is a custom or constant
-                pre_c_exec_node = PreComputedExecNode(key, self.exec_function, arg)
-                exec_nodes.append(pre_c_exec_node)
-                dependencies.append((key, pre_c_exec_node.id))
-
-            # provided_arguments_names.add(argument_name)
-
-        # TODO: support default arguments
-        # Fill default valued parameters with default values if they aren't provided by the user
-        # default_valued_params = get_default_args(self.exec_function)
-        # for argument_name in set(function_arguments_names) - provided_arguments_names:
-        #     # if the argument is a custom or constant
-        #     pre_c_exec_node = PreComputedExecNode(
-        #         self.exec_function, default_valued_params[argument_name]
-        #     )
-        #     exec_nodes.append(pre_c_exec_node)
-        #     dependencies.append(pre_c_exec_node.id)
-
-        self.depends_on = dependencies
+        for arg_name, arg in kwargs.items():
+            if not isinstance(arg, LazyExecNode):
+                arg = PreComputedExecNode(arg_name, self.exec_function, arg)
+                # Create a bew ExecNode
+                exec_nodes.append(arg)
+            self.kwargs[arg_name] = arg
 
         # in case the same function is called twice
         if self not in exec_nodes:
