@@ -50,22 +50,18 @@ def fail(g):
 
 
 # ExecNodes can be identified using the actual function or an identification string
-list_execnodes = [
-    ExecNode(a.__name__, a, is_sequential=True),
-    ExecNode(b.__name__, b, [(None, a.__name__)], priority=2, is_sequential=False),
-    ExecNode(c.__name__, c, [(None, a.__name__)], priority=1, is_sequential=False),
-    ExecNode(
-        d.__name__, d, [(None, b.__name__), (None, c.__name__)], priority=1, is_sequential=False
-    ),
-    ExecNode(e.__name__, e, [(None, b.__name__)], is_sequential=False),
-    ExecNode(f.__name__, f, [(None, e.__name__)], is_sequential=False),
-    ExecNode(g.__name__, g, [(None, e.__name__)], is_sequential=False),
-]
+en_a = ExecNode(a.__name__, a, is_sequential=True)
+en_b = ExecNode(b.__name__, b, [en_a], priority=2, is_sequential=False)
+en_c = ExecNode(c.__name__, c, [en_a], priority=1, is_sequential=False)
+en_d = ExecNode(d.__name__, d, [en_b, en_c], priority=1, is_sequential=False)
+en_e = ExecNode(e.__name__, e, [en_b], is_sequential=False)
+en_f = ExecNode(f.__name__, f, [en_e], is_sequential=False)
+en_g = ExecNode(g.__name__, g, [en_e], is_sequential=False)
+
+list_execnodes = [en_a, en_b, en_c, en_d, en_e, en_f, en_g]
 
 
-failing_execnodes = list_execnodes + [
-    ExecNode(fail.__name__, fail, [(None, g.__name__)], is_sequential=False)
-]
+failing_execnodes = list_execnodes + [ExecNode(fail.__name__, fail, [en_g], is_sequential=False)]
 
 
 def test_dag_build():

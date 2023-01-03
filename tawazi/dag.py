@@ -182,8 +182,8 @@ class DAG:
         """
         self.graph_ids = DiGraphEx()
 
-        # since ExecNodes are modified they must be copied
-        self.exec_nodes = exec_nodes
+        # ExecNodes can be shared between Graphs, their call signatures might also be different
+        self.exec_nodes = deepcopy(exec_nodes)
 
         self.max_concurrency = int(max_concurrency)
         assert max_concurrency >= 1, "Invalid maximum number of threads! Must be a positive integer"
@@ -196,6 +196,8 @@ class DAG:
             exec_node.id: exec_node for exec_node in self.exec_nodes
         }
 
+        # NOTE: only used in testing: to be remove ? Maybe not because it might be
+        # NOTE: useful to access nodes from the outside easily
         self.node_dict_by_name: Dict[str, ExecNode] = {
             exec_node.__name__: exec_node for exec_node in self.exec_nodes
         }
@@ -304,7 +306,7 @@ class DAG:
             time.sleep(t)
             plt.close()
 
-    # TODO: change the arguments in .execute to pass in arguments for the dag calculations
+    # TODO: change the arguments in .execute to pass in arguments for the dag calculations ?
     def execute(
         self, leaves_ids: Optional[List[Union[IdentityHash, ExecNode]]] = None
     ) -> Dict[IdentityHash, Any]:
@@ -318,7 +320,7 @@ class DAG:
         # 0.1 create a subgraph of the graph if necessary
         graph = subgraph(self.graph_ids, leaves_ids)
 
-        # 0.2 deepcopy the node_dict in order to modify the results inside every node
+        # 0.2 deepcopy the node_dict in order to modify the results inside every node and make the dag reusable
         node_dict = deepcopy(self.node_dict)
 
         # 0.3 create variables related to futures
