@@ -78,6 +78,8 @@ def test_ops_interface():
     assert pytest.fourth_argument == 1111
     logger.debug("\n2nd execution of dag")
     d1.execute()
+    assert pytest.third_argument == 1234
+    assert pytest.fourth_argument == 1111
 
     d2 = my_other_custom_dag()
     logger.debug("\n1st execution of other dag")
@@ -86,6 +88,8 @@ def test_ops_interface():
     assert pytest.fourth_argument == 2222
     logger.debug("\n2nd execution of other dag")
     d2.execute()
+    assert pytest.third_argument == "blabla"
+    assert pytest.fourth_argument == 2222
 
     logger.debug("\n3rd execution of dag")
     d1.execute()
