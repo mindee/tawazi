@@ -1,5 +1,5 @@
 #  type: ignore
-from tawazi import op, to_dag
+from tawazi import _to_dag, op
 
 """integration test"""
 
@@ -15,7 +15,7 @@ def test_same_constant_name_in_two_exec_nodes():
         print(a, cst)
         return str(a) + cst
 
-    @to_dag
+    @_to_dag
     def my_dag():
         var_a = a(1234)
         var_b = b(var_a, "poulpe")
