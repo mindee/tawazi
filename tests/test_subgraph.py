@@ -1,7 +1,7 @@
 #  type: ignore
 import pytest
 
-from tawazi import op, to_dag
+from tawazi import _to_dag, op
 
 """integration test"""
 
@@ -54,7 +54,7 @@ def i(h):
     pytest.subgraph_comp_str += "i"
 
 
-@to_dag
+@_to_dag
 def dag_describer():
     var_a = a()
     var_b = b(var_a)

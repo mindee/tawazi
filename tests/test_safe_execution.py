@@ -3,7 +3,7 @@ from time import sleep
 
 import pytest
 
-from tawazi import op, to_dag
+from tawazi import _to_dag, op
 
 """integration tests"""
 
@@ -41,7 +41,7 @@ b_op = op(b)
 c_op = op(c)
 
 # run in the dag interface
-@to_dag
+@_to_dag
 def dagger():
     a_ = a_op()
     b_ = b_op()

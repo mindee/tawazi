@@ -3,7 +3,7 @@ from time import sleep
 
 import pytest
 
-from tawazi import op, to_dag
+from tawazi import _to_dag, op
 
 """Internal Unit Test"""
 
@@ -41,7 +41,7 @@ def e():
     pytest.compound_priority_str += "e"
 
 
-@to_dag
+@_to_dag
 def dependency_describer():
     _a = a()
     _b = b(_a)

@@ -128,6 +128,12 @@ if __name__ == "__main__":
 
 ```
 
+<!-- ## Limitations:
+Currently there are some limitations in the usage of tawazi that will be overcome in the future.
+1. A DAG can not reuse the same function twice inside the calculation sequence (Will be resolved in the future)
+2. All code inside a dag descriptor function must be either an @op decorated functions calls and arguments passed arguments. Otherwise the behavior of the DAG might be unpredicatble -->
+
+
 
 ## Name explanation
 The libraries name is inspired from the arabic word تَوَازٍ which means parallel.

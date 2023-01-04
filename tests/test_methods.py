@@ -4,7 +4,7 @@ from typing import Union
 
 import pytest
 
-from tawazi import op, to_dag
+from tawazi import _to_dag, op
 
 """integration test"""
 
@@ -40,7 +40,7 @@ class MyClass:
         logger.debug("ran d")
         return "d"
 
-    @to_dag
+    @_to_dag
     def my_custom_dag(self):
         vara = self.a()
         varb = self.b(vara)
