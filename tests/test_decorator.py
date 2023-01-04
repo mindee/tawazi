@@ -1,7 +1,7 @@
 # type: ignore
 from functools import wraps
 
-from tawazi import op, to_dag
+from tawazi import _to_dag, op
 
 """Integration test"""
 
@@ -29,7 +29,7 @@ def b(a):
     return "tata" + a
 
 
-@to_dag
+@_to_dag
 def pipe():
     a_ = a()
     t = b(a_)

@@ -1,7 +1,7 @@
 import inspect
 from threading import Lock
 from types import MethodType
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from loguru import logger
 
@@ -44,6 +44,29 @@ def ordinal(numb: int) -> str:
             else:
                 suffix = "th"
     return str(numb) + suffix
+
+
+# TODO: transfer to a helpers file
+# TODO: change the name!!
+def get_args_and_default_args(func: Callable[..., Any]) -> Tuple[List[str], Dict[str, Any]]:
+    """
+    retrieves the default arguments of a function
+    Args:
+        func: the function with unknown defaults
+
+    Returns:
+        the mapping between the arguments and their default value
+    """
+    signature = inspect.signature(func)
+    args = []
+    default_args = {}
+    for k, v in signature.parameters.items():
+        if v.default is not inspect.Parameter.empty:
+            default_args[k] = v.default
+        else:
+            args.append(k)
+
+    return args, default_args
 
 
 class ExecNode:
@@ -90,6 +113,8 @@ class ExecNode:
 
         # todo: remove and make ExecNode immutable ?
         self.result: Optional[Dict[str, Any]] = None
+        # TODO: use the PreComputedExecNode instead ?
+        self.executed = False
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} {self.id} ~ | <{hex(id(self))}>"
@@ -116,6 +141,9 @@ class ExecNode:
         """
         logger.debug(f"Start executing {self.id} with task {self.exec_function}")
 
+        if self.executed:
+            logger.debug(f"Skipping execution of a pre-computed node {self.id}")
+            return self.result
         # 1. prepare args and kwargs for usage:
         args = [node_dict[node.id].result for node in self.args]
         kwargs = {key: node_dict[node.id].result for key, node in self.kwargs.items()}
@@ -124,6 +152,7 @@ class ExecNode:
 
         # 2. write the result
         self.result = self.exec_function(*args, **kwargs)
+        self.executed = True
 
         # 3. useless return value
         logger.debug(f"Finished executing {self.id} with task {self.exec_function}")
@@ -131,30 +160,19 @@ class ExecNode:
 
 
 class PreComputedExecNode(ExecNode):
+    # TODO: documentation!!!
     def __init__(self, argument_name: str, func: Callable[..., Any], value: Any):
-        super().__init__(
-            id_=f"{func.__qualname__} >>> {argument_name}",
-            exec_function=lambda: value,
-            is_sequential=False,
-        )
+        """_summary_
 
+        Args:
+            argument_name (str): the name of the argument passed
+            func (Callable[..., Any]): the function which contains the default argument
+            value (Any): _description_
+        """
+        super().__init__(id_=f"{func.__qualname__} >>> {argument_name}", is_sequential=False)
 
-# TODO: transfer to a helpers file
-def get_default_args(func: Callable[..., Any]) -> Dict[str, Any]:
-    """
-    retrieves the default arguments of a function
-    Args:
-        func: the function with unknown defaults
-
-    Returns:
-        the mapping between the arguments and their default value
-    """
-    signature = inspect.signature(func)
-    return {
-        k: v.default
-        for k, v in signature.parameters.items()
-        if v.default is not inspect.Parameter.empty
-    }
+        self.result = value
+        self.executed = True
 
 
 class LazyExecNode(ExecNode):
@@ -191,7 +209,7 @@ class LazyExecNode(ExecNode):
         self.args = []
         self.kwargs = {}
         for i, arg in enumerate(args):
-            if not isinstance(arg, LazyExecNode):
+            if not isinstance(arg, ExecNode):
                 # NOTE: maybe use the name of the argument instead ?
                 arg = PreComputedExecNode(f"{ordinal(i)} argument", self.exec_function, arg)
                 # Create a new ExecNode
@@ -201,7 +219,7 @@ class LazyExecNode(ExecNode):
 
         for arg_name, arg in kwargs.items():
             # encapsulate the argument in PreComputedExecNode
-            if not isinstance(arg, LazyExecNode):
+            if not isinstance(arg, ExecNode):
                 arg = PreComputedExecNode(arg_name, self.exec_function, arg)
                 # Create a new ExecNode
                 exec_nodes.append(arg)

@@ -201,6 +201,8 @@ class DAG:
         self.node_dict_by_name: Dict[str, ExecNode] = {
             exec_node.__name__: exec_node for exec_node in self.exec_nodes
         }
+        self.return_ids: Optional[Union[List[IdentityHash], IdentityHash]] = None
+        self.input_ids: Optional[List[IdentityHash]] = None
 
         # a sequence of execution to be applied in a for loop
         self.exec_node_sequence: List[ExecNode] = []
@@ -308,7 +310,9 @@ class DAG:
 
     # TODO: change the arguments in .execute to pass in arguments for the dag calculations ?
     def execute(
-        self, leaves_ids: Optional[List[Union[IdentityHash, ExecNode]]] = None
+        self,
+        leaves_ids: Optional[List[Union[IdentityHash, ExecNode]]] = None,
+        modified_node_dict: Optional[Dict[str, ExecNode]] = None,
     ) -> Dict[IdentityHash, Any]:
         """
         Thread safe execution of the DAG.
@@ -321,7 +325,8 @@ class DAG:
         graph = subgraph(self.graph_ids, leaves_ids)
 
         # 0.2 deepcopy the node_dict in order to modify the results inside every node and make the dag reusable
-        node_dict = deepcopy(self.node_dict)
+        #     modified_node_dict are used to modify the values inside the ExecNode corresponding to the input arguments
+        node_dict = deepcopy(modified_node_dict or self.node_dict)
 
         # 0.3 create variables related to futures
         futures: Dict[IdentityHash, "Future[Any]"] = {}
@@ -411,6 +416,8 @@ class DAG:
                     continue
 
                 # 5.1 submit the exec node to the executor
+                # TODO: make a special case if self.max_concurrency == 1
+                #   then invoke the function directly instead of launching a thread
                 exec_future = executor.submit(exec_node.execute, node_dict=node_dict)
                 running.add(exec_future)
                 futures[exec_node.id] = exec_future
@@ -421,6 +428,38 @@ class DAG:
                     wait(futures.values(), return_when=ALL_COMPLETED)
         return node_dict
 
+    def __call__(self, *args: Any) -> Any:
+        modified_node_dict = deepcopy(self.node_dict)
+        # NOTE: maybe a better way of coding this is to consider input_ids always a List[] instead of Optional
+        if args and self.input_ids:
+            # make sure they have the same length
+            if len(args) != len(self.input_ids):
+                raise ValueError(f"Must provide all arguments to the DAG {self}")
+
+            for ind_arg, arg in enumerate(args):
+                node_id = self.input_ids[ind_arg]
+                val = args[ind_arg]
+
+                modified_node_dict[node_id].result = val
+                modified_node_dict[node_id].executed = True
+
+        all_node_dicts = self.execute(None, modified_node_dict)
+
+        if self.return_ids is None:
+            returned_values = None
+        elif isinstance(self.return_ids, IdentityHash):
+            # in this case it is returned_value
+            returned_values = all_node_dicts[self.return_ids].result
+        elif isinstance(self.return_ids, list):
+            # TODO: for bla is instance
+            returned_values = [all_node_dicts[ren_id].result for ren_id in self.return_ids]
+        else:
+            raise TypeError("bla")
+
+        return returned_values
+
+    # NOTE: this function should be used in case there was a bizarre behavior noticed during the
+    #   the execution of the DAG via DAG.execute(...)
     def safe_execute(
         self, leaves_ids: Optional[List[Union[IdentityHash, ExecNode]]] = None
     ) -> Dict[IdentityHash, Any]:
