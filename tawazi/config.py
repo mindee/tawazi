@@ -2,7 +2,10 @@ from pydantic import BaseSettings
 
 
 class Config(BaseSettings):
+    # Tawazi configuration
     TAWAZI_IS_SEQUENTIAL: bool = False
+    # Weather to run the graphs in debug mode or not
+    RUN_DEBUG_NODES: bool = False
 
     # Logger settings
     LOGURU_LEVEL: str = "ERROR"

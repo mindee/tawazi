@@ -433,8 +433,11 @@ class DAG:
         # NOTE: maybe a better way of coding this is to consider input_ids always a List[] instead of Optional
         if args and self.input_ids:
             # make sure they have the same length
-            if len(args) != len(self.input_ids):
-                raise ValueError(f"Must provide all arguments to the DAG {self}")
+            if len(args) > len(self.input_ids):
+                # NOTE: change this into argument error ?
+                raise TypeError(
+                    f"The DAG takes a maximum of {len(self.input_ids)} arguments. {len(args)} arguments provided"
+                )
 
             for ind_arg, arg in enumerate(args):
                 node_id = self.input_ids[ind_arg]
