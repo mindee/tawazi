@@ -1,11 +1,12 @@
 import inspect
+from itertools import chain
 from threading import Lock
 from types import MethodType
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from loguru import logger
 
-from tawazi.errors import UnvalidExecNodeCall
+from tawazi.errors import TawaziBaseException, UnvalidExecNodeCall
 
 from .config import Cfg
 
@@ -83,6 +84,7 @@ class ExecNode:
         kwargs: Optional[Dict[str, "ExecNode"]] = None,
         priority: int = 0,
         is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
+        debug: bool = False,
     ):
         """
         Args:
@@ -106,6 +108,7 @@ class ExecNode:
         self.priority: int = priority
         self.compound_priority: int = priority
         self.is_sequential = is_sequential
+        self.debug = debug
 
         # a string that identifies the ExecNode.
         # It is either the name of the identifying function or the identifying string id_
@@ -185,7 +188,9 @@ class LazyExecNode(ExecNode):
         func: Callable[..., Any],
         priority: int = 0,
         is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
+        debug: bool = False,
     ):
+        # TODO: make the parameters non default everywhere but inside the @op decorator
         # TODO: change the id_ of the execNode. Maybe remove it completely
         # NOTE: this means that a DAG must have a different named functions which is already True!
         super().__init__(
@@ -193,6 +198,7 @@ class LazyExecNode(ExecNode):
             exec_function=func,
             priority=priority,
             is_sequential=is_sequential,
+            debug=debug,
         )
 
     def __call__(self, *args: Any, **kwargs: Any) -> "LazyExecNode":
@@ -206,8 +212,14 @@ class LazyExecNode(ExecNode):
                 "Invoking ExecNode __call__ is only allowed inside a @to_dag decorated function"
             )
 
-        self.args = []
-        self.kwargs = {}
+        # if self is a debug ExecNode and Tawazi is configured to skip running debug Nodes
+        #   then skip registering this node in the list of ExecNodes to be executed
+        if self.debug and not Cfg.RUN_DEBUG_NODES:
+            # NOTE: is this the best idea ? what if
+            return self
+
+        self.args: List[ExecNode] = []
+        self.kwargs: Dict[IdentityHash, ExecNode] = {}
         for i, arg in enumerate(args):
             if not isinstance(arg, ExecNode):
                 # NOTE: maybe use the name of the argument instead ?
@@ -224,6 +236,13 @@ class LazyExecNode(ExecNode):
                 # Create a new ExecNode
                 exec_nodes.append(arg)
             self.kwargs[arg_name] = arg
+
+        # if ExecNode is not a debug node, all its dependencies must not be debug node
+        deps = chain(self.args, self.kwargs.values())
+        if not self.debug:
+            for dep in deps:
+                if dep.debug:
+                    raise TawaziBaseException(f"Non debug node {self} depends on debug node {dep}")
 
         # in case the same function is called twice, it is appended twice!
         # but this won't work correctly because we use the id of the function which is unique!

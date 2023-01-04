@@ -3,7 +3,8 @@ from pydantic import BaseSettings, Field
 
 class Config(BaseSettings):
     TAWAZI_IS_SEQUENTIAL: bool = Field(False, env="TAWAZI_IS_SEQUENTIAL")
-
+    # Weather to run the graphs in debug mode or not
+    RUN_DEBUG_NODES: bool = False
     # Logger settings
     LOGURU_LEVEL: str = Field("CRITICAL", env="TAWAZI_LOGGER_LEVEL")
     LOGURU_BACKTRACE: bool = Field(False, env="TAWAZI_LOGGER_BT")
