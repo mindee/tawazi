@@ -1,7 +1,8 @@
 #  type: ignore
 import pytest
 
-from tawazi import _to_dag, op
+from tawazi import _to_dag, op, to_dag
+from tawazi.errors import TawaziBaseException
 
 """integration test"""
 
@@ -101,3 +102,13 @@ def test_dag_subgraph_non_existing_nodes_ids():
     with pytest.raises(ValueError, match="nodes are not in the graph"):
         dag = dag_describer()
         results = dag.execute(["gibirish"])
+
+
+# TODO: fix this test
+# def test_dag_subgraph_nodes_with_usage():
+#     @to_dag
+#     def pipe_duplication():
+#         a()
+#         a()
+#     with pytest.raises(TawaziBaseException):
+#         pipe_duplication.execute([a])

@@ -1,4 +1,5 @@
 import inspect
+from copy import deepcopy
 from itertools import chain
 from threading import Lock
 from types import MethodType
@@ -247,13 +248,21 @@ class LazyExecNode(ExecNode):
         # in case the same function is called twice, it is appended twice!
         # but this won't work correctly because we use the id of the function which is unique!
         # TODO: fix it using an additional random number at the end or the memory address of self!
-        if self.id in [exec_node.id for exec_node in exec_nodes]:
-            raise UnvalidExecNodeCall(
-                "Invoking the same function twice is not allowed in the same DAG"
-            )
+        # if self.id in [exec_node.id for exec_node in exec_nodes]:
+        #     raise UnvalidExecNodeCall(
+        #         "Invoking the same function twice is not allowed in the same DAG"
+        #     )
 
-        exec_nodes.append(self)
-        return self
+        # TODO: maybe change the Type of objects created.
+        #  for example: have a LazyExecNode.__call(...) return an ExecNode instead of a deepcopy
+        # "<" is a separator for the number of usage
+        count_usages = sum(id_.split("<")[0] == self.id for id_ in (ex_n.id for ex_n in exec_nodes))
+        self_copy = deepcopy(self)
+        if count_usages > 0:
+            self_copy.id = f"{self.id}<{count_usages}>"
+
+        exec_nodes.append(self_copy)
+        return self_copy
 
     def __get__(self, instance: "LazyExecNode", owner_cls: Optional[Any] = None) -> Any:
         """
