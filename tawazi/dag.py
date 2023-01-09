@@ -151,6 +151,15 @@ def subgraph(
             node_id.id if isinstance(node_id, ExecNode) else node_id for node_id in leaves_ids
         ]
 
+        # NOTE: this should be done elsewhere
+        # for lv_str_id_0 in leaves_str_ids:
+        #     for ex_n in graph.nodes:
+        #         if ex_n.id.startswith(lv_str_id_0)
+        #     raise TawaziBaseException(
+        #         f"Running subgraph that contains duplicate "
+        #         "usage of ExecNode {lv_str_id_0} is __currently not allowed"
+        #         )
+
         graph.subgraph_leaves(leaves_str_ids)
 
     return graph
