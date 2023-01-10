@@ -9,7 +9,7 @@ from networkx import find_cycle
 from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 
 from .errors import ErrorStrategy
-from .node import ExecNode, IdentityHash
+from .node import ExecNode, IdentityHash, Tag
 
 
 # todo remove dependency on DiGraph!
@@ -199,11 +199,14 @@ class DAG:
 
         # variables necessary for DAG construction
         self.backwards_hierarchy: Dict[IdentityHash, List[IdentityHash]] = {
-            exec_node.id: [dep.id for dep in exec_node.depends_on] for exec_node in self.exec_nodes
+            exec_node.id: [dep.id for dep in exec_node.dependencies]
+            for exec_node in self.exec_nodes
         }
         self.node_dict: Dict[IdentityHash, ExecNode] = {
             exec_node.id: exec_node for exec_node in self.exec_nodes
         }
+        # Calculate all the tags in the DAG to reduce overhead during computation
+        self.tag_node_dict = {xn.tag: xn for xn in self.exec_nodes if xn.tag}
 
         # NOTE: only used in testing: to be remove ? Maybe not because it might be
         # NOTE: useful to access nodes from the outside easily
@@ -327,6 +330,17 @@ class DAG:
             time.sleep(t)
             plt.close()
 
+    @classmethod
+    def deepcopy_non_setup_x_nodes(cls, x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
+        x_nodes_copy = {}
+        for id_, x_nd in x_nodes.items():
+            # if execnode is a setup node, it shouldn't be copied
+            if x_nd.setup:
+                x_nodes_copy[id_] = x_nd
+            else:
+                x_nodes_copy[id_] = deepcopy(x_nd)
+        return x_nodes_copy
+
     # TODO: change the arguments in .execute to pass in arguments for the dag calculations ?
     def execute(
         self,
@@ -344,8 +358,17 @@ class DAG:
         graph = subgraph(self.graph_ids, leaves_ids)
 
         # 0.2 deepcopy the node_dict in order to modify the results inside every node and make the dag reusable
-        #     modified_node_dict are used to modify the values inside the ExecNode corresponding to the input arguments
-        node_dict = deepcopy(modified_node_dict or self.node_dict)
+        #     modified_node_dict are used to modify the values inside the ExecNode corresponding
+        #     to the input arguments provided to the whole DAG
+        # NOTE: what is the behavior if modified_node_dict contains setup nodes !???
+        #   In principal, this is not possible...
+        # if modified_node_dict:
+        #     for ex_n in modified_node_dict.values():
+        #         if ex_n.setup:
+        #             raise TawaziBaseException(f"Setup nodes can't be provided as input to the DAG!,")
+        # TODO: only deepcopy the the node_dict that aren't setup nodes !
+
+        node_dict = DAG.deepcopy_non_setup_x_nodes(modified_node_dict or self.node_dict)
 
         # 0.3 create variables related to futures
         futures: Dict[IdentityHash, "Future[Any]"] = {}
@@ -447,8 +470,45 @@ class DAG:
                     wait(futures.values(), return_when=ALL_COMPLETED)
         return node_dict
 
-    def __call__(self, *args: Any) -> Any:
-        modified_node_dict = deepcopy(self.node_dict)
+    # TODO: support passing in a subset of nodes to execute via kwargs!
+    #  for example: __twz_nodes: List[ExecNodes] | List[IdHash]
+
+    # TODO: List[Any] refers to tag Type!! Make a special Type for it
+    def __call__(self, *args: Any, **kwargs: Dict[str, Any]) -> Any:
+
+        __twz_nodes: Optional[List[Union[Tag, IdentityHash, ExecNode]]] = kwargs.get(
+            "__twz_nodes"
+        )  # type:ignore
+        leaves_ids = None
+        if __twz_nodes:
+            leaves_ids = []
+            for tag_or_id_or_node in __twz_nodes:
+                if isinstance(tag_or_id_or_node, ExecNode):
+                    leaves_ids.append(tag_or_id_or_node.id)
+                # TODO: do further validation!
+                elif isinstance(tag_or_id_or_node, (IdentityHash, tuple)):
+                    tag_or_id = tag_or_id_or_node
+
+                    # if leaves_identification is not ExecNode, it can be either
+                    #  1. a Tag
+                    if node := self.tag_node_dict.get(tag_or_id):
+                        leaves_ids.append(node.id)
+                    #  2. or a node id!
+                    elif isinstance(tag_or_id, IdentityHash):
+                        node = self.get_node_by_id(tag_or_id)
+                        leaves_ids.append(node.id)
+                    else:
+                        raise ValueError(f"{tag_or_id_or_node} is not found in the DAG")
+                else:
+                    #
+                    raise TypeError(
+                        "__twz_nodes must be of type ExecNode, "
+                        f"str or tuple identifying the node but provided {tag_or_id_or_node}"
+                    )
+
+        # NOTE: there is a double deep copy, this is the 1st,
+        #  the 2nd happens in DAG.execute(...)
+        modified_node_dict = DAG.deepcopy_non_setup_x_nodes(self.node_dict)
         # NOTE: maybe a better way of coding this is to consider input_ids always a List[] instead of Optional
         if args and self.input_ids:
             # make sure they have the same length
@@ -465,7 +525,7 @@ class DAG:
                 modified_node_dict[node_id].result = val
                 modified_node_dict[node_id].executed = True
 
-        all_node_dicts = self.execute(None, modified_node_dict)
+        all_node_dicts = self.execute(leaves_ids, modified_node_dict)  # type: ignore
 
         if self.return_ids is None:
             returned_values = None
