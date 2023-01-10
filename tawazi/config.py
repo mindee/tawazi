@@ -8,7 +8,7 @@ class Config(BaseSettings):
     RUN_DEBUG_NODES: bool = False
 
     # Logger settings
-    LOGURU_LEVEL: str = "ERROR"
+    LOGURU_LEVEL: str = "PROD"
     LOGURU_BACKTRACE: bool = True
     # Caution: to set to False if used in prod (exposes variable names)
     LOGURU_DIAGNOSE: bool = False

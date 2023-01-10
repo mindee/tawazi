@@ -7,6 +7,7 @@ from tawazi.errors import ErrorStrategy, TawaziBaseException
 from . import node
 from .config import Cfg
 from .node import (
+    ArgExecNode,
     ExecNode,
     IdentityHash,
     LazyExecNode,
@@ -24,6 +25,7 @@ def op(
     is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
     debug: bool = False,
     tag: Optional[Any] = None,
+    setup: bool = False,
 ) -> LazyExecNode:
     """
     Decorate a function to make it an ExecNode. When the decorated function is called, you are actually calling
@@ -39,7 +41,7 @@ def op(
     """
 
     def my_custom_op(_func: Callable[..., Any]) -> "LazyExecNode":
-        lazy_exec_node = LazyExecNode(_func, priority, is_sequential, debug, tag)
+        lazy_exec_node = LazyExecNode(_func, priority, is_sequential, debug, tag, setup)
         functools.update_wrapper(lazy_exec_node, _func)
         return lazy_exec_node
 
@@ -118,9 +120,8 @@ def to_dag(
 
         func_args, func_default_args = get_args_and_default_args(declare_dag_function)
         # non default parameters must be provided!
-        # TODO: transform this into an ExecNode that is special ArgumentExecNode
-        args = [
-            ExecNode(
+        args: List[ExecNode] = [
+            ArgExecNode(
                 id_=f"{declare_dag_function.__qualname__} >>> {arg_name}",
                 # exec_function must be overwridden at the call of the function
                 exec_function=lambda: raise_no_argument_passed_error(
@@ -133,6 +134,7 @@ def to_dag(
 
         args.extend(
             [
+                # TODO: Refactor and make ArgumentExecNode! for args and kwargs!
                 PreComputedExecNode(arg_name, declare_dag_function, arg)
                 for arg_name, arg in func_default_args.items()
             ]
