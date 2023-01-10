@@ -23,6 +23,7 @@ def op(
     priority: int = 0,
     is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
     debug: bool = False,
+    tag: Optional[Any] = None,
 ) -> LazyExecNode:
     """
     Decorate a function to make it an ExecNode. When the decorated function is called, you are actually calling
@@ -38,7 +39,7 @@ def op(
     """
 
     def my_custom_op(_func: Callable[..., Any]) -> "LazyExecNode":
-        lazy_exec_node = LazyExecNode(_func, priority, is_sequential, debug)
+        lazy_exec_node = LazyExecNode(_func, priority, is_sequential, debug, tag)
         functools.update_wrapper(lazy_exec_node, _func)
         return lazy_exec_node
 
