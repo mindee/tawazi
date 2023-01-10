@@ -86,6 +86,7 @@ class ExecNode:
         priority: int = 0,
         is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
         debug: bool = False,
+        tag: Optional[Any] = None,
     ):
         """
         Args:
@@ -110,6 +111,7 @@ class ExecNode:
         self.compound_priority: int = priority
         self.is_sequential = is_sequential
         self.debug = debug
+        self.tag = tag
 
         # a string that identifies the ExecNode.
         # It is either the name of the identifying function or the identifying string id_
@@ -190,6 +192,7 @@ class LazyExecNode(ExecNode):
         priority: int = 0,
         is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
         debug: bool = False,
+        tag: Optional[Any] = None,
     ):
         # TODO: make the parameters non default everywhere but inside the @op decorator
         # TODO: change the id_ of the execNode. Maybe remove it completely
@@ -200,6 +203,7 @@ class LazyExecNode(ExecNode):
             priority=priority,
             is_sequential=is_sequential,
             debug=debug,
+            tag=tag,
         )
 
     def __call__(self, *args: Any, **kwargs: Any) -> "LazyExecNode":

@@ -220,6 +220,16 @@ class DAG:
 
         self._build()
 
+    # getters
+    def get_nodes_by_tag(self, tag: Any) -> List[ExecNode]:
+        nodes = [ex_n for ex_n in self.exec_nodes if ex_n.tag == tag]
+        return nodes
+
+    def get_node_by_id(self, id_: IdentityHash) -> ExecNode:
+        # TODO: ? catch the keyError and
+        #   help the user know the id of the ExecNode by pointing to documentation!?
+        return self.node_dict[id_]
+
     def find_cycle(self) -> Optional[List[Tuple[str, str]]]:
         """
         A DAG doesn't have any dependency cycle.
