@@ -51,6 +51,7 @@ def op(
         return my_custom_op(func)
 
 
+# TODO: delete!!!
 # NOTE: deprecated!!
 def _to_dag(
     declare_dag_function: Optional[Callable[..., Any]] = None,
@@ -109,7 +110,7 @@ def to_dag(
     *,
     max_concurrency: int = 1,
     behavior: ErrorStrategy = ErrorStrategy.strict,
-) -> Callable[..., DAG]:
+) -> DAG:
 
     # TODO: modify this horrible pattern
     with exec_nodes_lock:
