@@ -6,7 +6,7 @@ class Config(BaseSettings):
     # Weather to run the graphs in debug mode or not
     RUN_DEBUG_NODES: bool = False
     # Logger settings
-    LOGURU_LEVEL: str = Field("CRITICAL", env="TAWAZI_LOGGER_LEVEL")
+    LOGURU_LEVEL: str = Field("PROD", env="TAWAZI_LOGGER_LEVEL")
     LOGURU_BACKTRACE: bool = Field(False, env="TAWAZI_LOGGER_BT")
     # Caution: to set to False if used in prod (exposes variable names)
     LOGURU_DIAGNOSE: bool = Field(False, env="TAWAZI_LOGGER_DIAGNOSE")
