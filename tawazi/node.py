@@ -1,9 +1,8 @@
 import inspect
 from copy import deepcopy
-from itertools import chain
 from threading import Lock
 from types import MethodType
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from loguru import logger
 
@@ -16,6 +15,10 @@ from .config import Cfg
 exec_nodes: List["ExecNode"] = []
 exec_nodes_lock = Lock()
 IdentityHash = str
+Tag = Union[str, tuple]  # anything immutable
+
+
+RESERVED_KWARGS = ["__twz_tag"]
 
 
 # TODO: make a helpers module and put this function in it
@@ -77,6 +80,7 @@ class ExecNode:
     """
 
     # todo deprecate calling the init directly!
+    # TODO: remove the default values from the parameters!
     def __init__(
         self,
         id_: IdentityHash,
@@ -87,6 +91,7 @@ class ExecNode:
         is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
         debug: bool = False,
         tag: Optional[Any] = None,
+        setup: bool = False,
     ):
         """
         Args:
@@ -100,24 +105,28 @@ class ExecNode:
              When this ExecNode must be executed, all other nodes are waited to finish before starting execution.
              Defaults to False.
         """
-
+        # TODO: validate attributes using pydantic perhaps!
+        # assign attributes
         self.id = id_
         self.exec_function = exec_function
+        self.priority = priority
+        self.is_sequential = is_sequential
+        self.debug = debug
+        self.tag = tag
+        self.setup = setup
 
         self.args = args or []
         self.kwargs = kwargs or {}
 
-        self.priority: int = priority
-        self.compound_priority: int = priority
-        self.is_sequential = is_sequential
-        self.debug = debug
-        self.tag = tag
+        # assign the base of compound priority
+        self.compound_priority = priority
 
         # a string that identifies the ExecNode.
         # It is either the name of the identifying function or the identifying string id_
         self.__name__ = self.exec_function.__name__ if not isinstance(id_, str) else id_
 
         # todo: remove and make ExecNode immutable ?
+        # TODO: make a subclass of None called NoValueSet
         self.result: Optional[Dict[str, Any]] = None
         # TODO: use the PreComputedExecNode instead ?
         self.executed = False
@@ -127,7 +136,7 @@ class ExecNode:
 
     # TODO: make cached_property ?
     @property
-    def depends_on(self) -> List["ExecNode"]:
+    def dependencies(self) -> List["ExecNode"]:
         # Making the dependencies
         # 1. from args
         deps = self.args.copy()
@@ -164,6 +173,17 @@ class ExecNode:
         logger.debug(f"Finished executing {self.id} with task {self.exec_function}")
         return self.result
 
+    def assign_attr(self, arg_name: str, value: Tag) -> None:
+        # TODO: make a tag setter
+        if arg_name == "__twz_tag":
+            if not isinstance(value, (str, tuple)):
+                raise TypeError(f"tag should be of type {Tag} but {value} provided")
+            self.tag = value
+
+
+class ArgExecNode(ExecNode):
+    pass
+
 
 class PreComputedExecNode(ExecNode):
     # TODO: documentation!!!
@@ -189,10 +209,11 @@ class LazyExecNode(ExecNode):
     def __init__(
         self,
         func: Callable[..., Any],
-        priority: int = 0,
-        is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
-        debug: bool = False,
-        tag: Optional[Any] = None,
+        priority: int,
+        is_sequential: bool,
+        debug: bool,
+        tag: Any,
+        setup: bool,
     ):
         # TODO: make the parameters non default everywhere but inside the @op decorator
         # TODO: change the id_ of the execNode. Maybe remove it completely
@@ -204,8 +225,11 @@ class LazyExecNode(ExecNode):
             is_sequential=is_sequential,
             debug=debug,
             tag=tag,
+            setup=setup,
         )
 
+    # TODO: support tagging an ExecNode using __tawazi_call_tag or smthing like that
+    #  maybe something like __twz_tag might be acceptable ?
     def __call__(self, *args: Any, **kwargs: Any) -> "LazyExecNode":
         """
         Record the dependencies in a global variable to be called later in DAG.
@@ -235,6 +259,9 @@ class LazyExecNode(ExecNode):
             self.args.append(arg)
 
         for arg_name, arg in kwargs.items():
+            if arg_name in RESERVED_KWARGS:
+                self.assign_attr(arg_name, arg)
+                continue
             # encapsulate the argument in PreComputedExecNode
             if not isinstance(arg, ExecNode):
                 arg = PreComputedExecNode(arg_name, self.exec_function, arg)
@@ -242,12 +269,18 @@ class LazyExecNode(ExecNode):
                 exec_nodes.append(arg)
             self.kwargs[arg_name] = arg
 
+        # NOTE: duplicate code!, can be abstracted into a function !?
         # if ExecNode is not a debug node, all its dependencies must not be debug node
-        deps = chain(self.args, self.kwargs.values())
         if not self.debug:
-            for dep in deps:
+            for dep in self.dependencies:
                 if dep.debug:
                     raise TawaziBaseException(f"Non debug node {self} depends on debug node {dep}")
+
+        # if ExecNode is a setup node, all its dependencies should be setup nodes or precalculated nodes Or Argument Nodes
+        if self.setup:
+            for dep in self.dependencies:
+                if not dep.setup and not isinstance(dep, (PreComputedExecNode, ArgExecNode)):
+                    raise TawaziBaseException(f"Non setup node {self} depends on setup node {dep}")
 
         # in case the same function is called twice, it is appended twice!
         # but this won't work correctly because we use the id of the function which is unique!
