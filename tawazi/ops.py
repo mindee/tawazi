@@ -173,4 +173,5 @@ def to_dag(
 
         d.return_ids = return_ids
 
+    functools.update_wrapper(d, declare_dag_function)
     return d
