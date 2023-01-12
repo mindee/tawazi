@@ -8,10 +8,12 @@ from loguru import logger
 from networkx import find_cycle
 from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 
-from .errors import ErrorStrategy
+from .errors import ErrorStrategy, TawaziBaseException
 from .node import ExecNode, IdentityHash, Tag
 
 
+# TODO: find a .pre-commit hook that aligns properly the fstrings
+#   if it doesn't exist... make one! it should take max columns as argument
 # todo remove dependency on DiGraph!
 class DiGraphEx(nx.DiGraph):
     """
@@ -470,41 +472,73 @@ class DAG:
                     wait(futures.values(), return_when=ALL_COMPLETED)
         return node_dict
 
+    def get_leaves_ids(
+        self, twz_nodes: List[Union[Tag, IdentityHash, ExecNode]]
+    ) -> List[IdentityHash]:
+
+        leaves_ids = []
+        for tag_or_id_or_node in twz_nodes:
+            if isinstance(tag_or_id_or_node, ExecNode):
+                leaves_ids.append(tag_or_id_or_node.id)
+            # TODO: do further validation!
+            elif isinstance(tag_or_id_or_node, (IdentityHash, tuple)):
+                tag_or_id = tag_or_id_or_node
+
+                # if leaves_identification is not ExecNode, it can be either
+                #  1. a Tag
+                if node := self.tag_node_dict.get(tag_or_id):
+                    leaves_ids.append(node.id)
+                #  2. or a node id!
+                elif isinstance(tag_or_id, IdentityHash):
+                    node = self.get_node_by_id(tag_or_id)
+                    leaves_ids.append(node.id)
+                else:
+                    raise ValueError(f"{tag_or_id_or_node} is not found in the DAG")
+            else:
+
+                raise TypeError(
+                    "twz_nodes must be of type ExecNode, "
+                    f"str or tuple identifying the node but provided {tag_or_id_or_node}"
+                )
+        if len(twz_nodes) != len(leaves_ids):
+            raise TawaziBaseException(
+                "something went wrong because of " f"providing {twz_nodes} as subgraph nodes to run"
+            )
+        return leaves_ids
+
+    # TODO: setup nodes should not have dependencies that pass in through the pipeline parameters!
+    #  raise an error in this case!!
+    def setup(self, twz_nodes: Optional[List[Union[Tag, IdentityHash, ExecNode]]] = None) -> None:
+        # no calculation ExecNode (non setup ExecNode) should run... otherwise there is an error in implementation
+        # NOTE: do not copy the setup nodes because we want them to be modified per DAG instance!
+        all_setup_nodes = {nd.id: nd for nd in self.exec_nodes if nd.setup}
+
+        # all the graph's leaves ids or the leave ids of the provided nodes
+        if twz_nodes is None:
+            setup_leaves_ids = list(all_setup_nodes.keys())
+        else:
+            # the leaves_ids that the user wants to execute
+            #  however they might contain non setup nodes... so we should extract all the nodes ids
+            #  that must be run in order to run the twz_nodes ExecNodes
+            #  after wards we can remove the non setup nodes
+            leaves_ids = self.get_leaves_ids(twz_nodes)
+            graph = subgraph(self.graph_ids, leaves_ids)  # type: ignore
+
+            # maybe the user provided a node by argument that is not a setup node!
+            setup_leaves_ids = [id_ for id_ in graph.nodes if id_ in all_setup_nodes]
+            # NOTE: what happens if the user provides a debug node ? this is weird and should probably be disallowed
+
+        self.execute(setup_leaves_ids, all_setup_nodes)  # type: ignore
+
     # TODO: support passing in a subset of nodes to execute via kwargs!
-    #  for example: __twz_nodes: List[ExecNodes] | List[IdHash]
+    #  for example: twz_nodes: List[ExecNodes] | List[IdHash]
 
     # TODO: List[Any] refers to tag Type!! Make a special Type for it
-    def __call__(self, *args: Any, **kwargs: Dict[str, Any]) -> Any:
+    def __call__(
+        self, *args: Any, twz_nodes: Optional[List[Union[Tag, IdentityHash, ExecNode]]] = None
+    ) -> Any:
 
-        __twz_nodes: Optional[List[Union[Tag, IdentityHash, ExecNode]]] = kwargs.get(
-            "__twz_nodes"
-        )  # type:ignore
-        leaves_ids = None
-        if __twz_nodes:
-            leaves_ids = []
-            for tag_or_id_or_node in __twz_nodes:
-                if isinstance(tag_or_id_or_node, ExecNode):
-                    leaves_ids.append(tag_or_id_or_node.id)
-                # TODO: do further validation!
-                elif isinstance(tag_or_id_or_node, (IdentityHash, tuple)):
-                    tag_or_id = tag_or_id_or_node
-
-                    # if leaves_identification is not ExecNode, it can be either
-                    #  1. a Tag
-                    if node := self.tag_node_dict.get(tag_or_id):
-                        leaves_ids.append(node.id)
-                    #  2. or a node id!
-                    elif isinstance(tag_or_id, IdentityHash):
-                        node = self.get_node_by_id(tag_or_id)
-                        leaves_ids.append(node.id)
-                    else:
-                        raise ValueError(f"{tag_or_id_or_node} is not found in the DAG")
-                else:
-                    #
-                    raise TypeError(
-                        "__twz_nodes must be of type ExecNode, "
-                        f"str or tuple identifying the node but provided {tag_or_id_or_node}"
-                    )
+        leaves_ids = None if not twz_nodes else self.get_leaves_ids(twz_nodes)
 
         # NOTE: there is a double deep copy, this is the 1st,
         #  the 2nd happens in DAG.execute(...)

@@ -155,7 +155,7 @@ def test_dependencies_subgraph():
     def pipe_setup_deps():
         sop1_r = setup_op1()
         sop2_r = setup_op2(sop1_r)
-        op1_r = op1(sop1_r, __twz_tag="twinkle toes")
+        op1_r = op1(sop1_r, twz_tag="twinkle toes")
         op2_r = op2(sop2_r)
         op12_r = op12(op1_r, op2_r)
         return op12_r
@@ -166,7 +166,7 @@ def test_dependencies_subgraph():
     pytest.op2 = 0
     pytest.op12 = 0
 
-    res = pipe_setup_deps(__twz_nodes=["twinkle toes"])
+    res = pipe_setup_deps(twz_nodes=["twinkle toes"])
     assert res is None
     assert pytest.setup_op1 == 1
     assert pytest.setup_op2 == 0
@@ -174,7 +174,7 @@ def test_dependencies_subgraph():
     assert pytest.op2 == 0
     assert pytest.op12 == 0
 
-    res = pipe_setup_deps(__twz_nodes=["twinkle toes"])
+    res = pipe_setup_deps(twz_nodes=["twinkle toes"])
     assert res is None
     assert pytest.setup_op1 == 1
     assert pytest.setup_op2 == 0
@@ -183,4 +183,109 @@ def test_dependencies_subgraph():
     assert pytest.op12 == 0
 
 
-test_dependencies_subgraph()
+def test_pipeline_setup_method():
+    def clean():
+        pytest.setup_op1 = 0
+        pytest.setup_op2 = 0
+        pytest.op1 = 0
+        pytest.op2 = 0
+        pytest.op12 = 0
+
+    @op(setup=True)
+    def setup_op1():
+        pytest.setup_op1 += 1
+        return "sop1"
+
+    @op(setup=True)
+    def setup_op2(op1_result):
+        pytest.setup_op2 += 1
+        return "sop2"
+
+    @op
+    def op1(sop1_result):
+        pytest.op1 += 1
+        return "op1"
+
+    @op
+    def op2(sop2_result):
+        pytest.op2 += 1
+        return "op2"
+
+    @op
+    def op12(op1_result, op2_result):
+        pytest.op12 += 1
+        return "op12"
+
+    @to_dag
+    def pipe_setup_deps():
+        sop1_r = setup_op1(twz_tag="setup1")
+        sop2_r = setup_op2(sop1_r, twz_tag="setup2")
+        op1_r = op1(sop1_r, twz_tag="twinkle toes")
+        op2_r = op2(sop2_r)
+        op12_r = op12(op1_r, op2_r)
+        return op12_r
+
+    # test runninig setup without arguments
+    pipe = deepcopy(pipe_setup_deps)
+    clean()
+    pipe.setup()
+    assert pytest.setup_op1 == 1
+    assert pytest.setup_op2 == 1
+    assert pytest.op1 == 0
+    assert pytest.op2 == 0
+    assert pytest.op12 == 0
+    pipe()
+
+    assert pytest.setup_op1 == 1
+    assert pytest.setup_op2 == 1
+    assert pytest.op1 == 1
+    assert pytest.op2 == 1
+    assert pytest.op12 == 1
+
+    # test running setup targetting a setup node
+    pipe = deepcopy(pipe_setup_deps)
+    clean()
+    pipe.setup(twz_nodes=["setup1"])
+    assert pytest.setup_op1 == 1
+    assert pytest.setup_op2 == 0
+    assert pytest.op1 == 0
+    assert pytest.op2 == 0
+    assert pytest.op12 == 0
+    pipe()
+    assert pytest.setup_op1 == 1
+    assert pytest.setup_op2 == 1
+    assert pytest.op1 == 1
+    assert pytest.op2 == 1
+    assert pytest.op12 == 1
+
+    # test running setup targeting a dependencies of setup nodes
+    pipe = deepcopy(pipe_setup_deps)
+    clean()
+    pipe.setup(twz_nodes=["setup2"])
+    assert pytest.setup_op1 == 1
+    assert pytest.setup_op2 == 1
+    assert pytest.op1 == 0
+    assert pytest.op2 == 0
+    assert pytest.op12 == 0
+    pipe()
+    assert pytest.setup_op1 == 1
+    assert pytest.setup_op2 == 1
+    assert pytest.op1 == 1
+    assert pytest.op2 == 1
+    assert pytest.op12 == 1
+
+    # test running setup targetting a non setup node
+    pipe = deepcopy(pipe_setup_deps)
+    clean()
+    pipe.setup(twz_nodes=["twinkle toes"])
+    assert pytest.setup_op1 == 1
+    assert pytest.setup_op2 == 0
+    assert pytest.op1 == 0
+    assert pytest.op2 == 0
+    assert pytest.op12 == 0
+    pipe(twz_nodes=["twinkle toes"])
+    assert pytest.setup_op1 == 1
+    assert pytest.setup_op2 == 0
+    assert pytest.op1 == 1
+    assert pytest.op2 == 0
+    assert pytest.op12 == 0
