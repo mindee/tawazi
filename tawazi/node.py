@@ -17,8 +17,9 @@ exec_nodes_lock = Lock()
 IdentityHash = str
 Tag = Union[str, tuple]  # anything immutable
 
+ARG_NAME_TAG = "twz_tag"
 
-RESERVED_KWARGS = ["__twz_tag"]
+RESERVED_KWARGS = [ARG_NAME_TAG]
 
 
 # TODO: make a helpers module and put this function in it
@@ -175,7 +176,7 @@ class ExecNode:
 
     def assign_attr(self, arg_name: str, value: Tag) -> None:
         # TODO: make a tag setter
-        if arg_name == "__twz_tag":
+        if arg_name == ARG_NAME_TAG:
             if not isinstance(value, (str, tuple)):
                 raise TypeError(f"tag should be of type {Tag} but {value} provided")
             self.tag = value
@@ -229,7 +230,7 @@ class LazyExecNode(ExecNode):
         )
 
     # TODO: support tagging an ExecNode using __tawazi_call_tag or smthing like that
-    #  maybe something like __twz_tag might be acceptable ?
+    #  maybe something like twz_tag might be acceptable ?
     def __call__(self, *args: Any, **kwargs: Any) -> "LazyExecNode":
         """
         Record the dependencies in a global variable to be called later in DAG.
