@@ -39,6 +39,11 @@ def op(
     Returns:
         LazyExecNode
     """
+    # TODO: maybe setup nodes are not threadsafe!
+    #   because they are shared between all threads!
+    #   I mean shared per pipeline… so if you execute the same pipeline in multiple threads,
+    #   it is not thread safe!
+    # so we should execute it using a thread  safety of 1 !!
 
     def my_custom_op(_func: Callable[..., Any]) -> "LazyExecNode":
         lazy_exec_node = LazyExecNode(_func, priority, is_sequential, debug, tag, setup)
@@ -135,7 +140,9 @@ def to_dag(
         args.extend(
             [
                 # TODO: Refactor and make ArgumentExecNode! for args and kwargs!
-                PreComputedExecNode(arg_name, declare_dag_function, arg)
+                PreComputedExecNode(
+                    f"{declare_dag_function.__qualname__} >>> {arg_name}", declare_dag_function, arg
+                )
                 for arg_name, arg in func_default_args.items()
             ]
         )
