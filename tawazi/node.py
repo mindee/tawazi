@@ -116,8 +116,8 @@ class ExecNode:
         self.tag = tag
         self.setup = setup
 
-        self.args = args or []
-        self.kwargs = kwargs or {}
+        self.args: List[ExecNode] = args or []
+        self.kwargs: Dict[IdentityHash, ExecNode] = kwargs or {}
 
         # assign the base of compound priority
         self.compound_priority = priority
@@ -188,7 +188,7 @@ class ArgExecNode(ExecNode):
 
 class PreComputedExecNode(ExecNode):
     # TODO: documentation!!!
-    def __init__(self, argument_name: str, func: Callable[..., Any], value: Any):
+    def __init__(self, id: str, func: Callable[..., Any], value: Any):
         """_summary_
 
         Args:
@@ -196,7 +196,7 @@ class PreComputedExecNode(ExecNode):
             func (Callable[..., Any]): the function which contains the default argument
             value (Any): _description_
         """
-        super().__init__(id_=f"{func.__qualname__} >>> {argument_name}", is_sequential=False)
+        super().__init__(id_=id, is_sequential=False)
 
         self.result = value
         self.executed = True
@@ -248,40 +248,57 @@ class LazyExecNode(ExecNode):
             # NOTE: is this the best idea ? what if
             return self
 
-        self.args: List[ExecNode] = []
-        self.kwargs: Dict[IdentityHash, ExecNode] = {}
+        # TODO: maybe change the Type of objects created.
+        #  for example: have a LazyExecNode.__call(...) return an ExecNode instead of a deepcopy
+        # "<" is a separator for the number of usage
+        count_usages = sum(ex_n.id.split("<<")[0] == self.id for ex_n in exec_nodes)
+        self_copy = deepcopy(self)
+        if count_usages > 0:
+            self_copy.id = f"{self.id}<<{count_usages}>>"
+
+        # these assignements are not necessary! because self_copy is deeply copied
+        self_copy.args = []
+        self_copy.kwargs = {}
         for i, arg in enumerate(args):
             if not isinstance(arg, ExecNode):
                 # NOTE: maybe use the name of the argument instead ?
-                arg = PreComputedExecNode(f"{ordinal(i)} argument", self.exec_function, arg)
+                arg = PreComputedExecNode(
+                    f"{self_copy.id} >>> {ordinal(i)} argument", self_copy.exec_function, arg
+                )
                 # Create a new ExecNode
                 exec_nodes.append(arg)
 
-            self.args.append(arg)
+            self_copy.args.append(arg)
 
         for arg_name, arg in kwargs.items():
             if arg_name in RESERVED_KWARGS:
-                self.assign_attr(arg_name, arg)
+                self_copy.assign_attr(arg_name, arg)
                 continue
             # encapsulate the argument in PreComputedExecNode
             if not isinstance(arg, ExecNode):
-                arg = PreComputedExecNode(arg_name, self.exec_function, arg)
+                arg = PreComputedExecNode(
+                    f"{self_copy.id} >>> {arg_name}", self_copy.exec_function, arg
+                )
                 # Create a new ExecNode
                 exec_nodes.append(arg)
-            self.kwargs[arg_name] = arg
+            self_copy.kwargs[arg_name] = arg
 
         # NOTE: duplicate code!, can be abstracted into a function !?
         # if ExecNode is not a debug node, all its dependencies must not be debug node
-        if not self.debug:
-            for dep in self.dependencies:
+        if not self_copy.debug:
+            for dep in self_copy.dependencies:
                 if dep.debug:
-                    raise TawaziBaseException(f"Non debug node {self} depends on debug node {dep}")
+                    raise TawaziBaseException(
+                        f"Non debug node {self_copy} depends on debug node {dep}"
+                    )
 
         # if ExecNode is a setup node, all its dependencies should be setup nodes or precalculated nodes Or Argument Nodes
-        if self.setup:
-            for dep in self.dependencies:
+        if self_copy.setup:
+            for dep in self_copy.dependencies:
                 if not dep.setup and not isinstance(dep, (PreComputedExecNode, ArgExecNode)):
-                    raise TawaziBaseException(f"Non setup node {self} depends on setup node {dep}")
+                    raise TawaziBaseException(
+                        f"Non setup node {self_copy} depends on setup node {dep}"
+                    )
 
         # in case the same function is called twice, it is appended twice!
         # but this won't work correctly because we use the id of the function which is unique!
@@ -290,14 +307,6 @@ class LazyExecNode(ExecNode):
         #     raise UnvalidExecNodeCall(
         #         "Invoking the same function twice is not allowed in the same DAG"
         #     )
-
-        # TODO: maybe change the Type of objects created.
-        #  for example: have a LazyExecNode.__call(...) return an ExecNode instead of a deepcopy
-        # "<" is a separator for the number of usage
-        count_usages = sum(id_.split("<")[0] == self.id for id_ in (ex_n.id for ex_n in exec_nodes))
-        self_copy = deepcopy(self)
-        if count_usages > 0:
-            self_copy.id = f"{self.id}<{count_usages}>"
 
         exec_nodes.append(self_copy)
         return self_copy

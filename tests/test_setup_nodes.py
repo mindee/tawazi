@@ -1,5 +1,6 @@
 # type: ignore
 from copy import deepcopy
+from functools import reduce
 
 import pytest
 
@@ -289,3 +290,89 @@ def test_pipeline_setup_method():
     assert pytest.op1 == 1
     assert pytest.op2 == 0
     assert pytest.op12 == 0
+
+
+def test_setup_node_cst_input():
+    @op(setup=True)
+    def setop(k: int = 1234):
+        pytest.setop += 1
+        return k + 1
+
+    @to_dag
+    def pipe():
+        return setop()
+
+    @to_dag
+    def pipe2():
+        return setop(1)
+
+    pytest.setop = 0
+    r = pipe()
+    assert pytest.setop == 1
+    assert r == 1235
+    r = pipe()
+    assert pytest.setop == 1
+    assert r == 1235
+
+    r2 = pipe2()
+    assert pytest.setop == 2
+    assert r2 == 2
+    r2 = pipe2()
+    assert pytest.setop == 2
+    assert r2 == 2
+
+
+def test_setup_no_default_arg():
+    @op(setup=True)
+    def setup(k: int):
+        pytest.setop += 1
+        return k + 1
+
+    @to_dag
+    def pipe():
+        return setup(10)
+
+    pytest.setop = 0
+    r = pipe()
+    assert r == 11
+    assert pytest.setop == 1
+    r = pipe()
+    assert r == 11
+    assert pytest.setop == 1
+
+
+def test_setup_multiple_usages():
+    @op(setup=True)
+    def get_model(mid: str):
+        pytest.get_model_setup += 1
+        return mid
+
+    @op
+    def sumop(*mids):
+        return reduce(str.__add__, mids)
+
+    @to_dag
+    def pipe():
+        mid1 = get_model("a")
+        mid2 = get_model("b")
+        mid3 = get_model("c")
+        mid4 = get_model("d")
+
+        return sumop(mid1, mid2, mid3, mid4)
+
+    pipe2 = deepcopy(pipe)
+
+    pytest.get_model_setup = 0
+    r = pipe()
+    assert r == "abcd"
+    assert pytest.get_model_setup == 4
+    r = pipe()
+    assert r == "abcd"
+    assert pytest.get_model_setup == 4
+
+    pytest.get_model_setup = 0
+    pipe2.setup()
+    assert pytest.get_model_setup == 4
+    r = pipe2()
+    assert r == "abcd"
+    assert pytest.get_model_setup == 4
