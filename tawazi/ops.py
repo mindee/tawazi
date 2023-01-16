@@ -2,17 +2,16 @@ import functools
 from typing import Any, Callable, List, Optional, Union
 
 from tawazi import DAG
-from tawazi.errors import ErrorStrategy, TawaziBaseException
+from tawazi.errors import ErrorStrategy
 
 from . import node
 from .config import Cfg
 from .node import (
-    ARG_NAME_SEP,
     ArgExecNode,
     ExecNode,
     IdentityHash,
     LazyExecNode,
-    PreComputedExecNode,
+    PreCompArgExecNode,
     exec_nodes_lock,
     get_args_and_default_args,
 )
@@ -107,12 +106,6 @@ def _to_dag(
         return intermediate_wrapper(declare_dag_function)
 
 
-def raise_no_argument_passed_error(pipe: Callable[..., Any], arg_name: str) -> None:
-    raise TawaziBaseException(
-        f"Argument {arg_name} wasn't passed for the dag function {pipe.__qualname__}"
-    )
-
-
 def to_dag(
     declare_dag_function: Callable[..., Any],
     *,
@@ -144,25 +137,12 @@ def to_dag(
         func_args, func_default_args = get_args_and_default_args(declare_dag_function)
         # non default parameters must be provided!
         args: List[ExecNode] = [
-            ArgExecNode(
-                id_=f"{declare_dag_function.__qualname__}{ARG_NAME_SEP}{arg_name}",
-                # exec_function must be overwridden at the call of the function
-                exec_function=lambda: raise_no_argument_passed_error(
-                    declare_dag_function, arg_name
-                ),
-                is_sequential=False,
-            )
-            for arg_name in func_args
+            ArgExecNode(declare_dag_function, arg_name) for arg_name in func_args
         ]
 
         args.extend(
             [
-                # TODO: Refactor and make ArgumentExecNode! for args and kwargs!
-                PreComputedExecNode(
-                    f"{declare_dag_function.__qualname__}{ARG_NAME_SEP}{arg_name}",
-                    declare_dag_function,
-                    arg,
-                )
+                PreCompArgExecNode(declare_dag_function, arg_name, arg)
                 for arg_name, arg in func_default_args.items()
             ]
         )
