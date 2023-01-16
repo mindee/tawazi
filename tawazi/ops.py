@@ -7,6 +7,7 @@ from tawazi.errors import ErrorStrategy, TawaziBaseException
 from . import node
 from .config import Cfg
 from .node import (
+    ARG_NAME_SEP,
     ArgExecNode,
     ExecNode,
     IdentityHash,
@@ -118,16 +119,33 @@ def to_dag(
     max_concurrency: int = 1,
     behavior: ErrorStrategy = ErrorStrategy.strict,
 ) -> DAG:
-
-    # TODO: modify this horrible pattern
+    """
+    Transform the declared ops into a DAG that can be executed by tawazi's scheduler.
+    The same DAG can be executed multiple times.
+    Note: to_dag is thread safe because it uses an internal lock.
+        If you need to construct lots of DAGs in multiple threads,
+        it is best to construct your dag once and then use it as much as you like.
+    Please check the example in the README for a guide to the usage.
+    Args:
+        declare_dag_function: a function that contains the execution of the DAG.
+        Currently Only @op decorated functions can be used inside the decorated function (i.e. declare_dag_function).
+        However, you can use some simple python code to generate constants.
+        max_concurrency: the maximum number of concurrent threads to execute in parallel.
+        behavior: the behavior of the DAG when an error occurs during the execution of a function (ExecNode).
+    Returns: a DAG instance
+    """
+    # 0. Protect against multiple threads declaring many DAGs at the same time
     with exec_nodes_lock:
+        # 1. node.exec_nodes contains all the ExecNodes that concern the DAG being built at the moment.
+        #      make sure it is empty
         node.exec_nodes = []
 
+        # 2. make ExecNodes corresponding to the arguments of the ExecNode
         func_args, func_default_args = get_args_and_default_args(declare_dag_function)
         # non default parameters must be provided!
         args: List[ExecNode] = [
             ArgExecNode(
-                id_=f"{declare_dag_function.__qualname__} >>> {arg_name}",
+                id_=f"{declare_dag_function.__qualname__}{ARG_NAME_SEP}{arg_name}",
                 # exec_function must be overwridden at the call of the function
                 exec_function=lambda: raise_no_argument_passed_error(
                     declare_dag_function, arg_name
@@ -141,7 +159,9 @@ def to_dag(
             [
                 # TODO: Refactor and make ArgumentExecNode! for args and kwargs!
                 PreComputedExecNode(
-                    f"{declare_dag_function.__qualname__} >>> {arg_name}", declare_dag_function, arg
+                    f"{declare_dag_function.__qualname__}{ARG_NAME_SEP}{arg_name}",
+                    declare_dag_function,
+                    arg,
                 )
                 for arg_name, arg in func_default_args.items()
             ]
