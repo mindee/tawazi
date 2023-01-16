@@ -9,7 +9,7 @@ from networkx import find_cycle
 from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 
 from .errors import ErrorStrategy, TawaziBaseException
-from .node import ExecNode, IdentityHash, PreComputedExecNode, Tag
+from .node import ExecNode, IdentityHash, PreCompArgExecNode, Tag
 
 
 # TODO: find a .pre-commit hook that aligns properly the fstrings
@@ -512,7 +512,7 @@ class DAG:
         # no calculation ExecNode (non setup ExecNode) should run... otherwise there is an error in implementation
         # NOTE: do not copy the setup nodes because we want them to be modified per DAG instance!
         all_setup_nodes = {
-            nd.id: nd for nd in self.exec_nodes if nd.setup or isinstance(nd, PreComputedExecNode)
+            nd.id: nd for nd in self.exec_nodes if nd.setup or isinstance(nd, PreCompArgExecNode)
         }
 
         # all the graph's leaves ids or the leave ids of the provided nodes
