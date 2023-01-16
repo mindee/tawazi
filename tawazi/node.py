@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from loguru import logger
 
-from tawazi.errors import TawaziBaseException, UnvalidExecNodeCall
+from tawazi.errors import TawaziBaseException, UnvalidExecNodeCall, raise_arg_exc
 
 from .config import Cfg
 
@@ -21,6 +21,10 @@ ARG_NAME_TAG = "twz_tag"
 
 RESERVED_KWARGS = [ARG_NAME_TAG]
 ARG_NAME_SEP = ">>>"
+
+
+class NoVal:
+    ...
 
 
 # TODO: make a helpers module and put this function in it
@@ -188,21 +192,69 @@ class ExecNode:
 
 
 class ArgExecNode(ExecNode):
-    pass
-
-
-class PreComputedExecNode(ExecNode):
-    # TODO: documentation!!!
-    def __init__(self, id: str, func: Callable[..., Any], value: Any):
-        """_summary_
+    def __init__(
+        self, xn_or_func: Union[ExecNode, Callable[..., Any]], name_or_order: Union[str, int]
+    ):
+        """
+        ExecNode corresponding to an Argument.
+        Every Argument is Attached to a Function or an ExecNode (especially a LazyExecNode)
+        If a value is not passed to the function call / ExecNode,
+        it will raise an error similar to Python's Error
 
         Args:
-            argument_name (str): the name of the argument passed
-            func (Callable[..., Any]): the function which contains the default argument
-            value (Any): _description_
-        """
-        super().__init__(id_=id, is_sequential=False)
+            xn_or_func (Union[ExecNode, Callable[..., Any]]): The ExecNode or function that this Argument is rattached to
+            name_or_order (Union[str, int]): Argument name or order in the calling function.
+              For example Python's builtin sorted function takes 3 arguments (iterable, key, reverse).
+                1. If called like this: sorted([1,2,3]) then [1,2,3] will be of type ArgExecNode with an order=0
+                2. If called like this: sorted(iterable=[4,5,6]) then [4,5,6] will be of type ArgExecNode with a name="iterable"
 
+        Raises:
+            TawaziArgumentException: if this argument is not provided during the Attached ExecNode usage
+            TypeError: if type parameter is passed (Internal)
+        """
+        if isinstance(xn_or_func, ExecNode):
+            base_id = xn_or_func.id
+            func = xn_or_func.exec_function
+        elif isinstance(xn_or_func, Callable):  # type: ignore
+            base_id = xn_or_func.__qualname__
+            func = xn_or_func
+        else:
+            raise TypeError("ArgExecNode can only be attached to a LazyExecNode or a Callable")
+
+        if isinstance(name_or_order, str):
+            suffix = name_or_order
+        elif isinstance(name_or_order, int):
+            suffix = f"{ordinal(name_or_order)} argument"
+        else:
+            raise TypeError(
+                f"ArgExecNode needs the argument name (str) or order of call (int), "
+                f"but {name_or_order} of type {type(name_or_order)} is provided"
+            )
+
+        id_ = f"{base_id}{ARG_NAME_SEP}{suffix}"
+
+        # declare a local function that will raise an error in the scheduler if
+        # the user doesn't pass in This ArgExecNode as argument to the Attached LazyExecNode
+        def raise_err() -> None:
+            raise_arg_exc(func, suffix)
+
+        super().__init__(id_=id_, exec_function=raise_err, is_sequential=False)
+
+
+class PreCompArgExecNode(ArgExecNode):
+    def __init__(
+        self,
+        xn_or_func: Union[ExecNode, Callable[..., Any]],
+        name_or_order: Union[str, int],
+        value: Any,
+    ):
+        """An Extension to ArgExecNode to support default arguments and constant provided arguments
+        Args:
+            xn_or_func (Union[ExecNode, Callable[..., Any]]): See ArgExecNode
+            name_or_order (Union[str, int]): See ArgExecNode
+            value (Any): The preassigned value to the corresponding Argument.
+        """
+        super().__init__(xn_or_func, name_or_order)
         self.result = value
         self.executed = True
 
@@ -264,14 +316,14 @@ class LazyExecNode(ExecNode):
         # these assignements are not necessary! because self_copy is deeply copied
         self_copy.args = []
         self_copy.kwargs = {}
+        # args can contain either ExecNodes or non ExecNode values
+        #  like strings, constants etc.
         for i, arg in enumerate(args):
             if not isinstance(arg, ExecNode):
                 # NOTE: maybe use the name of the argument instead ?
-                arg = PreComputedExecNode(
-                    f"{self_copy.id}{ARG_NAME_SEP}{ordinal(i)} argument",
-                    self_copy.exec_function,
-                    arg,
-                )
+                # arg here is definetly not a return value of a LazyExecNode!
+                # it must be a default value for example
+                arg = PreCompArgExecNode(self_copy, i, arg)
                 # Create a new ExecNode
                 exec_nodes.append(arg)
 
@@ -283,9 +335,7 @@ class LazyExecNode(ExecNode):
                 continue
             # encapsulate the argument in PreComputedExecNode
             if not isinstance(arg, ExecNode):
-                arg = PreComputedExecNode(
-                    f"{self_copy.id}{ARG_NAME_SEP}{arg_name}", self_copy.exec_function, arg
-                )
+                arg = PreCompArgExecNode(self_copy, arg_name, arg)
                 # Create a new ExecNode
                 exec_nodes.append(arg)
             self_copy.kwargs[arg_name] = arg
@@ -302,7 +352,7 @@ class LazyExecNode(ExecNode):
         # if ExecNode is a setup node, all its dependencies should be setup nodes or precalculated nodes Or Argument Nodes
         if self_copy.setup:
             for dep in self_copy.dependencies:
-                if not dep.setup and not isinstance(dep, (PreComputedExecNode, ArgExecNode)):
+                if not dep.setup and not isinstance(dep, (PreCompArgExecNode, ArgExecNode)):
                     raise TawaziBaseException(
                         f"Non setup node {self_copy} depends on setup node {dep}"
                     )
