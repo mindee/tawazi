@@ -20,6 +20,7 @@ Tag = Union[str, tuple]  # anything immutable
 ARG_NAME_TAG = "twz_tag"
 
 RESERVED_KWARGS = [ARG_NAME_TAG]
+ARG_NAME_SEP = ">>>"
 
 
 # TODO: make a helpers module and put this function in it
@@ -56,12 +57,16 @@ def ordinal(numb: int) -> str:
 # TODO: change the name!!
 def get_args_and_default_args(func: Callable[..., Any]) -> Tuple[List[str], Dict[str, Any]]:
     """
-    retrieves the default arguments of a function
+    Retrieves the arguments names and the default arguments of a function.
     Args:
-        func: the function with unknown defaults
+        func: the target function
 
     Returns:
-        the mapping between the arguments and their default value
+        A Tuple containing a List of argument names of non default arguments,
+         and the mapping between the arguments and their default value for default arguments
+    >>> def f(a1, a2, *args, d1=123, d2=None): pass
+    >>> get_args_and_default_args(f)
+    >>> (['a1', 'a2', 'args'], {'d1': 123, 'd2': None})
     """
     signature = inspect.signature(func)
     args = []
@@ -263,7 +268,9 @@ class LazyExecNode(ExecNode):
             if not isinstance(arg, ExecNode):
                 # NOTE: maybe use the name of the argument instead ?
                 arg = PreComputedExecNode(
-                    f"{self_copy.id} >>> {ordinal(i)} argument", self_copy.exec_function, arg
+                    f"{self_copy.id}{ARG_NAME_SEP}{ordinal(i)} argument",
+                    self_copy.exec_function,
+                    arg,
                 )
                 # Create a new ExecNode
                 exec_nodes.append(arg)
@@ -277,7 +284,7 @@ class LazyExecNode(ExecNode):
             # encapsulate the argument in PreComputedExecNode
             if not isinstance(arg, ExecNode):
                 arg = PreComputedExecNode(
-                    f"{self_copy.id} >>> {arg_name}", self_copy.exec_function, arg
+                    f"{self_copy.id}{ARG_NAME_SEP}{arg_name}", self_copy.exec_function, arg
                 )
                 # Create a new ExecNode
                 exec_nodes.append(arg)
