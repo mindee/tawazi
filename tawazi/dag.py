@@ -195,6 +195,8 @@ class DAG:
 
         # ExecNodes can be shared between Graphs, their call signatures might also be different
         self.exec_nodes = deepcopy(exec_nodes)
+        # TODO: is this necessary ?? I don't think so because we already deepcopy every LazyExecNode call
+        #  However we don't deep copy the arguments and the kwargs, so maybe just deepcopy the Args and and pass them
 
         self.max_concurrency = int(max_concurrency)
         assert max_concurrency >= 1, "Invalid maximum number of threads! Must be a positive integer"
