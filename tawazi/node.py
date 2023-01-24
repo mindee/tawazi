@@ -193,7 +193,10 @@ class ExecNode:
 
 class ArgExecNode(ExecNode):
     def __init__(
-        self, xn_or_func: Union[ExecNode, Callable[..., Any]], name_or_order: Union[str, int]
+        self,
+        xn_or_func: Union[ExecNode, Callable[..., Any]],
+        name_or_order: Union[str, int],
+        value: Any = NoVal,
     ):
         """
         ExecNode corresponding to an Argument.
@@ -207,6 +210,7 @@ class ArgExecNode(ExecNode):
               For example Python's builtin sorted function takes 3 arguments (iterable, key, reverse).
                 1. If called like this: sorted([1,2,3]) then [1,2,3] will be of type ArgExecNode with an order=0
                 2. If called like this: sorted(iterable=[4,5,6]) then [4,5,6] will be of type ArgExecNode with a name="iterable"
+            value (Any): The preassigned value to the corresponding Argument.
 
         Raises:
             TawaziArgumentException: if this argument is not provided during the Attached ExecNode usage
@@ -240,23 +244,9 @@ class ArgExecNode(ExecNode):
 
         super().__init__(id_=id_, exec_function=raise_err, is_sequential=False)
 
-
-class PreCompArgExecNode(ArgExecNode):
-    def __init__(
-        self,
-        xn_or_func: Union[ExecNode, Callable[..., Any]],
-        name_or_order: Union[str, int],
-        value: Any,
-    ):
-        """An Extension to ArgExecNode to support default arguments and constant provided arguments
-        Args:
-            xn_or_func (Union[ExecNode, Callable[..., Any]]): See ArgExecNode
-            name_or_order (Union[str, int]): See ArgExecNode
-            value (Any): The preassigned value to the corresponding Argument.
-        """
-        super().__init__(xn_or_func, name_or_order)
-        self.result = value
-        self.executed = True
+        if value is not NoVal:
+            self.result = value
+            self.executed = True
 
 
 class LazyExecNode(ExecNode):
@@ -323,7 +313,7 @@ class LazyExecNode(ExecNode):
                 # NOTE: maybe use the name of the argument instead ?
                 # arg here is definetly not a return value of a LazyExecNode!
                 # it must be a default value for example
-                arg = PreCompArgExecNode(self_copy, i, arg)
+                arg = ArgExecNode(self_copy, i, arg)
                 # Create a new ExecNode
                 exec_nodes.append(arg)
 
@@ -335,7 +325,7 @@ class LazyExecNode(ExecNode):
                 continue
             # encapsulate the argument in PreComputedExecNode
             if not isinstance(arg, ExecNode):
-                arg = PreCompArgExecNode(self_copy, arg_name, arg)
+                arg = ArgExecNode(self_copy, arg_name, arg)
                 # Create a new ExecNode
                 exec_nodes.append(arg)
             self_copy.kwargs[arg_name] = arg
@@ -352,7 +342,7 @@ class LazyExecNode(ExecNode):
         # if ExecNode is a setup node, all its dependencies should be setup nodes or precalculated nodes Or Argument Nodes
         if self_copy.setup:
             for dep in self_copy.dependencies:
-                if not dep.setup and not isinstance(dep, (PreCompArgExecNode, ArgExecNode)):
+                if not dep.setup and not isinstance(dep, ArgExecNode):
                     raise TawaziBaseException(
                         f"Non setup node {self_copy} depends on setup node {dep}"
                     )
