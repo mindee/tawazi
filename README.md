@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
   t0 = time()
   # executing the dag takes a single line of code
-  deps_describer().execute()
+  deps_describer()
   execution_time = time() - t0
   assert execution_time < 1.5
   print(f"Graph execution took {execution_time:.2f} seconds")
@@ -105,27 +105,23 @@ def c(a, arg_b):
 # optionally customize the DAG
 @to_dag(max_concurrency=2, behavior="strict")
 def deps_describer():
-  result_a = a()
-  result_b = b()
-  result_c = c(result_a, result_b)
+  res_a = a()
+  res_b = b()
+  res_c = c(res_a, res_b)
+  return res_a, res_b, res_c
 
 if __name__ == "__main__":
 
   t0 = time()
   # the dag instance is reusable.
   # This is recommended if you want to do the same computation multiple times
-  dag = deps_describer()
-  results_1 = dag.execute()
+  res_a, res_b, res_c = deps_describer()
   execution_time = time() - t0
   print(f"Graph execution took {execution_time:.2f} seconds")
+  assert res_a == "A"
+  assert res_b == "B"
+  assert res_c == "A + B = C"
 
-  # debugging the code using `dag.safe_execute()` is easier
-  # because the execution doesn't go through the Thread pool
-  results_2 = dag.safe_execute()
-
-  # you can look throught the results of each operation like this:
-  for my_op in [a, b, c]:
-    assert results_1[my_op.id].result == results_2[my_op.id].result
 
 ```
 

@@ -4,7 +4,7 @@ from typing import Union
 
 import pytest
 
-from tawazi import _to_dag, op
+from tawazi import op, to_dag
 
 """integration test"""
 
@@ -41,7 +41,7 @@ def test_ops_interface():
         # logger.debug(f"ran d {some_constant} {keyworded_arg}")
         return "d"
 
-    @_to_dag
+    @to_dag
     def my_custom_dag():
         vara = a()
         varb = b(vara)
@@ -62,7 +62,7 @@ def test_ops_interface():
         logger.debug(f"e is {e}")
         logger.debug("ran f")
 
-    @_to_dag
+    @to_dag
     def my_other_custom_dag():
         vara = a()
         varb = b(vara)
@@ -71,27 +71,25 @@ def test_ops_interface():
         vare = e()
         _varf = f(vara, varb, varc, vard, vare)
 
-    d1 = my_custom_dag()
     logger.debug("\n1st execution of dag")
-    d1.execute()
+    my_custom_dag()
     assert pytest.third_argument == 1234
     assert pytest.fourth_argument == 1111
     logger.debug("\n2nd execution of dag")
-    d1.execute()
+    my_custom_dag()
     assert pytest.third_argument == 1234
     assert pytest.fourth_argument == 1111
 
-    d2 = my_other_custom_dag()
     logger.debug("\n1st execution of other dag")
-    d2.execute()
+    my_other_custom_dag()
     assert pytest.third_argument == "blabla"
     assert pytest.fourth_argument == 2222
     logger.debug("\n2nd execution of other dag")
-    d2.execute()
+    my_other_custom_dag()
     assert pytest.third_argument == "blabla"
     assert pytest.fourth_argument == 2222
 
     logger.debug("\n3rd execution of dag")
-    d1.execute()
+    my_custom_dag()
     assert pytest.third_argument == 1234
     assert pytest.fourth_argument == 1111

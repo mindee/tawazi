@@ -3,7 +3,7 @@ from time import sleep
 
 import pytest
 
-from tawazi import _to_dag, op
+from tawazi import op, to_dag
 
 """integration tests"""
 
@@ -41,7 +41,7 @@ b_op = op(b)
 c_op = op(c)
 
 # run in the dag interface
-@_to_dag
+@to_dag
 def dagger():
     a_ = a_op()
     b_ = b_op()
@@ -57,14 +57,12 @@ def test_normal_execution_without_dag():
 def test_dag_execution():
     for i in range(10):
         pytest.safe_execution_val = ""
-        dag = dagger()
-        dag.max_concurrency = 1
-        dag.execute()
+        dagger.max_concurrency = 1
+        dagger()
         assert pytest.safe_execution_val == "ABC", f"during {i}th iteration"
 
 
 def test_safe_execution():
     pytest.safe_execution_val = ""
-    dag = dagger()
-    dag.safe_execute()
+    dagger.safe_execute()
     assert pytest.safe_execution_val in ["ABC", "BAC"]

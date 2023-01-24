@@ -309,6 +309,7 @@ class LazyExecNode(ExecNode):
         Returns:
 
         """
+        # if LazyExecNode is not an attribute of a class, then return self
         if instance is None:
             # this is the case when we call the method on the class instead of an instance of the class
             # In this case, we must return a "function" hence an instance of this class
