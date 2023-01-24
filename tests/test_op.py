@@ -1,5 +1,5 @@
 # type: ignore
-from tawazi import _to_dag, op
+from tawazi import op, to_dag
 
 """integration test"""
 
@@ -48,7 +48,7 @@ def f8(f1, *args, **kwargs):
     return sum([f1, *args, *(kwargs.values())])
 
 
-@_to_dag
+@to_dag
 def pipe():
     _1 = f1()
     # import ipdb
@@ -63,5 +63,4 @@ def pipe():
 
 
 def test_ops_signatures():
-    p = pipe()
-    p.execute()
+    pipe()

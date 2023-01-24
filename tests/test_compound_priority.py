@@ -3,7 +3,7 @@ from time import sleep
 
 import pytest
 
-from tawazi import _to_dag, op
+from tawazi import op, to_dag
 
 """Internal Unit Test"""
 
@@ -41,7 +41,7 @@ def e():
     pytest.compound_priority_str += "e"
 
 
-@_to_dag
+@to_dag
 def dependency_describer():
     _a = a()
     _b = b(_a)
@@ -51,7 +51,7 @@ def dependency_describer():
 
 
 def test_compound_priority():
-    dag = dependency_describer()
+    dag = dependency_describer
 
     assert dag.node_dict_by_name["a"].compound_priority == 4
     assert dag.node_dict_by_name["b"].compound_priority == 2
@@ -62,8 +62,7 @@ def test_compound_priority():
 
 def test_compound_priority():
     pytest.compound_priority_str == ""
-    dag = dependency_describer()
-    dag.execute()
+    dependency_describer()
 
     assert pytest.compound_priority_str.startswith("ab")
     assert len(pytest.compound_priority_str) == 5
