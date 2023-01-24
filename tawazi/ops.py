@@ -11,7 +11,6 @@ from .node import (
     ExecNode,
     IdentityHash,
     LazyExecNode,
-    PreCompArgExecNode,
     exec_nodes_lock,
     get_args_and_default_args,
 )
@@ -142,7 +141,7 @@ def to_dag(
 
         args.extend(
             [
-                PreCompArgExecNode(declare_dag_function, arg_name, arg)
+                ArgExecNode(declare_dag_function, arg_name, arg)
                 for arg_name, arg in func_default_args.items()
             ]
         )
