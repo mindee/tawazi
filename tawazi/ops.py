@@ -82,34 +82,38 @@ def to_dag(
             # 1. node.exec_nodes contains all the ExecNodes that concern the DAG being built at the moment.
             #      make sure it is empty
             node.exec_nodes = []
+            try:
+                # 2. make ExecNodes corresponding to the arguments of the ExecNode
+                # 2.1 get the names of the arguments and the default values
+                func_args, func_default_args = get_args_and_default_args(_func)
 
-            # 2. make ExecNodes corresponding to the arguments of the ExecNode
-            # 2.1 get the names of the arguments and the default values
-            func_args, func_default_args = get_args_and_default_args(_func)
+                # 2.2 Construct non default arguments.
+                # Corresponding values must be provided during usage
+                args: List[ExecNode] = [ArgExecNode(_func, arg_name) for arg_name in func_args]
+                # 2.2 Construct Default arguments.
+                args.extend(
+                    [
+                        ArgExecNode(_func, arg_name, arg)
+                        for arg_name, arg in func_default_args.items()
+                    ]
+                )
+                # 2.3 Arguments are also ExecNodes that get executed inside the scheduler
+                node.exec_nodes.extend(args)
 
-            # 2.2 Construct non default arguments.
-            # Corresponding values must be provided during usage
-            args: List[ExecNode] = [ArgExecNode(_func, arg_name) for arg_name in func_args]
-            # 2.2 Construct Default arguments.
-            args.extend(
-                [ArgExecNode(_func, arg_name, arg) for arg_name, arg in func_default_args.items()]
-            )
-            # 2.3 Arguments are also ExecNodes that get executed inside the scheduler
-            node.exec_nodes.extend(args)
+                # 3. Execute the dependency describer function
+                # NOTE: Only ordered parameters are supported at the moment!
+                #  No **kwargs!! Only positional Arguments
+                returned_exec_nodes = _func(*args)
 
-            # 3. Execute the dependency describer function
-            # NOTE: Only ordered parameters are supported at the moment!
-            #  No **kwargs!! Only positional Arguments
-            returned_exec_nodes = _func(*args)
+                # 4. Construct the DAG instance
+                d = DAG(node.exec_nodes, max_concurrency=max_concurrency, behavior=behavior)
 
-            # 4. Construct the DAG instance
-            d = DAG(node.exec_nodes, max_concurrency=max_concurrency, behavior=behavior)
-
-            # 5. Clean global variable
-            # node.exec_nodes are deep copied inside the DAG.
-            #   we can emtpy the global variable node.exec_nodes
-            # TODO: clean node.exec_nodes even if an error is raised put it in finally block
-            node.exec_nodes = []
+            # clean up even in case an error is raised during dag construction
+            finally:
+                # 5. Clean global variable
+                # node.exec_nodes are deep copied inside the DAG.
+                #   we can epmty the global variable node.exec_nodes
+                node.exec_nodes = []
 
             d.input_ids = [arg.id for arg in args]
 
