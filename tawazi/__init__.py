@@ -1,5 +1,5 @@
 from .dag import DAG
-from .ops import op, _to_dag, to_dag
+from .ops import op, to_dag
 from .errors import ErrorStrategy
 from .config import Cfg
 
@@ -9,4 +9,4 @@ isort:skip_file
 """
 __version__ = "0.2.0"
 
-__all__ = ["DAG", "op", "_to_dag", "to_dag", "ErrorStrategy", "Cfg"]
+__all__ = ["DAG", "op", "to_dag", "ErrorStrategy", "Cfg"]
