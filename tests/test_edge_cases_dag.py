@@ -1,5 +1,5 @@
 #  type: ignore
-from tawazi import _to_dag, op
+from tawazi import op, to_dag
 
 """integration test"""
 
@@ -15,13 +15,12 @@ def test_same_constant_name_in_two_exec_nodes():
         print(a, cst)
         return str(a) + cst
 
-    @_to_dag
+    @to_dag
     def my_dag():
         var_a = a(1234)
         var_b = b(var_a, "poulpe")
 
-    dag = my_dag()
-    exec_nodes = dag.execute()
+    exec_nodes = my_dag.execute()
     assert len(exec_nodes) == 4
     assert exec_nodes[a.id].result == 1234
     assert exec_nodes[b.id].result == "1234poulpe"

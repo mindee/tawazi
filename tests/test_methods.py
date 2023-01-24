@@ -4,7 +4,7 @@ from typing import Union
 
 import pytest
 
-from tawazi import _to_dag, op
+from tawazi import op, to_dag
 
 """integration test"""
 
@@ -40,7 +40,7 @@ class MyClass:
         logger.debug("ran d")
         return "d"
 
-    @_to_dag
+    @to_dag
     def my_custom_dag(self):
         vara = self.a()
         varb = self.b(vara)
@@ -58,3 +58,17 @@ def test_ops_interface():
     assert pytest.fourth_argument == 1111
     logger.debug("\n2nd execution of dag")
     d1.execute()
+
+
+"""
+The use case for this feature is the following:
+
+The user has a Class with an instance that contains a lof of methods and attributes.
+This class contains a very complicated function that can benefit from parallelization.
+The user wants to run the dag multiple times and get the same results...
+    he is responsible for the modifications that any function might do on the instance...
+    He should be warned about the parallelization dangers when dealing with shared data (in this case self!)
+The user (in the best case scenario) will only exchange mutable data between the methods via the parameters
+This will ensure the dependency of execution will be respected!
+"""
+# TODO: do some advanced tests on this case!
