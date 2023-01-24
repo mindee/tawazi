@@ -51,54 +51,6 @@ def op(
         return my_custom_op(func)
 
 
-# TODO: delete!!!
-# NOTE: deprecated!!
-def _to_dag(
-    declare_dag_function: Optional[Callable[..., Any]] = None,
-    *,
-    max_concurrency: int = 1,
-    behavior: ErrorStrategy = ErrorStrategy.strict,
-) -> Callable[..., DAG]:
-    """
-    deprecated!! use to_pipe instead
-    Transform the declared ops into a DAG that can be executed by tawazi.
-    The same DAG can be executed multiple times.
-    Note: to_dag is thread safe because it uses an internal lock.
-        If you need to construct lots of DAGs in multiple threads,
-        it is best to construct your dag once and then consume it as much as you like in multiple threads.
-    Please check the example in the README for a guide to the usage.
-    Args:
-        declare_dag_function: a function that contains the execution of the DAG.
-        if the functions are decorated with @op decorator they can be executed in parallel.
-        Otherwise, they will be executed immediately. Currently mixing the two behaviors isn't supported.
-        max_concurrency: the maximum number of concurrent threads to execute in parallel
-        behavior: the behavior of the dag when an error occurs during the execution of a function (ExecNode)
-    Returns: a DAG instance
-
-    """
-
-    def intermediate_wrapper(_func: Callable[..., Any]) -> Callable[..., DAG]:
-        def wrapped(*args: Any, **kwargs: Any) -> DAG:
-            # TODO: modify this horrible pattern
-            with exec_nodes_lock:
-                node.exec_nodes = []
-                _func(*args, **kwargs)
-                d = DAG(node.exec_nodes, max_concurrency=max_concurrency, behavior=behavior)
-                node.exec_nodes = []
-
-            return d
-
-        return wrapped
-
-    # case 1: arguments are provided to the decorator
-    if declare_dag_function is None:
-        # return a decorator
-        return intermediate_wrapper  # type: ignore
-    # case 2: arguments aren't provided to the decorator
-    else:
-        return intermediate_wrapper(declare_dag_function)
-
-
 def to_dag(
     declare_dag_function: Optional[Callable[..., Any]] = None,
     *,
