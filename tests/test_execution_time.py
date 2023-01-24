@@ -1,7 +1,7 @@
 # type: ignore
 from time import sleep, time
 
-from tawazi import _to_dag, op
+from tawazi import op, to_dag
 
 """integration test"""
 
@@ -23,7 +23,7 @@ def c(a, b):
     sleep(T)
 
 
-@_to_dag(max_concurrency=2)
+@to_dag(max_concurrency=2)
 def deps():
     a_ = a()
     b_ = b()
@@ -32,6 +32,6 @@ def deps():
 
 def test_timing():
     t0 = time()
-    deps().execute()
+    deps()
     execution_time = time() - t0
     assert execution_time < 2.5 * T
