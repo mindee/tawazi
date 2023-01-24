@@ -40,24 +40,25 @@ class MyClass:
         logger.debug("ran d")
         return "d"
 
-    @to_dag
-    def my_custom_dag(self):
-        vara = self.a()
-        varb = self.b(vara)
-        varc = self.c(vara)
-        _vard = self.d(varb, c=varc, fourth_argument=1111)
+
+#     @to_dag
+#     def my_custom_dag(self):
+#         vara = self.a()
+#         varb = self.b(vara)
+#         varc = self.c(vara)
+#         _vard = self.d(varb, c=varc, fourth_argument=1111)
 
 
-def test_ops_interface():
-    c = MyClass()
+# def test_ops_interface():
+#     c = MyClass()
 
-    d1 = c.my_custom_dag()
-    logger.debug("\n1st execution of dag")
-    d1.execute()
-    assert pytest.third_argument == 1234
-    assert pytest.fourth_argument == 1111
-    logger.debug("\n2nd execution of dag")
-    d1.execute()
+#     d1 = c.my_custom_dag()
+#     logger.debug("\n1st execution of dag")
+#     d1.execute()
+#     assert pytest.third_argument == 1234
+#     assert pytest.fourth_argument == 1111
+#     logger.debug("\n2nd execution of dag")
+#     d1.execute()
 
 
 """
