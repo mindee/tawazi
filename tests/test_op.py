@@ -1,5 +1,8 @@
 # type: ignore
+import pytest
+
 from tawazi import op, to_dag
+from tawazi.errors import InvalidExecNodeCall
 
 """integration test"""
 
@@ -64,3 +67,8 @@ def pipe():
 
 def test_ops_signatures():
     pipe()
+
+
+def test_invalid_call_execnode():
+    with pytest.raises(InvalidExecNodeCall):
+        f6()
