@@ -15,7 +15,7 @@ from .config import Cfg
 exec_nodes: List["ExecNode"] = []
 exec_nodes_lock = Lock()
 IdentityHash = str
-Tag = Union[str, tuple]  # anything immutable
+Tag = Union[None, str, tuple]  # anything immutable
 
 ARG_NAME_TAG = "twz_tag"
 
@@ -23,8 +23,30 @@ RESERVED_KWARGS = [ARG_NAME_TAG]
 ARG_NAME_SEP = ">>>"
 
 
-class NoVal:
-    ...
+class NoValType:
+    """
+    Tawazi's special None.
+    This class is a singleton similar to None to determine that no value is assigned
+    """
+
+    _instance = None
+
+    def __new__(cls):  # type: ignore
+        if cls._instance is None:
+            cls._instance
+
+    @classmethod
+    def __bool__(cls) -> bool:
+        return False
+
+    def __repr__(self) -> str:
+        return "NoVal"
+
+    def __eq__(self, __o: object) -> bool:
+        return False
+
+
+NoVal = NoValType()
 
 
 class ExecNode:
@@ -41,10 +63,14 @@ class ExecNode:
         priority: int = 0,
         is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
         debug: bool = False,
-        tag: Optional[Any] = None,
+        tag: Tag = None,
         setup: bool = False,
     ):
         """
+        An ExecNode is an Object that can be executed inside a DAG scheduler.
+        It basically consists of a function (exec_function) that takes *args and **kwargs and return a Value.
+        When the ExecNode is executed in the DAG, the resulting value will be stored in the ExecNode.result instance attribute
+
         Args:
             id_ (IdentityHash): identifier of ExecNode.
             exec_function (Callable, optional): a callable will be executed in the graph.
@@ -56,8 +82,9 @@ class ExecNode:
              When this ExecNode must be executed, all other nodes are waited to finish before starting execution.
              Defaults to False.
         """
-        # TODO: validate attributes using pydantic perhaps!
-        # assign attributes
+        # NOTE: validate attributes using pydantic perhaps?
+        #   But will be problematic when Pydantic 2 will be released... it will be best to wait for this Feature
+        # 1. assign attributes
         self.id = id_
         self.exec_function = exec_function
         self.priority = priority
@@ -69,17 +96,21 @@ class ExecNode:
         self.args: List[ExecNode] = args or []
         self.kwargs: Dict[IdentityHash, ExecNode] = kwargs or {}
 
-        # assign the base of compound priority
+        # 2. compound_priority equals priority at the start but will be modified during the build process
         self.compound_priority = priority
 
-        # a string that identifies the ExecNode.
-        # It is either the name of the identifying function or the identifying string id_
+        # 3. Assign the name
+        # This can be used in the future but is not particularly useful at the moment
         self.__name__ = self.exec_function.__name__ if not isinstance(id_, str) else id_
 
-        # todo: remove and make ExecNode immutable ?
-        # TODO: make a subclass of None called NoValueSet
-        self.result: Optional[Dict[str, Any]] = None
-        # TODO: use the PreComputedExecNode instead ?
+        # 4. Assign a default NoVal to the result of the execution of this ExecNode,
+        #  when this ExecNode will be executed, self.result will be overridden
+        # It would be amazing if we can remove self.result and make ExecNode immutable
+        self.result: Union[NoValType, Dict[str, Any]] = NoVal
+        # even though setting result to NoVal is not necessary... it clarifies debugging
+
+        # self.executed can be removed...
+        #  it can be a property that checks if self.result is not NoVal
         self.executed = False
 
     def __repr__(self) -> str:
@@ -96,12 +127,12 @@ class ExecNode:
 
         return deps
 
-    def execute(self, node_dict: Dict[IdentityHash, "ExecNode"]) -> Optional[Dict[str, Any]]:
+    def execute(self, node_dict: Dict[IdentityHash, "ExecNode"]) -> Optional[Any]:
         """
-        Execute the ExecNode directly or according to an execution graph.
+        Execute the ExecNode inside of a DAG.
         Args:
             node_dict (Dict[IdentityHash, ExecNode]): A shared dictionary containing the other ExecNodes in the DAG;
-                                                the key is the id of the ExecNode.
+              the key is the id of the ExecNode. This node_dict refers to the current execution
 
         Returns: the result of the execution of the current ExecNode
         """
@@ -124,12 +155,23 @@ class ExecNode:
         logger.debug(f"Finished executing {self.id} with task {self.exec_function}")
         return self.result
 
-    def assign_attr(self, arg_name: str, value: Tag) -> None:
-        # TODO: make a tag setter
+    def _assign_reserved_args(self, arg_name: str, value: Tag) -> bool:
+        # TODO: change value type to Union[Tag, Setup etc...] when other special attributes are introduced
         if arg_name == ARG_NAME_TAG:
-            if not isinstance(value, (str, tuple)):
-                raise TypeError(f"tag should be of type {Tag} but {value} provided")
             self.tag = value
+            return True
+
+        return False
+
+    @property
+    def tag(self) -> Tag:
+        return self._tag
+
+    @tag.setter
+    def tag(self, value: Tag) -> None:
+        if not isinstance(value, (str, tuple)) and value is not None:
+            raise TypeError(f"tag should be of type {Tag} but {value} provided")
+        self._tag = value
 
 
 class ArgExecNode(ExecNode):
@@ -260,7 +302,7 @@ class LazyExecNode(ExecNode):
 
         for arg_name, arg in kwargs.items():
             if arg_name in RESERVED_KWARGS:
-                self_copy.assign_attr(arg_name, arg)
+                self_copy._assign_reserved_args(arg_name, arg)
                 continue
             # encapsulate the argument in PreComputedExecNode
             if not isinstance(arg, ExecNode):

@@ -292,6 +292,9 @@ def test_pipeline_setup_method():
     assert pytest.op12 == 0
 
 
+test_pipeline_setup_method()
+
+
 def test_setup_node_cst_input():
     @op(setup=True)
     def setop(k: int = 1234):
