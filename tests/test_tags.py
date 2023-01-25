@@ -33,6 +33,3 @@ def test_call_tag():
     assert pipe() == 12
     assert pipe.get_nodes_by_tag("another_a_tag") == [pipe.get_node_by_id("a")]
     assert pipe.get_nodes_by_tag("another_b_tag") == [pipe.get_node_by_id("b")]
-
-
-test_call_tag()
