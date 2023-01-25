@@ -32,8 +32,6 @@ class ExecNode:
     This class is the base executable node of the Directed Acyclic Execution Graph
     """
 
-    # todo deprecate calling the init directly!
-    # TODO: remove the default values from the parameters!
     def __init__(
         self,
         id_: IdentityHash,
@@ -64,7 +62,7 @@ class ExecNode:
         self.exec_function = exec_function
         self.priority = priority
         self.is_sequential = is_sequential
-        self.debug = debug
+        self.debug = debug  # TODO: do the fix to run debug nodes if their inputs exist
         self.tag = tag
         self.setup = setup
 
