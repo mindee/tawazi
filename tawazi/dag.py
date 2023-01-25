@@ -11,6 +11,8 @@ from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 from .errors import ErrorStrategy, TawaziBaseException
 from .node import ArgExecNode, ExecNode, IdentityHash, Tag
 
+ReturnIDsType = Optional[Union[List[IdentityHash], Tuple[IdentityHash], IdentityHash]]
+
 
 # TODO: find a .pre-commit hook that aligns properly the fstrings
 #   if it doesn't exist... make one! it should take max columns as argument
@@ -217,7 +219,7 @@ class DAG:
         self.node_dict_by_name: Dict[str, ExecNode] = {
             exec_node.__name__: exec_node for exec_node in self.exec_nodes
         }
-        self.return_ids: Optional[Union[List[IdentityHash], IdentityHash]] = None
+        self.return_ids: ReturnIDsType = None
         self.input_ids: Optional[List[IdentityHash]] = None
 
         # a sequence of execution to be applied in a for loop
@@ -572,6 +574,8 @@ class DAG:
         elif isinstance(self.return_ids, IdentityHash):
             # in this case it is returned_value
             returned_values = all_node_dicts[self.return_ids].result
+        elif isinstance(self.return_ids, tuple):
+            returned_values = tuple(all_node_dicts[ren_id].result for ren_id in self.return_ids)
         elif isinstance(self.return_ids, list):
             # TODO: for bla is instance
             returned_values = [all_node_dicts[ren_id].result for ren_id in self.return_ids]
