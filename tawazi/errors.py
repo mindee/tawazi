@@ -15,6 +15,10 @@ class TawaziArgumentException(TawaziBaseException):
         super().__init__(msg)
 
 
+class TawaziTypeError(TawaziBaseException):
+    pass
+
+
 def raise_arg_exc(func: Callable[[Any], Any], arg_name: str) -> None:
     raise TawaziArgumentException(func, arg_name)
 
