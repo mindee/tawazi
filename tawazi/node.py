@@ -5,8 +5,16 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
 
-from tawazi.errors import TawaziBaseException, UnvalidExecNodeCall, raise_arg_exc
-from tawazi.helpers import ordinal
+from tawazi.consts import (
+    ARG_NAME_SEP,
+    ARG_NAME_TAG,
+    RESERVED_KWARGS,
+    USE_SEP_START,
+    IdentityHash,
+    Tag,
+)
+from tawazi.errors import InvalidExecNodeCall, TawaziBaseException, raise_arg_exc
+from tawazi.helpers import lazy_xn_id, ordinal
 
 from .config import Cfg
 
@@ -14,13 +22,6 @@ from .config import Cfg
 # a temporary variable used to pass in exec_nodes to the DAG during building
 exec_nodes: List["ExecNode"] = []
 exec_nodes_lock = Lock()
-IdentityHash = str
-Tag = Union[None, str, tuple]  # anything immutable
-
-ARG_NAME_TAG = "twz_tag"
-
-RESERVED_KWARGS = [ARG_NAME_TAG]
-ARG_NAME_SEP = ">>>"
 
 
 class NoValType:
@@ -51,7 +52,11 @@ NoVal = NoValType()
 
 class ExecNode:
     """
-    This class is the base executable node of the Directed Acyclic Execution Graph
+    This class is the base executable node of the Directed Acyclic Execution Graph.
+    An ExecNode is an Object that can be executed inside a DAG scheduler.
+    It basically consists of a function (exec_function) that takes *args and **kwargs and return a Value.
+    When the ExecNode is executed in the DAG, the resulting value will be stored in the ExecNode.result instance attribute
+
     """
 
     def __init__(
@@ -67,9 +72,7 @@ class ExecNode:
         setup: bool = False,
     ):
         """
-        An ExecNode is an Object that can be executed inside a DAG scheduler.
-        It basically consists of a function (exec_function) that takes *args and **kwargs and return a Value.
-        When the ExecNode is executed in the DAG, the resulting value will be stored in the ExecNode.result instance attribute
+        Constructor of ExecNode
 
         Args:
             id_ (IdentityHash): identifier of ExecNode.
@@ -175,6 +178,13 @@ class ExecNode:
 
 
 class ArgExecNode(ExecNode):
+    """
+    ExecNode corresponding to an Argument.
+    Every Argument is Attached to a Function or an ExecNode (especially a LazyExecNode)
+    If a value is not passed to the function call / ExecNode,
+    it will raise an error similar to Python's Error
+    """
+
     def __init__(
         self,
         xn_or_func: Union[ExecNode, Callable[..., Any]],
@@ -182,10 +192,7 @@ class ArgExecNode(ExecNode):
         value: Any = NoVal,
     ):
         """
-        ExecNode corresponding to an Argument.
-        Every Argument is Attached to a Function or an ExecNode (especially a LazyExecNode)
-        If a value is not passed to the function call / ExecNode,
-        it will raise an error similar to Python's Error
+        Constructor of ArgExecNode
 
         Args:
             xn_or_func (Union[ExecNode, Callable[..., Any]]): The ExecNode or function that this Argument is rattached to
@@ -234,7 +241,9 @@ class ArgExecNode(ExecNode):
 
 class LazyExecNode(ExecNode):
     """
-    A lazy function simulator that records the dependencies to build the DAG
+    A lazy function simulator.
+    The __call__ behavior of the original function is overridden to record the dependencies to build the DAG.
+    The original function is kept to be called during the scheduling phase when calling the DAG.
     """
 
     def __init__(
@@ -246,9 +255,13 @@ class LazyExecNode(ExecNode):
         tag: Any,
         setup: bool,
     ):
-        # TODO: make the parameters non default everywhere but inside the @op decorator
-        # TODO: change the id_ of the execNode. Maybe remove it completely
-        # NOTE: this means that a DAG must have a different named functions which is already True!
+        """
+        Constructor of LazyExecNode
+
+        Args:
+            look at ExecNode's documentation.
+        """
+
         super().__init__(
             id_=func.__qualname__,
             exec_function=func,
@@ -262,56 +275,62 @@ class LazyExecNode(ExecNode):
     def __call__(self, *args: Any, **kwargs: Any) -> "LazyExecNode":
         """
         Record the dependencies in a global variable to be called later in DAG.
-        Returns: LazyExecNode
+        Returns: a deepcopy of the LazyExecNode
         """
-        # TODO: test
-        if not exec_nodes_lock.locked:
-            raise UnvalidExecNodeCall(
+        # 0.1 LazyExecNodes cannot be called outside DAG dependency calculation
+        #  (i.e. outside a function that is decorated with @to_dag)
+        if not exec_nodes_lock.locked():
+            raise InvalidExecNodeCall(
                 "Invoking ExecNode __call__ is only allowed inside a @to_dag decorated function"
             )
 
-        # if self is a debug ExecNode and Tawazi is configured to skip running debug Nodes
+        # 0.2 if self is a debug ExecNode and Tawazi is configured to skip running debug Nodes
         #   then skip registering this node in the list of ExecNodes to be executed
         if self.debug and not Cfg.RUN_DEBUG_NODES:
-            # NOTE: is this the best idea ? what if
+            # NOTE: is this the best idea ? what if I want to run a pipe with debug nodes then without debug nodes
             return self
 
         # TODO: maybe change the Type of objects created.
-        #  for example: have a LazyExecNode.__call(...) return an ExecNode instead of a deepcopy
-        # "<" is a separator for the number of usage
-        count_usages = sum(ex_n.id.split("<<")[0] == self.id for ex_n in exec_nodes)
-        self_copy = deepcopy(self)
-        if count_usages > 0:
-            self_copy.id = f"{self.id}<<{count_usages}>>"
+        #  for example: have a LazyExecNode.__call(...) return an ExecNodeCall instead of a deepcopy
 
-        # these assignements are not necessary! because self_copy is deeply copied
+        # 1. Assign the id
+        count_usages = sum(ex_n.id.split(USE_SEP_START)[0] == self.id for ex_n in exec_nodes)
+        self_copy = deepcopy(self)
+        # if ExecNode is used multiple times, <<usage_count>> is appended to its ID
+        self_copy.id = lazy_xn_id(self.id, count_usages)
+
+        # 2. Make the corresponding ExecNodes that corresponds to the Arguments
+        # NOTE: these assignments are unnecessary! because self_copy is deeply copied
         self_copy.args = []
         self_copy.kwargs = {}
-        # args can contain either ExecNodes or non ExecNode values
-        #  like strings, constants etc.
+
+        # 2.1 *args can contain either:
+        #  1. ExecNodes corresponding to the dependencies that come from predecessors
+        #  2. or non ExecNode values which are constants passed directly to the LazyExecNode.__call__ (eg. strings, int, etc.)
         for i, arg in enumerate(args):
             if not isinstance(arg, ExecNode):
-                # NOTE: maybe use the name of the argument instead ?
-                # arg here is definetly not a return value of a LazyExecNode!
-                # it must be a default value for example
+                # arg here is definitely not a return value of a LazyExecNode!
+                # it must be a default value
                 arg = ArgExecNode(self_copy, i, arg)
-                # Create a new ExecNode
                 exec_nodes.append(arg)
 
             self_copy.args.append(arg)
 
+        # 2.2 support **kwargs
         for arg_name, arg in kwargs.items():
+            # support reserved kwargs for tawazi
+            # These are necessary in order to pass information about the call of an ExecNode (the deep copy)
+            #  independently of the original LazyExecNode
             if arg_name in RESERVED_KWARGS:
                 self_copy._assign_reserved_args(arg_name, arg)
                 continue
-            # encapsulate the argument in PreComputedExecNode
             if not isinstance(arg, ExecNode):
+                # passed in constants
                 arg = ArgExecNode(self_copy, arg_name, arg)
-                # Create a new ExecNode
                 exec_nodes.append(arg)
+
             self_copy.kwargs[arg_name] = arg
 
-        # NOTE: duplicate code!, can be abstracted into a function !?
         # if ExecNode is not a debug node, all its dependencies must not be debug node
         if not self_copy.debug:
             for dep in self_copy.dependencies:
@@ -320,21 +339,17 @@ class LazyExecNode(ExecNode):
                         f"Non debug node {self_copy} depends on debug node {dep}"
                     )
 
-        # if ExecNode is a setup node, all its dependencies should be setup nodes or precalculated nodes Or Argument Nodes
+        # if ExecNode is a setup node, all its dependencies should be either:
+        # 1. setup nodes
+        # 2. Constants (ArgExecNode)
+        # 3. Arguments passed directly to the PipeLine (ArgExecNode)
         if self_copy.setup:
             for dep in self_copy.dependencies:
-                if not dep.setup and not isinstance(dep, ArgExecNode):
+                accepted_case = dep.setup or isinstance(dep, ArgExecNode)
+                if not accepted_case:
                     raise TawaziBaseException(
-                        f"Non setup node {self_copy} depends on setup node {dep}"
+                        f"setup node {self_copy} depends on non setup node {dep}"
                     )
-
-        # in case the same function is called twice, it is appended twice!
-        # but this won't work correctly because we use the id of the function which is unique!
-        # TODO: fix it using an additional random number at the end or the memory address of self!
-        # if self.id in [exec_node.id for exec_node in exec_nodes]:
-        #     raise UnvalidExecNodeCall(
-        #         "Invoking the same function twice is not allowed in the same DAG"
-        #     )
 
         exec_nodes.append(self_copy)
         return self_copy

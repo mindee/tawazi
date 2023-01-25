@@ -8,10 +8,11 @@ from loguru import logger
 from networkx import find_cycle
 from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 
-from .errors import ErrorStrategy, TawaziBaseException
-from .node import ArgExecNode, ExecNode, IdentityHash, Tag
+from tawazi.consts import ReturnIDsType
 
-ReturnIDsType = Optional[Union[List[IdentityHash], Tuple[IdentityHash], IdentityHash]]
+from .consts import IdentityHash, Tag
+from .errors import ErrorStrategy, TawaziBaseException
+from .node import ArgExecNode, ExecNode
 
 
 # TODO: find a .pre-commit hook that aligns properly the fstrings
@@ -601,6 +602,8 @@ class DAG:
             node_dict[node_id].execute(node_dict)
 
         return node_dict
+
+    # TODO: get node by usage
 
     def handle_exception(self, graph: DiGraphEx, fut: "Future[Any]", id_: IdentityHash) -> None:
         """
