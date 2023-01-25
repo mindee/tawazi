@@ -1,6 +1,8 @@
 import inspect
 from typing import Any, Callable, Dict, List, Tuple
 
+from tawazi.consts import USE_SEP_END, USE_SEP_START, IdentityHash
+
 
 def ordinal(numb: int) -> str:
     """Construct the string corresponding to the ordinal of a number
@@ -62,3 +64,10 @@ def get_args_and_default_args(func: Callable[..., Any]) -> Tuple[List[str], Dict
             args.append(k)
 
     return args, default_args
+
+
+def lazy_xn_id(base_id: IdentityHash, count_usages: int) -> IdentityHash:
+    if count_usages > 0:
+        return f"{base_id}{USE_SEP_START}{count_usages}{USE_SEP_END}"
+
+    return base_id

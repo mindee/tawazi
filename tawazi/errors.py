@@ -23,7 +23,7 @@ def raise_arg_exc(func: Callable[[Any], Any], arg_name: str) -> None:
     raise TawaziArgumentException(func, arg_name)
 
 
-class UnvalidExecNodeCall(TawaziBaseException):
+class InvalidExecNodeCall(TawaziBaseException):
     pass
 
 
