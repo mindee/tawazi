@@ -109,7 +109,7 @@ class ExecNode:
         # 4. Assign a default NoVal to the result of the execution of this ExecNode,
         #  when this ExecNode will be executed, self.result will be overridden
         # It would be amazing if we can remove self.result and make ExecNode immutable
-        self.result: Union[NoValType, Dict[str, Any]] = NoVal
+        self.result: Union[NoValType, Any] = NoVal
         # even though setting result to NoVal is not necessary... it clarifies debugging
 
         # self.executed can be removed...

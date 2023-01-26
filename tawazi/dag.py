@@ -134,7 +134,8 @@ class DiGraphEx(nx.DiGraph):
 def subgraph(
     graph: DiGraphEx, leaves_ids: Optional[List[Union[IdentityHash, ExecNode]]]
 ) -> DiGraphEx:
-    """returns a deep copy of the same graph if leaves_ids is None,
+    """
+    returns a deep copy of the same graph if leaves_ids is None,
     otherwise returns a new graph by applying `graph.subgraph_leaves`
 
     Args:
@@ -145,7 +146,7 @@ def subgraph(
         DiGraphEx: The subgraph of the provided graph
     """
     # TODO: avoid mutable state, hence avoid doing deep copies ?
-    # 0. deep copy the graph ids
+    # 0. deep copy the graph ids because it will be pruned during calculation
     graph = deepcopy(graph)
 
     # TODO: make the creation of subgraph possible directly from initialization
@@ -155,15 +156,6 @@ def subgraph(
         leaves_str_ids = [
             node_id.id if isinstance(node_id, ExecNode) else node_id for node_id in leaves_ids
         ]
-
-        # NOTE: this should be done elsewhere
-        # for lv_str_id_0 in leaves_str_ids:
-        #     for ex_n in graph.nodes:
-        #         if ex_n.id.startswith(lv_str_id_0)
-        #     raise TawaziBaseException(
-        #         f"Running subgraph that contains duplicate "
-        #         "usage of ExecNode {lv_str_id_0} is __currently not allowed"
-        #         )
 
         graph.subgraph_leaves(leaves_str_ids)
 
@@ -542,6 +534,7 @@ class DAG:
             raise TawaziBaseException(
                 f"something went wrong because of providing {twz_nodes} as subgraph nodes to run"
             )
+        # TODO: review the way the interface with DAG.execute works! it is not the best interface!
         return leaves_ids
 
     # TODO: setup nodes should not have dependencies that pass in through the pipeline parameters!
@@ -605,64 +598,101 @@ class DAG:
         # 1. get the leaves ids to execute
         leaves_ids = None if not twz_nodes else self._get_leaves_ids(twz_nodes)
 
+        # 2. copy the ExecNodes
+        call_xn_dict = self._make_call_xn_dict(*args, twz_nodes=twz_nodes)
+
+        # 3. Execute the scheduler
+        all_nodes_dict = self._execute(leaves_ids, call_xn_dict)  # type: ignore
+
+        # 4. extract the returned value/values
+        returned_values = self._get_return_values(all_nodes_dict)
+
+        return returned_values
+
+    def _make_call_xn_dict(
+        self, *args: Any, twz_nodes: Optional[List[Union[Tag, IdentityHash, ExecNode]]]
+    ) -> Dict[IdentityHash, ExecNode]:
+        """
+        Generate the calling ExecNode dict.
+        This is an ExecNode dict that will contain the ExecNodes that will be executed (hence modified) by the DAG scheduler.
+        This takes into consideration:
+         1. deep copying the ExecNodes
+         2. filling the arguments of the call
+         3. skipping the copy for setup ExecNodes
+        """
         # NOTE: there is a double deep copy, this is the 1st,
         #  the 2nd happens in DAG.execute(...) which will be removed in Tawazi 0.4
-        # 2. deepcopy the node_dict because it will be modified by the DAG's execution
-        modified_node_dict = DAG._deepcopy_non_setup_x_nodes(self.node_dict)
+        # 1. deepcopy the node_dict because it will be modified by the DAG's execution
+        call_xn_dict = DAG._deepcopy_non_setup_x_nodes(self.node_dict)
 
-        # 3. parse the input arguments of the pipeline
-        # 3.1 default valued arguments can be skipped and not provided!
+        # 2. parse the input arguments of the pipeline
+        # 2.1 default valued arguments can be skipped and not provided!
         # note: if not enough arguments are provided then the code will fail inside the DAG's execution through the raise_err lambda
         if args:
-            # 3.2 can't provide more than enough arguments
+            # 2.2 can't provide more than enough arguments
             if len(args) > len(self.input_ids):
                 raise TypeError(
                     f"The DAG takes a maximum of {len(self.input_ids)} arguments. {len(args)} arguments provided"
                 )
 
-            # 3.3 modify ExecNodes corresponding to input ArgExecNodes
+            # 2.3 modify ExecNodes corresponding to input ArgExecNodes
             for ind_arg, arg in enumerate(args):
                 node_id = self.input_ids[ind_arg]
 
-                modified_node_dict[node_id].result = arg
-                modified_node_dict[node_id].executed = True
+                call_xn_dict[node_id].result = arg
+                call_xn_dict[node_id].executed = True
 
-        # 4. Execute the scheduler
-        all_node_dicts = self._execute(leaves_ids, modified_node_dict)  # type: ignore
+        return call_xn_dict
 
-        # 5. extract the returned value/values
+    def _get_return_values(
+        self, xn_dict: Dict[IdentityHash, ExecNode]
+    ) -> Union[Any, Tuple[Any], List[Any]]:
+        """
+        Extract the return value/values from the output of the DAG's scheduler!
+
+        Args:
+            xn_dict (Dict[IdentityHash, ExecNode]): _description_
+
+        Raises:
+            TawaziTypeError: _description_
+
+        Returns:
+            Union[Any, Tuple[Any], List[Any]]: _description_
+        """
         if self.return_ids is None:
-            returned_values = None
-        elif isinstance(self.return_ids, IdentityHash):
-            returned_values = all_node_dicts[self.return_ids].result
-        elif isinstance(self.return_ids, tuple):
-            returned_values = tuple(all_node_dicts[ren_id].result for ren_id in self.return_ids)
-        elif isinstance(self.return_ids, list):
-            returned_values = [all_node_dicts[ren_id].result for ren_id in self.return_ids]
-        else:
-            raise TawaziTypeError(
-                "Return type for the DAG can only be a single value, Tuple or List"
-            )
-
-        return returned_values
+            return None
+        if isinstance(self.return_ids, IdentityHash):
+            return xn_dict[self.return_ids].result
+        if isinstance(self.return_ids, tuple):
+            return tuple(xn_dict[ren_id].result for ren_id in self.return_ids)
+        if isinstance(self.return_ids, list):
+            return [xn_dict[ren_id].result for ren_id in self.return_ids]
+        raise TawaziTypeError("Return type for the DAG can only be a single value, Tuple or List")
 
     # NOTE: this function should be used in case there was a bizarre behavior noticed during the
     #   the execution of the DAG via DAG.execute(...)
     def safe_execute(
-        self, leaves_ids: Optional[List[Union[IdentityHash, ExecNode]]] = None
-    ) -> Dict[IdentityHash, Any]:
+        self, *args: Any, twz_nodes: Optional[List[Union[Tag, IdentityHash, ExecNode]]] = None
+    ) -> Any:
         """
         Execute the ExecNodes in topological order without priority in for loop manner for debugging purposes
         """
-        # 1. create the subgraph to be executed
-        graph = subgraph(self.graph_ids, leaves_ids)
+        # 1. make the graph_ids to be executed!
+        leaves_ids = None if not twz_nodes else self._get_leaves_ids(twz_nodes)
+        graph_ids = subgraph(self.graph_ids, leaves_ids)  # type: ignore
 
-        # 2. deep copy the node_dict to store the results in each node
-        node_dict = deepcopy(self.node_dict)
-        for node_id in graph.topological_sort():
-            node_dict[node_id].execute(node_dict)
+        # 2. make call_xn_dict that will be modified
+        call_xn_dict = self._make_call_xn_dict(*args, twz_nodes=twz_nodes)
 
-        return node_dict
+        # 3. deep copy the node_dict to store the results in each node
+        for xn_id in graph_ids.topological_sort():
+            # only execute ExecNodes that are part of the subgraph
+            call_xn_dict[xn_id].execute(call_xn_dict)
+
+        # 4. make returned values
+        return_values = self._get_return_values(call_xn_dict)
+
+        return return_values
 
     def _handle_exception(self, graph: DiGraphEx, fut: "Future[Any]", id_: IdentityHash) -> None:
         """
