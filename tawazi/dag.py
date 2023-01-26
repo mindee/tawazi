@@ -11,7 +11,7 @@ from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 from tawazi.consts import ReturnIDsType
 
 from .consts import IdentityHash, Tag
-from .errors import ErrorStrategy, TawaziBaseException
+from .errors import ErrorStrategy, TawaziBaseException, TawaziTypeError
 from .node import ArgExecNode, ExecNode
 
 
@@ -197,6 +197,8 @@ class DAG:
         self.graph_ids = DiGraphEx()
 
         # ExecNodes can be shared between Graphs, their call signatures might also be different
+        # NOTE: maybe this should be transformed into a property because there is a deepcopy for node_dict...
+        #  this means that there are different ExecNodes that are hanging arround in the same instance of the DAG
         self.exec_nodes = exec_nodes
 
         self.max_concurrency = max_concurrency
@@ -217,7 +219,7 @@ class DAG:
             exec_node.__name__: exec_node for exec_node in self.exec_nodes
         }
         self.return_ids: ReturnIDsType = None
-        self.input_ids: Optional[List[IdentityHash]] = None
+        self.input_ids: List[IdentityHash] = []
 
         # a sequence of execution to be applied in a for loop
         self.exec_node_sequence: List[ExecNode] = []
@@ -346,6 +348,9 @@ class DAG:
 
     @classmethod
     def _deepcopy_non_setup_x_nodes(cls, x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
+        """
+        Deep copy all ExecNodes except setup ExecNodes because they are shared throughout the DAG instance
+        """
         x_nodes_copy = {}
         for id_, x_nd in x_nodes.items():
             # if execnode is a setup node, it shouldn't be copied
@@ -381,6 +386,7 @@ class DAG:
         #         if ex_n.setup:
         #             raise TawaziBaseException(f"Setup nodes can't be provided as input to the DAG!,")
 
+        # TODO: remove this deep copy because it already happens inside DAG.__call__
         node_dict = DAG._deepcopy_non_setup_x_nodes(modified_node_dict or self.node_dict)
 
         # 0.3 create variables related to futures
@@ -491,17 +497,33 @@ class DAG:
     def _get_leaves_ids(
         self, twz_nodes: List[Union[Tag, IdentityHash, ExecNode]]
     ) -> List[IdentityHash]:
+        """
+        get the ids of ExecNodes corresponding to twz_nodes.
+        The identification can be carried out using the tag, the Id, or the ExecNode itself.
+        Keep in Mind that depending on the way ExecNode is provided inside twz_nodes,
+         the returned id
 
+        Args:
+            twz_nodes (List[Union[Tag, IdentityHash, ExecNode]]): list of a mix of identifier that the user might provide to run a subgraph
+
+        Raises:
+            ValueError: if a requested ExecNode is not found in the DAG
+            TawaziTypeError: if the Type of the identifier is not Tag, IdentityHash or ExecNode
+            TawaziBaseException: if the returned List[IdentityHash] has the wrong length, this indicates a bug in the code
+
+        Returns:
+            List[IdentityHash]: ExecNodes' Identities
+        """
         leaves_ids = []
         for tag_or_id_or_node in twz_nodes:
             if isinstance(tag_or_id_or_node, ExecNode):
                 leaves_ids.append(tag_or_id_or_node.id)
-            # TODO: do further validation!
+            # todo: do further validation!
             elif isinstance(tag_or_id_or_node, (IdentityHash, tuple)):
                 tag_or_id = tag_or_id_or_node
 
                 # if leaves_identification is not ExecNode, it can be either
-                #  1. a Tag
+                #  1. a Tag (Highest priority in case an id with the same value exists)
                 if node := self.tag_node_dict.get(tag_or_id):
                     leaves_ids.append(node.id)
                 #  2. or a node id!
@@ -512,86 +534,115 @@ class DAG:
                     raise ValueError(f"{tag_or_id_or_node} is not found in the DAG")
             else:
 
-                raise TypeError(
+                raise TawaziTypeError(
                     "twz_nodes must be of type ExecNode, "
                     f"str or tuple identifying the node but provided {tag_or_id_or_node}"
                 )
         if len(twz_nodes) != len(leaves_ids):
             raise TawaziBaseException(
-                "something went wrong because of " f"providing {twz_nodes} as subgraph nodes to run"
+                f"something went wrong because of providing {twz_nodes} as subgraph nodes to run"
             )
         return leaves_ids
 
     # TODO: setup nodes should not have dependencies that pass in through the pipeline parameters!
     #  raise an error in this case!!
     def setup(self, twz_nodes: Optional[List[Union[Tag, IdentityHash, ExecNode]]] = None) -> None:
+        """
+        Run the setup ExecNodes for the DAG.
+        If twz_nodes are provided, run only the necessary setup ExecNodes, otherwise will run all setup ExecNodes.
+        NOTE: currently if setup ExecNodes receive arguments from the Pipeline this method won't work because it doesn't support *args.
+         This might be supported in the future though
+
+        Args:
+            twz_nodes (Optional[List[Union[Tag, IdentityHash, ExecNode]]], optional): The ExecNodes that the user aims to use in the DAG.
+              This might inlcude setup or non setup ExecNodes. If None is provided, will run all setup ExecNodes. Defaults to None.
+        """
+        # BUG: if setup ExecNodes can take input from the DAG' pipeline then there is some missing args!
         # no calculation ExecNode (non setup ExecNode) should run... otherwise there is an error in implementation
-        # NOTE: do not copy the setup nodes because we want them to be modified per DAG instance!
+        # NOTE: what happens if the user provides a debug node ? this is weird and should probably be disallowed
+
+        # 1. select all setup ExecNodes
+        #  do not copy the setup nodes because we want them to be modified per DAG instance!
         all_setup_nodes = {
             nd.id: nd
             for nd in self.exec_nodes
             if nd.setup or (isinstance(nd, ArgExecNode) and nd.executed)
         }
 
-        # all the graph's leaves ids or the leave ids of the provided nodes
+        # 2. if twz_nodes is not provided run all setup ExecNodes
         if twz_nodes is None:
             setup_leaves_ids = list(all_setup_nodes.keys())
         else:
-            # the leaves_ids that the user wants to execute
+            # 2.1 the leaves_ids that the user wants to execute
             #  however they might contain non setup nodes... so we should extract all the nodes ids
             #  that must be run in order to run the twz_nodes ExecNodes
-            #  after wards we can remove the non setup nodes
+            #  afterwards we can remove the non setup nodes
             leaves_ids = self._get_leaves_ids(twz_nodes)
             graph = subgraph(self.graph_ids, leaves_ids)  # type: ignore
 
-            # maybe the user provided a node by argument that is not a setup node!
+            # 2.2 filter non setup ExecNodes
             setup_leaves_ids = [id_ for id_ in graph.nodes if id_ in all_setup_nodes]
-            # NOTE: what happens if the user provides a debug node ? this is weird and should probably be disallowed
 
         self._execute(setup_leaves_ids, all_setup_nodes)  # type: ignore
-
-    # TODO: support passing in a subset of nodes to execute via kwargs!
-    #  for example: twz_nodes: List[ExecNodes] | List[IdHash]
 
     def __call__(
         self, *args: Any, twz_nodes: Optional[List[Union[Tag, IdentityHash, ExecNode]]] = None
     ) -> Any:
+        """
+        Execute the DAG scheduler via a similar interface to the function that describes the dependencies.
 
+        Args:
+            twz_nodes (Optional[List[Union[Tag, IdentityHash, ExecNode]]], optional): ExecNodes to execute as a subgraph;
+             executes the whole DAG if None. Defaults to None.
+
+        Raises:
+            TypeError: If called with an invalid number of arguments
+            TawaziTypeError: if twz_nodes contains a wrong typed identifier or if the return value contain a non LazyExecNode
+
+        Returns:
+            Any: _description_
+        """
+        # 1. get the leaves ids to execute
         leaves_ids = None if not twz_nodes else self._get_leaves_ids(twz_nodes)
 
         # NOTE: there is a double deep copy, this is the 1st,
-        #  the 2nd happens in DAG.execute(...)
+        #  the 2nd happens in DAG.execute(...) which will be removed in Tawazi 0.4
+        # 2. deepcopy the node_dict because it will be modified by the DAG's execution
         modified_node_dict = DAG._deepcopy_non_setup_x_nodes(self.node_dict)
-        # NOTE: maybe a better way of coding this is to consider input_ids always a List[] instead of Optional
-        if args and self.input_ids:
-            # make sure they have the same length
+
+        # 3. parse the input arguments of the pipeline
+        # 3.1 default valued arguments can be skipped and not provided!
+        # note: if not enough arguments are provided then the code will fail inside the DAG's execution through the raise_err lambda
+        if args:
+            # 3.2 can't provide more than enough arguments
             if len(args) > len(self.input_ids):
-                # NOTE: change this into argument error ?
                 raise TypeError(
                     f"The DAG takes a maximum of {len(self.input_ids)} arguments. {len(args)} arguments provided"
                 )
 
+            # 3.3 modify ExecNodes corresponding to input ArgExecNodes
             for ind_arg, arg in enumerate(args):
                 node_id = self.input_ids[ind_arg]
-                val = args[ind_arg]
 
-                modified_node_dict[node_id].result = val
+                modified_node_dict[node_id].result = arg
                 modified_node_dict[node_id].executed = True
 
+        # 4. Execute the scheduler
         all_node_dicts = self._execute(leaves_ids, modified_node_dict)  # type: ignore
 
+        # 5. extract the returned value/values
         if self.return_ids is None:
             returned_values = None
         elif isinstance(self.return_ids, IdentityHash):
-            # in this case it is returned_value
             returned_values = all_node_dicts[self.return_ids].result
         elif isinstance(self.return_ids, tuple):
             returned_values = tuple(all_node_dicts[ren_id].result for ren_id in self.return_ids)
         elif isinstance(self.return_ids, list):
-            # TODO: for bla is instance
             returned_values = [all_node_dicts[ren_id].result for ren_id in self.return_ids]
         else:
-            raise TypeError("bla")
+            raise TawaziTypeError(
+                "Return type for the DAG can only be a single value, Tuple or List"
+            )
 
         return returned_values
 
