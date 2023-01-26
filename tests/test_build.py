@@ -67,7 +67,7 @@ failing_execnodes = list_execnodes + [ExecNode(fail.__name__, fail, [en_g], is_s
 def test_dag_build():
     g = DAG(list_execnodes, 2, behavior=ErrorStrategy.strict)
     t0 = time()
-    g.execute()  # must never fail!
+    g._execute()  # must never fail!
     print(time() - t0)
     for k, v in g.node_dict.items():
         print(g, v, v.result)
@@ -82,6 +82,6 @@ def test_draw():
 def test_bad_behaviour():
     try:
         g = DAG(failing_execnodes, 2, behavior="Such Bad Behavior")
-        g.execute()
+        g._execute()
     except NotImplementedError:
         pass
