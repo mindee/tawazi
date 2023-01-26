@@ -73,35 +73,35 @@ def dag_describer():
 def test_dag_subgraph_all_nodes():
     pytest.subgraph_comp_str = ""
     dag = dag_describer
-    results = dag.execute([a, b, c, d, e, f, g, h, i])
+    results = dag._execute([a, b, c, d, e, f, g, h, i])
     assert set("abcdefghi") == set(pytest.subgraph_comp_str)
 
 
 def test_dag_subgraph_leaf_nodes():
     pytest.subgraph_comp_str = ""
     dag = dag_describer
-    results = dag.execute([b, d, f, g, i])
+    results = dag._execute([b, d, f, g, i])
     assert set("abcdefghi") == set(pytest.subgraph_comp_str)
 
 
 def test_dag_subgraph_leaf_nodes_with_extra_nodes():
     pytest.subgraph_comp_str = ""
     dag = dag_describer
-    results = dag.execute([b, c, e, h, g])
+    results = dag._execute([b, c, e, h, g])
     assert set("abcegh") == set(pytest.subgraph_comp_str)
 
 
 def test_dag_subgraph_nodes_ids():
     pytest.subgraph_comp_str = ""
     dag = dag_describer
-    results = dag.execute([b.id, c.id, e.id, h.id, g.id])
+    results = dag._execute([b.id, c.id, e.id, h.id, g.id])
     assert set("abcegh") == set(pytest.subgraph_comp_str)
 
 
 def test_dag_subgraph_non_existing_nodes_ids():
     with pytest.raises(ValueError, match="nodes are not in the graph"):
         dag = dag_describer
-        results = dag.execute(["gibirish"])
+        results = dag._execute(["gibirish"])
 
 
 # TODO: fix this problem!!!
