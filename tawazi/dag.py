@@ -199,8 +199,7 @@ class DAG:
         # ExecNodes can be shared between Graphs, their call signatures might also be different
         self.exec_nodes = exec_nodes
 
-        self.max_concurrency = int(max_concurrency)
-        assert max_concurrency >= 1, "Invalid maximum number of threads! Must be a positive integer"
+        self.max_concurrency = max_concurrency
 
         # variables necessary for DAG construction
         self.backwards_hierarchy: Dict[IdentityHash, List[IdentityHash]] = {
@@ -213,8 +212,7 @@ class DAG:
         # Calculate all the tags in the DAG to reduce overhead during computation
         self.tag_node_dict = {xn.tag: xn for xn in self.exec_nodes if xn.tag}
 
-        # NOTE: only used in testing: to be remove ? Maybe not because it might be
-        # NOTE: useful to access nodes from the outside easily
+        # Might be useful in the future
         self.node_dict_by_name: Dict[str, ExecNode] = {
             exec_node.__name__: exec_node for exec_node in self.exec_nodes
         }
@@ -228,6 +226,16 @@ class DAG:
 
         self._build()
 
+    @property
+    def max_concurrency(self) -> int:
+        return self._max_concurrency
+
+    @max_concurrency.setter
+    def max_concurrency(self, value: int) -> None:
+        if value < 1:
+            raise ValueError("Invalid maximum number of threads! Must be a positive integer")
+        self._max_concurrency = value
+
     # getters
     def get_nodes_by_tag(self, tag: Any) -> List[ExecNode]:
         nodes = [ex_n for ex_n in self.exec_nodes if ex_n.tag == tag]
@@ -238,7 +246,9 @@ class DAG:
         #   help the user know the id of the ExecNode by pointing to documentation!?
         return self.node_dict[id_]
 
-    def find_cycle(self) -> Optional[List[Tuple[str, str]]]:
+    # TODO: get node by usage (the order of call of an ExecNode)
+
+    def _find_cycle(self) -> Optional[List[Tuple[str, str]]]:
         """
         A DAG doesn't have any dependency cycle.
         This method returns the cycles if found.
@@ -268,7 +278,7 @@ class DAG:
                 self.graph_ids.add_edges_from(edges)
 
         # 2. Validate the DAG: check for circular dependencies
-        cycle = self.find_cycle()
+        cycle = self._find_cycle()
         if cycle:
             raise NetworkXUnfeasible(
                 f"the product contains at least a circular dependency: {cycle}"
@@ -278,18 +288,17 @@ class DAG:
         topological_order = self.graph_ids.topological_sort()
 
         # 4. calculate the sum of priorities of all recursive children
-        self.assign_recursive_children_compound_priority()
+        self._recursive_assign_compound_priority()
 
         # 5. make a valid execution sequence to run sequentially if needed
-        self.exec_node_sequence = [self.node_dict[node_name] for node_name in topological_order]
+        self.exec_node_sequence = [self.node_dict[xn_id] for xn_id in topological_order]
 
-    def assign_recursive_children_compound_priority(self) -> None:
+    def _recursive_assign_compound_priority(self) -> None:
         """
         Assigns a compound priority to all nodes in the graph.
         The compound priority is the sum of the priorities of all children recursively.
         """
-        # Note: if there was a forward dependency recorded, this would have been much easier
-
+        # 1. deepcopy graph_ids because it will be modified (pruned)
         graph_ids = deepcopy(self.graph_ids)
         leaf_ids = graph_ids.leaf_nodes()
 
@@ -325,7 +334,7 @@ class DAG:
         """
         import matplotlib.pyplot as plt
 
-        # todo use graphviz instead! it is much more elegant
+        # TODO: use graphviz instead! it is much more elegant
 
         pos = nx.spring_layout(self.graph_ids, seed=42069, k=k, iterations=20)
         nx.draw(self.graph_ids, pos, with_labels=True)
@@ -336,7 +345,7 @@ class DAG:
             plt.close()
 
     @classmethod
-    def deepcopy_non_setup_x_nodes(cls, x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
+    def _deepcopy_non_setup_x_nodes(cls, x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
         x_nodes_copy = {}
         for id_, x_nd in x_nodes.items():
             # if execnode is a setup node, it shouldn't be copied
@@ -346,14 +355,14 @@ class DAG:
                 x_nodes_copy[id_] = deepcopy(x_nd)
         return x_nodes_copy
 
-    # TODO: change the arguments in .execute to pass in arguments for the dag calculations ?
-    def execute(
+    def _execute(
         self,
         leaves_ids: Optional[List[Union[IdentityHash, ExecNode]]] = None,
         modified_node_dict: Optional[Dict[str, ExecNode]] = None,
     ) -> Dict[IdentityHash, Any]:
         """
-        Thread safe execution of the DAG.
+        Thread safe execution of the DAG...
+         (Except for the setup nodes! Please run DAG.setup() in a single thread because its results will be cached).
         Args:
             leaves_ids: The nodes (or the ids of the nodes) to be executed
         Returns:
@@ -364,21 +373,25 @@ class DAG:
 
         # 0.2 deepcopy the node_dict in order to modify the results inside every node and make the dag reusable
         #     modified_node_dict are used to modify the values inside the ExecNode corresponding
-        #     to the input arguments provided to the whole DAG
+        #     to the input arguments provided to the whole DAG (ArgExecNode)
         # NOTE: what is the behavior if modified_node_dict contains setup nodes !???
         #   In principal, this is not possible...
         # if modified_node_dict:
         #     for ex_n in modified_node_dict.values():
         #         if ex_n.setup:
         #             raise TawaziBaseException(f"Setup nodes can't be provided as input to the DAG!,")
-        # TODO: only deepcopy the the node_dict that aren't setup nodes !
 
-        node_dict = DAG.deepcopy_non_setup_x_nodes(modified_node_dict or self.node_dict)
+        node_dict = DAG._deepcopy_non_setup_x_nodes(modified_node_dict or self.node_dict)
 
         # 0.3 create variables related to futures
         futures: Dict[IdentityHash, "Future[Any]"] = {}
         done: Set["Future[Any]"] = set()
         running: Set["Future[Any]"] = set()
+
+        # TODO: optimize the execution by directly running the pre-computed ExecNodes! (setup, ArgExecNodes)
+
+        # TODO: support non "threadable" ExecNodes.
+        #  These are ExecNodes that can't run inside a thread because their arguments aren't pickelable!
 
         # 0.4 create helpers functions encapsulated from the outside
         def get_num_running_threads(_futures: Dict[IdentityHash, "Future[Any]"]) -> int:
@@ -421,7 +434,7 @@ class DAG:
                 for id_, fut in futures.items():
                     if fut.done() and id_ in graph:
                         logger.debug(f"Remove ExecNode {id_} from the graph")
-                        self.handle_exception(graph, fut, id_)
+                        self._handle_exception(graph, fut, id_)
                         graph.remove_node(id_)
 
                 # 2. list the root nodes that aren't being executed
@@ -475,7 +488,7 @@ class DAG:
                     wait(futures.values(), return_when=ALL_COMPLETED)
         return node_dict
 
-    def get_leaves_ids(
+    def _get_leaves_ids(
         self, twz_nodes: List[Union[Tag, IdentityHash, ExecNode]]
     ) -> List[IdentityHash]:
 
@@ -528,28 +541,27 @@ class DAG:
             #  however they might contain non setup nodes... so we should extract all the nodes ids
             #  that must be run in order to run the twz_nodes ExecNodes
             #  after wards we can remove the non setup nodes
-            leaves_ids = self.get_leaves_ids(twz_nodes)
+            leaves_ids = self._get_leaves_ids(twz_nodes)
             graph = subgraph(self.graph_ids, leaves_ids)  # type: ignore
 
             # maybe the user provided a node by argument that is not a setup node!
             setup_leaves_ids = [id_ for id_ in graph.nodes if id_ in all_setup_nodes]
             # NOTE: what happens if the user provides a debug node ? this is weird and should probably be disallowed
 
-        self.execute(setup_leaves_ids, all_setup_nodes)  # type: ignore
+        self._execute(setup_leaves_ids, all_setup_nodes)  # type: ignore
 
     # TODO: support passing in a subset of nodes to execute via kwargs!
     #  for example: twz_nodes: List[ExecNodes] | List[IdHash]
 
-    # TODO: List[Any] refers to tag Type!! Make a special Type for it
     def __call__(
         self, *args: Any, twz_nodes: Optional[List[Union[Tag, IdentityHash, ExecNode]]] = None
     ) -> Any:
 
-        leaves_ids = None if not twz_nodes else self.get_leaves_ids(twz_nodes)
+        leaves_ids = None if not twz_nodes else self._get_leaves_ids(twz_nodes)
 
         # NOTE: there is a double deep copy, this is the 1st,
         #  the 2nd happens in DAG.execute(...)
-        modified_node_dict = DAG.deepcopy_non_setup_x_nodes(self.node_dict)
+        modified_node_dict = DAG._deepcopy_non_setup_x_nodes(self.node_dict)
         # NOTE: maybe a better way of coding this is to consider input_ids always a List[] instead of Optional
         if args and self.input_ids:
             # make sure they have the same length
@@ -566,7 +578,7 @@ class DAG:
                 modified_node_dict[node_id].result = val
                 modified_node_dict[node_id].executed = True
 
-        all_node_dicts = self.execute(leaves_ids, modified_node_dict)  # type: ignore
+        all_node_dicts = self._execute(leaves_ids, modified_node_dict)  # type: ignore
 
         if self.return_ids is None:
             returned_values = None
@@ -601,9 +613,7 @@ class DAG:
 
         return node_dict
 
-    # TODO: get node by usage
-
-    def handle_exception(self, graph: DiGraphEx, fut: "Future[Any]", id_: IdentityHash) -> None:
+    def _handle_exception(self, graph: DiGraphEx, fut: "Future[Any]", id_: IdentityHash) -> None:
         """
         checks if futures have produced exceptions, and handles them
         according to the specified behavior
