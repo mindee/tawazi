@@ -652,7 +652,6 @@ class DAG:
                 node_id = self.input_ids[ind_arg]
 
                 call_xn_dict[node_id].result = arg
-                call_xn_dict[node_id].executed = True
 
         return call_xn_dict
 
