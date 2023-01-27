@@ -11,6 +11,8 @@ from tawazi.consts import (
     RESERVED_KWARGS,
     USE_SEP_START,
     IdentityHash,
+    NoVal,
+    NoValType,
     Tag,
 )
 from tawazi.errors import InvalidExecNodeCall, TawaziBaseException, raise_arg_exc
@@ -22,32 +24,6 @@ from .config import Cfg
 # a temporary variable used to pass in exec_nodes to the DAG during building
 exec_nodes: List["ExecNode"] = []
 exec_nodes_lock = Lock()
-
-
-class NoValType:
-    """
-    Tawazi's special None.
-    This class is a singleton similar to None to determine that no value is assigned
-    """
-
-    _instance = None
-
-    def __new__(cls):  # type: ignore
-        if cls._instance is None:
-            cls._instance
-
-    @classmethod
-    def __bool__(cls) -> bool:
-        return False
-
-    def __repr__(self) -> str:
-        return "NoVal"
-
-    def __eq__(self, __o: object) -> bool:
-        return False
-
-
-NoVal = NoValType()
 
 
 class ExecNode:
@@ -293,9 +269,10 @@ class LazyExecNode(ExecNode):
         # TODO: maybe change the Type of objects created.
         #  for example: have a LazyExecNode.__call(...) return an ExecNodeCall instead of a deepcopy
 
-        # 1. Assign the id
-        count_usages = sum(ex_n.id.split(USE_SEP_START)[0] == self.id for ex_n in exec_nodes)
+        # 1.1 Make a deep copy of self because every Call to an ExecNode corresponds to a new instance
         self_copy = deepcopy(self)
+        # 1.2 Assign the id
+        count_usages = sum(ex_n.id.split(USE_SEP_START)[0] == self.id for ex_n in exec_nodes)
         # if ExecNode is used multiple times, <<usage_count>> is appended to its ID
         self_copy.id = lazy_xn_id(self.id, count_usages)
 

@@ -1,7 +1,7 @@
 import inspect
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple, Union
 
-from tawazi.consts import USE_SEP_END, USE_SEP_START, IdentityHash
+from tawazi.consts import USE_SEP_END, USE_SEP_START, IdentityHash, NoVal, NoValType
 
 
 def ordinal(numb: int) -> str:
@@ -52,7 +52,7 @@ def get_args_and_default_args(func: Callable[..., Any]) -> Tuple[List[str], Dict
          and the mapping between the arguments and their default value for default arguments
     >>> def f(a1, a2, *args, d1=123, d2=None): pass
     >>> get_args_and_default_args(f)
-    >>> (['a1', 'a2', 'args'], {'d1': 123, 'd2': None})
+    (['a1', 'a2', 'args'], {'d1': 123, 'd2': None})
     """
     signature = inspect.signature(func)
     args = []
@@ -71,3 +71,9 @@ def lazy_xn_id(base_id: IdentityHash, count_usages: int) -> IdentityHash:
         return f"{base_id}{USE_SEP_START}{count_usages}{USE_SEP_END}"
 
     return base_id
+
+
+def filter_NoVal(v: Union[NoValType, Any]) -> Any:
+    if v is NoVal:
+        return None
+    return v
