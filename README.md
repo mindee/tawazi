@@ -16,24 +16,31 @@ The tawazi library enables **parallel** execution of functions in a [DAG](https:
 This library satisfies the following:
 * Stable, robust, well tested
 * lightweight
-* Thread Safety
-* Low to no dependencies
+* Thread Safe
+* Low or no dependencies
 * Legacy Python versions support (in the future)
 * pypy support (in the future)
+* Many Python implementation support (in the future)
 
 In the context of tawazi, the computation sequence to be run in parallel is referred to as DAG and the functions that must run in parallel are called `ExecNode`s.
 
 This library supports:
-* Limitation of the number of "Threads"
+* Limiting the number of "Threads" that the DAG uses while running
 * Priority Choice of each `ExecNode`
 * Per `ExecNode` choice of parallelization (i.e. An `ExecNode` is allowed to run in parallel with other `ExecNode`s or not)
+* setup `ExecNode`s: These nodes only run once per DAG instance
+* debug `ExecNode`s: These are nodes that only run during when `RUN_DEBUG_NODES` environment variable is set
+* running a subgraph of the DAG instance
 
 **Note**: The library is still at an [advanced state of development](#future-developments). Your contributions are highly welcomed.
 
 
 ## Usage
-```python
 
+### Parallelism
+You can use Tawazi to make your non CPU-Bound code Faster
+
+```python
 # type: ignore
 from time import sleep, time
 from tawazi import op, to_dag
@@ -57,21 +64,174 @@ def c(a, b):
     return f"{a} + {b} = C"
 
 @to_dag(max_concurrency=2)
-def deps_describer():
-  result_a = a()
-  result_b = b()
-  result_c = c(result_a, result_b)
+def pipeline():
+  res_a = a()
+  res_b = b()
+  res_c = c(res_a, res_b)
+  return res_c
 
-if __name__ == "__main__":
-
-  t0 = time()
-  # executing the dag takes a single line of code
-  deps_describer()
-  execution_time = time() - t0
-  assert execution_time < 1.5
-  print(f"Graph execution took {execution_time:.2f} seconds")
+t0 = time()
+# executing the dag takes a single line of code
+res = pipeline()
+execution_time = time() - t0
+assert execution_time < 1.5
+print(f"Graph execution took {execution_time:.2f} seconds")
+print(f"res = {res}")
 
 ```
+As you can see, the execution time of pipeline takes less than 2 seconds, which means that some part of the code ran in parallel to the other
+
+### pipeline
+
+* You can pass in arguments to the pipeline and get results back using the normal function interface:
+
+```Python
+from tawazi import op, to_dag
+@op
+def op1(i):
+  return i+1
+
+@op
+def op2(i, j=1):
+  return i + j + 1
+
+@to_dag
+def pipeline(i=0):
+  res1 = op1(i)
+  res2 = op2(res1)
+  return res2
+
+# run pipeline with default parameters
+assert pipeline() == 3
+# run pipeline with passed parameters
+assert pipeline(1) == 4
+```
+You can not pass in named parameters though... (will be supported in future releases)
+
+* You can return multiple values from a pipeline via tuples or lists. (Dict will be supported in the future)
+
+```Python
+@to_dag
+def pipeline():
+  return op1(1), op2(1)
+
+assert pipeline() == (2, 3)
+```
+
+Currently you can only return a single value from an `ExecNode`, in the future multiple return values will be allowed.
+
+
+* You can have setup `ExecNode`s; Theses are `ExecNode`s that will run once per DAG instance
+
+```Python
+from copy import deepcopy
+@op(setup=True)
+def setop():
+  global setop_counter
+  setop_counter += 1
+  return "Long algorithm to generate Constant Data"
+@op
+def my_print(arg):
+  print(arg)
+@to_dag
+def pipeline():
+  cst_data = setop()
+  my_print(cst_data)
+
+setop_counter = 0
+# create another instance because setup ExecNode result is cached inside the instance
+pipe1 = deepcopy(pipeline)
+pipe1.setup()
+assert setop_counter == 1
+pipe1()
+assert setop_counter == 1
+
+
+setop_counter = 0
+pipe2 = deepcopy(pipeline)
+pipe2()
+assert setop_counter == 1
+pipe2()
+assert setop_counter == 1
+
+```
+
+* You can Make Debug ExecNodes that will only run if `RUN_DEBUG_NODES` env variable is set. These can be visualization ExecNodes for example... or some complicated Assertions that helps you debug problems when needed that are hostile to the production environment
+```Python
+@op
+def a(i):
+  return i + 1
+@op(debug=True)
+def print_debug(i):
+  global debug_has_run
+  debug_has_run = True
+  print("DEBUG: ", i)
+@to_dag
+def pipe():
+  i = a(0)
+  print_debug(i)
+  return i
+
+debug_has_run = False
+pipe()
+assert debug_has_run == False
+
+```
+
+* Tags: you can tag an ExecNode
+```Python
+@op(tag="twinkle toes")
+def a():
+  print("I am tough")
+@op
+def b():
+  print("I am normal")
+
+@to_dag
+def pipeline():
+  a()
+  b()
+
+pipeline()
+xn_a = pipeline.get_nodes_by_tag("twinkle toes")
+# You can do whatever you want with this ExecNode...
+
+
+# You can even tag a specific call of an ExecNode
+@op
+def g(i):
+  return i
+@op(tag="c_node")
+def c(i):
+  print(i)
+@to_dag
+def pipeline():
+  b()
+  hello = g("hello")
+  c(hello)
+  goodbye = g("goodbye")
+  c(goodbye, twz_tag="byebye")
+
+pipeline()
+xn_bye = pipeline.get_nodes_by_tag("byebye")
+```
+
+This will be useful if you want to run a subgraph (cf. the next paragraph). It will also be useful if you want to access result of a specific ExecNode after an Execution
+* You can run a subgraph of your pipeline. During the invocation of the pipeline, you can choose your target ExecNodes (these are the leaf nodes that you want to run).
+```Python
+# You can use the original __qual__name of the decorated function as an Identifier
+pipeline(twz_nodes=["b"])
+# You can use the tag of an ExecNode
+pipeline(twz_nodes=["c_nodes"])
+# You can use the calling tag to distinguish the 1st call of g from the 2nd call!
+pipeline(twz_nodes=["byebye"])
+# You can even pass in the ExecNodes to run and mix identifiers types
+pipeline(twz_nodes=["b", xn_bye])
+
+```
+
+* More functionalities will be introduced in the future...
+
 
 ## Advanced Usage
 
@@ -110,17 +270,16 @@ def deps_describer():
   res_c = c(res_a, res_b)
   return res_a, res_b, res_c
 
-if __name__ == "__main__":
 
-  t0 = time()
-  # the dag instance is reusable.
-  # This is recommended if you want to do the same computation multiple times
-  res_a, res_b, res_c = deps_describer()
-  execution_time = time() - t0
-  print(f"Graph execution took {execution_time:.2f} seconds")
-  assert res_a == "A"
-  assert res_b == "B"
-  assert res_c == "A + B = C"
+t0 = time()
+# the dag instance is reusable.
+# This is recommended if you want to do the same computation multiple times
+res_a, res_b, res_c = deps_describer()
+execution_time = time() - t0
+print(f"Graph execution took {execution_time:.2f} seconds")
+assert res_a == "A"
+assert res_b == "B"
+assert res_c == "A + B = C"
 
 
 ```

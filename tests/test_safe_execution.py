@@ -123,6 +123,3 @@ def test_subgraph_with_safe_execution_with_setup():
     assert pipe_.safe_execute(2, twz_nodes=["op1"]) == (5, None)
     assert pytest.safe_execution_c == 1
     assert pytest.safe_execution_op_cst_has_run == False
-
-
-test_subgraph_with_safe_execution_with_setup()
