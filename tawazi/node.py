@@ -88,9 +88,9 @@ class ExecNode:
         self.result: Union[NoValType, Any] = NoVal
         # even though setting result to NoVal is not necessary... it clarifies debugging
 
-        # self.executed can be removed...
-        #  it can be a property that checks if self.result is not NoVal
-        self.executed = False
+    @property
+    def executed(self) -> bool:
+        return self.result is not NoVal
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} {self.id} ~ | <{hex(id(self))}>"
@@ -128,7 +128,6 @@ class ExecNode:
 
         # 2. write the result
         self.result = self.exec_function(*args, **kwargs)
-        self.executed = True
 
         # 3. useless return value
         logger.debug(f"Finished executing {self.id} with task {self.exec_function}")
@@ -212,7 +211,6 @@ class ArgExecNode(ExecNode):
 
         if value is not NoVal:
             self.result = value
-            self.executed = True
 
 
 class LazyExecNode(ExecNode):
