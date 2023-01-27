@@ -5,7 +5,7 @@ from typing import Union
 
 import pytest
 
-from tawazi import _to_dag, op
+from tawazi import op, to_dag
 
 
 @op
@@ -41,7 +41,7 @@ def d(b, c, third_argument: Union[str, int] = 1234, fourth_argument=6789):
     return "d"
 
 
-@_to_dag
+@to_dag
 def my_custom_dag():
     vara = a()
     varb = b(vara)
@@ -65,7 +65,7 @@ def f(a, b, c, d, e):
     print("ran f")
 
 
-@_to_dag
+@to_dag
 def my_other_custom_dag():
     vara = a()
     varb = b(vara)
@@ -75,23 +75,23 @@ def my_other_custom_dag():
     _varf = f(vara, varb, varc, vard, vare)
 
 
-d1 = my_custom_dag()
+d1 = my_custom_dag
 print("\n1st execution of dag")
-d1.execute()
+d1()
 assert pytest.third_argument == 1234
 assert pytest.fourth_argument == 1111
 print("\n2nd execution of dag")
-d1.execute()
+d1()
 
-d2 = my_other_custom_dag()
+d2 = my_other_custom_dag
 print("\n1st execution of other dag")
-d2.execute()
+d2()
 assert pytest.third_argument == "blabla"
 assert pytest.fourth_argument == 2222
 print("\n2nd execution of other dag")
-d2.execute()
+d2()
 
 print("\n3rd execution of dag")
-d1.execute()
+d1()
 assert pytest.third_argument == 1234
 assert pytest.fourth_argument == 1111

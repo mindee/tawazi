@@ -9,6 +9,7 @@ from networkx import find_cycle
 from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 
 from tawazi.consts import ReturnIDsType
+from tawazi.helpers import filter_NoVal
 
 from .consts import IdentityHash, Tag
 from .errors import ErrorStrategy, TawaziBaseException, TawaziTypeError
@@ -379,7 +380,7 @@ class DAG:
         #             raise TawaziBaseException(f"Setup nodes can't be provided as input to the DAG!,")
 
         # TODO: remove this deep copy because it already happens inside DAG.__call__
-        node_dict = DAG._deepcopy_non_setup_x_nodes(modified_node_dict or self.node_dict)
+        node_dict = modified_node_dict or DAG._deepcopy_non_setup_x_nodes(self.node_dict)
 
         # 0.3 create variables related to futures
         futures: Dict[IdentityHash, "Future[Any]"] = {}
@@ -673,11 +674,12 @@ class DAG:
         if self.return_ids is None:
             return None
         if isinstance(self.return_ids, IdentityHash):
-            return xn_dict[self.return_ids].result
+            return filter_NoVal(xn_dict[self.return_ids].result)
+        gen = (filter_NoVal(xn_dict[ren_id].result) for ren_id in self.return_ids)
         if isinstance(self.return_ids, tuple):
-            return tuple(xn_dict[ren_id].result for ren_id in self.return_ids)
+            return tuple(gen)
         if isinstance(self.return_ids, list):
-            return [xn_dict[ren_id].result for ren_id in self.return_ids]
+            return list(gen)
         raise TawaziTypeError("Return type for the DAG can only be a single value, Tuple or List")
 
     # NOTE: this function should be used in case there was a bizarre behavior noticed during the
