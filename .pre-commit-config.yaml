@@ -12,7 +12,7 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
   - repo: https://github.com/pycqa/isort
-    rev: 5.8.0
+    rev: 5.11.5
     hooks:
       - id: isort
       # only useful for pre-commit hooked to git
