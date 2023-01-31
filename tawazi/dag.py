@@ -609,6 +609,17 @@ class DAG:
 
         return returned_values
 
+    # TODO: introduce a new interface.
+    #  this interface should return an Object that contains
+    #  class DAGExecution():
+    #      def __init__(self):
+    #           return: the returned values
+    #           results: the results for every single ExecNode call
+    #           profile: the time it took for every single
+    #           exec_nodes: detailed object containing all exec_nodes hence their results (it should be used only for advanced usages)
+    #           args passed to the pipeline
+    # def execute(self, *args, **kwargs, twz_nodes=None, profile=False):
+
     def _make_call_xn_dict(
         self, *args: Any, twz_nodes: Optional[List[Union[Tag, IdentityHash, ExecNode]]]
     ) -> Dict[IdentityHash, ExecNode]:
