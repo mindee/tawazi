@@ -213,7 +213,8 @@ def pipeline():
   c(goodbye, twz_tag="byebye")
 
 pipeline()
-xn_bye = pipeline.get_nodes_by_tag("byebye")
+# multiple nodes can have the same tag!
+xns_bye = pipeline.get_nodes_by_tag("byebye")
 ```
 
 This will be useful if you want to run a subgraph (cf. the next paragraph). It will also be useful if you want to access result of a specific ExecNode after an Execution
@@ -222,11 +223,11 @@ This will be useful if you want to run a subgraph (cf. the next paragraph). It w
 # You can use the original __qual__name of the decorated function as an Identifier
 pipeline(twz_nodes=["b"])
 # You can use the tag of an ExecNode
-pipeline(twz_nodes=["c_nodes"])
+pipeline(twz_nodes=["c_node"])
 # You can use the calling tag to distinguish the 1st call of g from the 2nd call!
 pipeline(twz_nodes=["byebye"])
 # You can even pass in the ExecNodes to run and mix identifiers types
-pipeline(twz_nodes=["b", xn_bye])
+pipeline(twz_nodes=["b", xns_bye[0]])
 
 ```
 
