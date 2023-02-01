@@ -600,7 +600,7 @@ class DAG:
         leaves_ids = None if not twz_nodes else self._get_leaves_ids(twz_nodes)
 
         # 2. copy the ExecNodes
-        call_xn_dict = self._make_call_xn_dict(*args, twz_nodes=twz_nodes)
+        call_xn_dict = self._make_call_xn_dict(*args)
 
         # 3. Execute the scheduler
         all_nodes_dict = self._execute(leaves_ids, call_xn_dict)  # type: ignore
@@ -621,9 +621,7 @@ class DAG:
     #           args passed to the pipeline
     # def execute(self, *args, **kwargs, twz_nodes=None, profile=False):
 
-    def _make_call_xn_dict(
-        self, *args: Any, twz_nodes: Optional[List[Union[Tag, IdentityHash, ExecNode]]]
-    ) -> Dict[IdentityHash, ExecNode]:
+    def _make_call_xn_dict(self, *args: Any) -> Dict[IdentityHash, ExecNode]:
         """
         Generate the calling ExecNode dict.
         This is an ExecNode dict that will contain the ExecNodes that will be executed (hence modified) by the DAG scheduler.
@@ -694,7 +692,7 @@ class DAG:
         graph_ids = subgraph(self.graph_ids, leaves_ids)  # type: ignore
 
         # 2. make call_xn_dict that will be modified
-        call_xn_dict = self._make_call_xn_dict(*args, twz_nodes=twz_nodes)
+        call_xn_dict = self._make_call_xn_dict(*args)
 
         # 3. deep copy the node_dict to store the results in each node
         for xn_id in graph_ids.topological_sort():
