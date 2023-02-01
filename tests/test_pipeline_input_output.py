@@ -28,18 +28,16 @@ def op1(in1):
 
 
 def test_pipeline_input_output():
-    l = declare_dag_function([1, 2, 3], 10)
-    assert l == 16
+    assert declare_dag_function([1, 2, 3], 10) == 16
 
 
 def test_pipeline_input_output_skipping_default_params():
-    l = declare_dag_function([1, 2, 3])
-    assert l == 6
+    assert declare_dag_function([1, 2, 3]) == 6
 
 
 def test_pipeline_input_output_missing_argument():
     with pytest.raises(TawaziBaseException):
-        l = declare_dag_function()
+        declare_dag_function()
 
 
 def test_pipeline_default_args_input_not_provided():
