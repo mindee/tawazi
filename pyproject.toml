@@ -24,7 +24,7 @@ pytest-cov = "^4.0.0"
 mkcodes = "*"
 # documentation packages
 
-[tool.poetry.doc-dependencies]
+[tool.poetry.group.docs.dependencies]
 mkdocs = "^1.4.0"
 mike = "1.1.2"
 mkdocs-exclude = "1.0.2"
