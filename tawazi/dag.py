@@ -282,12 +282,12 @@ class DAG:
         topological_order = self.graph_ids.topologically_sorted
 
         # 4. calculate the sum of priorities of all recursive children
-        self._recursive_assign_compound_priority()
+        self._assign_compound_priority()
 
         # 5. make a valid execution sequence to run sequentially if needed
         self.exec_node_sequence = [self.node_dict[xn_id] for xn_id in topological_order]
 
-    def _recursive_assign_compound_priority(self) -> None:
+    def _assign_compound_priority(self) -> None:
         """
         Assigns a compound priority to all nodes in the graph.
         The compound priority is the sum of the priorities of all children recursively.
