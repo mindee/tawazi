@@ -61,8 +61,7 @@ class ExecNode:
              When this ExecNode must be executed, all other nodes are waited to finish before starting execution.
              Defaults to False.
         """
-        # NOTE: validate attributes using pydantic perhaps?
-        #   But will be problematic when Pydantic 2 will be released... it will be best to wait for this Feature
+        # NOTE: validate attributes using pydantic perhaps
         # 1. assign attributes
         self.id = id_
         self.exec_function = exec_function
@@ -181,6 +180,7 @@ class ArgExecNode(ExecNode):
             TawaziArgumentException: if this argument is not provided during the Attached ExecNode usage
             TypeError: if type parameter is passed (Internal)
         """
+        # TODO: use pydantic!
         if isinstance(xn_or_func, ExecNode):
             base_id = xn_or_func.id
             func = xn_or_func.exec_function
@@ -262,6 +262,7 @@ class LazyExecNode(ExecNode):
         #   then skip registering this node in the list of ExecNodes to be executed
         if self.debug and not Cfg.RUN_DEBUG_NODES:
             # NOTE: is this the best idea ? what if I want to run a pipe with debug nodes then without debug nodes
+            # TODO: move to init ?
             return self
 
         # TODO: maybe change the Type of objects created.
@@ -292,39 +293,32 @@ class LazyExecNode(ExecNode):
             self_copy.args.append(arg)
 
         # 2.2 support **kwargs
-        for arg_name, arg in kwargs.items():
+        for kwarg_name, kwarg in kwargs.items():
             # support reserved kwargs for tawazi
             # These are necessary in order to pass information about the call of an ExecNode (the deep copy)
             #  independently of the original LazyExecNode
-            if arg_name in RESERVED_KWARGS:
-                self_copy._assign_reserved_args(arg_name, arg)
+            if kwarg_name in RESERVED_KWARGS:
+                self_copy._assign_reserved_args(kwarg_name, kwarg)
                 continue
-            if not isinstance(arg, ExecNode):
+            if not isinstance(kwarg, ExecNode):
                 # passed in constants
-                arg = ArgExecNode(self_copy, arg_name, arg)
-                exec_nodes.append(arg)
+                kwarg = ArgExecNode(self_copy, kwarg_name, kwarg)
+                exec_nodes.append(kwarg)
 
-            self_copy.kwargs[arg_name] = arg
+            self_copy.kwargs[kwarg_name] = kwarg
 
-        # if ExecNode is not a debug node, all its dependencies must not be debug node
-        if not self_copy.debug:
-            for dep in self_copy.dependencies:
-                if dep.debug:
-                    raise TawaziBaseException(
-                        f"Non debug node {self_copy} depends on debug node {dep}"
-                    )
+        for dep in self_copy.dependencies:
+            # if ExecNode is not a debug node, all its dependencies must not be debug node
+            if not self_copy.debug and dep.debug:
+                raise TawaziBaseException(f"Non debug node {self_copy} depends on debug node {dep}")
 
-        # if ExecNode is a setup node, all its dependencies should be either:
-        # 1. setup nodes
-        # 2. Constants (ArgExecNode)
-        # 3. Arguments passed directly to the PipeLine (ArgExecNode)
-        if self_copy.setup:
-            for dep in self_copy.dependencies:
-                accepted_case = dep.setup or isinstance(dep, ArgExecNode)
-                if not accepted_case:
-                    raise TawaziBaseException(
-                        f"setup node {self_copy} depends on non setup node {dep}"
-                    )
+            # if ExecNode is a setup node, all its dependencies should be either:
+            # 1. setup nodes
+            # 2. Constants (ArgExecNode)
+            # 3. Arguments passed directly to the PipeLine (ArgExecNode)
+            accepted_case = dep.setup or isinstance(dep, ArgExecNode)
+            if self_copy.setup and not accepted_case:
+                raise TawaziBaseException(f"setup node {self_copy} depends on non setup node {dep}")
 
         exec_nodes.append(self_copy)
         return self_copy

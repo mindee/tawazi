@@ -12,7 +12,7 @@ from tawazi.consts import ReturnIDsType
 from tawazi.helpers import filter_NoVal
 
 from .consts import IdentityHash, Tag
-from .errors import ErrorStrategy, TawaziBaseException, TawaziTypeError
+from .errors import ErrorStrategy, TawaziTypeError
 from .node import ArgExecNode, ExecNode
 
 
@@ -170,6 +170,7 @@ class DAG:
         * Parallelization constraint of each ExecNode (is_sequential attribute)
     """
 
+    # TODO: transform into basemodel to do validation
     def __init__(
         self,
         exec_nodes: List[ExecNode],
@@ -242,6 +243,7 @@ class DAG:
 
     # TODO: get node by usage (the order of call of an ExecNode)
 
+    # TODO: validate using Pydantic
     def _find_cycle(self) -> Optional[List[Tuple[str, str]]]:
         """
         A DAG doesn't have any dependency cycle.
@@ -528,10 +530,10 @@ class DAG:
                     "twz_nodes must be of type ExecNode, "
                     f"str or tuple identifying the node but provided {tag_or_id_or_node}"
                 )
-        if len(twz_nodes) != len(leaves_ids):
-            raise TawaziBaseException(
-                f"something went wrong because of providing {twz_nodes} as subgraph nodes to run"
-            )
+        assert len(twz_nodes) == len(
+            leaves_ids
+        ), f"something went wrong because of providing {twz_nodes} as subgraph nodes to run"
+
         # TODO: review the way the interface with DAG.execute works! it is not the best interface!
         return leaves_ids
 
@@ -607,17 +609,6 @@ class DAG:
 
         return returned_values
 
-    # TODO: introduce a new interface.
-    #  this interface should return an Object that contains
-    #  class DAGExecution():
-    #      def __init__(self):
-    #           return: the returned values
-    #           results: the results for every single ExecNode call
-    #           profile: the time it took for every single
-    #           exec_nodes: detailed object containing all exec_nodes hence their results (it should be used only for advanced usages)
-    #           args passed to the pipeline
-    # def execute(self, *args, **kwargs, twz_nodes=None, profile=False):
-
     def _make_call_xn_dict(self, *args: Any) -> Dict[IdentityHash, ExecNode]:
         """
         Generate the calling ExecNode dict.
@@ -676,7 +667,7 @@ class DAG:
 
     # NOTE: this function should be used in case there was a bizarre behavior noticed during the
     #   the execution of the DAG via DAG.execute(...)
-    def safe_execute(
+    def _safe_execute(
         self, *args: Any, twz_nodes: Optional[List[Union[Tag, IdentityHash, ExecNode]]] = None
     ) -> Any:
         """
