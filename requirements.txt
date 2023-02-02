@@ -1,5 +1,0 @@
-# contains the same dependencies in pyproject.toml for compatibility with markdown-embedded-code github action.
-
-networkx>=2.6.3
-pydantic>=1.10
-loguru>=0.6.0
