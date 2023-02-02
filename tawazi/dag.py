@@ -32,6 +32,7 @@ class DiGraphEx(nx.DiGraph):
         """
         return [node for node, degree in self.in_degree if degree == 0]
 
+    @property
     def leaf_nodes(self) -> List[IdentityHash]:
         """
         Safely gets the leaf nodes
@@ -103,18 +104,15 @@ class DiGraphEx(nx.DiGraph):
                 f"The graph only contains: {self.nodes}."
             )
 
-        leaf_nodes = self.leaf_nodes()
-        nodes_to_remove = set(leaf_nodes).difference(set(nodes))
+        nodes_to_remove = set(self.leaf_nodes).difference(set(nodes))
 
         while nodes_to_remove:
             node_to_remove = nodes_to_remove.pop()
             self.remove_node(node_to_remove)
 
-            leaf_nodes = self.leaf_nodes()
-            nodes_to_remove = set(leaf_nodes).difference(set(nodes))
+            nodes_to_remove = set(self.leaf_nodes).difference(set(nodes))
 
-        leaf_nodes = self.leaf_nodes()
-        unremovable_nodes = set(nodes).difference(set(leaf_nodes))
+        unremovable_nodes = set(nodes).difference(set(self.leaf_nodes))
 
         if len(unremovable_nodes) > 0:
             logger.debug(
@@ -295,7 +293,7 @@ class DAG:
         """
         # 1. deepcopy graph_ids because it will be modified (pruned)
         graph_ids = deepcopy(self.graph_ids)
-        leaf_ids = graph_ids.leaf_nodes()
+        leaf_ids = graph_ids.leaf_nodes
 
         # 2. assign the compound priority for all the remaining nodes in the graph:
         # Priority assignment happens by epochs:
@@ -317,7 +315,7 @@ class DAG:
                 graph_ids.remove_node(leaf_id)
 
             # assign the new leaf nodes
-            leaf_ids = graph_ids.leaf_nodes()
+            leaf_ids = graph_ids.leaf_nodes
 
     def draw(self, k: float = 0.8, display: bool = True, t: int = 3) -> None:
         """
