@@ -1,5 +1,5 @@
 from .dag import DAG
-from .ops import xnode, to_dag
+from .decorators import xnode, to_dag
 from .errors import ErrorStrategy
 from .config import Cfg
 
