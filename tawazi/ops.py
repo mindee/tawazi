@@ -11,7 +11,7 @@ from .consts import ReturnIDsType
 from .node import ArgExecNode, ExecNode, LazyExecNode, exec_nodes_lock
 
 
-def op(
+def xnode(
     func: Optional[Callable[..., Any]] = None,
     *,
     priority: int = 0,

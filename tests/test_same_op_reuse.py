@@ -1,8 +1,8 @@
 # type: ignore
-from tawazi import op, to_dag
+from tawazi import to_dag, xnode
 
 
-@op
+@xnode
 def a(v):
     return v + 1
 

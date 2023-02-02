@@ -2,16 +2,16 @@
 
 import pytest
 
-from tawazi import op, to_dag
+from tawazi import to_dag, xnode
 from tawazi.errors import TawaziArgumentException, TawaziBaseException
 
 
-@op
+@xnode
 def a(input_img, cst):
     return sum(input_img) + cst
 
 
-@op
+@xnode
 def lazy_print(*args):
     print(*args)
 
@@ -22,7 +22,7 @@ def declare_dag_function(input_img, cst: int = 0):
     return a(input_img, cst)
 
 
-@op
+@xnode
 def op1(in1):
     return in1 + 1
 

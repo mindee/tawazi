@@ -1,16 +1,16 @@
 #  type: ignore
-from tawazi import op, to_dag
+from tawazi import to_dag, xnode
 
 """integration test"""
 
 
 def test_same_constant_name_in_two_exec_nodes():
-    @op
+    @xnode
     def a(cst: int):
         print(cst)
         return cst
 
-    @op
+    @xnode
     def b(a, cst: str):
         print(a, cst)
         return str(a) + cst

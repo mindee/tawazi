@@ -3,7 +3,7 @@ from time import sleep
 
 import pytest
 
-from tawazi import op, to_dag
+from tawazi import to_dag, xnode
 
 """Internal Unit Test"""
 
@@ -11,31 +11,31 @@ pytest.compound_priority_str: str = ""
 T = 1e-3
 
 
-@op(priority=1)
+@xnode(priority=1)
 def a():
     sleep(T)
     pytest.compound_priority_str += "a"
 
 
-@op(priority=1)
+@xnode(priority=1)
 def b(a):
     sleep(T)
     pytest.compound_priority_str += "b"
 
 
-@op(priority=1)
+@xnode(priority=1)
 def c(a):
     sleep(T)
     pytest.compound_priority_str += "c"
 
 
-@op(priority=1)
+@xnode(priority=1)
 def d(b):
     sleep(T)
     pytest.compound_priority_str += "d"
 
 
-@op(priority=1)
+@xnode(priority=1)
 def e():
     sleep(T)
     pytest.compound_priority_str += "e"

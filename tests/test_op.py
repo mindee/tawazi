@@ -1,52 +1,52 @@
 # type: ignore
 import pytest
 
-from tawazi import op, to_dag
+from tawazi import to_dag, xnode
 from tawazi.errors import InvalidExecNodeCall
 
 """integration test"""
 
 # tests different cases of @op decoration for Python functions
 # 1. different signatures
-@op
+@xnode
 def f1():
     return 1
 
 
-@op
+@xnode
 def f2(f1):
     return 2
 
 
-@op
+@xnode
 def f3(f1, f2):
     assert f1 == 1
     assert f2 == 2
     return 3
 
 
-@op
+@xnode
 def f4(f1, cst=0):
     # TODO: test with argument param and without argument param cst
     return 4 + cst
 
 
-@op
+@xnode
 def f5(*args):
     return sum(args)
 
 
-@op
+@xnode
 def f6(**kwargs):
     return sum(kwargs.values())
 
 
-@op
+@xnode
 def f7(*args, **kwargs):
     return sum(args) + sum(kwargs.values())
 
 
-@op
+@xnode
 def f8(f1, *args, **kwargs):
     return sum([f1, *args, *(kwargs.values())])
 

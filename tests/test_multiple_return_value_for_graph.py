@@ -1,11 +1,11 @@
 # type: ignore
 import pytest
 
-from tawazi import op, to_dag
+from tawazi import to_dag, xnode
 from tawazi.errors import TawaziTypeError
 
 
-@op
+@xnode
 def a(v):
     return v
 

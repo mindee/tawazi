@@ -1,24 +1,24 @@
 # type: ignore
 import pytest
 
-from tawazi import op, to_dag
+from tawazi import to_dag, xnode
 from tawazi.errors import TawaziBaseException
 
 
-@op
+@xnode
 def n1(img):
     print(f"did operation on {img}")
     return img
 
 
-@op(debug=True)
+@xnode(debug=True)
 def my_len(img):
     len_img = len(img)
     pytest.my_len_has_ran = True
     return len_img
 
 
-@op(debug=True)
+@xnode(debug=True)
 def is_positive_len(len_img):
     # this node depends of the my_len!
     if len_img > 0:
