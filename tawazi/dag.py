@@ -371,8 +371,6 @@ class DAG:
         # 0.2 deepcopy the node_dict in order to modify the results inside every node and make the dag reusable
         #     modified_node_dict are used to modify the values inside the ExecNode corresponding
         #     to the input arguments provided to the whole DAG (ArgExecNode)
-        # NOTE: what is the behavior if modified_node_dict contains setup nodes !???
-        #   In principal, this is not possible...
         # if modified_node_dict:
         #     for ex_n in modified_node_dict.values():
         #         if ex_n.setup:
@@ -510,7 +508,7 @@ class DAG:
         for tag_or_id_or_node in twz_nodes:
             if isinstance(tag_or_id_or_node, ExecNode):
                 leaves_ids.append(tag_or_id_or_node.id)
-            # todo: do further validation!
+            # todo: do further validation for the case of the tag!!
             elif isinstance(tag_or_id_or_node, (IdentityHash, tuple)):
                 tag_or_id = tag_or_id_or_node
 
@@ -629,8 +627,6 @@ class DAG:
          2. filling the arguments of the call
          3. skipping the copy for setup ExecNodes
         """
-        # NOTE: there is a double deep copy, this is the 1st,
-        #  the 2nd happens in DAG.execute(...) which will be removed in Tawazi 0.4
         # 1. deepcopy the node_dict because it will be modified by the DAG's execution
         call_xn_dict = DAG._deepcopy_non_setup_x_nodes(self.node_dict)
 
