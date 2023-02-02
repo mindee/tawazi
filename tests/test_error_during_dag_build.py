@@ -1,11 +1,11 @@
 # type: ignore
 import pytest
 
-from tawazi import node, op, to_dag
+from tawazi import node, to_dag, xnode
 
 
 def test_execnodes():
-    @op
+    @xnode
     def a():
         pass
 

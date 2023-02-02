@@ -1,7 +1,7 @@
 #  type: ignore
 import pytest
 
-from tawazi import op, to_dag
+from tawazi import to_dag, xnode
 from tawazi.errors import TawaziBaseException
 
 """integration test"""
@@ -10,47 +10,47 @@ pytest.subgraph_comp_str = ""
 T = 1e-3
 
 
-@op
+@xnode
 def a():
     pytest.subgraph_comp_str += "a"
 
 
-@op
+@xnode
 def b(a):
     pytest.subgraph_comp_str += "b"
 
 
-@op
+@xnode
 def c(a):
     pytest.subgraph_comp_str += "c"
 
 
-@op
+@xnode
 def d(c):
     pytest.subgraph_comp_str += "d"
 
 
-@op
+@xnode
 def e(c):
     pytest.subgraph_comp_str += "e"
 
 
-@op
+@xnode
 def f(e):
     pytest.subgraph_comp_str += "f"
 
 
-@op
+@xnode
 def g():
     pytest.subgraph_comp_str += "g"
 
 
-@op
+@xnode
 def h():
     pytest.subgraph_comp_str += "h"
 
 
-@op
+@xnode
 def i(h):
     pytest.subgraph_comp_str += "i"
 

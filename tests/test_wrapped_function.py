@@ -1,10 +1,10 @@
 # type: ignore
 from typing import List
 
-from tawazi import op, to_dag
+from tawazi import to_dag, xnode
 
 
-@op
+@xnode
 def abcd(i: int, b: List[str], cst: float = 0.1, **kwargs) -> int:
     """doc of a"""
     print(i, b, cst)
