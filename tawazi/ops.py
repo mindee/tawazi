@@ -46,17 +46,17 @@ def xnode(
         LazyExecNode: The decorated function wrapped in a Callable.
     """
 
-    def my_custom_op(_func: Callable[..., Any]) -> "LazyExecNode":
+    def intermediate_wrapper(_func: Callable[..., Any]) -> "LazyExecNode":
         lazy_exec_node = LazyExecNode(_func, priority, is_sequential, debug, tag, setup)
         functools.update_wrapper(lazy_exec_node, _func)
         return lazy_exec_node
 
     # case #1: arguments are provided to the decorator
     if func is None:
-        return my_custom_op  # type: ignore
+        return intermediate_wrapper  # type: ignore
     # case #2: no argument is provided to the decorator
     else:
-        return my_custom_op(func)
+        return intermediate_wrapper(func)
 
 
 def to_dag(
