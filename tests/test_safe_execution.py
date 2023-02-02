@@ -65,7 +65,7 @@ def test_dag_execution():
 
 def test_safe_execution():
     pytest.safe_execution_val = ""
-    dagger.safe_execute()
+    dagger._safe_execute()
     assert pytest.safe_execution_val in ["ABC", "BAC"]
 
 
@@ -106,9 +106,9 @@ def test_normal_execution_with_setup():
 def test_safe_execution_with_setup():
     pipe_ = deepcopy(pipe)
     pytest.safe_execution_c = 0
-    assert pipe_.safe_execute(1) == (5, 3)
+    assert pipe_._safe_execute(1) == (5, 3)
     assert pytest.safe_execution_c == 1
-    assert pipe_.safe_execute(2) == (5, 3)
+    assert pipe_._safe_execute(2) == (5, 3)
     assert pytest.safe_execution_c == 1
 
 
@@ -116,10 +116,10 @@ def test_subgraph_with_safe_execution_with_setup():
     pipe_ = deepcopy(pipe)
     pytest.safe_execution_c = 0
     pytest.safe_execution_op_cst_has_run = False
-    assert pipe_.safe_execute(1, twz_nodes=["op1"]) == (5, None)
+    assert pipe_._safe_execute(1, twz_nodes=["op1"]) == (5, None)
     assert pytest.safe_execution_c == 1
     assert pytest.safe_execution_op_cst_has_run == False
 
-    assert pipe_.safe_execute(2, twz_nodes=["op1"]) == (5, None)
+    assert pipe_._safe_execute(2, twz_nodes=["op1"]) == (5, None)
     assert pytest.safe_execution_c == 1
     assert pytest.safe_execution_op_cst_has_run == False
