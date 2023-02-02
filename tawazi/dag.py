@@ -122,7 +122,8 @@ class DiGraphEx(nx.DiGraph):
 
         return unremovable_nodes
 
-    def topological_sort(self) -> List[IdentityHash]:
+    @property
+    def topologically_sorted(self) -> List[IdentityHash]:
         """
         Makes the simple topological sort of the graph nodes
         """
@@ -278,7 +279,7 @@ class DAG:
             )
 
         # 3. set sequence order
-        topological_order = self.graph_ids.topological_sort()
+        topological_order = self.graph_ids.topologically_sorted
 
         # 4. calculate the sum of priorities of all recursive children
         self._recursive_assign_compound_priority()
@@ -693,7 +694,7 @@ class DAG:
         call_xn_dict = self._make_call_xn_dict(*args)
 
         # 3. deep copy the node_dict to store the results in each node
-        for xn_id in graph_ids.topological_sort():
+        for xn_id in graph_ids.topologically_sorted:
             # only execute ExecNodes that are part of the subgraph
             call_xn_dict[xn_id].execute(call_xn_dict)
 
