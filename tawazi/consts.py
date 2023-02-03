@@ -9,7 +9,10 @@ RESERVED_KWARGS = [ARG_NAME_TAG]
 ARG_NAME_SEP = ">>>"
 USE_SEP_START = "<<"
 USE_SEP_END = ">>"
-ReturnIDsType = Optional[Union[List[IdentityHash], Tuple[IdentityHash], IdentityHash]]
+# NOTE: maybe support other key types? for example int... or even tuple...
+ReturnIDsType = Optional[
+    Union[Dict[str, IdentityHash], List[IdentityHash], Tuple[IdentityHash], IdentityHash]
+]
 
 
 class NoValType:

@@ -658,11 +658,17 @@ class DAG:
             return None
         if isinstance(self.return_ids, IdentityHash):
             return filter_NoVal(xn_dict[self.return_ids].result)
-        gen = (filter_NoVal(xn_dict[ren_id].result) for ren_id in self.return_ids)
-        if isinstance(self.return_ids, tuple):
-            return tuple(gen)
-        if isinstance(self.return_ids, list):
-            return list(gen)
+        if isinstance(self.return_ids, (tuple, list)):
+            gen = (filter_NoVal(xn_dict[ren_id].result) for ren_id in self.return_ids)
+            if isinstance(self.return_ids, tuple):
+                return tuple(gen)
+            if isinstance(self.return_ids, list):
+                return list(gen)
+        if isinstance(self.return_ids, dict):
+            return {
+                key: filter_NoVal(xn_dict[ren_id].result) for key, ren_id in self.return_ids.items()
+            }
+
         raise TawaziTypeError("Return type for the DAG can only be a single value, Tuple or List")
 
     # NOTE: this function should be used in case there was a bizarre behavior noticed during the
