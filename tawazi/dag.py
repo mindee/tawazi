@@ -1,5 +1,4 @@
 import time
-from collections import defaultdict
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
@@ -53,14 +52,6 @@ class DAG:
 
         self.max_concurrency = max_concurrency
 
-        # TODO: use networkx methods
-        # variables necessary for DAG construction
-        self.backwards_hierarchy: Dict[IdentityHash, List[IdentityHash]] = {
-            exec_node.id: [dep.id for dep in exec_node.dependencies]
-            for exec_node in self.exec_nodes
-        }
-        self.forwards_hierarchy = self._forwards_hierarchy()
-
         self.node_dict: Dict[IdentityHash, ExecNode] = {
             exec_node.id: exec_node for exec_node in self.exec_nodes
         }
@@ -80,6 +71,18 @@ class DAG:
         self.behavior = behavior
 
         self._build()
+
+        self.bckrd_deps = {
+            xn.id: list(self.graph_ids.predecessors(xn.id)) for xn in self.exec_nodes
+        }
+        self.frwrd_deps = {xn.id: list(self.graph_ids.successors(xn.id)) for xn in self.exec_nodes}
+
+        # calculate the sum of priorities of all recursive children
+        self._assign_compound_priority()
+
+        # make a valid execution sequence to run sequentially if needed
+        topological_order = self.graph_ids.topologically_sorted
+        self.exec_node_sequence = [self.node_dict[xn_id] for xn_id in topological_order]
 
     @property
     def max_concurrency(self) -> int:
@@ -103,18 +106,6 @@ class DAG:
 
     # TODO: get node by usage (the order of call of an ExecNode)
 
-    def _forwards_hierarchy(self) -> Dict[IdentityHash, List[ExecNode]]:
-        """construct the forwards_hierarchy {XN.id: [XNs]}
-
-        Returns:
-            Dict[IdentityHash, List[ExecNode]]: forwards hierarchy
-        """
-        forwards_hierarchy = defaultdict(list)
-        for xn in self.exec_nodes:
-            for xn_dep in xn.dependencies:
-                forwards_hierarchy[xn_dep.id].append(xn)
-        return forwards_hierarchy
-
     # TODO: validate using Pydantic
     def _find_cycle(self) -> Optional[List[Tuple[str, str]]]:
         """
@@ -136,14 +127,13 @@ class DAG:
         """
         # 1. Make the graph
         # 1.1 add nodes
-        for node_id in self.backwards_hierarchy.keys():
-            self.graph_ids.add_node(node_id)
+        for xn in self.exec_nodes:
+            self.graph_ids.add_node(xn.id)
 
         # 1.2 add edges
-        for node_id, dependencies in self.backwards_hierarchy.items():
-            if dependencies is not None:
-                edges = [(dep, node_id) for dep in dependencies]
-                self.graph_ids.add_edges_from(edges)
+        for xn in self.exec_nodes:
+            edges = [(dep.id, xn.id) for dep in xn.dependencies]
+            self.graph_ids.add_edges_from(edges)
 
         # 2. Validate the DAG: check for circular dependencies
         cycle = self._find_cycle()
@@ -151,15 +141,6 @@ class DAG:
             raise NetworkXUnfeasible(
                 f"the product contains at least a circular dependency: {cycle}"
             )
-
-        # 3. set sequence order
-        topological_order = self.graph_ids.topologically_sorted
-
-        # 4. calculate the sum of priorities of all recursive children
-        self._assign_compound_priority()
-
-        # 5. make a valid execution sequence to run sequentially if needed
-        self.exec_node_sequence = [self.node_dict[xn_id] for xn_id in topological_order]
 
     def _validate(self) -> None:
         # validate setup ExecNodes
@@ -190,7 +171,7 @@ class DAG:
             for leaf_id in leaf_ids:
                 leaf_node = self.node_dict[leaf_id]
 
-                for parent_id in self.backwards_hierarchy[leaf_id]:
+                for parent_id in self.bckrd_deps[leaf_id]:
                     # increment the compound_priority of the parent node by the leaf priority
                     parent_node = self.node_dict[parent_id]
                     parent_node.compound_priority += leaf_node.compound_priority
@@ -435,17 +416,16 @@ class DAG:
         while new_debug_xn_discovered:
             new_debug_xn_discovered = False
             for id_ in leaves_ids:
-                for successor in self.forwards_hierarchy[id_]:
-                    if successor.id not in leaves_ids and successor.debug:
+                for successor_id in self.frwrd_deps[id_]:
+                    is_successor_debug = self.node_dict[successor_id].debug
+                    if successor_id not in leaves_ids and is_successor_debug:
                         # a new debug XN has been discovered!
                         new_debug_xn_discovered = True
-                        preds_of_succs_ids = [
-                            xn_id for xn_id in self.backwards_hierarchy[successor.id]
-                        ]
+                        preds_of_succs_ids = [xn_id for xn_id in self.bckrd_deps[successor_id]]
 
                         if set(preds_of_succs_ids).issubset(set(leaves_ids)):
                             # this new XN can run by only running the current leaves_ids
-                            leaves_ids.append(successor.id)
+                            leaves_ids.append(successor_id)
         return leaves_ids
 
     # TODO: setup nodes should not have dependencies that pass in through the pipeline parameters!
@@ -461,9 +441,6 @@ class DAG:
             twz_nodes (Optional[List[Union[Tag, IdentityHash, ExecNode]]], optional): The ExecNodes that the user aims to use in the DAG.
               This might inlcude setup or non setup ExecNodes. If None is provided, will run all setup ExecNodes. Defaults to None.
         """
-        # BUG: if setup ExecNodes can take input from the DAG' pipeline then there is some missing args!
-        # no calculation ExecNode (non setup ExecNode) should run... otherwise there is an error in implementation
-        # NOTE: what happens if the user provides a debug node ? this is weird and should probably be disallowed
 
         # 1. select all setup ExecNodes
         #  do not copy the setup nodes because we want them to be modified per DAG instance!
