@@ -86,10 +86,9 @@ def setop(in1):
     return in1 + 3
 
 
-# TODO: this should raise a warning!! because passing in an argument to the setup nodes!!
 @to_dag
-def pipe(in1):
-    out_setop = setop(in1)
+def pipe():
+    out_setop = setop(1)
     out1 = op1(out_setop)
     return out1, op_cst()
 
@@ -97,18 +96,18 @@ def pipe(in1):
 def test_normal_execution_with_setup():
     pipe_ = deepcopy(pipe)
     pytest.safe_execution_c = 0
-    assert pipe_(1) == (5, 3)
+    assert pipe_() == (5, 3)
     assert pytest.safe_execution_c == 1
-    assert pipe_(2) == (5, 3)
+    assert pipe_() == (5, 3)
     assert pytest.safe_execution_c == 1
 
 
 def test_safe_execution_with_setup():
     pipe_ = deepcopy(pipe)
     pytest.safe_execution_c = 0
-    assert pipe_._safe_execute(1) == (5, 3)
+    assert pipe_._safe_execute() == (5, 3)
     assert pytest.safe_execution_c == 1
-    assert pipe_._safe_execute(2) == (5, 3)
+    assert pipe_._safe_execute() == (5, 3)
     assert pytest.safe_execution_c == 1
 
 
@@ -116,10 +115,10 @@ def test_subgraph_with_safe_execution_with_setup():
     pipe_ = deepcopy(pipe)
     pytest.safe_execution_c = 0
     pytest.safe_execution_op_cst_has_run = False
-    assert pipe_._safe_execute(1, twz_nodes=["op1"]) == (5, None)
+    assert pipe_._safe_execute(twz_nodes=["op1"]) == (5, None)
     assert pytest.safe_execution_c == 1
     assert pytest.safe_execution_op_cst_has_run == False
 
-    assert pipe_._safe_execute(2, twz_nodes=["op1"]) == (5, None)
+    assert pipe_._safe_execute(twz_nodes=["op1"]) == (5, None)
     assert pytest.safe_execution_c == 1
     assert pytest.safe_execution_op_cst_has_run == False

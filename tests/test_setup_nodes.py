@@ -5,7 +5,7 @@ from functools import reduce
 import pytest
 
 from tawazi import to_dag, xnode
-from tawazi.errors import TawaziBaseException
+from tawazi.errors import TawaziBaseException, TawaziUsageError
 
 
 def test_pipeline():
@@ -24,7 +24,7 @@ def test_pipeline():
 
     @to_dag
     def pipeline(in1, in2):
-        a_str = setup_op(in1)
+        a_str = setup_op("in1")
         return op1(a_str)
 
     @to_dag
@@ -376,3 +376,15 @@ def test_setup_multiple_usages():
     r = pipe2()
     assert r == "abcd"
     assert pytest.get_model_setup == 4
+
+
+def test_setup_xn_should_not_take_input_from_pipeline_args():
+    @xnode(setup=True)
+    def setop(in1):
+        pass
+
+    with pytest.raises(TawaziUsageError):
+
+        @to_dag
+        def pipe(in1):
+            setop(in1)

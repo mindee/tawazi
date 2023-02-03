@@ -164,13 +164,13 @@ def to_dag(
                         raise TawaziTypeError(
                             f"return dict should only contain ExecNodes, but {ren} is of type {type(ren)}"
                         )
-
             else:
                 raise err
 
             d.return_ids = return_ids
 
         functools.update_wrapper(d, _func)
+        d._validate()
         return d
 
     # case 1: arguments are provided to the decorator

@@ -14,7 +14,7 @@ from tawazi.consts import ReturnIDsType
 from tawazi.helpers import filter_NoVal
 
 from .consts import IdentityHash, Tag
-from .errors import ErrorStrategy, TawaziTypeError
+from .errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
 from .node import ArgExecNode, ExecNode
 
 
@@ -305,6 +305,15 @@ class DAG:
 
         # 5. make a valid execution sequence to run sequentially if needed
         self.exec_node_sequence = [self.node_dict[xn_id] for xn_id in topological_order]
+
+    def _validate(self) -> None:
+        # validate setup ExecNodes
+        for xn in self.exec_nodes:
+            if xn.setup and any(dep.id in self.input_ids for dep in xn.dependencies):
+                raise TawaziUsageError(
+                    f"The ExecNode {xn} takes as parameters one of the DAG's input parameter"
+                )
+        # future validations...
 
     def _assign_compound_priority(self) -> None:
         """
