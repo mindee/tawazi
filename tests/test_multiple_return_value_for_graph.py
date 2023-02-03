@@ -44,6 +44,24 @@ def test_return_list():
     assert pipe() == ["tata", "tata", "tata"]
 
 
+def test_return_dict():
+    @to_dag
+    def pipe():
+        res = a("tata")
+        return {"1": res, "2": res, "3": res}
+
+    assert pipe() == {"1": "tata", "2": "tata", "3": "tata"}
+
+
+def test_return_dict2():
+    @to_dag
+    def pipe(a_const=123):
+        res = a("tata")
+        return {1: res, "2": res, "input_value": a_const}
+
+    assert pipe() == {1: "tata", "2": "tata", "input_value": 123}
+
+
 def test_return_invalid_type():
     with pytest.raises(TawaziTypeError):
 
