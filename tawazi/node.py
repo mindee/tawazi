@@ -258,12 +258,12 @@ class LazyExecNode(ExecNode):
                 "Invoking ExecNode __call__ is only allowed inside a @to_dag decorated function"
             )
 
-        # 0.2 if self is a debug ExecNode and Tawazi is configured to skip running debug Nodes
-        #   then skip registering this node in the list of ExecNodes to be executed
-        if self.debug and not Cfg.RUN_DEBUG_NODES:
-            # NOTE: is this the best idea ? what if I want to run a pipe with debug nodes then without debug nodes
-            # TODO: move to init ?
-            return self
+        # # 0.2 if self is a debug ExecNode and Tawazi is configured to skip running debug Nodes
+        # #   then skip registering this node in the list of ExecNodes to be executed
+        # if self.debug and not Cfg.RUN_DEBUG_NODES:
+        #     # NOTE: is this the best idea ? what if I want to run a pipe with debug nodes then without debug nodes
+        #     # TODO: move to init ?
+        #     return self
 
         # TODO: maybe change the Type of objects created.
         #  for example: have a LazyExecNode.__call(...) return an ExecNodeCall instead of a deepcopy
