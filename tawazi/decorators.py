@@ -1,7 +1,7 @@
 import functools
 from typing import Any, Callable, List, Optional
 
-from tawazi import DAG
+from tawazi.dag import DAG
 from tawazi.errors import ErrorStrategy, TawaziTypeError
 from tawazi.helpers import get_args_and_default_args
 

@@ -1,3 +1,4 @@
+# exposing useful objects / Classes
 from .dag import DAG
 from .decorators import xnode, to_dag
 from .errors import ErrorStrategy

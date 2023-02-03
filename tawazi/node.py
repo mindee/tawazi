@@ -15,10 +15,10 @@ from tawazi.consts import (
     NoValType,
     Tag,
 )
-from tawazi.errors import InvalidExecNodeCall, TawaziBaseException, raise_arg_exc
-from tawazi.helpers import lazy_xn_id, ordinal
 
 from .config import Cfg
+from .errors import InvalidExecNodeCall, TawaziBaseException, raise_arg_exc
+from .helpers import lazy_xn_id, ordinal
 
 # TODO: replace exec_nodes with dict
 # a temporary variable used to pass in exec_nodes to the DAG during building
