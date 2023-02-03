@@ -104,6 +104,20 @@ def test_dag_subgraph_non_existing_nodes_ids():
         results = dag._execute(["gibirish"])
 
 
+@xnode
+def a1(in1):
+    return in1 + 1
+
+
+@to_dag
+def pipe(in1):
+    return a1(in1)
+
+
+def test_no_nodes_running_in_subgraph():
+    assert pipe(twz_nodes=[]) == None
+
+
 # TODO: fix this problem!!!
 # def test_dag_subgraph_nodes_with_usage():
 #     @to_dag

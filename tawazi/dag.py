@@ -1,4 +1,5 @@
 import time
+from collections import defaultdict
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import deepcopy
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
@@ -8,6 +9,7 @@ from loguru import logger
 from networkx import find_cycle
 from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 
+from tawazi.config import Cfg
 from tawazi.consts import ReturnIDsType
 from tawazi.helpers import filter_NoVal
 
@@ -196,11 +198,14 @@ class DAG:
 
         self.max_concurrency = max_concurrency
 
+        # TODO: use networkx methods
         # variables necessary for DAG construction
         self.backwards_hierarchy: Dict[IdentityHash, List[IdentityHash]] = {
             exec_node.id: [dep.id for dep in exec_node.dependencies]
             for exec_node in self.exec_nodes
         }
+        self.forwards_hierarchy = self._forwards_hierarchy()
+
         self.node_dict: Dict[IdentityHash, ExecNode] = {
             exec_node.id: exec_node for exec_node in self.exec_nodes
         }
@@ -242,6 +247,18 @@ class DAG:
         return self.node_dict[id_]
 
     # TODO: get node by usage (the order of call of an ExecNode)
+
+    def _forwards_hierarchy(self) -> Dict[IdentityHash, List[ExecNode]]:
+        """construct the forwards_hierarchy {XN.id: [XNs]}
+
+        Returns:
+            Dict[IdentityHash, List[ExecNode]]: forwards hierarchy
+        """
+        forwards_hierarchy = defaultdict(list)
+        for xn in self.exec_nodes:
+            for xn_dep in xn.dependencies:
+                forwards_hierarchy[xn_dep.id].append(xn)
+        return forwards_hierarchy
 
     # TODO: validate using Pydantic
     def _find_cycle(self) -> Optional[List[Tuple[str, str]]]:
@@ -487,13 +504,15 @@ class DAG:
         return node_dict
 
     def _get_leaves_ids(
-        self, twz_nodes: List[Union[Tag, IdentityHash, ExecNode]]
+        self, twz_nodes: Optional[List[Union[Tag, IdentityHash, ExecNode]]] = None
     ) -> List[IdentityHash]:
         """
         get the ids of ExecNodes corresponding to twz_nodes.
         The identification can be carried out using the tag, the Id, or the ExecNode itself.
         Keep in Mind that depending on the way ExecNode is provided inside twz_nodes,
          the returned id
+        if nothing is provided it will return all leaves_ids
+        Handles the debug nodes
 
         Args:
             twz_nodes (List[Union[Tag, IdentityHash, ExecNode]]): list of a mix of identifier that the user might provide to run a subgraph
@@ -506,35 +525,63 @@ class DAG:
         Returns:
             List[IdentityHash]: ExecNodes' Identities
         """
-        leaves_ids = []
-        for tag_or_id_or_node in twz_nodes:
-            if isinstance(tag_or_id_or_node, ExecNode):
-                leaves_ids.append(tag_or_id_or_node.id)
-            # todo: do further validation for the case of the tag!!
-            elif isinstance(tag_or_id_or_node, (IdentityHash, tuple)):
-                tag_or_id = tag_or_id_or_node
+        if twz_nodes is None:
+            # TODO: make cached!
+            leaves_ids = [xn.id for xn in self.exec_nodes]
+        # 2. create leaves_ids
+        else:
+            leaves_ids = []
+            for tag_or_id_or_node in twz_nodes:
+                if isinstance(tag_or_id_or_node, ExecNode):
+                    leaves_ids.append(tag_or_id_or_node.id)
+                # todo: do further validation for the case of the tag!!
+                elif isinstance(tag_or_id_or_node, (IdentityHash, tuple)):
+                    tag_or_id = tag_or_id_or_node
 
-                # if leaves_identification is not ExecNode, it can be either
-                #  1. a Tag (Highest priority in case an id with the same value exists)
-                if node := self.tag_node_dict.get(tag_or_id):
-                    leaves_ids.append(node.id)
-                #  2. or a node id!
-                elif isinstance(tag_or_id, IdentityHash):
-                    node = self.get_node_by_id(tag_or_id)
-                    leaves_ids.append(node.id)
+                    # if leaves_identification is not ExecNode, it can be either
+                    #  1. a Tag (Highest priority in case an id with the same value exists)
+                    if node := self.tag_node_dict.get(tag_or_id):
+                        leaves_ids.append(node.id)
+                    #  2. or a node id!
+                    elif isinstance(tag_or_id, IdentityHash):
+                        node = self.get_node_by_id(tag_or_id)
+                        leaves_ids.append(node.id)
+                    else:
+                        raise ValueError(f"{tag_or_id_or_node} is not found in the DAG")
                 else:
-                    raise ValueError(f"{tag_or_id_or_node} is not found in the DAG")
-            else:
 
-                raise TawaziTypeError(
-                    "twz_nodes must be of type ExecNode, "
-                    f"str or tuple identifying the node but provided {tag_or_id_or_node}"
-                )
-        assert len(twz_nodes) == len(
-            leaves_ids
-        ), f"something went wrong because of providing {twz_nodes} as subgraph nodes to run"
+                    raise TawaziTypeError(
+                        "twz_nodes must be of type ExecNode, "
+                        f"str or tuple identifying the node but provided {tag_or_id_or_node}"
+                    )
+
+            # after extending leaves_ids, we should do a recheck because this might recreate another debug-able XN...
+            if Cfg.RUN_DEBUG_NODES:
+                leaves_ids = self._extend_leaves_ids_debug_xns(leaves_ids)
+
+        # 3. clean all leaves_ids from debug XNs if necessary
+        if not Cfg.RUN_DEBUG_NODES:
+            leaves_ids = [id_ for id_ in leaves_ids if not self.node_dict[id_].debug]
 
         # TODO: review the way the interface with DAG.execute works! it is not the best interface!
+        return leaves_ids
+
+    def _extend_leaves_ids_debug_xns(self, leaves_ids: List[IdentityHash]) -> List[IdentityHash]:
+        new_debug_xn_discovered = True
+        while new_debug_xn_discovered:
+            new_debug_xn_discovered = False
+            for id_ in leaves_ids:
+                for successor in self.forwards_hierarchy[id_]:
+                    if successor.id not in leaves_ids and successor.debug:
+                        # a new debug XN has been discovered!
+                        new_debug_xn_discovered = True
+                        preds_of_succs_ids = [
+                            xn_id for xn_id in self.backwards_hierarchy[successor.id]
+                        ]
+
+                        if set(preds_of_succs_ids).issubset(set(leaves_ids)):
+                            # this new XN can run by only running the current leaves_ids
+                            leaves_ids.append(successor.id)
         return leaves_ids
 
     # TODO: setup nodes should not have dependencies that pass in through the pipeline parameters!
@@ -595,8 +642,9 @@ class DAG:
         Returns:
             Any: _description_
         """
-        # 1. get the leaves ids to execute
-        leaves_ids = None if not twz_nodes else self._get_leaves_ids(twz_nodes)
+        # 1. get the leaves ids to execute in case of a subgraph
+        leaves_ids = self._get_leaves_ids(twz_nodes)
+        #
 
         # 2. copy the ExecNodes
         call_xn_dict = self._make_call_xn_dict(*args)
@@ -612,7 +660,7 @@ class DAG:
     def _make_call_xn_dict(self, *args: Any) -> Dict[IdentityHash, ExecNode]:
         """
         Generate the calling ExecNode dict.
-        This is an ExecNode dict that will contain the ExecNodes that will be executed (hence modified) by the DAG scheduler.
+        This is a dict containing ExecNodes that will be executed (hence modified) by the DAG scheduler.
         This takes into consideration:
          1. deep copying the ExecNodes
          2. filling the arguments of the call
@@ -680,7 +728,7 @@ class DAG:
         Execute the ExecNodes in topological order without priority in for loop manner for debugging purposes
         """
         # 1. make the graph_ids to be executed!
-        leaves_ids = None if not twz_nodes else self._get_leaves_ids(twz_nodes)
+        leaves_ids = self._get_leaves_ids(twz_nodes)
         graph_ids = subgraph(self.graph_ids, leaves_ids)  # type: ignore
 
         # 2. make call_xn_dict that will be modified
