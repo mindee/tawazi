@@ -74,8 +74,10 @@ def get_args_and_default_args(func: Callable[..., Any]) -> Tuple[List[str], Dict
 def make_raise_arg_error(func_name: str, arg_name: str) -> Callable[[], None]:
     # declare a local function that will raise an error in the scheduler if
     # the user doesn't pass in This ArgExecNode as argument to the Attached LazyExecNode
-    return lambda: raise_arg_exc(func_name, arg_name)
+    def raise_err() -> None:
+        raise_arg_exc(func_name, arg_name)
 
+    return raise_err
 
 def lazy_xn_id(base_id: Identifier, count_usages: int) -> Identifier:
     if count_usages > 0:

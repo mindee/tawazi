@@ -249,8 +249,6 @@ class ArgExecNode(ExecNode):
 
 
 # TODO: make the LazyExecNode call outside the dag a normal function call!
-
-
 # NOTE: how can we make a LazyExecNode more configurable ?
 #  This might not be as important as it seems actually because
 #  one can simply create Partial Functions and wrap them in an ExecNode
