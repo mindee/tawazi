@@ -1,4 +1,4 @@
-from copy import deepcopy
+from copy import copy
 from threading import Lock
 from types import MethodType
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -213,6 +213,13 @@ class ArgExecNode(ExecNode):
             self.result = value
 
 
+# NOTE: how can we make a LazyExecNode more configurable ?
+#  This might not be as important as it seems actually because
+#  one can simply create Partial Functions and wrap them in an ExecNode
+# TODO: give ExecNode the possibility to expand its result
+#  this means that it will return its values as Tuple[LazyExecNode] or Dict[LazyExecNode]
+#  Hence ExecNode can return multiple values!
+# TODO: create a twz_deps reserved variable to support Nothing dependency
 class LazyExecNode(ExecNode):
     """
     A lazy function simulator.
@@ -269,14 +276,14 @@ class LazyExecNode(ExecNode):
         #  for example: have a LazyExecNode.__call(...) return an ExecNodeCall instead of a deepcopy
 
         # 1.1 Make a deep copy of self because every Call to an ExecNode corresponds to a new instance
-        self_copy = deepcopy(self)
+        self_copy = copy(self)
         # 1.2 Assign the id
         count_usages = sum(ex_n.id.split(USE_SEP_START)[0] == self.id for ex_n in exec_nodes)
         # if ExecNode is used multiple times, <<usage_count>> is appended to its ID
         self_copy.id = lazy_xn_id(self.id, count_usages)
 
         # 2. Make the corresponding ExecNodes that corresponds to the Arguments
-        # NOTE: these assignments are unnecessary! because self_copy is deeply copied
+        # Make new objects because these should be different between different XN_calls
         self_copy.args = []
         self_copy.kwargs = {}
 
