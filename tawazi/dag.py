@@ -18,6 +18,7 @@ from .errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
 from .node import ArgExecNode, ExecNode
 
 
+# TODO: make ExecNodes configurable using a yaml configuration file
 class DAG:
     """
     Data Structure containing ExecNodes with interdependencies.
@@ -497,6 +498,8 @@ class DAG:
         returned_values = self._get_return_values(all_nodes_dict)
 
         return returned_values
+
+    # def make_executor(self):
 
     def _make_call_xn_dict(self, *args: Any) -> Dict[IdentityHash, ExecNode]:
         """
