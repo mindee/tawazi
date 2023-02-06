@@ -9,7 +9,7 @@ from tawazi.helpers import get_args_and_default_args
 from . import node
 from .config import Cfg
 from .consts import RVDAG, RVXN, P
-from .node import ArgExecNode, ExecNode, LazyExecNode, exec_nodes_lock, get_return_ids
+from .node import ArgExecNode, LazyExecNode, UsageExecNode, exec_nodes_lock, get_return_ids
 
 
 @overload
@@ -139,16 +139,18 @@ def dag(
 
                 # 2.2 Construct non default arguments.
                 # Corresponding values must be provided during usage
-                args: List[ExecNode] = [ArgExecNode(_func, arg_name) for arg_name in func_args]
+                args: List[UsageExecNode] = [
+                    UsageExecNode(ArgExecNode(_func, arg_name)) for arg_name in func_args
+                ]
                 # 2.2 Construct Default arguments.
                 args.extend(
                     [
-                        ArgExecNode(_func, arg_name, arg)
+                        UsageExecNode(ArgExecNode(_func, arg_name, arg))
                         for arg_name, arg in func_default_args.items()
                     ]
                 )
                 # 2.3 Arguments are also ExecNodes that get executed inside the scheduler
-                node.exec_nodes.extend(args)
+                node.exec_nodes.extend([xnw.xn for xnw in args])
 
                 # 3. Execute the dependency describer function
                 # NOTE: Only ordered parameters are supported at the moment!
@@ -167,7 +169,7 @@ def dag(
                 #   we can empty the global variable node.exec_nodes
                 node.exec_nodes = []
 
-            d.input_ids = [arg.id for arg in args]
+            d.input_ids = [arg.xn.id for arg in args]
 
             # 6. make the return ids to be fetched at the end of the computation
             d.return_ids = get_return_ids(returned_exec_nodes)
