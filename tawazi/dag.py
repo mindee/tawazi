@@ -1,6 +1,6 @@
 import time
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
-from copy import deepcopy
+from copy import copy, deepcopy
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import networkx as nx
@@ -208,13 +208,16 @@ class DAG:
         """
         Deep copy all ExecNodes except setup ExecNodes because they are shared throughout the DAG instance
         """
+        # TODO: separate setup xnodes and non setup xndoes.
+        #  maybe use copy instead of deepcopy for the non setup xnodes!? I think this is a bad idea it won't work
         x_nodes_copy = {}
         for id_, x_nd in x_nodes.items():
             # if execnode is a setup node, it shouldn't be copied
             if x_nd.setup:
                 x_nodes_copy[id_] = x_nd
             else:
-                x_nodes_copy[id_] = deepcopy(x_nd)
+                # no need to deepcopy. we only need to know if self.result is NoVal or not (TODO: fix this COmment)
+                x_nodes_copy[id_] = copy(x_nd)
         return x_nodes_copy
 
     def _execute(
