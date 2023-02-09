@@ -43,7 +43,7 @@ You can use Tawazi to make your non CPU-Bound code Faster
 ```python
 # type: ignore
 from time import sleep, time
-from tawazi import xn, to_dag
+from tawazi import xn, dag
 
 @xn
 def a():
@@ -63,7 +63,7 @@ def c(a, b):
     print(f"Function 'c' received {a} from 'a' & {b} from 'b'", flush=True)
     return f"{a} + {b} = C"
 
-@to_dag(max_concurrency=2)
+@dag(max_concurrency=2)
 def pipeline():
   res_a = a()
   res_b = b()
@@ -86,7 +86,7 @@ As you can see, the execution time of pipeline takes less than 2 seconds, which 
 * You can pass in arguments to the pipeline and get results back using the normal function interface:
 
 ```Python
-from tawazi import xn, to_dag
+from tawazi import xn, dag
 @xn
 def xn1(i):
   return i+1
@@ -95,7 +95,7 @@ def xn1(i):
 def xn2(i, j=1):
   return i + j + 1
 
-@to_dag
+@dag
 def pipeline(i=0):
   res1 = xn1(i)
   res2 = xn2(res1)
@@ -111,7 +111,7 @@ You can not pass in named parameters though... (will be supported in future rele
 * You can return multiple values from a pipeline via tuples or lists. (Dict will be supported in the future)
 
 ```Python
-@to_dag
+@dag
 def pipeline():
   return xn1(1), xn2(1)
 
@@ -133,7 +133,7 @@ def setop():
 @xn
 def my_print(arg):
   print(arg)
-@to_dag
+@dag
 def pipeline():
   cst_data = setop()
   my_print(cst_data)
@@ -166,7 +166,7 @@ def print_debug(i):
   global debug_has_run
   debug_has_run = True
   print("DEBUG: ", i)
-@to_dag
+@dag
 def pipe():
   i = a(0)
   print_debug(i)
@@ -187,7 +187,7 @@ def a():
 def b():
   print("I am normal")
 
-@to_dag
+@dag
 def pipeline():
   a()
   b()
@@ -204,7 +204,7 @@ def g(i):
 @xn(tag="c_node")
 def c(i):
   print(i)
-@to_dag
+@dag
 def pipeline():
   b()
   hello = g("hello")
@@ -240,7 +240,7 @@ pipeline(twz_nodes=["b", xns_bye[0]])
 
 # type: ignore
 from time import sleep, time
-from tawazi import xn, to_dag
+from tawazi import xn, dag
 
 @xn
 def a():
@@ -264,7 +264,7 @@ def c(a, arg_b):
     return f"{a} + {arg_b} = C"
 
 # optionally customize the DAG
-@to_dag(max_concurrency=2, behavior="strict")
+@dag(max_concurrency=2, behavior="strict")
 def deps_describer():
   res_a = a()
   res_b = b()

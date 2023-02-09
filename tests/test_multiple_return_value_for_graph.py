@@ -1,7 +1,7 @@
 # type: ignore
 import pytest
 
-from tawazi import to_dag, xn
+from tawazi import dag, xn
 from tawazi.errors import TawaziTypeError
 
 
@@ -11,7 +11,7 @@ def a(v):
 
 
 def test_no_return():
-    @to_dag
+    @dag
     def pipe():
         return
 
@@ -19,7 +19,7 @@ def test_no_return():
 
 
 def test_return_single():
-    @to_dag
+    @dag
     def pipe():
         return a("twinkle")
 
@@ -27,7 +27,7 @@ def test_return_single():
 
 
 def test_return_tuple():
-    @to_dag
+    @dag
     def pipe():
         res = a("tata")
         return res, res, res
@@ -36,7 +36,7 @@ def test_return_tuple():
 
 
 def test_return_list():
-    @to_dag
+    @dag
     def pipe():
         res = a("tata")
         return [res, res, res]
@@ -45,7 +45,7 @@ def test_return_list():
 
 
 def test_return_dict():
-    @to_dag
+    @dag
     def pipe():
         res = a("tata")
         return {"1": res, "2": res, "3": res}
@@ -54,7 +54,7 @@ def test_return_dict():
 
 
 def test_return_dict2():
-    @to_dag
+    @dag
     def pipe(a_const=123):
         res = a("tata")
         return {1: res, "2": res, "input_value": a_const}
@@ -65,6 +65,6 @@ def test_return_dict2():
 def test_return_invalid_type():
     with pytest.raises(TawaziTypeError):
 
-        @to_dag
+        @dag
         def pipe():
             return "bhasdfkjals"

@@ -1,7 +1,7 @@
 # type: ignore
 import pytest
 
-from tawazi import to_dag, xn
+from tawazi import dag, xn
 from tawazi.errors import InvalidExecNodeCall
 
 """integration test"""
@@ -51,7 +51,7 @@ def f8(f1, *args, **kwargs):
     return sum([f1, *args, *(kwargs.values())])
 
 
-@to_dag
+@dag
 def pipe():
     _1 = f1()
     # import ipdb

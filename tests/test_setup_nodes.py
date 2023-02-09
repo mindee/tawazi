@@ -4,7 +4,7 @@ from functools import reduce
 
 import pytest
 
-from tawazi import to_dag, xn
+from tawazi import dag, xn
 from tawazi.errors import TawaziBaseException, TawaziUsageError
 
 
@@ -22,12 +22,12 @@ def test_pipeline():
         pytest.op1_counter += 1
         return len(a_str)
 
-    @to_dag
+    @dag
     def pipeline(in1, in2):
         a_str = setup_op("in1")
         return op1(a_str)
 
-    @to_dag
+    @dag
     def pipeline2(in2):
         a_str = setup_op("mid_path")
         return op1(a_str)
@@ -61,7 +61,7 @@ def test_bad_declaration():
 
     with pytest.raises(TawaziBaseException):
 
-        @to_dag
+        @dag
         def bad_pipe():
             setup_op(op1())
 
@@ -97,7 +97,7 @@ def test_dependencies():
         pytest.op12 += 1
         return "op12"
 
-    @to_dag
+    @dag
     def pipe_setup_deps():
         sop1_r = setup_op1()
         sop2_r = setup_op2(sop1_r)
@@ -152,7 +152,7 @@ def test_dependencies_subgraph():
         pytest.op12 += 1
         return "op12"
 
-    @to_dag
+    @dag
     def pipe_setup_deps():
         sop1_r = setup_op1()
         sop2_r = setup_op2(sop1_r)
@@ -217,7 +217,7 @@ def test_pipeline_setup_method():
         pytest.op12 += 1
         return "op12"
 
-    @to_dag
+    @dag
     def pipe_setup_deps():
         sop1_r = setup_op1(twz_tag="setup1")
         sop2_r = setup_op2(sop1_r, twz_tag="setup2")
@@ -298,11 +298,11 @@ def test_setup_node_cst_input():
         pytest.setop += 1
         return k + 1
 
-    @to_dag
+    @dag
     def pipe():
         return setop()
 
-    @to_dag
+    @dag
     def pipe2():
         return setop(1)
 
@@ -328,7 +328,7 @@ def test_setup_no_default_arg():
         pytest.setop += 1
         return k + 1
 
-    @to_dag
+    @dag
     def pipe():
         return setup(10)
 
@@ -351,7 +351,7 @@ def test_setup_multiple_usages():
     def sumop(*mids):
         return reduce(str.__add__, mids)
 
-    @to_dag
+    @dag
     def pipe():
         mid1 = get_model("a")
         mid2 = get_model("b")
@@ -385,6 +385,6 @@ def test_setup_xn_should_not_take_input_from_pipeline_args():
 
     with pytest.raises(TawaziUsageError):
 
-        @to_dag
+        @dag
         def pipe(in1):
             setop(in1)

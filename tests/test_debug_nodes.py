@@ -1,7 +1,7 @@
 # type: ignore
 import pytest
 
-from tawazi import to_dag, xn
+from tawazi import dag, xn
 from tawazi.errors import TawaziBaseException
 
 
@@ -36,7 +36,7 @@ def test_pipeline_with_debug_node():
 
     tawazi.Cfg.RUN_DEBUG_NODES = True
 
-    @to_dag
+    @dag
     def pipeline(img):
         img = stub(img)
         len_ = my_len(img)
@@ -53,7 +53,7 @@ def test_pipeline_without_debug_node():
 
     tawazi.Cfg.RUN_DEBUG_NODES = False
 
-    @to_dag
+    @dag
     def pipeline(img):
         img = stub(img)
         len_ = my_len(img)
@@ -74,7 +74,7 @@ def test_interdependant_debug_nodes():
 
     tawazi.Cfg.RUN_DEBUG_NODES = True
 
-    @to_dag
+    @dag
     def pipeline(img):
         img = stub(img)
         len_ = my_len(img)
@@ -89,7 +89,7 @@ def test_interdependant_debug_nodes():
 def test_wrongly_defined_pipeline():
     with pytest.raises(TawaziBaseException):
 
-        @to_dag
+        @dag
         def pipeline(img):
             len_ = my_len(img)
             # wrongly defined dependency node!
@@ -109,7 +109,7 @@ def incr(in1):
     return res
 
 
-@to_dag
+@dag
 def triple_incr_debug(in1):
     return incr(incr(incr(in1, twz_tag="1st")))
 
@@ -148,7 +148,7 @@ def test_reachable_debuggable_node_in_subgraph():
 
     tawazi.Cfg.RUN_DEBUG_NODES = True
 
-    @to_dag
+    @dag
     def pipe(in1):
         res1 = stub(in1)
         res2 = incr(res1)

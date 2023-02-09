@@ -1,7 +1,7 @@
 #  type: ignore
 import pytest
 
-from tawazi import to_dag, xn
+from tawazi import dag, xn
 from tawazi.errors import TawaziBaseException
 
 """integration test"""
@@ -55,7 +55,7 @@ def i(h):
     pytest.subgraph_comp_str += "i"
 
 
-@to_dag
+@dag
 def dag_describer():
     var_a = a()
     var_b = b(var_a)
@@ -109,7 +109,7 @@ def a1(in1):
     return in1 + 1
 
 
-@to_dag
+@dag
 def pipe(in1):
     return a1(in1)
 

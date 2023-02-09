@@ -2,7 +2,7 @@
 
 import pytest
 
-from tawazi import to_dag, xn
+from tawazi import dag, xn
 from tawazi.errors import TawaziArgumentException, TawaziBaseException
 
 
@@ -16,7 +16,7 @@ def lazy_print(*args):
     print(*args)
 
 
-@to_dag
+@dag
 def declare_dag_function(input_img, cst: int = 0):
     lazy_print(cst)
     return a(input_img, cst)
@@ -41,7 +41,7 @@ def test_pipeline_input_output_missing_argument():
 
 
 def test_pipeline_default_args_input_not_provided():
-    @to_dag
+    @dag
     def pipe(in1=1, in2=2, in3=3, in4=4):
         return op1(in1), op1(in2), op1(in3), op1(in4)
 
@@ -50,7 +50,7 @@ def test_pipeline_default_args_input_not_provided():
 
 def test_pipeline_args_input_not_provided():
     # should fail!!
-    @to_dag
+    @dag
     def pipe(in1, in2, in3, in4):
         return op1(in1), op1(in2), op1(in3), op1(in4)
 

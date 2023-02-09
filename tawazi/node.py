@@ -252,10 +252,10 @@ class LazyExecNode(ExecNode):
         Returns: a deepcopy of the LazyExecNode
         """
         # 0.1 LazyExecNodes cannot be called outside DAG dependency calculation
-        #  (i.e. outside a function that is decorated with @to_dag)
+        #  (i.e. outside a function that is decorated with @dag)
         if not exec_nodes_lock.locked():
             raise InvalidExecNodeCall(
-                "Invoking ExecNode __call__ is only allowed inside a @to_dag decorated function"
+                "Invoking ExecNode __call__ is only allowed inside a @dag decorated function"
             )
 
         # # 0.2 if self is a debug ExecNode and Tawazi is configured to skip running debug Nodes

@@ -1,5 +1,5 @@
 # type: ignore
-from tawazi import to_dag, xn
+from tawazi import dag, xn
 
 
 @xn
@@ -7,7 +7,7 @@ def a(v):
     return v + 1
 
 
-@to_dag
+@dag
 def pipe():
     a_1 = a(1)
     a_2 = a(2)

@@ -1,7 +1,7 @@
 # type: ignore
 from typing import List
 
-from tawazi import to_dag, xn
+from tawazi import dag, xn
 
 
 @xn
@@ -11,7 +11,7 @@ def abcd(i: int, b: List[str], cst: float = 0.1, **kwargs) -> int:
     return i
 
 
-@to_dag
+@dag
 def pipe(entry: int) -> int:
     """doc of my pipeline"""
     b = abcd(entry)

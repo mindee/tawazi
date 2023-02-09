@@ -1,5 +1,5 @@
 # type: ignore
-from tawazi import to_dag, xn
+from tawazi import dag, xn
 
 
 def test_imbricated_dags():
@@ -12,7 +12,7 @@ def test_imbricated_dags():
         return 1 - op1
 
     @xn
-    @to_dag
+    @dag
     def op3(img):
         toto = op2(op1(img))
         return toto
@@ -25,7 +25,7 @@ def test_imbricated_dags():
     def op5(mean, std):
         return mean + std
 
-    @to_dag
+    @dag
     def op6(img):
         titi = op3(img)
         toto = op4(img)

@@ -4,7 +4,7 @@ from typing import Union
 
 import pytest
 
-from tawazi import to_dag, xn
+from tawazi import dag, xn
 
 """integration test"""
 
@@ -41,7 +41,7 @@ def test_ops_interface():
         # logger.debug(f"ran d {some_constant} {keyworded_arg}")
         return "d"
 
-    @to_dag
+    @dag
     def my_custom_dag():
         vara = a()
         varb = b(vara)
@@ -62,7 +62,7 @@ def test_ops_interface():
         logger.debug(f"e is {e}")
         logger.debug("ran f")
 
-    @to_dag
+    @dag
     def my_other_custom_dag():
         vara = a()
         varb = b(vara)
