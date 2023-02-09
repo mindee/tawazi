@@ -4,7 +4,7 @@ from time import sleep
 
 import pytest
 
-from tawazi import to_dag, xnode
+from tawazi import to_dag, xn
 
 """integration tests"""
 
@@ -37,9 +37,9 @@ def run_without_dag():
 
 # apply the operation decorator
 # make sure "a" runs first before "b"
-a_op = xnode(a, priority=10)
-b_op = xnode(b)
-c_op = xnode(c)
+a_op = xn(a, priority=10)
+b_op = xn(b)
+c_op = xn(c)
 
 # run in the dag interface
 @to_dag
@@ -69,18 +69,18 @@ def test_safe_execution():
     assert pytest.safe_execution_val in ["ABC", "BAC"]
 
 
-@xnode
+@xn
 def op1(in1):
     return in1 + 1
 
 
-@xnode
+@xn
 def op_cst(in1=1):
     pytest.safe_execution_op_cst_has_run = True
     return in1 + 2
 
 
-@xnode(setup=True)
+@xn(setup=True)
 def setop(in1):
     pytest.safe_execution_c += 1
     return in1 + 3

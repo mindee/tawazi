@@ -43,21 +43,21 @@ You can use Tawazi to make your non CPU-Bound code Faster
 ```python
 # type: ignore
 from time import sleep, time
-from tawazi import xnode, to_dag
+from tawazi import xn, to_dag
 
-@xnode
+@xn
 def a():
     print("Function 'a' is running", flush=True)
     sleep(1)
     return "A"
 
-@xnode
+@xn
 def b():
     print("Function 'b' is running", flush=True)
     sleep(1)
     return "B"
 
-@xnode
+@xn
 def c(a, b):
     print("Function 'c' is running", flush=True)
     print(f"Function 'c' received {a} from 'a' & {b} from 'b'", flush=True)
@@ -86,19 +86,19 @@ As you can see, the execution time of pipeline takes less than 2 seconds, which 
 * You can pass in arguments to the pipeline and get results back using the normal function interface:
 
 ```Python
-from tawazi import xnode, to_dag
-@xnode
-def xnode1(i):
+from tawazi import xn, to_dag
+@xn
+def xn1(i):
   return i+1
 
-@xnode
-def xnode2(i, j=1):
+@xn
+def xn2(i, j=1):
   return i + j + 1
 
 @to_dag
 def pipeline(i=0):
-  res1 = xnode1(i)
-  res2 = xnode2(res1)
+  res1 = xn1(i)
+  res2 = xn2(res1)
   return res2
 
 # run pipeline with default parameters
@@ -113,7 +113,7 @@ You can not pass in named parameters though... (will be supported in future rele
 ```Python
 @to_dag
 def pipeline():
-  return xnode1(1), xnode2(1)
+  return xn1(1), xn2(1)
 
 assert pipeline() == (2, 3)
 ```
@@ -125,12 +125,12 @@ Currently you can only return a single value from an `ExecNode`, in the future m
 
 ```Python
 from copy import deepcopy
-@xnode(setup=True)
+@xn(setup=True)
 def setop():
   global setop_counter
   setop_counter += 1
   return "Long algorithm to generate Constant Data"
-@xnode
+@xn
 def my_print(arg):
   print(arg)
 @to_dag
@@ -158,10 +158,10 @@ assert setop_counter == 1
 
 * You can Make Debug ExecNodes that will only run if `RUN_DEBUG_NODES` env variable is set. These can be visualization ExecNodes for example... or some complicated Assertions that helps you debug problems when needed that are hostile to the production environment
 ```Python
-@xnode
+@xn
 def a(i):
   return i + 1
-@xnode(debug=True)
+@xn(debug=True)
 def print_debug(i):
   global debug_has_run
   debug_has_run = True
@@ -180,10 +180,10 @@ assert debug_has_run == False
 
 * Tags: you can tag an ExecNode
 ```Python
-@xnode(tag="twinkle toes")
+@xn(tag="twinkle toes")
 def a():
   print("I am tough")
-@xnode
+@xn
 def b():
   print("I am normal")
 
@@ -198,10 +198,10 @@ xn_a = pipeline.get_nodes_by_tag("twinkle toes")
 
 
 # You can even tag a specific call of an ExecNode
-@xnode
+@xn
 def g(i):
   return i
-@xnode(tag="c_node")
+@xn(tag="c_node")
 def c(i):
   print(i)
 @to_dag
@@ -240,24 +240,24 @@ pipeline(twz_nodes=["b", xns_bye[0]])
 
 # type: ignore
 from time import sleep, time
-from tawazi import xnode, to_dag
+from tawazi import xn, to_dag
 
-@xnode
+@xn
 def a():
     print("Function 'a' is running", flush=True)
     sleep(1)
     return "A"
 
-# optionally configure each xnode using the decorator:
-# is_sequential = True to prevent xnode from running in parallel with other xnodes
-# priority to choose the xnode in the next execution phase
-@xnode(is_sequential=True, priority=10)
+# optionally configure each ExecNode using the decorator:
+# is_sequential = True to prevent ExecNode from running in parallel with other ExecNodes
+# priority to choose the ExecNode in the next execution phase
+@xn(is_sequential=True, priority=10)
 def b():
     print("Function 'b' is running", flush=True)
     sleep(1)
     return "B"
 
-@xnode
+@xn
 def c(a, arg_b):
     print("Function 'c' is running", flush=True)
     print(f"Function 'c' received {a} from 'a' & {arg_b} from 'b'", flush=True)

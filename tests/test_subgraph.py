@@ -1,7 +1,7 @@
 #  type: ignore
 import pytest
 
-from tawazi import to_dag, xnode
+from tawazi import to_dag, xn
 from tawazi.errors import TawaziBaseException
 
 """integration test"""
@@ -10,47 +10,47 @@ pytest.subgraph_comp_str = ""
 T = 1e-3
 
 
-@xnode
+@xn
 def a():
     pytest.subgraph_comp_str += "a"
 
 
-@xnode
+@xn
 def b(a):
     pytest.subgraph_comp_str += "b"
 
 
-@xnode
+@xn
 def c(a):
     pytest.subgraph_comp_str += "c"
 
 
-@xnode
+@xn
 def d(c):
     pytest.subgraph_comp_str += "d"
 
 
-@xnode
+@xn
 def e(c):
     pytest.subgraph_comp_str += "e"
 
 
-@xnode
+@xn
 def f(e):
     pytest.subgraph_comp_str += "f"
 
 
-@xnode
+@xn
 def g():
     pytest.subgraph_comp_str += "g"
 
 
-@xnode
+@xn
 def h():
     pytest.subgraph_comp_str += "h"
 
 
-@xnode
+@xn
 def i(h):
     pytest.subgraph_comp_str += "i"
 
@@ -104,7 +104,7 @@ def test_dag_subgraph_non_existing_nodes_ids():
         results = dag._execute(["gibirish"])
 
 
-@xnode
+@xn
 def a1(in1):
     return in1 + 1
 

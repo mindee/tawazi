@@ -1,7 +1,7 @@
 # type: ignore
 from functools import wraps
 
-from tawazi import to_dag, xnode
+from tawazi import to_dag, xn
 
 """Integration test"""
 
@@ -17,13 +17,13 @@ def my_little_logger(func):
     return log
 
 
-@xnode
+@xn
 @my_little_logger
 def a():
     return "titi"
 
 
-@xnode
+@xn
 @my_little_logger
 def b(a):
     return "tata" + a

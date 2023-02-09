@@ -4,19 +4,19 @@ from functools import reduce
 
 import pytest
 
-from tawazi import to_dag, xnode
+from tawazi import to_dag, xn
 from tawazi.errors import TawaziBaseException, TawaziUsageError
 
 
 def test_pipeline():
-    @xnode(setup=True)
+    @xn(setup=True)
     def setup_op(in1):
         # setup operations should run a single time!
         #   even if invoked multiple times, they should run only once! and its result remain unchanged!
         pytest.setup_counter += 1
         return in1
 
-    @xnode
+    @xn
     def op1(a_str: str):
         print("op1", a_str)
         pytest.op1_counter += 1
@@ -51,11 +51,11 @@ def test_pipeline():
 
 
 def test_bad_declaration():
-    @xnode
+    @xn
     def op1():
         return True
 
-    @xnode(setup=True)
+    @xn(setup=True)
     def setup_op(non_setup_result):
         return False
 
@@ -72,27 +72,27 @@ def test_bad_declaration():
 
 
 def test_dependencies():
-    @xnode(setup=True)
+    @xn(setup=True)
     def setup_op1():
         pytest.setup_op1 += 1
         return "sop1"
 
-    @xnode(setup=True)
+    @xn(setup=True)
     def setup_op2(op1_result):
         pytest.setup_op2 += 1
         return "sop2"
 
-    @xnode
+    @xn
     def op1(sop1_result):
         pytest.op1 += 1
         return "op1"
 
-    @xnode
+    @xn
     def op2(sop2_result):
         pytest.op2 += 1
         return "op2"
 
-    @xnode
+    @xn
     def op12(op1_result, op2_result):
         pytest.op12 += 1
         return "op12"
@@ -127,27 +127,27 @@ def test_dependencies():
 
 
 def test_dependencies_subgraph():
-    @xnode(setup=True)
+    @xn(setup=True)
     def setup_op1():
         pytest.setup_op1 += 1
         return "sop1"
 
-    @xnode(setup=True)
+    @xn(setup=True)
     def setup_op2(op1_result):
         pytest.setup_op2 += 1
         return "sop2"
 
-    @xnode
+    @xn
     def op1(sop1_result):
         pytest.op1 += 1
         return "op1"
 
-    @xnode
+    @xn
     def op2(sop2_result):
         pytest.op2 += 1
         return "op2"
 
-    @xnode
+    @xn
     def op12(op1_result, op2_result):
         pytest.op12 += 1
         return "op12"
@@ -192,27 +192,27 @@ def test_pipeline_setup_method():
         pytest.op2 = 0
         pytest.op12 = 0
 
-    @xnode(setup=True)
+    @xn(setup=True)
     def setup_op1():
         pytest.setup_op1 += 1
         return "sop1"
 
-    @xnode(setup=True)
+    @xn(setup=True)
     def setup_op2(op1_result):
         pytest.setup_op2 += 1
         return "sop2"
 
-    @xnode
+    @xn
     def op1(sop1_result):
         pytest.op1 += 1
         return "op1"
 
-    @xnode
+    @xn
     def op2(sop2_result):
         pytest.op2 += 1
         return "op2"
 
-    @xnode
+    @xn
     def op12(op1_result, op2_result):
         pytest.op12 += 1
         return "op12"
@@ -293,7 +293,7 @@ def test_pipeline_setup_method():
 
 
 def test_setup_node_cst_input():
-    @xnode(setup=True)
+    @xn(setup=True)
     def setop(k: int = 1234):
         pytest.setop += 1
         return k + 1
@@ -323,7 +323,7 @@ def test_setup_node_cst_input():
 
 
 def test_setup_no_default_arg():
-    @xnode(setup=True)
+    @xn(setup=True)
     def setup(k: int):
         pytest.setop += 1
         return k + 1
@@ -342,12 +342,12 @@ def test_setup_no_default_arg():
 
 
 def test_setup_multiple_usages():
-    @xnode(setup=True)
+    @xn(setup=True)
     def get_model(mid: str):
         pytest.get_model_setup += 1
         return mid
 
-    @xnode
+    @xn
     def sumop(*mids):
         return reduce(str.__add__, mids)
 
@@ -379,7 +379,7 @@ def test_setup_multiple_usages():
 
 
 def test_setup_xn_should_not_take_input_from_pipeline_args():
-    @xnode(setup=True)
+    @xn(setup=True)
     def setop(in1):
         pass
 
