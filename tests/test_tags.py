@@ -1,5 +1,5 @@
 # type: ignore
-from tawazi import to_dag, xn
+from tawazi import dag, xn
 
 
 @xn(tag="b")
@@ -12,7 +12,7 @@ def b(a: int = 4321):
     return a + 1
 
 
-@to_dag
+@dag
 def pipe():
     return b(a())
 
@@ -24,7 +24,7 @@ def test_tag():
 
 
 def test_call_tag():
-    @to_dag
+    @dag
     def pipe():
         a_ = a(10, twz_tag="another_a_tag")
         b_ = b(a_, twz_tag="another_b_tag")

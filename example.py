@@ -5,7 +5,7 @@ from typing import Union
 
 import pytest
 
-from tawazi import to_dag, xn
+from tawazi import dag, xn
 
 
 @xn
@@ -41,7 +41,7 @@ def d(b, c, third_argument: Union[str, int] = 1234, fourth_argument=6789):
     return "d"
 
 
-@to_dag
+@dag
 def my_custom_dag():
     vara = a()
     varb = b(vara)
@@ -65,7 +65,7 @@ def f(a, b, c, d, e):
     print("ran f")
 
 
-@to_dag
+@dag
 def my_other_custom_dag():
     vara = a()
     varb = b(vara)

@@ -4,7 +4,7 @@ from time import sleep
 
 import pytest
 
-from tawazi import to_dag, xn
+from tawazi import dag, xn
 
 """integration tests"""
 
@@ -42,7 +42,7 @@ b_op = xn(b)
 c_op = xn(c)
 
 # run in the dag interface
-@to_dag
+@dag
 def dagger():
     a_ = a_op()
     b_ = b_op()
@@ -86,7 +86,7 @@ def setop(in1):
     return in1 + 3
 
 
-@to_dag
+@dag
 def pipe():
     out_setop = setop(1)
     out1 = op1(out_setop)

@@ -4,7 +4,7 @@ from typing import Union
 
 import pytest
 
-from tawazi import to_dag, xn
+from tawazi import dag, xn
 
 """integration test"""
 

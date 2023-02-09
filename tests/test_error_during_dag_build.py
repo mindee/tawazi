@@ -1,7 +1,7 @@
 # type: ignore
 import pytest
 
-from tawazi import node, to_dag, xn
+from tawazi import dag, node, xn
 
 
 def test_execnodes():
@@ -11,7 +11,7 @@ def test_execnodes():
 
     with pytest.raises(NameError):
 
-        @to_dag
+        @dag
         def pipe():
             a()
             b()  # an undefined ExecNode
