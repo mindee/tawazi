@@ -1,13 +1,13 @@
 # type: ignore
-from tawazi import to_dag, xnode
+from tawazi import to_dag, xn
 
 
-@xnode(tag="b")
+@xn(tag="b")
 def a(b: int = 1234):
     return b + 1
 
 
-@xnode(tag=("op", "b", "takes argument a"))
+@xn(tag=("op", "b", "takes argument a"))
 def b(a: int = 4321):
     return a + 1
 

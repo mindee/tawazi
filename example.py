@@ -5,30 +5,30 @@ from typing import Union
 
 import pytest
 
-from tawazi import to_dag, xnode
+from tawazi import to_dag, xn
 
 
-@xnode
+@xn
 def a():
     print("ran a")
     return "a"
 
 
-@xnode
+@xn
 def b(a):
     print(f"a is {a}")
     print("ran b")
     return "b"
 
 
-@xnode
+@xn
 def c(a):
     print(f"a is {a}")
     print("ran c")
     return "c"
 
 
-@xnode
+@xn
 def d(b, c, third_argument: Union[str, int] = 1234, fourth_argument=6789):
     print(f"b is {b}")
     print(f"c is {c}")
@@ -49,13 +49,13 @@ def my_custom_dag():
     _vard = d(varb, c=varc, fourth_argument=1111)
 
 
-@xnode
+@xn
 def e():
     print("ran e")
     return "e"
 
 
-@xnode
+@xn
 def f(a, b, c, d, e):
     print(f"a is {a}")
     print(f"b is {b}")

@@ -4,7 +4,7 @@ from typing import Union
 
 import pytest
 
-from tawazi import to_dag, xnode
+from tawazi import to_dag, xn
 
 """integration test"""
 
@@ -12,24 +12,24 @@ logger = Logger(name="mylogger", level="ERROR")
 
 
 def test_ops_interface():
-    @xnode
+    @xn
     def a():
         logger.debug("ran a")
         return "a"
 
-    @xnode
+    @xn
     def b(a):
         logger.debug(f"a is {a}")
         logger.debug("ran b")
         return "b"
 
-    @xnode
+    @xn
     def c(a):
         logger.debug(f"a is {a}")
         logger.debug("ran c")
         return "c"
 
-    @xnode
+    @xn
     def d(b, c, third_argument: Union[str, int] = 1234, fourth_argument=6789):
         logger.debug(f"b is {b}")
         logger.debug(f"c is {c}")
@@ -48,12 +48,12 @@ def test_ops_interface():
         varc = c(vara)
         _vard = d(varb, c=varc, fourth_argument=1111)
 
-    @xnode
+    @xn
     def e():
         logger.debug("ran e")
         return "e"
 
-    @xnode
+    @xn
     def f(a, b, c, d, e):
         logger.debug(f"a is {a}")
         logger.debug(f"b is {b}")

@@ -1,27 +1,27 @@
 # type: ignore
-from tawazi import to_dag, xnode
+from tawazi import to_dag, xn
 
 
 def test_imbricated_dags():
-    @xnode
+    @xn
     def op1(img):
         return sum(img)
 
-    @xnode
+    @xn
     def op2(op1):
         return 1 - op1
 
-    @xnode
+    @xn
     @to_dag
     def op3(img):
         toto = op2(op1(img))
         return toto
 
-    @xnode
+    @xn
     def op4(img):
         return sum(img) ** 2
 
-    @xnode
+    @xn
     def op5(mean, std):
         return mean + std
 

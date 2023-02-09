@@ -1,24 +1,24 @@
 # type: ignore
 import pytest
 
-from tawazi import to_dag, xnode
+from tawazi import to_dag, xn
 from tawazi.errors import TawaziBaseException
 
 
-@xnode
+@xn
 def stub(img):
     print(f"did operation on {img}")
     return img
 
 
-@xnode(debug=True)
+@xn(debug=True)
 def my_len(img):
     len_img = len(img)
     pytest.my_len_has_ran = True
     return len_img
 
 
-@xnode(debug=True)
+@xn(debug=True)
 def is_positive_len(len_img):
     # this node depends of the my_len!
     if len_img > 0:
@@ -97,12 +97,12 @@ def test_wrongly_defined_pipeline():
             return stub(len_)
 
 
-@xnode(debug=True)
+@xn(debug=True)
 def print_(in1):
     pytest.prin_share_var = in1
 
 
-@xnode(debug=True)
+@xn(debug=True)
 def incr(in1):
     res = in1 + 1
     pytest.inc_shared_var = res

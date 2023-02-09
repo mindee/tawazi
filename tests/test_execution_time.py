@@ -1,24 +1,24 @@
 # type: ignore
 from time import sleep, time
 
-from tawazi import to_dag, xnode
+from tawazi import to_dag, xn
 
 """integration test"""
 
 T = 0.1
 
 
-@xnode
+@xn
 def a():
     sleep(T)
 
 
-@xnode
+@xn
 def b():
     sleep(T)
 
 
-@xnode
+@xn
 def c(a, b):
     sleep(T)
 
