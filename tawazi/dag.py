@@ -1,12 +1,8 @@
 import pickle
 import time
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
-<<<<<<< HEAD
 from copy import copy, deepcopy
-=======
-from copy import deepcopy
 from pathlib import Path
->>>>>>> 82380db (new: :sparkles: cache_in results of DAGExecutor)
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import networkx as nx
@@ -637,12 +633,15 @@ class DAG:
                     raise NotImplementedError(f"Unknown behavior name: {self.behavior}")
 
 
+# TODO: change the name of twz_nodes!! should be twz_leaves_nodes. What do you think matthias ?
+# TODO: should implement twz_exclude_nodes
 class DAGExecutor:
     def __init__(
         self,
         dag: DAG,
         twz_nodes: Optional[List[Alias]] = None,
-        cache_in: str = ""
+        cache_in: str = "",
+        from_cache: str = ""
         # profile = False, ?
     ):
         """
@@ -667,6 +666,9 @@ class DAGExecutor:
         self.dag = dag
         self.twz_nodes = twz_nodes
         self.cache_in = cache_in
+        self.from_cache = from_cache
+        # NOTE: from_cache is orthogonal to cache_in which means that if cache_in is set at the same time as from_cache.
+        #  in this case the DAG will be loaded from_cache and the results will be saved again to the cache_in file.
 
         # get the leaves ids to execute in case of a subgraph
         self.leaves_ids = dag._get_leaves_ids(self.twz_nodes)
@@ -684,12 +686,30 @@ class DAGExecutor:
             raise ValueError("cache_in should end with.pkl")
         self._cache_in = cache_in
 
+    @property
+    def from_cache(self) -> str:
+        return self._from_cache
+
+    @from_cache.setter
+    def from_cache(self, from_cache: str) -> None:
+        if from_cache and not from_cache.endswith(".pkl"):
+            raise ValueError("from_cache should end with.pkl")
+        self._from_cache = from_cache
+
     def __call__(self, *args: Any) -> Any:
+        # NOTE: *args will be ignored if self.from_cache is set!
         dag = self.dag
         leaves_ids = self.leaves_ids
 
         # 1. copy the ExecNodes
         call_xn_dict = dag._make_call_xn_dict(*args)
+        if self.from_cache:
+            with open(self.from_cache, "rb") as f:
+                cached_results = pickle.load(f)
+            # set the result for the ExecNode that were previously executed
+            # this will make them skip execution inside the scheduler
+            for id_, result in cached_results.items():
+                call_xn_dict[id_].result = result
 
         # 2. Execute the scheduler
         self.xn_dict = dag._execute(leaves_ids, call_xn_dict)  # type: ignore

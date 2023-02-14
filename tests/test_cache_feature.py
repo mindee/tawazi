@@ -93,3 +93,30 @@ def test_cache_results_subgraph():
     assert (cached_results["incr_large_array"] == ones).all()
     assert cached_results["pass_large_array"] is ones_
     assert cached_results["avg_array"] is avg
+
+
+def test_running_cached_dag():
+    cache_path = "tests/cache_results/test_running_cached_dag.pkl"
+    if Path(cache_path).is_file():
+        os.remove(cache_path)
+
+    exc = DAGExecutor(
+        pipe, twz_nodes=["generate_large_zeros_array", "incr_large_array"], cache_in=cache_path
+    )
+    zeros = np.zeros(10**6)
+    ones = np.ones(10**6)
+    ones_ = ones
+    avg = 1
+
+    r1, r2, r3, r4 = exc()
+    assert (r1 == zeros).all()
+    assert (r2 == ones).all()
+    assert r3 is None
+    assert r4 is None
+
+    exc_cached = DAGExecutor(pipe, from_cache=cache_path)
+    r1, r2, r3, r4 = exc_cached()
+    assert (r1 == zeros).all()
+    assert (r2 == ones).all()
+    assert (r3 == ones_).all()
+    assert r4 == avg
