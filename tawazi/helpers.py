@@ -2,6 +2,7 @@ import inspect
 from typing import Any, Callable, Dict, List, Tuple, Union
 
 from tawazi.consts import USE_SEP_END, USE_SEP_START, IdentityHash, NoVal, NoValType
+from tawazi.errors import raise_arg_exc
 
 
 def ordinal(numb: int) -> str:
@@ -64,6 +65,12 @@ def get_args_and_default_args(func: Callable[..., Any]) -> Tuple[List[str], Dict
             args.append(k)
 
     return args, default_args
+
+
+def make_raise_arg_error(func_name: str, arg_name: str) -> Callable[[], None]:
+    # declare a local function that will raise an error in the scheduler if
+    # the user doesn't pass in This ArgExecNode as argument to the Attached LazyExecNode
+    return lambda: raise_arg_exc(func_name, arg_name)
 
 
 def lazy_xn_id(base_id: IdentityHash, count_usages: int) -> IdentityHash:

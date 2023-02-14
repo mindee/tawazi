@@ -1,7 +1,7 @@
 from copy import copy
 from threading import Lock
 from types import MethodType
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from loguru import logger
 
@@ -13,17 +13,20 @@ from tawazi.consts import (
     IdentityHash,
     NoVal,
     NoValType,
+    ReturnIDsType,
     Tag,
 )
 
 from .config import Cfg
-from .errors import InvalidExecNodeCall, TawaziBaseException, raise_arg_exc
-from .helpers import lazy_xn_id, ordinal
+from .errors import InvalidExecNodeCall, TawaziBaseException, TawaziTypeError
+from .helpers import lazy_xn_id, make_raise_arg_error, ordinal
 
 # TODO: replace exec_nodes with dict
 # a temporary variable used to pass in exec_nodes to the DAG during building
 exec_nodes: List["ExecNode"] = []
 exec_nodes_lock = Lock()
+
+Alias = Union[Tag, IdentityHash, "ExecNode"]  # multiple ways of identifying an XN
 
 
 class ExecNode:
@@ -161,7 +164,7 @@ class ArgExecNode(ExecNode):
 
     def __init__(
         self,
-        xn_or_func: Union[ExecNode, Callable[..., Any]],
+        xn_or_func_or_id: Union[ExecNode, Callable[..., Any], IdentityHash],
         name_or_order: Union[str, int],
         value: Any = NoVal,
     ):
@@ -169,7 +172,7 @@ class ArgExecNode(ExecNode):
         Constructor of ArgExecNode
 
         Args:
-            xn_or_func (Union[ExecNode, Callable[..., Any]]): The ExecNode or function that this Argument is rattached to
+            xn_or_func_or_id (Union[ExecNode, Callable[..., Any], IdentityHash]): The ExecNode or function that this Argument is rattached to
             name_or_order (Union[str, int]): Argument name or order in the calling function.
               For example Python's builtin sorted function takes 3 arguments (iterable, key, reverse).
                 1. If called like this: sorted([1,2,3]) then [1,2,3] will be of type ArgExecNode with an order=0
@@ -181,12 +184,12 @@ class ArgExecNode(ExecNode):
             TypeError: if type parameter is passed (Internal)
         """
         # TODO: use pydantic!
-        if isinstance(xn_or_func, ExecNode):
-            base_id = xn_or_func.id
-            func = xn_or_func.exec_function
-        elif isinstance(xn_or_func, Callable):  # type: ignore
-            base_id = xn_or_func.__qualname__
-            func = xn_or_func
+        if isinstance(xn_or_func_or_id, ExecNode):
+            base_id = xn_or_func_or_id.id
+        elif isinstance(xn_or_func_or_id, Callable):  # type: ignore
+            base_id = xn_or_func_or_id.__qualname__  # type: ignore
+        elif isinstance(xn_or_func_or_id, IdentityHash):
+            base_id = xn_or_func_or_id
         else:
             raise TypeError("ArgExecNode can only be attached to a LazyExecNode or a Callable")
 
@@ -202,10 +205,7 @@ class ArgExecNode(ExecNode):
 
         id_ = f"{base_id}{ARG_NAME_SEP}{suffix}"
 
-        # declare a local function that will raise an error in the scheduler if
-        # the user doesn't pass in This ArgExecNode as argument to the Attached LazyExecNode
-        def raise_err() -> None:
-            raise_arg_exc(func, suffix)
+        raise_err = make_raise_arg_error(base_id, suffix)
 
         super().__init__(id_=id_, exec_function=raise_err, is_sequential=False)
 
@@ -347,3 +347,50 @@ class LazyExecNode(ExecNode):
             # https://stackoverflow.com/questions/3798835/understanding-get-and-set-and-python-descriptors
             return self
         return MethodType(self, instance)  # func=self  # obj=instance
+
+
+ReturnXNsType = Optional[Union[ExecNode, Tuple[ExecNode], List[ExecNode], Dict[str, ExecNode]]]
+
+
+def get_return_ids(returned_exec_nodes: ReturnXNsType) -> ReturnIDsType:
+    # TODO: support iterators etc.
+    err = TawaziTypeError(
+        "Return type of the pipeline must be either a Single value, Tuple of values, List of values, dict of values or None"
+    )
+    # 1 returned values can be of multiple nature
+    return_ids: ReturnIDsType = []
+    # 2 No value returned by the execution
+    if returned_exec_nodes is None:
+        return_ids = None
+    # 3 a single value is returned
+    elif isinstance(returned_exec_nodes, ExecNode):
+        return_ids = returned_exec_nodes.id
+    # 4 multiple values returned
+    elif isinstance(returned_exec_nodes, (tuple, list)):
+        # 4.1 Collect all the return ids
+        for ren in returned_exec_nodes:
+            if isinstance(ren, ExecNode):
+                return_ids.append(ren.id)  # type: ignore
+            else:
+                # NOTE: this error shouldn't ever raise during usage.
+                # Please report in https://github.com/mindee/tawazi/issues
+                raise err
+        # 4.2 Cast to the corresponding type
+        if isinstance(returned_exec_nodes, tuple):
+            return_ids = tuple(return_ids)  # type: ignore
+        # 4.3 No Cast is necessary for the List because this is the default
+        # NOTE: this cast must be done when adding other types!
+    # 5 support dict
+    elif isinstance(returned_exec_nodes, dict):
+        return_ids = {}
+        for key, ren in returned_exec_nodes.items():
+            # 5.1 key should be str and value should be an ExecNode generated by running an xnode...
+            if isinstance(ren, ExecNode):
+                return_ids[key] = ren.id
+            else:
+                raise TawaziTypeError(
+                    f"return dict should only contain ExecNodes, but {ren} is of type {type(ren)}"
+                )
+    else:
+        raise err
+    return return_ids

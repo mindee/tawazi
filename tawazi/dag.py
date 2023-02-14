@@ -12,10 +12,10 @@ from tawazi.config import Cfg
 from tawazi.consts import ReturnIDsType
 from tawazi.helpers import filter_NoVal
 
-from .consts import IdentityHash, Tag
+from .consts import IdentityHash
 from .digraph import DiGraphEx, subgraph
 from .errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
-from .node import ArgExecNode, ExecNode
+from .node import Alias, ArgExecNode, ExecNode
 
 
 # TODO: make ExecNodes configurable using a yaml configuration file
@@ -352,9 +352,31 @@ class DAG:
                     wait(futures.values(), return_when=ALL_COMPLETED)
         return node_dict
 
-    def _get_leaves_ids(
-        self, twz_nodes: Optional[List[Union[Tag, IdentityHash, ExecNode]]] = None
-    ) -> List[IdentityHash]:
+    def _alias_to_id(self, alias: Alias) -> IdentityHash:
+        """Extract an ExecNode ID from an Alias (Tag, ExecNode ID or ExecNode)"""
+        if isinstance(alias, ExecNode):
+            return alias.id
+        # todo: do further validation for the case of the tag!!
+        elif isinstance(alias, (IdentityHash, tuple)):
+
+            # if leaves_identification is not ExecNode, it can be either
+            #  1. a Tag (Highest priority in case an id with the same value exists)
+            if node := self.tag_node_dict.get(alias):
+                return node.id
+            #  2. or a node id!
+            elif isinstance(alias, IdentityHash):
+                node = self.get_node_by_id(alias)
+                return node.id
+            else:
+                raise ValueError(f"{alias} is not found in the DAG")
+        else:
+
+            raise TawaziTypeError(
+                "twz_nodes must be of type ExecNode, "
+                f"str or tuple identifying the node but provided {alias}"
+            )
+
+    def _get_leaves_ids(self, twz_nodes: Optional[List[Alias]] = None) -> List[IdentityHash]:
         """
         get the ids of ExecNodes corresponding to twz_nodes.
         The identification can be carried out using the tag, the Id, or the ExecNode itself.
@@ -364,7 +386,7 @@ class DAG:
         Handles the debug nodes
 
         Args:
-            twz_nodes (List[Union[Tag, IdentityHash, ExecNode]]): list of a mix of identifier that the user might provide to run a subgraph
+            twz_nodes (List[XNId]): list of a mix of identifier that the user might provide to run a subgraph
 
         Raises:
             ValueError: if a requested ExecNode is not found in the DAG
@@ -381,28 +403,7 @@ class DAG:
         else:
             leaves_ids = []
             for tag_or_id_or_node in twz_nodes:
-                if isinstance(tag_or_id_or_node, ExecNode):
-                    leaves_ids.append(tag_or_id_or_node.id)
-                # todo: do further validation for the case of the tag!!
-                elif isinstance(tag_or_id_or_node, (IdentityHash, tuple)):
-                    tag_or_id = tag_or_id_or_node
-
-                    # if leaves_identification is not ExecNode, it can be either
-                    #  1. a Tag (Highest priority in case an id with the same value exists)
-                    if node := self.tag_node_dict.get(tag_or_id):
-                        leaves_ids.append(node.id)
-                    #  2. or a node id!
-                    elif isinstance(tag_or_id, IdentityHash):
-                        node = self.get_node_by_id(tag_or_id)
-                        leaves_ids.append(node.id)
-                    else:
-                        raise ValueError(f"{tag_or_id_or_node} is not found in the DAG")
-                else:
-
-                    raise TawaziTypeError(
-                        "twz_nodes must be of type ExecNode, "
-                        f"str or tuple identifying the node but provided {tag_or_id_or_node}"
-                    )
+                leaves_ids.append(self._alias_to_id(tag_or_id_or_node))
 
             # after extending leaves_ids, we should do a recheck because this might recreate another debug-able XN...
             if Cfg.RUN_DEBUG_NODES:
@@ -434,7 +435,7 @@ class DAG:
 
     # TODO: setup nodes should not have dependencies that pass in through the pipeline parameters!
     #  raise an error in this case!!
-    def setup(self, twz_nodes: Optional[List[Union[Tag, IdentityHash, ExecNode]]] = None) -> None:
+    def setup(self, twz_nodes: Optional[List[Alias]] = None) -> None:
         """
         Run the setup ExecNodes for the DAG.
         If twz_nodes are provided, run only the necessary setup ExecNodes, otherwise will run all setup ExecNodes.
@@ -442,7 +443,7 @@ class DAG:
          This might be supported in the future though
 
         Args:
-            twz_nodes (Optional[List[Union[Tag, IdentityHash, ExecNode]]], optional): The ExecNodes that the user aims to use in the DAG.
+            twz_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to use in the DAG.
               This might inlcude setup or non setup ExecNodes. If None is provided, will run all setup ExecNodes. Defaults to None.
         """
 
@@ -470,14 +471,12 @@ class DAG:
 
         self._execute(setup_leaves_ids, all_setup_nodes)  # type: ignore
 
-    def __call__(
-        self, *args: Any, twz_nodes: Optional[List[Union[Tag, IdentityHash, ExecNode]]] = None
-    ) -> Any:
+    def __call__(self, *args: Any, twz_nodes: Optional[List[Alias]] = None) -> Any:
         """
         Execute the DAG scheduler via a similar interface to the function that describes the dependencies.
 
         Args:
-            twz_nodes (Optional[List[Union[Tag, IdentityHash, ExecNode]]], optional): ExecNodes to execute as a subgraph;
+            twz_nodes (Optional[List[XNId]], optional): target ExecNodes to execute
              executes the whole DAG if None. Defaults to None.
 
         Raises:
@@ -568,9 +567,7 @@ class DAG:
 
     # NOTE: this function should be used in case there was a bizarre behavior noticed during the
     #   the execution of the DAG via DAG.execute(...)
-    def _safe_execute(
-        self, *args: Any, twz_nodes: Optional[List[Union[Tag, IdentityHash, ExecNode]]] = None
-    ) -> Any:
+    def _safe_execute(self, *args: Any, twz_nodes: Optional[List[Alias]] = None) -> Any:
         """
         Execute the ExecNodes in topological order without priority in for loop manner for debugging purposes
         """
