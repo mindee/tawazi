@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 
-from tawazi import DAGExecutor, dag, xn
+from tawazi import DAGExecution, dag, xn
 from tawazi.consts import NoVal
 
 
@@ -44,7 +44,7 @@ def test_cache_results_basic():
     if Path(cache_path).is_file():
         os.remove(cache_path)
 
-    exc = DAGExecutor(pipe, cache_in=cache_path)
+    exc = DAGExecution(pipe, cache_in=cache_path)
 
     zeros = np.zeros(10**6)
     ones = np.ones(10**6)
@@ -73,8 +73,8 @@ def test_cache_results_subgraph():
     if Path(cache_path).is_file():
         os.remove(cache_path)
 
-    exc = DAGExecutor(
-        pipe, twz_nodes=["generate_large_zeros_array", "incr_large_array"], cache_in=cache_path
+    exc = DAGExecution(
+        pipe, twz_nodes=[generate_large_zeros_array, incr_large_array], cache_in=cache_path
     )
     zeros = np.zeros(10**6)
     ones = np.ones(10**6)
@@ -100,8 +100,8 @@ def test_running_cached_dag():
     if Path(cache_path).is_file():
         os.remove(cache_path)
 
-    exc = DAGExecutor(
-        pipe, twz_nodes=["generate_large_zeros_array", "incr_large_array"], cache_in=cache_path
+    exc = DAGExecution(
+        pipe, twz_nodes=[generate_large_zeros_array, incr_large_array], cache_in=cache_path
     )
     zeros = np.zeros(10**6)
     ones = np.ones(10**6)
@@ -114,8 +114,57 @@ def test_running_cached_dag():
     assert r3 is None
     assert r4 is None
 
-    exc_cached = DAGExecutor(pipe, from_cache=cache_path)
+    exc_cached = DAGExecution(pipe, from_cache=cache_path)
     r1, r2, r3, r4 = exc_cached()
+    assert (r1 == zeros).all()
+    assert (r2 == ones).all()
+    assert (r3 == ones_).all()
+    assert r4 == avg
+
+
+def test_cache_read_write():
+    cache_path = "tests/cache_results/test_cache_read_write.pkl"
+    if Path(cache_path).is_file():
+        os.remove(cache_path)
+
+    exc = DAGExecution(pipe, twz_nodes=[generate_large_zeros_array], cache_in=cache_path)
+    zeros = np.zeros(10**6)
+    ones = np.ones(10**6)
+    ones_ = ones
+    avg = 1
+
+    r1, r2, r3, r4 = exc()
+    assert (r1 == zeros).all()
+    assert r2 is None
+    assert r3 is None
+    assert r4 is None
+
+    exc = DAGExecution(
+        pipe, twz_nodes=[generate_large_zeros_array, incr_large_array], cache_in=cache_path
+    )
+    r1, r2, r3, r4 = exc()
+    assert (r1 == zeros).all()
+    assert (r2 == ones).all()
+    assert r3 is None
+    assert r4 is None
+
+    exc = DAGExecution(
+        pipe,
+        twz_nodes=[generate_large_zeros_array, incr_large_array, pass_large_array],
+        cache_in=cache_path,
+    )
+    r1, r2, r3, r4 = exc()
+    assert (r1 == zeros).all()
+    assert (r2 == ones).all()
+    assert (r3 == ones_).all()
+    assert r4 is None
+
+    exc = DAGExecution(
+        pipe,
+        twz_nodes=[generate_large_zeros_array, incr_large_array, pass_large_array, avg_array],
+        cache_in=cache_path,
+    )
+    r1, r2, r3, r4 = exc()
     assert (r1 == zeros).all()
     assert (r2 == ones).all()
     assert (r3 == ones_).all()
