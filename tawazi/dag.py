@@ -16,7 +16,7 @@ from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 
 from tawazi.config import Cfg
 from tawazi.consts import ReturnIDsType
-from tawazi.helpers import UniqueKeyLoader, filter_NoVal
+from tawazi.helpers import filter_NoVal, make_raise_arg_error, UniqueKeyLoader
 
 from .consts import RVDAG, Identifier, P, RVTypes
 from .digraph import DiGraphEx
@@ -131,6 +131,78 @@ class DAG(Generic[P, RVDAG]):
             return cycle
         except NetworkXNoCycle:
             return None
+
+    # TODO: support many output types (Tuple, list, single, dict etc.)
+    # NOTE: one can't support ... because the order of the arguments must be specified... The same idea goes for the returend value.
+    #  The user should be able to specify the order of the return values.
+    def compose(self, inputs: List[Alias], outputs: List[Alias]) -> "DAG":
+        """compose a new DAG using inputs and outputs ExecNodes
+
+        Args:
+            inputs (List[Alias]): the Inputs nodes whose results are provided.
+            outputs (List[Alias]): the Output nodes that must execute last, The ones that will generate results
+        """
+        # what happens for edge cases ??
+        # 1. if inputs & outputs are []
+        # 2. if inputs are successors of outputs
+        # 3. inputs do no suffice to produce outputs
+        # 4. inputs is [] outputs contains something
+        # 5. inputs is not [], outputs is []
+        # 6. a subcase of the above (some inputs suffice to produce some of the outputs, but some inputs don't)
+        # 7. advanced usage: if inputs contain ... (i.e. Ellipsis) in this case we must expand it to reach all the remaining XN in a smart manner
+        # 8. what if some arguments have default values? should they be provided by the user?
+
+        in_ids = [self._alias_to_id(i_id) for i_id in inputs]
+        out_ids = [self._alias_to_id(o_id) for o_id in outputs]
+
+        set_xn_ids = set(out_ids)
+        for o_id in out_ids:
+            # DFS until reaching an in_id or reaching XN with no predecessor (which is not allowed)
+            dfs_preds = nx.bfs_edges(self.graph_ids, o_id, reverse=True)
+            deps_ids = [edge[1] for edge in dfs_preds]
+            for dep_id in deps_ids:
+                # if the is not in the composed graph, it should be added to the composed graph
+                if dep_id not in set_xn_ids:
+                    set_xn_ids.add(dep_id)
+                # Reached the inputs of the composed graph... must stop at this point
+                if dep_id in in_ids:
+                    set_xn_ids.add(dep_id)
+                    break
+            else:
+                raise TawaziUsageError(
+                    f"the output {o_id} requires the following inputs: {deps_ids}. "
+                    "All of them should be included in the inputs list"
+                )
+
+        # TODO: change "composed" to something else!
+        #  Maybe insert an ID into DAG that is related to the dependency describing function !? just like ExecNode
+        #  This will be necessary when we want to make a DAG containing DAGs besides ExecNodes
+        # TODO: should we support kwargs ?
+        # NOTE: by doing this, we create a new ExecNode for each input.
+        #  Hence we loose all information related to the original ExecNode (tags, etc.)
+        #  Maybe a better way to do this is to transform the original ExecNode into an ArgExecNode
+        # NOTE: what should happen with setup ExecNodes ?
+        # args = [ArgExecNode("composed", i_id) for i_id in in_ids]
+
+        list_xn = [copy(self.node_dict[xn_id]) for xn_id in set_xn_ids]
+        for xn in list_xn:
+            if xn.id in in_ids:
+                xn.__class__ = ArgExecNode
+                xn.exec_function = make_raise_arg_error("composed", xn.id)
+                xn.args = []
+                xn.kwargs = {}
+        composed_dag = DAG(list_xn)
+
+        composed_dag.input_ids = in_ids
+        # composed_dag.return_ids = get_return_ids(out_ids) # TOBE used in the future
+        # if a single value is returned make the output a single value
+        if len(out_ids) == 1:
+            composed_dag.return_ids = out_ids[0]
+        # if multiple values are returned make the output a tuple
+        else:
+            composed_dag.return_ids = tuple(out_ids)  # type: ignore
+
+        return composed_dag
 
     def _build(self) -> None:
         """
