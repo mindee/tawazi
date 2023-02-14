@@ -471,6 +471,19 @@ class DAG:
 
         self._execute(setup_leaves_ids, all_setup_nodes)  # type: ignore
 
+    # TODO: maybe change twz_nodes name?
+    def executor(
+        self, twz_nodes: Optional[List[Alias]] = None
+    ) -> "DAGExecutor":
+        """Generates an executor for the DAG.
+        This is an instance of DAGExecutor which is a disposable instance.
+        It holds information about the DAG's last execution. Hence it is not threadsafe
+
+        Args:
+            twz_nodes (Optional[List[Union[Tag, IdentityHash, ExecNode]]], optional): _description_. Defaults to None.
+        """
+        return DAGExecutor(self, twz_nodes)
+
     def __call__(self, *args: Any, twz_nodes: Optional[List[Alias]] = None) -> Any:
         """
         Execute the DAG scheduler via a similar interface to the function that describes the dependencies.
@@ -624,3 +637,38 @@ class DAG:
 
                 else:
                     raise NotImplementedError(f"Unknown behavior name: {self.behavior}")
+
+
+class DAGExecutor:
+    def __init__(
+        self,
+        dag: DAG,
+        twz_nodes: Optional[List[Alias]] = None,
+        # profile = False, ?
+        # cache_results: bool = False, ?
+    ):
+
+        self.dag = dag
+        self.twz_nodes = twz_nodes
+
+        # get the leaves ids to execute in case of a subgraph
+        self.leaves_ids = dag._get_leaves_ids(self.twz_nodes)
+
+        self.xn_dict: Dict[IdentityHash, ExecNode] = {}
+        self.results: Dict[IdentityHash, Any] = {}
+
+    def __call__(self, *args: Any) -> Any:
+        dag = self.dag
+        leaves_ids = self.leaves_ids
+
+        # 2. copy the ExecNodes
+        call_xn_dict = dag._make_call_xn_dict(*args)
+
+        # 3. Execute the scheduler
+        self.xn_dict = dag._execute(leaves_ids, call_xn_dict)  # type: ignore
+        self.results = {xn.id: xn.result for xn in self.xn_dict.values()}
+
+        # 4. extract the returned value/values
+        returned_values = dag._get_return_values(self.xn_dict)
+
+        return returned_values
