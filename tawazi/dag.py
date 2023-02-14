@@ -1,6 +1,12 @@
+import pickle
 import time
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
+<<<<<<< HEAD
 from copy import copy, deepcopy
+=======
+from copy import deepcopy
+from pathlib import Path
+>>>>>>> 82380db (new: :sparkles: cache_in results of DAGExecutor)
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import networkx as nx
@@ -472,17 +478,9 @@ class DAG:
         self._execute(setup_leaves_ids, all_setup_nodes)  # type: ignore
 
     # TODO: maybe change twz_nodes name?
-    def executor(
-        self, twz_nodes: Optional[List[Alias]] = None
-    ) -> "DAGExecutor":
-        """Generates an executor for the DAG.
-        This is an instance of DAGExecutor which is a disposable instance.
-        It holds information about the DAG's last execution. Hence it is not threadsafe
-
-        Args:
-            twz_nodes (Optional[List[Union[Tag, IdentityHash, ExecNode]]], optional): _description_. Defaults to None.
-        """
-        return DAGExecutor(self, twz_nodes)
+    def executor(self, **kwargs: Dict[str, Any]) -> "DAGExecutor":
+        """Generates an executor for the DAG."""
+        return DAGExecutor(self, **kwargs)  # type: ignore
 
     def __call__(self, *args: Any, twz_nodes: Optional[List[Alias]] = None) -> Any:
         """
@@ -644,12 +642,31 @@ class DAGExecutor:
         self,
         dag: DAG,
         twz_nodes: Optional[List[Alias]] = None,
+        cache_in: str = ""
         # profile = False, ?
-        # cache_results: bool = False, ?
     ):
+        """
+        This is an instance of DAGExecutor which is a disposable instance.
+        It holds information about the DAG's last execution. Hence it is not threadsafe.
+        It is reusable, however it is not recommended to reuse an instance of DAGExecutor!.
+
+        Args:
+            dag (DAG): The attached DAG.
+            twz_nodes (Optional[List[Alias]], optional): The leave ExecNodes to execute.
+             If None will execute all ExecNodes.
+             Defaults to None.
+            cache_results (str, optional):
+             the path to the file where the execution should be cached.
+             The path should end in `.pkl`.
+             Will skip caching if `cache_in` is Falsy.
+             Will raise PickleError if any of the values passed around in the DAG is not pickleable.
+             Defaults to "".
+        """
+        # todo: Maybe we can support .dill to extend the possibilities of the exchanged values, but this won't solve the whole problem
 
         self.dag = dag
         self.twz_nodes = twz_nodes
+        self.cache_in = cache_in
 
         # get the leaves ids to execute in case of a subgraph
         self.leaves_ids = dag._get_leaves_ids(self.twz_nodes)
@@ -657,18 +674,40 @@ class DAGExecutor:
         self.xn_dict: Dict[IdentityHash, ExecNode] = {}
         self.results: Dict[IdentityHash, Any] = {}
 
+    @property
+    def cache_in(self) -> str:
+        return self._cache_in
+
+    @cache_in.setter
+    def cache_in(self, cache_in: str) -> None:
+        if cache_in and not cache_in.endswith(".pkl"):
+            raise ValueError("cache_in should end with.pkl")
+        self._cache_in = cache_in
+
     def __call__(self, *args: Any) -> Any:
         dag = self.dag
         leaves_ids = self.leaves_ids
 
-        # 2. copy the ExecNodes
+        # 1. copy the ExecNodes
         call_xn_dict = dag._make_call_xn_dict(*args)
 
-        # 3. Execute the scheduler
+        # 2. Execute the scheduler
         self.xn_dict = dag._execute(leaves_ids, call_xn_dict)  # type: ignore
         self.results = {xn.id: xn.result for xn in self.xn_dict.values()}
 
-        # 4. extract the returned value/values
+        # 3. cache in the results
+        if self.cache_in:
+            Path(self.cache_in).parent.mkdir(parents=True, exist_ok=True)
+            with open(self.cache_in, "wb") as f:
+                # NOTE: we are currently only storing the results of the execution,
+                #  this means that the configuration of the ExecNodes are lost!
+                #  But this is ok since it should not change between executions!
+                #  for example, a setup ExecNode should stay a setup ExecNode between caching in the results and reading back the cached results
+                #  the same goes for the DAG itself, the behavior when an error is encountered & its concurrency will be controlled via the constructor
+
+                pickle.dump(self.results, f, protocol=pickle.HIGHEST_PROTOCOL, fix_imports=False)
+
+        # 3. extract the returned value/values
         returned_values = dag._get_return_values(self.xn_dict)
 
         return returned_values
