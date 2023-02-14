@@ -36,9 +36,19 @@ jobs:
       with:
         python-version: ${{ matrix.python_version}}
 
-    - name: Install dependencies
+    - name: Install Poetry
       run: |
         curl -sSL https://install.python-poetry.org | python3 - --version 1.2.0b2
+
+    - uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python_version }}
+        cache: 'poetry'
+        # use the whole repo's hash (i.e. recalculate the deps everytime)
+        cache-dependency-path: pyproject.toml
+
+    - name: Install dependencies
+      run: |
         poetry install --without=docs
 
     - name: extract files from README.md
