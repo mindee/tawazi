@@ -474,9 +474,9 @@ class DAG:
         self._execute(setup_leaves_ids, all_setup_nodes)  # type: ignore
 
     # TODO: maybe change twz_nodes name?
-    def executor(self, **kwargs: Dict[str, Any]) -> "DAGExecutor":
+    def executor(self, **kwargs: Dict[str, Any]) -> "DAGExecution":
         """Generates an executor for the DAG."""
-        return DAGExecutor(self, **kwargs)  # type: ignore
+        return DAGExecution(self, **kwargs)  # type: ignore
 
     def __call__(self, *args: Any, twz_nodes: Optional[List[Alias]] = None) -> Any:
         """
@@ -633,9 +633,11 @@ class DAG:
                     raise NotImplementedError(f"Unknown behavior name: {self.behavior}")
 
 
-# TODO: change the name of twz_nodes!! should be twz_leaves_nodes. What do you think matthias ?
+# TODO: change the name of twz_nodes!! should be leaves_nodes
 # TODO: should implement twz_exclude_nodes
-class DAGExecutor:
+# TODO: check if the arguments are the same, then run the DAG using the from_cache.
+#  If the arguments are not the same, then rerun the DAG!
+class DAGExecution:
     def __init__(
         self,
         dag: DAG,
@@ -645,7 +647,7 @@ class DAGExecutor:
         # profile = False, ?
     ):
         """
-        This is an instance of DAGExecutor which is a disposable instance.
+        This is an instance of DAGExecution which is a disposable callable instance of a DAG.
         It holds information about the DAG's last execution. Hence it is not threadsafe.
         It is reusable, however it is not recommended to reuse an instance of DAGExecutor!.
 
@@ -654,11 +656,16 @@ class DAGExecutor:
             twz_nodes (Optional[List[Alias]], optional): The leave ExecNodes to execute.
              If None will execute all ExecNodes.
              Defaults to None.
-            cache_results (str, optional):
+            cache_in (str, optional):
              the path to the file where the execution should be cached.
              The path should end in `.pkl`.
              Will skip caching if `cache_in` is Falsy.
              Will raise PickleError if any of the values passed around in the DAG is not pickleable.
+             Defaults to "".
+            from_cache (str, optional):
+             the path to the file where the execution should be loaded from.
+             The path should end in `.pkl`.
+             Will skip loading from cache if `from_cache` is Falsy.
              Defaults to "".
         """
         # todo: Maybe we can support .dill to extend the possibilities of the exchanged values, but this won't solve the whole problem
