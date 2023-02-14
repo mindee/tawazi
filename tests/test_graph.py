@@ -2,7 +2,7 @@ from time import sleep
 
 from networkx import NetworkXUnfeasible
 from tawazi import DAG, ErrorStrategy
-from tawazi.node import ExecNode
+from tawazi.node import ExecNode, XNWrapper
 
 T = 0.1
 
@@ -22,9 +22,9 @@ def c(b: str) -> str:
     return b + "c"
 
 
-en_a = ExecNode(a.__name__, a, [], is_sequential=True)
-en_b = ExecNode(b.__name__, b, [en_a], priority=2, is_sequential=False)
-en_c = ExecNode(c.__name__, c, [en_a], priority=1, is_sequential=False)
+en_a = XNWrapper(ExecNode(a.__name__, a, [], is_sequential=True))
+en_b = XNWrapper(ExecNode(b.__name__, b, [en_a], priority=2, is_sequential=False))
+en_c = XNWrapper(ExecNode(c.__name__, c, [en_a], priority=1, is_sequential=False))
 en_a.args = [en_c]
 
 list_exec_nodes = [en_a, en_b, en_c]
