@@ -218,7 +218,7 @@ class DAG(Generic[P, RVDAG]):
 
         # 1.2 add edges
         for xn in self.exec_nodes:
-            edges = [(dep.id, xn.id) for dep in xn.dependencies]
+            edges = [(dep.xn.id, xn.id) for dep in xn.dependencies]
             self.graph_ids.add_edges_from(edges)
 
         # 2. Validate the DAG: check for circular dependencies
@@ -231,7 +231,7 @@ class DAG(Generic[P, RVDAG]):
     def _validate(self) -> None:
         # validate setup ExecNodes
         for xn in self.exec_nodes:
-            if xn.setup and any(dep.id in self.input_ids for dep in xn.dependencies):
+            if xn.setup and any(dep.xn.id in self.input_ids for dep in xn.dependencies):
                 raise TawaziUsageError(
                     f"The ExecNode {xn} takes as parameters one of the DAG's input parameter"
                 )

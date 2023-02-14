@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 
 from tawazi import DAG, ErrorStrategy
-from tawazi.node import ExecNode
+from tawazi.node import ExecNode, XNWrapper
 
 """Internal Unit tests"""
 
@@ -34,10 +34,10 @@ def d(a: Any) -> None:
     pytest.behavior_comp_str += "d"
 
 
-en_a = ExecNode(a.__qualname__, a, priority=1, is_sequential=False)
-en_b = ExecNode(b.__qualname__, b, args=[en_a], priority=2, is_sequential=False)
-en_c = ExecNode(c.__qualname__, c, args=[en_b], priority=2, is_sequential=False)
-en_d = ExecNode(d.__qualname__, d, args=[en_a], priority=1, is_sequential=False)
+en_a = XNWrapper(ExecNode(a.__qualname__, a, priority=1, is_sequential=False))
+en_b = XNWrapper(ExecNode(b.__qualname__, b, args=[en_a], priority=2, is_sequential=False))
+en_c = XNWrapper(ExecNode(c.__qualname__, c, args=[en_b], priority=2, is_sequential=False))
+en_d = XNWrapper(ExecNode(d.__qualname__, d, args=[en_a], priority=1, is_sequential=False))
 list_execnodes = [en_a, en_b, en_c, en_d]
 
 

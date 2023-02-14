@@ -62,3 +62,5 @@ P = ParamSpec("P")
 RVDAG = TypeVar("RVDAG", bound=RVTypes, covariant=True)
 
 RVXN = TypeVar("RVXN", covariant=True)
+
+# ImmutableType = Union[str, int, float, bool, Tuple[ImmutableType]]  # doesn't work because of cyclic typing
