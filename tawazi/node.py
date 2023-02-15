@@ -357,9 +357,8 @@ ReturnXNsType = Optional[Union[ExecNode, Tuple[ExecNode], List[ExecNode], Dict[s
 
 def get_return_ids(returned_exec_nodes: ReturnXNsType) -> ReturnIDsType:
     # TODO: support iterators etc.
-    err = TawaziTypeError(
-        "Return type of the pipeline must be either a Single value, Tuple of values, List of values, dict of values or None"
-    )
+    err_string = "Return type of the pipeline must be either a Single Xnode, Tuple of Xnodes, List of Xnodes, dict of Xnodes or None"
+
     # 1 returned values can be of multiple nature
     return_ids: ReturnIDsType = []
     # 2 No value returned by the execution
@@ -377,7 +376,7 @@ def get_return_ids(returned_exec_nodes: ReturnXNsType) -> ReturnIDsType:
             else:
                 # NOTE: this error shouldn't ever raise during usage.
                 # Please report in https://github.com/mindee/tawazi/issues
-                raise err
+                raise TawaziTypeError(err_string)
         # 4.2 Cast to the corresponding type
         if isinstance(returned_exec_nodes, tuple):
             return_ids = tuple(return_ids)  # type: ignore
@@ -395,5 +394,7 @@ def get_return_ids(returned_exec_nodes: ReturnXNsType) -> ReturnIDsType:
                     f"return dict should only contain ExecNodes, but {ren} is of type {type(ren)}"
                 )
     else:
-        raise err
+        raise TawaziTypeError(
+            f"{err_string}. Type of the provided return: {type(returned_exec_nodes)}"
+        )
     return return_ids
