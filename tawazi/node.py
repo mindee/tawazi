@@ -55,13 +55,20 @@ class ExecNode:
 
         Args:
             id_ (IdentityHash): identifier of ExecNode.
-            exec_function (Callable, optional): a callable will be executed in the graph.
-            This is useful to make Joining ExecNodes (Nodes that enforce dependencies on the graph)
-            priority (int, optional): priority compared to other ExecNodes;
-                the higher the number the higher the priority.
-            is_sequential (bool, optional): whether to execute this ExecNode in sequential order with respect to others.
-             When this ExecNode must be executed, all other nodes are waited to finish before starting execution.
-             Defaults to False.
+            exec_function (Callable): a callable will be executed in the graph.
+                This is useful to make Joining ExecNodes (Nodes that enforce dependencies on the graph)
+            args (Optional[List[ExecNode]], optional): *args to pass to exec_function.
+            kwargs (Optional[Dict[str, ExecNode]], optional): **kwargs to pass to exec_function.
+            priority (int): priority compared to other ExecNodes; the higher the number the higher the priority.
+            is_sequential (bool): whether to execute this ExecNode in sequential order with respect to others.
+                When this ExecNode must be executed, all other nodes are waited to finish before starting execution.
+                Defaults to False.
+            debug (bool): Make this ExecNode a debug Node. Defaults to False.
+            tag (Tag): Attach a Tag of this ExecNode. Defaults to None.
+            setup (bool): Make this ExecNode a setup Node. Defaults to False.
+
+        Raises:
+            ValueError: if setup and debug are both True.
         """
         # NOTE: validate attributes using pydantic perhaps
         # 1. assign attributes
@@ -115,11 +122,13 @@ class ExecNode:
     def execute(self, node_dict: Dict[IdentityHash, "ExecNode"]) -> Optional[Any]:
         """
         Execute the ExecNode inside of a DAG.
+
         Args:
             node_dict (Dict[IdentityHash, ExecNode]): A shared dictionary containing the other ExecNodes in the DAG;
-              the key is the id of the ExecNode. This node_dict refers to the current execution
+                the key is the id of the ExecNode. This node_dict refers to the current execution
 
-        Returns: the result of the execution of the current ExecNode
+        Returns:
+            the result of the execution of the current ExecNode
         """
         logger.debug(f"Start executing {self.id} with task {self.exec_function}")
 
@@ -188,15 +197,16 @@ class ArgExecNode(ExecNode):
         Args:
             xn_or_func_or_id (Union[ExecNode, Callable[..., Any], IdentityHash]): The ExecNode or function that this Argument is rattached to
             name_or_order (Union[str, int]): Argument name or order in the calling function.
-              For example Python's builtin sorted function takes 3 arguments (iterable, key, reverse).
-                1. If called like this: sorted([1,2,3]) then [1,2,3] will be of type ArgExecNode with an order=0
-                2. If called like this: sorted(iterable=[4,5,6]) then [4,5,6] will be of type ArgExecNode with a name="iterable"
+                For example Python's builtin sorted function takes 3 arguments (iterable, key, reverse).
+                    1. If called like this: sorted([1,2,3]) then [1,2,3] will be of type ArgExecNode with an order=0
+                    2. If called like this: sorted(iterable=[4,5,6]) then [4,5,6] will be of type ArgExecNode with a name="iterable"
             value (Any): The preassigned value to the corresponding Argument.
 
         Raises:
-            TawaziArgumentException: if this argument is not provided during the Attached ExecNode usage
             TypeError: if type parameter is passed (Internal)
         """
+        # raises TawaziArgumentException: if this argument is not provided during the Attached ExecNode usage
+
         # TODO: use pydantic!
         if isinstance(xn_or_func_or_id, ExecNode):
             base_id = xn_or_func_or_id.id
@@ -250,11 +260,15 @@ class LazyExecNode(ExecNode):
         tag: Any,
         setup: bool,
     ):
-        """
-        Constructor of LazyExecNode
+        """Constructor of LazyExecNode
 
         Args:
-            look at ExecNode's documentation.
+            func (Callable[..., Any]): Look at ExecNode's Documentation
+            priority (int): Look at ExecNode's Documentation
+            is_sequential (bool): Look at ExecNode's Documentation
+            debug (bool): Look at ExecNode's Documentation
+            tag (Any): Look at ExecNode's Documentation
+            setup (bool): Look at ExecNode's Documentation
         """
 
         super().__init__(
@@ -270,7 +284,19 @@ class LazyExecNode(ExecNode):
     def __call__(self, *args: Any, **kwargs: Any) -> "LazyExecNode":
         """
         Record the dependencies in a global variable to be called later in DAG.
-        Returns: a deepcopy of the LazyExecNode
+
+        Args:
+            *args (Any): positional arguments passed to the function during dependency recording
+            **kwargs (Any): keyword arguments passed to the function during dependency recording
+
+        Returns:
+            a copy of the LazyExecNode. This copy corresponds to a call to the original function.
+
+        Raises:
+            InvalidExecNodeCall: if this ExecNode is called outside of a DAG dependency calculation
+            TawaziBaseException: if the debug and setup dependencies constraints are violated:
+                1. normal ExecNode depends on debug ExecNode
+                2. setup ExecNode depends on normal ExecNode
         """
         # 0.1 LazyExecNodes cannot be called outside DAG dependency calculation
         #  (i.e. outside a function that is decorated with @dag)
@@ -342,12 +368,13 @@ class LazyExecNode(ExecNode):
     def __get__(self, instance: "LazyExecNode", owner_cls: Optional[Any] = None) -> Any:
         """
         Simulate func_descr_get() in Objects/funcobject.c
+
         Args:
-            instance:
-            owner_cls:
+            instance (LazyExecNode): the instance that this attribute should be attached to
+            owner_cls: Discriminate between attaching the attribute to the instance of the class and the class itself
 
         Returns:
-
+            Either self or a MethodType object
         """
         # if LazyExecNode is not an attribute of a class, then return self
         if instance is None:

@@ -120,9 +120,10 @@ class DAG:
         """
         A DAG doesn't have any dependency cycle.
         This method returns the cycles if found.
-        return: A list of the edges responsible for the cycles in case there are some (in forward and backward),
-        otherwise nothing.
-        return example: [('taxes', 'amount_reconciliation'),('amount_reconciliation', 'taxes')]
+
+        returns:
+            A list of the edges responsible for the cycles in case there are some (in forward and backward),
+             otherwise nothing. (e.g. [('taxes', 'amount_reconciliation'),('amount_reconciliation', 'taxes')])
         """
         try:
             cycle: List[Tuple[str, str]] = find_cycle(self.graph_ids)
@@ -133,6 +134,9 @@ class DAG:
     def _build(self) -> None:
         """
         Builds the graph and the sequence order for the computation.
+
+        Raises:
+            NetworkXUnfeasible: if the graph has cycles
         """
         # 1. Make the graph
         # 1.1 add nodes
@@ -191,12 +195,12 @@ class DAG:
             leaf_ids = graph_ids.leaf_nodes
 
     def draw(self, k: float = 0.8, display: bool = True, t: int = 3) -> None:
-        """
-        Draws the Networkx directed graph.
+        """Draws the Networkx directed graph.
+
         Args:
-            k: parameter for the layout of the graph, the higher, the further the nodes apart
-            display: display the layout created
-            t: time to display in seconds
+            k (float): parameter for the layout of the graph, the higher, the further the nodes apart. Defaults to 0.8.
+            display (bool): display the layout created. Defaults to True.
+            t (int): time to display in seconds. Defaults to 3.
         """
         import matplotlib.pyplot as plt
 
@@ -214,6 +218,12 @@ class DAG:
     def _deepcopy_non_setup_x_nodes(cls, x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
         """
         Deep copy all ExecNodes except setup ExecNodes because they are shared throughout the DAG instance
+
+        Args:
+            x_nodes: Dict[str, ExecNode] x_nodes to be deep copied
+
+        Returns:
+            Dict[str, ExecNode] copy of x_nodes
         """
         # TODO: separate setup xnodes and non setup xndoes.
         #  maybe use copy instead of deepcopy for the non setup xnodes!? I think this is a bad idea it won't work
@@ -235,8 +245,11 @@ class DAG:
         """
         Thread safe execution of the DAG...
          (Except for the setup nodes! Please run DAG.setup() in a single thread because its results will be cached).
+
         Args:
             leaves_ids: The nodes (or the ids of the nodes) to be executed
+            modified_node_dict: A dictionary of the ExecNodes that have been modified by setting the input parameters of the DAG.
+
         Returns:
             node_dict: dictionary with keys the name of the function and value the result after the execution
         """
@@ -360,7 +373,18 @@ class DAG:
         return node_dict
 
     def _alias_to_ids(self, alias: Alias) -> List[IdentityHash]:
-        """Extract an ExecNode ID from an Alias (Tag, ExecNode ID or ExecNode)"""
+        """Extract an ExecNode ID from an Alias (Tag, ExecNode ID or ExecNode)
+
+        Args:
+            alias (Alias): an Alias (Tag, ExecNode ID or ExecNode)
+
+        Returns:
+            The corresponding ExecNode IDs
+
+        Raises:
+            ValueError: if a requested ExecNode is not found in the DAG
+            TawaziTypeError: if the Type of the identifier is not Tag, IdentityHash or ExecNode
+        """
         if isinstance(alias, ExecNode):
             return [alias.id]
         # todo: do further validation for the case of the tag!!
@@ -395,16 +419,14 @@ class DAG:
         Handles the debug nodes
 
         Args:
-            twz_nodes (List[XNId]): list of a mix of identifier that the user might provide to run a subgraph
-
-        Raises:
-            ValueError: if a requested ExecNode is not found in the DAG
-            TawaziTypeError: if the Type of the identifier is not Tag, IdentityHash or ExecNode
-            TawaziBaseException: if the returned List[IdentityHash] has the wrong length, this indicates a bug in the code
+            twz_nodes (Optional[List[Alias]]): list of a ExecNode Aliases that the user might provide to run a subgraph
 
         Returns:
-            List[IdentityHash]: ExecNodes' Identities
+            List[IdentityHash]: Leaf ExecNodes' Identities
         """
+        # Raises:
+        #     TawaziBaseException: if the returned List[IdentityHash] has the wrong length, this indicates a bug in the code
+
         if twz_nodes is None:
             # TODO: make cached!
             leaves_ids = [xn.id for xn in self.exec_nodes]
@@ -443,15 +465,15 @@ class DAG:
         return leaves_ids
 
     def setup(self, twz_nodes: Optional[List[Alias]] = None) -> None:
-        """
-        Run the setup ExecNodes for the DAG.
+        """Run the setup ExecNodes for the DAG.
+
         If twz_nodes are provided, run only the necessary setup ExecNodes, otherwise will run all setup ExecNodes.
         NOTE: currently if setup ExecNodes receive arguments from the Pipeline this method won't work because it doesn't support *args.
-         This might be supported in the future though
+            This might be supported in the future though
 
         Args:
             twz_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to use in the DAG.
-              This might inlcude setup or non setup ExecNodes. If None is provided, will run all setup ExecNodes. Defaults to None.
+                This might inlcude setup or non setup ExecNodes. If None is provided, will run all setup ExecNodes. Defaults to None.
         """
 
         # 1. select all setup ExecNodes
@@ -480,7 +502,14 @@ class DAG:
 
     # TODO: maybe change twz_nodes name?
     def executor(self, **kwargs: Dict[str, Any]) -> "DAGExecution":
-        """Generates an executor for the DAG."""
+        """Generates an executor for the DAG.
+
+        Args:
+            **kwargs (Dict[str, Any]): keyword arguments to be passed to DAGExecution's constructor
+
+        Returns:
+            DAGExecution: an executor for the DAG
+        """
         return DAGExecution(self, **kwargs)  # type: ignore
 
     def __call__(self, *args: Any, twz_nodes: Optional[List[Alias]] = None) -> Any:
@@ -488,16 +517,17 @@ class DAG:
         Execute the DAG scheduler via a similar interface to the function that describes the dependencies.
 
         Args:
+            *args (Any): arguments to be passed to the call of the DAG
             twz_nodes (Optional[List[XNId]], optional): target ExecNodes to execute
-             executes the whole DAG if None. Defaults to None.
+                executes the whole DAG if None. Defaults to None.
 
-        Raises:
-            TypeError: If called with an invalid number of arguments
-            TawaziTypeError: if twz_nodes contains a wrong typed identifier or if the return value contain a non LazyExecNode
 
         Returns:
-            Any: _description_
+            Any: return value of the DAG's execution
         """
+        # Raises:
+        #     TawaziTypeError: if twz_nodes contains a wrong typed identifier or if the return value contain a non LazyExecNode
+
         # 1. get the leaves ids to execute in case of a subgraph
         leaves_ids = self._get_leaves_ids(twz_nodes)
         #
@@ -523,6 +553,15 @@ class DAG:
          1. deep copying the ExecNodes
          2. filling the arguments of the call
          3. skipping the copy for setup ExecNodes
+
+        Args:
+            *args (Any): arguments to be passed to the call of the DAG
+
+        Returns:
+            Dict[IdentityHash, ExecNode]: The modified ExecNode dict which will be executed by the DAG scheduler.
+
+        Raises:
+            TypeError: If called with an invalid number of arguments
         """
         # 1. deepcopy the node_dict because it will be modified by the DAG's execution
         call_xn_dict = DAG._deepcopy_non_setup_x_nodes(self.node_dict)
@@ -583,6 +622,14 @@ class DAG:
     def _safe_execute(self, *args: Any, twz_nodes: Optional[List[Alias]] = None) -> Any:
         """
         Execute the ExecNodes in topological order without priority in for loop manner for debugging purposes
+
+        Args:
+            *args (Any): Positional arguments passed to the DAG
+            twz_nodes (Optional[List[Alias]]): the ExecNodes that should be considered to construct the subgraph
+
+        Returns:
+            Any: the result of the execution of the DAG.
+             If an ExecNode returns a value in the DAG but is not executed, it will return None.
         """
         # 1. make the graph_ids to be executed!
         leaves_ids = self._get_leaves_ids(twz_nodes)
@@ -605,13 +652,14 @@ class DAG:
         """
         checks if futures have produced exceptions, and handles them
         according to the specified behavior
+
         Args:
             graph: the graph
-            fut: the future
-            id_: the identification of the ExecNode
+            fut: the thread future
+            id_: the IdentityHash of the current ExecNode
 
-        Returns:
-
+        Raises:
+            NotImplementedError: if self.behavior is not known
         """
 
         if self.behavior == ErrorStrategy.strict:
@@ -641,12 +689,13 @@ class DAG:
     def config_from_dict(self, config: Dict[str, Any]) -> None:
         """
         Allows reconfiguring the parameters of the nodes from a dictionary
+
         Args:
-            config: the dictionary containing the config
+            config (Dict[str, Any]): the dictionary containing the config
                     example: {"nodes": {"a": {"priority": 3, "is_sequential": True}}, "max_concurrency": 3}
 
-        Returns:
-
+        Raises:
+            ValueError: if two nodes are configured by the provided config (which is ambiguous)
         """
 
         def _override_node_config(n: ExecNode, cfg: Dict[str, Any]) -> bool:
@@ -688,11 +737,9 @@ class DAG:
     def config_from_yaml(self, config_path: str) -> None:
         """
         Allows reconfiguring the parameters of the nodes from a yaml file
+
         Args:
             config_path: the path to the yaml file
-
-        Returns:
-
         """
         with open(config_path, "r") as f:
             yaml_config = yaml.load(f, Loader=UniqueKeyLoader)
@@ -702,11 +749,9 @@ class DAG:
     def config_from_json(self, config_path: str) -> None:
         """
         Allows reconfiguring the parameters of the nodes from a yaml file
+
         Args:
             config_path: the path to the json file
-
-        Returns:
-
         """
         with open(config_path, "r") as f:
             json_config = json.load(f)
@@ -734,20 +779,20 @@ class DAGExecution:
 
         Args:
             dag (DAG): The attached DAG.
-            twz_nodes (Optional[List[Alias]], optional): The leave ExecNodes to execute.
-             If None will execute all ExecNodes.
-             Defaults to None.
-            cache_in (str, optional):
-             the path to the file where the execution should be cached.
-             The path should end in `.pkl`.
-             Will skip caching if `cache_in` is Falsy.
-             Will raise PickleError if any of the values passed around in the DAG is not pickleable.
-             Defaults to "".
-            from_cache (str, optional):
-             the path to the file where the execution should be loaded from.
-             The path should end in `.pkl`.
-             Will skip loading from cache if `from_cache` is Falsy.
-             Defaults to "".
+            twz_nodes (Optional[List[Alias]]): The leave ExecNodes to execute.
+                If None will execute all ExecNodes.
+                Defaults to None.
+            cache_in (str):
+                the path to the file where the execution should be cached.
+                The path should end in `.pkl`.
+                Will skip caching if `cache_in` is Falsy.
+                Will raise PickleError if any of the values passed around in the DAG is not pickleable.
+                Defaults to "".
+            from_cache (str):
+                the path to the file where the execution should be loaded from.
+                The path should end in `.pkl`.
+                Will skip loading from cache if `from_cache` is Falsy.
+                Defaults to "".
         """
         # todo: Maybe we can support .dill to extend the possibilities of the exchanged values, but this won't solve the whole problem
 

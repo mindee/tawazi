@@ -24,23 +24,26 @@ def xn(
     When the decorated function is called, you are actually calling an ExecNode.
     This way we can record the dependencies in order to build the actual DAG.
     Please check the example in the README for a guide to the usage.
+
     Args:
         func (Callable[..., Any]): a Callable that will be executed in the DAG
         priority (int): priority of the execution with respect to other ExecNodes
         is_sequential (bool): whether to allow the execution of this ExecNode with others or not
         debug (bool): if True, this node will be executed when the corresponding DAG runs in Debug mode.
-          This means that this ExecNode will run if its inputs exists
+            This means that this ExecNode will run if its inputs exists
         tag (Any): Any Hashable / immutable typed variable can be used to identify nodes (str, Tuples, int etc.).
-           It is the responsibility of the user to provide this immutability of the tag.
+            It is the responsibility of the user to provide this immutability of the tag.
         setup (bool): if True, this node will be executed only once during the lifetime of a DAG instance.
-          Setup ExecNodes are meant to be used to load heavy data only once inside the execution pipeline and then be used as if the results were cached.
-          This can be useful if you want to load heavy ML models, heavy Data etc.
-          Note that you can run all / subset of the setup nodes by invoking the DAG.setup method
-          NOTE: setup nodes are currently not threadsafe!
-            because they are shared between all threads!
-            If you execute the same pipeline in multiple threads during the setup phase, the behavior is undefined.
-            This is why it is best to invoke the DAG.setup method before using the DAG in a multithreaded environment.
-            This problem will be resolved in the future
+            Setup ExecNodes are meant to be used to load heavy data only once inside the execution pipeline and then be used as if the results were cached.
+            This can be useful if you want to load heavy ML models, heavy Data etc.
+            Note that you can run all / subset of the setup nodes by invoking the DAG.setup method
+            NOTE setup nodes are currently not threadsafe!
+                because they are shared between all threads!
+                If you execute the same pipeline in multiple threads during the setup phase, the behavior is undefined.
+                This is why it is best to invoke the DAG.setup method before using the DAG in a multithreaded environment.
+                This problem will be resolved in the future
+        tag (Optional[Any]): Any Hashable / immutable typed variable can be used to identify nodes (str, Tuple[str, ...])
+
     Returns:
         LazyExecNode: The decorated function wrapped in a Callable.
     """
@@ -71,13 +74,17 @@ def dag(
         If you need to construct lots of DAGs in multiple threads,
         it is best to construct your dag once and then use it as much as you like.
     Please check the example in the README for a guide to the usage.
+
     Args:
         declare_dag_function: a function that contains the execution of the DAG.
-        Currently Only @op decorated functions can be used inside the decorated function (i.e. declare_dag_function).
-        However, you can use some simple python code to generate constants.
+            Currently Only @op decorated functions can be used inside the decorated function (i.e. declare_dag_function).
+            However, you can use some simple python code to generate constants.
+            Note However that these constants are computed only once during DAG declaration.
         max_concurrency: the maximum number of concurrent threads to execute in parallel.
         behavior: the behavior of the DAG when an error occurs during the execution of a function (ExecNode).
-    Returns: a DAG instance
+
+    Returns:
+        a DAG instance
     """
 
     # wrapper used to support parametrized and non parametrized decorators
