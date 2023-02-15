@@ -129,7 +129,6 @@ def dag(
 
         functools.update_wrapper(d, _func)
         d._validate()
-        # d.deps_describer = _func
         return d
 
     # case 1: arguments are provided to the decorator
