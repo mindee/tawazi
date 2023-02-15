@@ -57,7 +57,6 @@ class ExecNode:
             id_ (IdentityHash): identifier of ExecNode.
             exec_function (Callable, optional): a callable will be executed in the graph.
             This is useful to make Joining ExecNodes (Nodes that enforce dependencies on the graph)
-            depends_on (list): a list of ExecNodes' ids that must be executed beforehand.
             priority (int, optional): priority compared to other ExecNodes;
                 the higher the number the higher the priority.
             is_sequential (bool, optional): whether to execute this ExecNode in sequential order with respect to others.
@@ -73,6 +72,10 @@ class ExecNode:
         self.debug = debug  # TODO: do the fix to run debug nodes if their inputs exist
         self.tag = tag
         self.setup = setup
+
+        assert not (
+            debug and setup
+        ), f"The node {self.id} can't be a setup and a debug node at the same time."
 
         self.args: List[ExecNode] = args or []
         self.kwargs: Dict[IdentityHash, ExecNode] = kwargs or {}
