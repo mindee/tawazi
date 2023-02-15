@@ -1,5 +1,5 @@
-import pickle
 import json
+import pickle
 import time
 from collections import defaultdict
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
@@ -712,6 +712,7 @@ class DAG:
             json_config = json.load(f)
 
         self.config_from_dict(json_config)
+
 
 # TODO: change the name of twz_nodes!! should be leaves_nodes
 # TODO: should implement twz_exclude_nodes
