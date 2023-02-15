@@ -73,9 +73,10 @@ class ExecNode:
         self.tag = tag
         self.setup = setup
 
-        assert not (
-            debug and setup
-        ), f"The node {self.id} can't be a setup and a debug node at the same time."
+        if debug and setup:
+            raise ValueError(
+                f"The node {self.id} can't be a setup and a debug node at the same time."
+            )
 
         self.args: List[ExecNode] = args or []
         self.kwargs: Dict[IdentityHash, ExecNode] = kwargs or {}
