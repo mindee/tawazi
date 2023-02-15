@@ -82,10 +82,8 @@ def dag(
 
     # wrapper used to support parametrized and non parametrized decorators
     def intermediate_wrapper(_func: Callable[..., Any]) -> DAG:
-
         # 0. Protect against multiple threads declaring many DAGs at the same time
         with exec_nodes_lock:
-
             # 1. node.exec_nodes contains all the ExecNodes that concern the DAG being built at the moment.
             #      make sure it is empty
             node.exec_nodes = []

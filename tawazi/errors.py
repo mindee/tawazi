@@ -8,7 +8,6 @@ class TawaziBaseException(BaseException):
 
 class TawaziArgumentException(TawaziBaseException):
     def __init__(self, func_name: str, arg_name: str) -> None:
-
         msg = f"Argument {arg_name} wasn't passed for the DAG" f" created from function {func_name}"
         super().__init__(msg)
 

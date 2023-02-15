@@ -18,7 +18,6 @@ def test_non_pickalable_args():
 
     @dag
     def pipe():
-
         return a(os), b(a(10), a())
 
     assert pipe() == (os, 13)

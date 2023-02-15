@@ -41,6 +41,7 @@ a_op = xn(a, priority=10)
 b_op = xn(b)
 c_op = xn(c)
 
+
 # run in the dag interface
 @dag
 def dagger():
