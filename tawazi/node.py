@@ -101,6 +101,7 @@ class ExecNode:
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} {self.id} ~ | <{hex(id(self))}>"
 
+    # TODO: make cached_property ?
     @property
     def dependencies(self) -> List["ExecNode"]:
         # Making the dependencies
@@ -281,6 +282,8 @@ class LazyExecNode(ExecNode):
         # # 0.2 if self is a debug ExecNode and Tawazi is configured to skip running debug Nodes
         # #   then skip registering this node in the list of ExecNodes to be executed
 
+        # TODO: maybe change the Type of objects created.
+        #  for example: have a LazyExecNode.__call(...) return an ExecNodeCall instead of a deepcopy
         # 1.1 Make a deep copy of self because every Call to an ExecNode corresponds to a new instance
         self_copy = copy(self)
         # 1.2 Assign the id
