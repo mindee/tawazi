@@ -30,7 +30,6 @@ def is_positive_len(len_img):
 
 
 def test_pipeline_with_debug_node():
-
     pytest.my_len_has_ran = False
     import tawazi
 
@@ -47,7 +46,6 @@ def test_pipeline_with_debug_node():
 
 
 def test_pipeline_without_debug_node():
-
     pytest.my_len_has_ran = False
     import tawazi
 
@@ -67,7 +65,6 @@ test_pipeline_without_debug_node()
 
 
 def test_interdependant_debug_nodes():
-
     pytest.my_len_has_ran = False
     pytest.is_positive_len_has_ran = False
     import tawazi
@@ -115,7 +112,6 @@ def triple_incr_debug(in1):
 
 
 def test_triple_incr_debug():
-
     import tawazi
 
     tawazi.Cfg.RUN_DEBUG_NODES = True
@@ -124,7 +120,6 @@ def test_triple_incr_debug():
 
 
 def test_triple_incr_no_debug():
-
     import tawazi
 
     tawazi.Cfg.RUN_DEBUG_NODES = False
@@ -133,7 +128,6 @@ def test_triple_incr_no_debug():
 
 
 def test_triple_incr_debug_subgraph():
-
     import tawazi
 
     tawazi.Cfg.RUN_DEBUG_NODES = True
@@ -143,7 +137,6 @@ def test_triple_incr_debug_subgraph():
 
 
 def test_reachable_debuggable_node_in_subgraph():
-
     import tawazi
 
     tawazi.Cfg.RUN_DEBUG_NODES = True

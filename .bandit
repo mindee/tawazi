@@ -1,0 +1,3 @@
+[bandit]
+skips: B403,B301
+exclude: */tests/*,*test_*,*~*,*example.py

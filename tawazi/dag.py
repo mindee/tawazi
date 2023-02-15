@@ -169,7 +169,6 @@ class DAG:
         # 2.2. at the end of every epoch, we trim the graph from its leaf nodes;
         #       hence the previous parents become the new leaf nodes
         while len(graph_ids) > 0:
-
             # Epoch level
             for leaf_id in leaf_ids:
                 leaf_node = self.node_dict[leaf_id]
@@ -360,7 +359,6 @@ class DAG:
             return alias.id
         # todo: do further validation for the case of the tag!!
         elif isinstance(alias, (IdentityHash, tuple)):
-
             # if leaves_identification is not ExecNode, it can be either
             #  1. a Tag (Highest priority in case an id with the same value exists)
             if node := self.tag_node_dict.get(alias):
@@ -372,7 +370,6 @@ class DAG:
             else:
                 raise ValueError(f"{alias} is not found in the DAG")
         else:
-
             raise TawaziTypeError(
                 "twz_nodes must be of type ExecNode, "
                 f"str or tuple identifying the node but provided {alias}"
