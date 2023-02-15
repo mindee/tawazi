@@ -641,14 +641,22 @@ class DAG:
 
         """
         prio_flag = False
+        visited: Dict[str, Any] = {}
         if "nodes" in config:
-            for node_name, conf_node in config["nodes"].items():
-                # two rounds of matching
-                if node_name in self.node_dict:
-                    node = self.get_node_by_id(node_name)
+            for alias, conf_node in config["nodes"].items():
+                # takes care of identifying a node by an id or by a tag
+                if alias in self.node_dict:
+                    id_ = self._alias_to_id(alias)
+                    if alias not in visited:
+                        node = self.get_node_by_id(id_)
+                    else:
+                        raise ValueError(
+                            f"trying to set two configs for node {alias}.\n 1) {visited[id_]}\n 2) {conf_node}"
+                        )
+                    visited[id_] = conf_node
                 else:
                     raise ValueError(
-                        f"node {node_name} not found in DAG. Available nodes are {self.node_dict}"
+                        f"node {alias} not found in DAG. Available nodes are {self.node_dict}"
                     )
 
                 if "is_sequential" in conf_node:
