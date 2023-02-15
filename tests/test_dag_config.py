@@ -1,6 +1,7 @@
 # type: ignore
 import json
 
+import pytest
 import yaml
 
 from tawazi import dag, xn
@@ -8,7 +9,7 @@ from tawazi import dag, xn
 cfg = {"nodes": {"a": {"priority": 42, "is_sequential": False}}, "max_concurrency": 3}
 
 
-@xn
+@xn(tag="toto")
 def a(cst: int):
     print(cst)
     return cst
@@ -61,3 +62,13 @@ def test_config_from_json(tmp_path):
     assert d.max_concurrency == 3
     assert d.get_node_by_id("a").priority == 42
     assert not d.get_node_by_id("a").is_sequential
+
+
+def test_dup_conf_dag():
+    dup_cfg = {
+        "nodes": {"a": {"priority": 42, "is_sequential": False}, "toto": {"priority": 256}},
+        "max_concurrency": 3,
+    }
+    d = my_dag
+    with pytest.raises(ValueError):
+        d.config_from_dict(dup_cfg)
