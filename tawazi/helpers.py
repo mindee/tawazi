@@ -94,6 +94,7 @@ class UniqueKeyLoader(yaml.SafeLoader):
         mapping = []
         for key_node, value_node in node.value:
             key = self.construct_object(key_node, deep=deep)
-            assert key not in mapping
+            if key in mapping:
+                raise KeyError(f"key {key} already in yaml file")
             mapping.append(key)
         return super().construct_mapping(node, deep)
