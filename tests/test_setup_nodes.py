@@ -66,6 +66,18 @@ def test_bad_declaration():
             setup_op(op1())
 
 
+def test_not_setup_and_debug():
+    with pytest.raises(AssertionError):
+
+        @xn(setup=True, debug=True)
+        def op1():
+            return True
+
+        @dag
+        def bad_pipe():
+            op1()
+
+
 ###############
 # TEST ADVANCED
 ###############
