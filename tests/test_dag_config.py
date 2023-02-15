@@ -72,3 +72,11 @@ def test_dup_conf_dag():
     d = my_dag
     with pytest.raises(ValueError):
         d.config_from_dict(dup_cfg)
+
+
+def test_conf_dag_via_tag():
+    tag_cfg = {"nodes": {"toto": {"priority": 256}}, "max_concurrency": 3}
+    d = my_dag
+    d.config_from_dict(tag_cfg)
+    assert d.max_concurrency == 3
+    assert d.get_node_by_id("a").priority == 256
