@@ -101,7 +101,6 @@ class ExecNode:
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} {self.id} ~ | <{hex(id(self))}>"
 
-    # TODO: make cached_property ?
     @property
     def dependencies(self) -> List["ExecNode"]:
         # Making the dependencies
@@ -281,13 +280,6 @@ class LazyExecNode(ExecNode):
 
         # # 0.2 if self is a debug ExecNode and Tawazi is configured to skip running debug Nodes
         # #   then skip registering this node in the list of ExecNodes to be executed
-        # if self.debug and not Cfg.RUN_DEBUG_NODES:
-        #     # NOTE: is this the best idea ? what if I want to run a pipe with debug nodes then without debug nodes
-        #     # TODO: move to init ?
-        #     return self
-
-        # TODO: maybe change the Type of objects created.
-        #  for example: have a LazyExecNode.__call(...) return an ExecNodeCall instead of a deepcopy
 
         # 1.1 Make a deep copy of self because every Call to an ExecNode corresponds to a new instance
         self_copy = copy(self)
@@ -368,7 +360,10 @@ ReturnXNsType = Optional[Union[ExecNode, Tuple[ExecNode], List[ExecNode], Dict[s
 
 def get_return_ids(returned_exec_nodes: ReturnXNsType) -> ReturnIDsType:
     # TODO: support iterators etc.
-    err_string = "Return type of the pipeline must be either a Single Xnode, Tuple of Xnodes, List of Xnodes, dict of Xnodes or None"
+    err_string = (
+        "Return type of the pipeline must be either a Single Xnode,"
+        " Tuple of Xnodes, List of Xnodes, dict of Xnodes or None"
+    )
 
     # 1 returned values can be of multiple nature
     return_ids: ReturnIDsType = []
