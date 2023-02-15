@@ -1,6 +1,7 @@
 import pickle
 import json
 import time
+from collections import defaultdict
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy, deepcopy
 from pathlib import Path
@@ -58,8 +59,11 @@ class DAG:
         self.node_dict: Dict[IdentityHash, ExecNode] = {
             exec_node.id: exec_node for exec_node in self.exec_nodes
         }
-        # Calculate all the tags in the DAG to reduce overhead during computation
-        self.tag_node_dict = {xn.tag: xn for xn in self.exec_nodes if xn.tag}
+        # Compute all the tags in the DAG to reduce overhead during computation
+        self.tagged_nodes = defaultdict(list)
+        for xn in self.exec_nodes:
+            if xn.tag:
+                self.tagged_nodes[xn.tag].append(xn)
 
         # Might be useful in the future
         self.node_dict_by_name: Dict[str, ExecNode] = {
@@ -355,22 +359,26 @@ class DAG:
                     wait(futures.values(), return_when=ALL_COMPLETED)
         return node_dict
 
-    def _alias_to_id(self, alias: Alias) -> IdentityHash:
+    def _alias_to_ids(self, alias: Alias) -> List[IdentityHash]:
         """Extract an ExecNode ID from an Alias (Tag, ExecNode ID or ExecNode)"""
         if isinstance(alias, ExecNode):
-            return alias.id
+            return [alias.id]
         # todo: do further validation for the case of the tag!!
         elif isinstance(alias, (IdentityHash, tuple)):
             # if leaves_identification is not ExecNode, it can be either
             #  1. a Tag (Highest priority in case an id with the same value exists)
-            if node := self.tag_node_dict.get(alias):
-                return node.id
+            if nodes := self.tagged_nodes.get(alias):
+                return [node.id for node in nodes]
             #  2. or a node id!
             elif isinstance(alias, IdentityHash):
                 node = self.get_node_by_id(alias)
-                return node.id
+                return [node.id]
             else:
-                raise ValueError(f"{alias} is not found in the DAG")
+                raise ValueError(
+                    f"node or tag {alias} not found in DAG.\n"
+                    f" Available nodes are {self.node_dict}.\n"
+                    f" Available tags are {list(self.tagged_nodes.keys())}"
+                )
         else:
             raise TawaziTypeError(
                 "twz_nodes must be of type ExecNode, "
@@ -404,7 +412,7 @@ class DAG:
         else:
             leaves_ids = []
             for tag_or_id_or_node in twz_nodes:
-                leaves_ids.append(self._alias_to_id(tag_or_id_or_node))
+                leaves_ids += self._alias_to_ids(tag_or_id_or_node)
 
             # after extending leaves_ids, we should do a recheck because this might recreate another debug-able XN...
             if Cfg.RUN_DEBUG_NODES:
@@ -640,31 +648,35 @@ class DAG:
         Returns:
 
         """
+
+        def _override_node_config(n: ExecNode, cfg: Dict[str, Any]) -> bool:
+            flag = False
+            if "is_sequential" in cfg:
+                n.is_sequential = cfg["is_sequential"]
+
+            if "priority" in cfg:
+                n.priority = cfg["priority"]
+                flag = True
+
+            return flag
+
         prio_flag = False
         visited: Dict[str, Any] = {}
         if "nodes" in config:
             for alias, conf_node in config["nodes"].items():
-                # takes care of identifying a node by an id or by a tag
-                if alias in self.node_dict:
-                    id_ = self._alias_to_id(alias)
-                    if alias not in visited:
-                        node = self.get_node_by_id(id_)
+                ids_ = self._alias_to_ids(alias)
+                for node_id in ids_:
+                    if node_id not in visited:
+                        node = self.get_node_by_id(node_id)
+                        node_prio_flag = _override_node_config(node, conf_node)
+                        prio_flag = node_prio_flag or prio_flag  # keep track of flag
+
                     else:
                         raise ValueError(
-                            f"trying to set two configs for node {alias}.\n 1) {visited[id_]}\n 2) {conf_node}"
+                            f"trying to set two configs for node {node_id}.\n 1) {visited[node_id]}\n 2) {conf_node}"
                         )
-                    visited[id_] = conf_node
-                else:
-                    raise ValueError(
-                        f"node {alias} not found in DAG. Available nodes are {self.node_dict}"
-                    )
 
-                if "is_sequential" in conf_node:
-                    node.is_sequential = conf_node["is_sequential"]
-
-                if "priority" in conf_node:
-                    node.priority = conf_node["priority"]
-                    prio_flag = True
+                    visited[node_id] = conf_node
 
         if "max_concurrency" in config:
             self.max_concurrency = config["max_concurrency"]
