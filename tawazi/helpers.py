@@ -1,6 +1,8 @@
 import inspect
 from typing import Any, Callable, Dict, List, Tuple, Union
 
+import yaml
+
 from tawazi.consts import USE_SEP_END, USE_SEP_START, IdentityHash, NoVal, NoValType
 from tawazi.errors import raise_arg_exc
 
@@ -84,3 +86,14 @@ def filter_NoVal(v: Union[NoValType, Any]) -> Any:
     if v is NoVal:
         return None
     return v
+
+
+# courtesy of https://gist.github.com/pypt/94d747fe5180851196eb?permalink_comment_id=3401011#gistcomment-3401011
+class UniqueKeyLoader(yaml.SafeLoader):
+    def construct_mapping(self, node: Any, deep: bool = False) -> Any:
+        mapping = []
+        for key_node, value_node in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            assert key not in mapping
+            mapping.append(key)
+        return super().construct_mapping(node, deep)

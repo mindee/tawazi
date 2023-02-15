@@ -1,4 +1,5 @@
 import pickle
+import json
 import time
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy, deepcopy
@@ -6,13 +7,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import networkx as nx
+import yaml
 from loguru import logger
 from networkx import find_cycle
 from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 
 from tawazi.config import Cfg
 from tawazi.consts import ReturnIDsType
-from tawazi.helpers import filter_NoVal
+from tawazi.helpers import UniqueKeyLoader, filter_NoVal
 
 from .consts import IdentityHash
 from .digraph import DiGraphEx, subgraph
@@ -93,6 +95,8 @@ class DAG:
 
     @max_concurrency.setter
     def max_concurrency(self, value: int) -> None:
+        if not isinstance(value, int):
+            raise ValueError("max_concurrency must be an int")
         if value < 1:
             raise ValueError("Invalid maximum number of threads! Must be a positive integer")
         self._max_concurrency = value
@@ -629,6 +633,68 @@ class DAG:
                 else:
                     raise NotImplementedError(f"Unknown behavior name: {self.behavior}")
 
+    def config_from_dict(self, config: Dict[str, Any]) -> None:
+        """
+        Allows reconfiguring the parameters of the nodes from a dictionary
+        Args:
+            config: the dictionary containing the config
+                    example: {"nodes": {"a": {"priority": 3, "is_sequential": True}}, "max_concurrency": 3}
+
+        Returns:
+
+        """
+        prio_flag = False
+        if "nodes" in config:
+            for node_name, conf_node in config["nodes"].items():
+                # two rounds of matching
+                if node_name in self.node_dict:
+                    node = self.get_node_by_id(node_name)
+                else:
+                    raise ValueError(
+                        f"node {node_name} not found in DAG. Available nodes are {self.node_dict}"
+                    )
+
+                if "is_sequential" in conf_node:
+                    node.is_sequential = conf_node["is_sequential"]
+
+                if "priority" in conf_node:
+                    node.priority = conf_node["priority"]
+                    prio_flag = True
+
+        if "max_concurrency" in config:
+            self.max_concurrency = config["max_concurrency"]
+
+        if prio_flag:
+            # if we changed the priority of some nodes we need to recompute the compound prio
+            self._assign_compound_priority()
+
+    def config_from_yaml(self, config_path: str) -> None:
+        """
+        Allows reconfiguring the parameters of the nodes from a yaml file
+        Args:
+            config_path: the path to the yaml file
+
+        Returns:
+
+        """
+        with open(config_path, "r") as f:
+            yaml_config = yaml.load(f, Loader=UniqueKeyLoader)
+
+        self.config_from_dict(yaml_config)
+
+    def config_from_json(self, config_path: str) -> None:
+        """
+        Allows reconfiguring the parameters of the nodes from a yaml file
+        Args:
+            config_path: the path to the json file
+
+        Returns:
+
+        """
+        with open(config_path, "r") as f:
+            json_config = json.load(f)
+
+        self.config_from_dict(json_config)
 
 # TODO: change the name of twz_nodes!! should be leaves_nodes
 # TODO: should implement twz_exclude_nodes

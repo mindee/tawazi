@@ -157,6 +157,16 @@ class ExecNode:
             raise TypeError(f"tag should be of type {Tag} but {value} provided")
         self._tag = value
 
+    @property
+    def priority(self) -> int:
+        return self._priority
+
+    @priority.setter
+    def priority(self, value: int) -> None:
+        if not isinstance(value, int):
+            raise ValueError(f"priority must be an int, provided {type(value)}")
+        self._priority = value
+
 
 class ArgExecNode(ExecNode):
     """
