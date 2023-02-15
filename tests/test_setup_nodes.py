@@ -67,7 +67,7 @@ def test_bad_declaration():
 
 
 def test_not_setup_and_debug():
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
 
         @xn(setup=True, debug=True)
         def op1():
