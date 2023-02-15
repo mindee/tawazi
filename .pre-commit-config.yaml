@@ -33,6 +33,11 @@ repos:
     rev: v1.0.0
     hooks:
     -   id: mypy
+        files: tawazi
+        args: []
+        additional_dependencies:
+          - pydantic
+          - loguru # to be removed when loguru is removed
 
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.4
