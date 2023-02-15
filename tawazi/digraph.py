@@ -9,9 +9,6 @@ from tawazi.node import ExecNode
 from .consts import IdentityHash
 
 
-# TODO: find a .pre-commit hook that aligns properly the fstrings
-#   if it doesn't exist... make one! it should take max columns as argument
-# todo remove dependency on DiGraph!
 class DiGraphEx(nx.DiGraph):
     """
     Extends the DiGraph with some methods

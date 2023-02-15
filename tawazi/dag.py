@@ -22,7 +22,6 @@ from .errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
 from .node import Alias, ArgExecNode, ExecNode
 
 
-# TODO: make ExecNodes configurable using a yaml configuration file
 class DAG:
     """
     Data Structure containing ExecNodes with interdependencies.
@@ -42,7 +41,6 @@ class DAG:
         Args:
             exec_nodes: all the ExecNodes
             max_concurrency: the maximal number of threads running in parallel
-            logger: the inferfwk logger name
             behavior: specify the behavior if an ExecNode raises an Error. Three option are currently supported:
                 1. DAG.STRICT: stop the execution of all the DAG
                 2. DAG.ALL_CHILDREN: do not execute all children ExecNodes, and continue execution of the DAG
@@ -436,8 +434,6 @@ class DAG:
                             leaves_ids.append(successor_id)
         return leaves_ids
 
-    # TODO: setup nodes should not have dependencies that pass in through the pipeline parameters!
-    #  raise an error in this case!!
     def setup(self, twz_nodes: Optional[List[Alias]] = None) -> None:
         """
         Run the setup ExecNodes for the DAG.
@@ -525,7 +521,8 @@ class DAG:
 
         # 2. parse the input arguments of the pipeline
         # 2.1 default valued arguments can be skipped and not provided!
-        # note: if not enough arguments are provided then the code will fail inside the DAG's execution through the raise_err lambda
+        # note: if not enough arguments are provided then the code will fail
+        # inside the DAG's execution through the raise_err lambda
         if args:
             # 2.2 can't provide more than enough arguments
             if len(args) > len(self.input_ids):
@@ -573,7 +570,7 @@ class DAG:
 
         raise TawaziTypeError("Return type for the DAG can only be a single value, Tuple or List")
 
-    # NOTE: this function should be used in case there was a bizarre behavior noticed during the
+    # NOTE: this function should be used in case there was a bizarre behavior noticed during
     #   the execution of the DAG via DAG.execute(...)
     def _safe_execute(self, *args: Any, twz_nodes: Optional[List[Alias]] = None) -> Any:
         """
