@@ -47,12 +47,14 @@ def ordinal(numb: int) -> str:
 def get_args_and_default_args(func: Callable[..., Any]) -> Tuple[List[str], Dict[str, Any]]:
     """
     Retrieves the arguments names and the default arguments of a function.
+
     Args:
         func: the target function
 
     Returns:
         A Tuple containing a List of argument names of non default arguments,
          and the mapping between the arguments and their default value for default arguments
+
     >>> def f(a1, a2, *args, d1=123, d2=None): pass
     >>> get_args_and_default_args(f)
     (['a1', 'a2', 'args'], {'d1': 123, 'd2': None})

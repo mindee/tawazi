@@ -17,8 +17,9 @@ class DiGraphEx(nx.DiGraph):
     def root_nodes(self) -> List[IdentityHash]:
         """
         Safely gets the root nodes
+
         Returns:
-            the root nodes
+            List of root nodes
         """
         return [node for node, degree in self.in_degree if degree == 0]
 
@@ -26,16 +27,18 @@ class DiGraphEx(nx.DiGraph):
     def leaf_nodes(self) -> List[IdentityHash]:
         """
         Safely gets the leaf nodes
+
         Returns:
-            the leaf nodes
+            List of leaf nodes
         """
         return [node for node, degree in self.out_degree if degree == 0]
 
     def remove_recursively(self, root_node: IdentityHash) -> None:
         """
         Recursively removes all the nodes that depend on the provided one
+
         Args:
-            root_node: the root node
+            root_node (IdentityHash): the root node
         """
         nodes_to_remove: Set[IdentityHash] = set()
 
@@ -74,13 +77,19 @@ class DiGraphEx(nx.DiGraph):
         D  E
         "
         C is not a node that can be made into leaf nodes
+
         Args:
             nodes: the list of nodes to be executed
-        Returns: the nodes that are provided but can never become leaf nodes:
-            Impossible cases are handled using a best effort approach;
+
+        Returns:
+            the nodes that are provided but can never become leaf nodes:
+                NOTE Impossible cases are handled using a best effort approach;
                 For example, if a node and its children are provided,
                 all those nodes will be left in the subgraph. However,
                 a warning will be issued
+
+        Raises:
+            ValueError: if the provided nodes are not in the graph
         """
 
         # works by pruning the graph until all leaf nodes
@@ -116,6 +125,9 @@ class DiGraphEx(nx.DiGraph):
     def topologically_sorted(self) -> List[IdentityHash]:
         """
         Makes the simple topological sort of the graph nodes
+
+        Returns:
+            List of nodes of the graph listed in topological order
         """
         return list(nx.topological_sort(self))
 
