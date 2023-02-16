@@ -167,10 +167,10 @@ def test_dependencies_subgraph():
     @dag
     def pipe_setup_deps():
         sop1_r = setup_op1()
-        sop2_r = setup_op2(sop1_r)
-        op1_r = op1(sop1_r, twz_tag="twinkle toes")
-        op2_r = op2(sop2_r)
-        op12_r = op12(op1_r, op2_r)
+        sop2_r = setup_op2(op1_result=sop1_r)
+        op1_r = op1(sop1_result=sop1_r, twz_tag="twinkle toes")
+        op2_r = op2(sop2_result=sop2_r)
+        op12_r = op12(op1_result=op1_r, op2_result=op2_r)
         return op12_r
 
     pytest.setup_op1 = 0
@@ -232,13 +232,13 @@ def test_pipeline_setup_method():
     @dag
     def pipe_setup_deps():
         sop1_r = setup_op1(twz_tag="setup1")
-        sop2_r = setup_op2(sop1_r, twz_tag="setup2")
-        op1_r = op1(sop1_r, twz_tag="twinkle toes")
-        op2_r = op2(sop2_r)
-        op12_r = op12(op1_r, op2_r)
+        sop2_r = setup_op2(op1_result=sop1_r, twz_tag="setup2")
+        op1_r = op1(sop1_result=sop1_r, twz_tag="twinkle toes")
+        op2_r = op2(sop2_result=sop2_r)
+        op12_r = op12(op1_result=op1_r, op2_result=op2_r)
         return op12_r
 
-    # test runninig setup without arguments
+    # test running setup without arguments
     pipe = deepcopy(pipe_setup_deps)
     clean()
     pipe.setup()
@@ -255,7 +255,7 @@ def test_pipeline_setup_method():
     assert pytest.op2 == 1
     assert pytest.op12 == 1
 
-    # test running setup targetting a setup node
+    # test running setup targeting a setup node
     pipe = deepcopy(pipe_setup_deps)
     clean()
     pipe.setup(target_nodes=["setup1"])
@@ -316,7 +316,7 @@ def test_setup_node_cst_input():
 
     @dag
     def pipe2():
-        return setop(1)
+        return setop(k=1)
 
     pytest.setop = 0
     r = pipe()
@@ -342,7 +342,7 @@ def test_setup_no_default_arg():
 
     @dag
     def pipe():
-        return setup(10)
+        return setup(k=10)
 
     pytest.setop = 0
     r = pipe()
@@ -365,10 +365,10 @@ def test_setup_multiple_usages():
 
     @dag
     def pipe():
-        mid1 = get_model("a")
-        mid2 = get_model("b")
-        mid3 = get_model("c")
-        mid4 = get_model("d")
+        mid1 = get_model(mid="a")
+        mid2 = get_model(mid="b")
+        mid3 = get_model(mid="c")
+        mid4 = get_model(mid="d")
 
         return sumop(mid1, mid2, mid3, mid4)
 
@@ -399,4 +399,4 @@ def test_setup_xn_should_not_take_input_from_pipeline_args():
 
         @dag
         def pipe(in1):
-            setop(in1)
+            setop(in1=in1)

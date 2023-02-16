@@ -27,7 +27,7 @@ def c(a, b):
 def deps():
     a_ = a()
     b_ = b()
-    c_ = c(a_, b_)
+    c_ = c(a=a_, b=b_)
 
 
 def test_timing():

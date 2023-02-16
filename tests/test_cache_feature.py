@@ -32,9 +32,9 @@ def avg_array(array):
 @dag
 def pipe():
     zeros = generate_large_zeros_array()
-    ones = incr_large_array(zeros)
-    ones_ = pass_large_array(ones)
-    avg = avg_array(ones)
+    ones = incr_large_array(array=zeros)
+    ones_ = pass_large_array(array=ones)
+    avg = avg_array(array=ones)
 
     return zeros, ones, ones_, avg
 

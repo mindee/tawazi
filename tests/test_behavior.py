@@ -33,10 +33,10 @@ def d(a):
     pytest.behavior_comp_str += "d"
 
 
-en_a = ExecNode(a.__qualname__, a, priority=1, is_sequential=False)
-en_b = ExecNode(b.__qualname__, b, args=[en_a], priority=2, is_sequential=False)
-en_c = ExecNode(c.__qualname__, c, args=[en_b], priority=2, is_sequential=False)
-en_d = ExecNode(d.__qualname__, d, args=[en_a], priority=1, is_sequential=False)
+en_a = ExecNode(id=a.__qualname__, exec_function=a, priority=1, is_sequential=False)
+en_b = ExecNode(id=b.__qualname__, exec_function=b, args=[en_a], priority=2, is_sequential=False)
+en_c = ExecNode(id=c.__qualname__, exec_function=c, args=[en_b], priority=2, is_sequential=False)
+en_d = ExecNode(id=d.__qualname__, exec_function=d, args=[en_a], priority=1, is_sequential=False)
 list_execnodes = [en_a, en_b, en_c, en_d]
 
 

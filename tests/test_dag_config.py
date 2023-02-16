@@ -23,8 +23,8 @@ def b(a, cst: str):
 
 @dag
 def my_dag():
-    var_a = a(1234)
-    var_b = b(var_a, "poulpe")
+    var_a = a(cst=1234)
+    var_b = b(a=var_a, cst="poulpe")
     return var_b
 
 

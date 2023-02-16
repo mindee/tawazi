@@ -123,7 +123,7 @@ class DAG(
     def extract_names(
         cls, value: Dict[str, ExecNode], values: Dict[str, Any]
     ) -> Dict[str, ExecNode]:
-        return {exec_node.__name__: exec_node for exec_node in values["exec_nodes"]}
+        return {exec_node._name: exec_node for exec_node in values["exec_nodes"]}
 
     @validator("exec_node_sequence", pre=True, always=True)
     def build_sequence_from_topological_order(

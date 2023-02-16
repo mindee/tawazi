@@ -37,8 +37,8 @@ def test_pipeline_with_debug_node():
 
     @dag
     def pipeline(img):
-        img = stub(img)
-        len_ = my_len(img)
+        img = stub(img=img)
+        len_ = my_len(img=img)
         return img
 
     assert [1, 2, 3] == pipeline([1, 2, 3])

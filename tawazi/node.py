@@ -4,6 +4,7 @@ from types import MethodType
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
+from pydantic import BaseModel, Extra, root_validator, validator
 
 from tawazi.consts import (
     ARG_NAME_SEP,
@@ -29,77 +30,84 @@ exec_nodes_lock = Lock()
 Alias = Union[Tag, IdentityHash, "ExecNode"]  # multiple ways of identifying an XN
 
 
-class ExecNode:
+class ExecNode(
+    BaseModel,
+    arbitrary_types_allowed=True,
+    validate_assignment=True,
+    smart_union=True,
+    copy_on_model_validation="none",
+):
     """
     This class is the base executable node of the Directed Acyclic Execution Graph.
     An ExecNode is an Object that can be executed inside a DAG scheduler.
-    It basically consists of a function (exec_function) that takes *args and **kwargs and return a Value.
-    When the ExecNode is executed in the DAG, the resulting value will be stored in the ExecNode.result instance attribute
+    It's a function (exec_function) that takes *args and **kwargs and return a Value.
+    When the ExecNode is executed in the DAG, the resulting value will be stored in the result attribute
 
+    id (IdentityHash): identifier of ExecNode.
+    exec_function (Callable): a callable will be executed in the graph.
+        This is useful to make Joining ExecNodes (Nodes that enforce dependencies on the graph)
+    args (Optional[List[ExecNode]], optional): *args to pass to exec_function.
+    kwargs (Optional[Dict[str, ExecNode]], optional): **kwargs to pass to exec_function.
+    priority (int): priority compared to other ExecNodes; the higher the number the higher the priority.
+    is_sequential (bool): whether to execute this ExecNode in sequential order with respect to others.
+        When this ExecNode must be executed, all other nodes are waited to finish before starting execution.
+        Defaults to False.
+    debug (bool): Make this ExecNode a debug Node. Defaults to False.
+    tag (Tag): Attach a Tag of this ExecNode. Defaults to None.
+    setup (bool): Make this ExecNode a setup Node. Defaults to False.
     """
 
-    def __init__(
-        self,
-        id_: IdentityHash,
-        exec_function: Callable[..., Any] = lambda *args, **kwargs: None,
-        args: Optional[List["ExecNode"]] = None,
-        kwargs: Optional[Dict[str, "ExecNode"]] = None,
-        priority: int = 0,
-        is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
-        debug: bool = False,
-        tag: Tag = None,
-        setup: bool = False,
-    ):
-        """
-        Constructor of ExecNode
+    # TODO: change the way that id is implemented in subclasses since it makes pydantic yell
+    #  Consider directly setting id in the code rather than indirecting through other args
+    id: IdentityHash = None  # type: ignore
+    exec_function: Callable[..., Any] = lambda *args, **kwargs: None
+    priority: int = 0
+    is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL
+    debug: bool = False
+    tag: Optional[Tag] = None
+    setup: bool = False
+    args: List["ExecNode"] = []
+    kwargs: Dict[IdentityHash, "ExecNode"] = {}
 
-        Args:
-            id_ (IdentityHash): identifier of ExecNode.
-            exec_function (Callable): a callable will be executed in the graph.
-                This is useful to make Joining ExecNodes (Nodes that enforce dependencies on the graph)
-            args (Optional[List[ExecNode]], optional): *args to pass to exec_function.
-            kwargs (Optional[Dict[str, ExecNode]], optional): **kwargs to pass to exec_function.
-            priority (int): priority compared to other ExecNodes; the higher the number the higher the priority.
-            is_sequential (bool): whether to execute this ExecNode in sequential order with respect to others.
-                When this ExecNode must be executed, all other nodes are waited to finish before starting execution.
-                Defaults to False.
-            debug (bool): Make this ExecNode a debug Node. Defaults to False.
-            tag (Tag): Attach a Tag of this ExecNode. Defaults to None.
-            setup (bool): Make this ExecNode a setup Node. Defaults to False.
+    # compound_priority equals priority at the start but will be modified during the build process
+    compound_priority: int = None  # type: ignore
 
-        Raises:
-            ValueError: if setup and debug are both True.
-        """
-        # NOTE: validate attributes using pydantic perhaps
-        # 1. assign attributes
-        self.id = id_
-        self.exec_function = exec_function
-        self.priority = priority
-        self.is_sequential = is_sequential
-        self.debug = debug  # TODO: do the fix to run debug nodes if their inputs exist
-        self.tag = tag
-        self.setup = setup
+    # Assign a default NoVal to the result of the execution of this ExecNode,
+    # when this ExecNode will be executed, self.result will be overridden
+    # It would be amazing if we can remove self.result and make ExecNode immutable
+    # even though setting result to NoVal is not necessary... it clarifies debugging
+    result: Union[NoValType, Any] = NoVal
 
-        if debug and setup:
+    @root_validator
+    def check_debug_and_setup(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        if values["debug"] and values["setup"]:
             raise ValueError(
-                f"The node {self.id} can't be a setup and a debug node at the same time."
+                f"The node {values['id']} can't be a setup and a debug node at the same time."
             )
+        return values
 
-        self.args: List[ExecNode] = args or []
-        self.kwargs: Dict[IdentityHash, ExecNode] = kwargs or {}
+    @validator("tag", pre=True)
+    def check_tag(cls, tag: Tag) -> Tag:
+        if not isinstance(tag, (str, tuple)) and tag is not None:
+            raise TypeError(f"tag should be of type {Tag} but {tag} provided")
+        return tag
 
-        # 2. compound_priority equals priority at the start but will be modified during the build process
-        self.compound_priority = priority
+    @validator("priority", pre=True)
+    def check_priority(cls, prio: int) -> int:
+        if not isinstance(prio, int):
+            raise ValueError(f"priority must be an int, provided {type(prio)}")
+        return prio
 
-        # 3. Assign the name
-        # This can be used in the future but is not particularly useful at the moment
-        self.__name__ = self.exec_function.__name__ if not isinstance(id_, str) else id_
+    @validator("compound_priority", always=True, pre=True)
+    def set_default_compound_prio(cls, c_prio: int, values: Dict[str, Any]) -> int:
+        # at initialization, defaults to priority
+        if c_prio is None:
+            c_prio = values["priority"]
+        return c_prio
 
-        # 4. Assign a default NoVal to the result of the execution of this ExecNode,
-        #  when this ExecNode will be executed, self.result will be overridden
-        # It would be amazing if we can remove self.result and make ExecNode immutable
-        self.result: Union[NoValType, Any] = NoVal
-        # even though setting result to NoVal is not necessary... it clarifies debugging
+    @property
+    def _name(self) -> str:
+        return self.exec_function.__name__ if not isinstance(self.id, str) else self.id
 
         self.profile = Profile(Cfg.TAWAZI_PROFILE_ALL_NODES)
 
@@ -164,67 +172,49 @@ class ExecNode:
 
         return False
 
-    @property
-    def tag(self) -> Tag:
-        return self._tag
 
-    @tag.setter
-    def tag(self, value: Tag) -> None:
-        if not isinstance(value, (str, tuple)) and value is not None:
-            raise TypeError(f"tag should be of type {Tag} but {value} provided")
-        self._tag = value
-
-    @property
-    def priority(self) -> int:
-        return self._priority
-
-    @priority.setter
-    def priority(self, value: int) -> None:
-        if not isinstance(value, int):
-            raise ValueError(f"priority must be an int, provided {type(value)}")
-        self._priority = value
-
-
-class ArgExecNode(ExecNode):
+class ArgExecNode(
+    ExecNode,
+    arbitrary_types_allowed=True,
+    validate_assignment=True,
+    smart_union=True,
+    copy_on_model_validation="none",
+):
     """
     ExecNode corresponding to an Argument.
     Every Argument is Attached to a Function or an ExecNode (especially a LazyExecNode)
     If a value is not passed to the function call / ExecNode,
     it will raise an error similar to Python's Error
+
+    xn_or_func_or_id: The ExecNode or function that this Argument is attached to
+    name_or_order: Argument name or order in the calling function.
+    For example Python's builtin sorted function takes 3 arguments (iterable, key, reverse).
+        1. If called like this: sorted([1,2,3]) then [1,2,3] will be of type ArgExecNode with an order=0
+        2. If called like this: sorted(iterable=[4,5,6]) then [4,5,6] will be of type ArgExecNode with a name="iterable"
+    value: The preassigned value to the corresponding Argument.
     """
 
-    def __init__(
-        self,
-        xn_or_func_or_id: Union[ExecNode, Callable[..., Any], IdentityHash],
-        name_or_order: Union[str, int],
-        value: Any = NoVal,
-    ):
-        """
-        Constructor of ArgExecNode
+    xn_or_func_or_id: Union[ExecNode, Callable[..., Any], IdentityHash]
+    name_or_order: Union[str, int]
+    value: Any = NoVal
 
-        Args:
-            xn_or_func_or_id (Union[ExecNode, Callable[..., Any], IdentityHash]): The ExecNode or function that this Argument is rattached to
-            name_or_order (Union[str, int]): Argument name or order in the calling function.
-                For example Python's builtin sorted function takes 3 arguments (iterable, key, reverse).
-                    1. If called like this: sorted([1,2,3]) then [1,2,3] will be of type ArgExecNode with an order=0
-                    2. If called like this: sorted(iterable=[4,5,6]) then [4,5,6] will be of type ArgExecNode with a name="iterable"
-            value (Any): The preassigned value to the corresponding Argument.
-
-        Raises:
-            TypeError: if type parameter is passed (Internal)
-        """
-        # raises TawaziArgumentException: if this argument is not provided during the Attached ExecNode usage
-
-        # TODO: use pydantic!
-        if isinstance(xn_or_func_or_id, ExecNode):
-            base_id = xn_or_func_or_id.id
-        elif isinstance(xn_or_func_or_id, Callable):  # type: ignore
-            base_id = xn_or_func_or_id.__qualname__  # type: ignore
-        elif isinstance(xn_or_func_or_id, IdentityHash):
-            base_id = xn_or_func_or_id
+    @validator("xn_or_func_or_id")
+    def build_base_id(
+        cls, identifier: Union[ExecNode, Callable[..., Any], IdentityHash]
+    ) -> Union[ExecNode, Callable[..., Any], IdentityHash]:
+        if isinstance(identifier, ExecNode):
+            base_id = identifier.id
+        elif callable(identifier):
+            base_id = identifier.__qualname__
+        elif isinstance(identifier, IdentityHash):
+            base_id = identifier
         else:
             raise TypeError("ArgExecNode can only be attached to a LazyExecNode or a Callable")
 
+        return base_id
+
+    @validator("name_or_order")
+    def build_suffix(cls, name_or_order: Union[str, int]) -> Union[str, int]:
         if isinstance(name_or_order, str):
             suffix = name_or_order
         elif isinstance(name_or_order, int):
@@ -235,14 +225,24 @@ class ArgExecNode(ExecNode):
                 f"but {name_or_order} of type {type(name_or_order)} is provided"
             )
 
-        id_ = f"{base_id}{ARG_NAME_SEP}{suffix}"
+        return suffix
 
-        raise_err = make_raise_arg_error(base_id, suffix)
-
-        super().__init__(id_=id_, exec_function=raise_err, is_sequential=False)
-
+    @validator("value")
+    def fill_value(cls, value: Any, values: Dict[str, Any]) -> Any:
         if value is not NoVal:
-            self.result = value
+            values["result"] = value
+
+        return value
+
+    @root_validator
+    def build_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        values["id"] = f"{values['xn_or_func_or_id']}{ARG_NAME_SEP}{values['name_or_order']}"
+        values["exec_function"] = make_raise_arg_error(
+            values["xn_or_func_or_id"], values["name_or_order"]
+        )
+        values["is_sequential"] = False
+
+        return values
 
 
 # NOTE: how can we make a LazyExecNode more configurable ?
@@ -252,42 +252,26 @@ class ArgExecNode(ExecNode):
 #  this means that it will return its values as Tuple[LazyExecNode] or Dict[LazyExecNode]
 #  Hence ExecNode can return multiple values!
 # TODO: create a twz_deps reserved variable to support Nothing dependency
-class LazyExecNode(ExecNode):
+class LazyExecNode(
+    ExecNode,
+    arbitrary_types_allowed=True,
+    validate_assignment=True,
+    smart_union=True,
+    extra=Extra.allow,
+    copy_on_model_validation="none",
+):
     """
     A lazy function simulator.
     The __call__ behavior of the original function is overridden to record the dependencies to build the DAG.
     The original function is kept to be called during the scheduling phase when calling the DAG.
     """
 
-    def __init__(
-        self,
-        func: Callable[..., Any],
-        priority: int,
-        is_sequential: bool,
-        debug: bool,
-        tag: Any,
-        setup: bool,
-    ):
-        """Constructor of LazyExecNode
-
-        Args:
-            func (Callable[..., Any]): Look at ExecNode's Documentation
-            priority (int): Look at ExecNode's Documentation
-            is_sequential (bool): Look at ExecNode's Documentation
-            debug (bool): Look at ExecNode's Documentation
-            tag (Any): Look at ExecNode's Documentation
-            setup (bool): Look at ExecNode's Documentation
-        """
-
-        super().__init__(
-            id_=func.__qualname__,
-            exec_function=func,
-            priority=priority,
-            is_sequential=is_sequential,
-            debug=debug,
-            tag=tag,
-            setup=setup,
-        )
+    @validator("exec_function")
+    def extract_id_from_func(
+        cls, func: Callable[..., Any], values: Dict[str, Any]
+    ) -> Callable[..., Any]:
+        values["id"] = func.__qualname__
+        return func
 
     def __call__(self, *args: Any, **kwargs: Any) -> "LazyExecNode":
         """
@@ -337,7 +321,7 @@ class LazyExecNode(ExecNode):
             if not isinstance(arg, ExecNode):
                 # arg here is definitely not a return value of a LazyExecNode!
                 # it must be a default value
-                arg = ArgExecNode(self_copy, i, arg)
+                arg = ArgExecNode(xn_or_func_or_id=self_copy, name_or_order=i, value=arg)
                 exec_nodes.append(arg)
 
             self_copy.args.append(arg)
@@ -346,13 +330,15 @@ class LazyExecNode(ExecNode):
         for kwarg_name, kwarg in kwargs.items():
             # support reserved kwargs for tawazi
             # These are necessary in order to pass information about the call of an ExecNode (the deep copy)
-            #  independently of the original LazyExecNode
+            # independently of the original LazyExecNode
             if kwarg_name in RESERVED_KWARGS:
                 self_copy._assign_reserved_args(kwarg_name, kwarg)
                 continue
             if not isinstance(kwarg, ExecNode):
                 # passed in constants
-                kwarg = ArgExecNode(self_copy, kwarg_name, kwarg)
+                kwarg = ArgExecNode(
+                    xn_or_func_or_id=self_copy, name_or_order=kwarg_name, value=kwarg
+                )
                 exec_nodes.append(kwarg)
 
             self_copy.kwargs[kwarg_name] = kwarg

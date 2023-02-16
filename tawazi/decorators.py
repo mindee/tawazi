@@ -49,7 +49,14 @@ def xn(
     """
 
     def intermediate_wrapper(_func: Callable[..., Any]) -> "LazyExecNode":
-        lazy_exec_node = LazyExecNode(_func, priority, is_sequential, debug, tag, setup)
+        lazy_exec_node = LazyExecNode(
+            exec_function=_func,
+            priority=priority,
+            is_sequential=is_sequential,
+            debug=debug,
+            tag=tag,
+            setup=setup,
+        )
         functools.update_wrapper(lazy_exec_node, _func)
         return lazy_exec_node
 
@@ -101,11 +108,14 @@ def dag(
 
                 # 2.2 Construct non default arguments.
                 # Corresponding values must be provided during usage
-                args: List[ExecNode] = [ArgExecNode(_func, arg_name) for arg_name in func_args]
+                args: List[ExecNode] = [
+                    ArgExecNode(xn_or_func_or_id=_func, name_or_order=arg_name)
+                    for arg_name in func_args
+                ]
                 # 2.2 Construct Default arguments.
                 args.extend(
                     [
-                        ArgExecNode(_func, arg_name, arg)
+                        ArgExecNode(xn_or_func_or_id=_func, name_or_order=arg_name, value=arg)
                         for arg_name, arg in func_default_args.items()
                     ]
                 )

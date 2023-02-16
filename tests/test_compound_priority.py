@@ -44,9 +44,9 @@ def e():
 @dag
 def dependency_describer():
     _a = a()
-    _b = b(_a)
-    _c = c(_a)
-    _d = d(_b)
+    _b = b(a=_a)
+    _c = c(a=_a)
+    _d = d(b=_b)
     _e = e()
 
 

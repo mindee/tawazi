@@ -44,10 +44,16 @@ def test_priority():
     # Priority test
     for _i in range(100):
         pytest.priority_sequential_comp_str = ""
-        en_a = ExecNode(a.__name__, a, priority=1, is_sequential=False)
-        en_b = ExecNode(b.__name__, b, [en_a], priority=2, is_sequential=False)
-        en_c = ExecNode(c.__name__, c, [en_b], priority=2, is_sequential=False)
-        en_d = ExecNode(d.__name__, d, [en_a], priority=1, is_sequential=False)
+        en_a = ExecNode(id=a.__name__, exec_function=a, priority=1, is_sequential=False)
+        en_b = ExecNode(
+            id=b.__name__, exec_function=b, args=[en_a], priority=2, is_sequential=False
+        )
+        en_c = ExecNode(
+            id=c.__name__, exec_function=c, args=[en_b], priority=2, is_sequential=False
+        )
+        en_d = ExecNode(
+            id=d.__name__, exec_function=d, args=[en_a], priority=1, is_sequential=False
+        )
         list_execnodes = [en_a, en_b, en_c, en_d]
 
         g = DAG(exec_nodes=list_execnodes, max_concurrency=1, behavior=ErrorStrategy.strict)
@@ -59,11 +65,17 @@ def test_sequentiality():
     for _i in range(100):
         # Sequentiality test
         pytest.priority_sequential_comp_str = ""
-        en_a = ExecNode(a.__name__, a, is_sequential=False)
-        en_b = ExecNode(b.__name__, b, [en_a], priority=2, is_sequential=False)
-        en_c = ExecNode(c.__name__, c, [en_a], priority=2, is_sequential=False)
-        en_d = ExecNode(d.__name__, d, [en_b], priority=2, is_sequential=False)
-        en_e = ExecNode(e.__name__, e, [en_a], priority=1, is_sequential=True)
+        en_a = ExecNode(id=a.__name__, exec_function=a, is_sequential=False)
+        en_b = ExecNode(
+            id=b.__name__, exec_function=b, args=[en_a], priority=2, is_sequential=False
+        )
+        en_c = ExecNode(
+            id=c.__name__, exec_function=c, args=[en_a], priority=2, is_sequential=False
+        )
+        en_d = ExecNode(
+            id=d.__name__, exec_function=d, args=[en_b], priority=2, is_sequential=False
+        )
+        en_e = ExecNode(id=e.__name__, exec_function=e, args=[en_a], priority=1, is_sequential=True)
         list_execnodes = [en_a, en_b, en_c, en_d, en_e]
 
         g = DAG(exec_nodes=list_execnodes, max_concurrency=2, behavior=ErrorStrategy.strict)

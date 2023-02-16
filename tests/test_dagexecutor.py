@@ -23,9 +23,9 @@ def xn3(in1, in2):
 
 @dag
 def pipe(in1, in2):
-    r1 = xn1(in1)
-    r2 = xn2(in2)
-    r3 = xn3(r1, r2)
+    r1 = xn1(in1=in1)
+    r2 = xn2(in1=in2)
+    r3 = xn3(in1=r1, in2=r2)
     return r1, r2, r3
 
 

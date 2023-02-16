@@ -26,9 +26,9 @@ def c(b):
     return b + "c"
 
 
-en_a = ExecNode(a.__name__, a, [], is_sequential=True)
-en_b = ExecNode(b.__name__, b, [en_a], priority=2, is_sequential=False)
-en_c = ExecNode(c.__name__, c, [en_a], priority=1, is_sequential=False)
+en_a = ExecNode(id=a.__name__, exec_function=a, args=[], is_sequential=True)
+en_b = ExecNode(id=b.__name__, exec_function=b, args=[en_a], priority=2, is_sequential=False)
+en_c = ExecNode(id=c.__name__, exec_function=c, args=[en_a], priority=1, is_sequential=False)
 en_a.args = [en_c]
 
 list_exec_nodes = [en_a, en_b, en_c]
