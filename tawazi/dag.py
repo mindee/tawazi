@@ -239,7 +239,7 @@ class DAG:
 
     def _execute(
         self,
-        leaves_ids: Optional[List[Union[IdentityHash, ExecNode]]] = None,
+        target_ids: Optional[List[IdentityHash]] = None,
         modified_node_dict: Optional[Dict[str, ExecNode]] = None,
     ) -> Dict[IdentityHash, Any]:
         """
@@ -247,14 +247,14 @@ class DAG:
          (Except for the setup nodes! Please run DAG.setup() in a single thread because its results will be cached).
 
         Args:
-            leaves_ids: The nodes (or the ids of the nodes) to be executed
+            target_ids: The nodes (or the ids of the nodes) to be executed
             modified_node_dict: A dictionary of the ExecNodes that have been modified by setting the input parameters of the DAG.
 
         Returns:
             node_dict: dictionary with keys the name of the function and value the result after the execution
         """
         # 0.1 create a subgraph of the graph if necessary
-        graph = subgraph(self.graph_ids, leaves_ids)
+        graph = subgraph(self.graph_ids, target_ids)
 
         # 0.2 deepcopy the node_dict in order to modify the results inside every node and make the dag reusable
         #     modified_node_dict are used to modify the values inside the ExecNode corresponding
@@ -493,12 +493,12 @@ class DAG:
             #  that must be run in order to run the target_nodes ExecNodes
             #  afterwards we can remove the non setup nodes
             leaves_ids = self._get_leaves_ids(target_nodes)
-            graph = subgraph(self.graph_ids, leaves_ids)  # type: ignore
+            graph = subgraph(self.graph_ids, leaves_ids)
 
             # 2.2 filter non setup ExecNodes
             setup_leaves_ids = [id_ for id_ in graph.nodes if id_ in all_setup_nodes]
 
-        self._execute(setup_leaves_ids, all_setup_nodes)  # type: ignore
+        self._execute(setup_leaves_ids, all_setup_nodes)
 
     def executor(self, **kwargs: Dict[str, Any]) -> "DAGExecution":
         """Generates an executor for the DAG.
@@ -535,7 +535,7 @@ class DAG:
         call_xn_dict = self._make_call_xn_dict(*args)
 
         # 3. Execute the scheduler
-        all_nodes_dict = self._execute(leaves_ids, call_xn_dict)  # type: ignore
+        all_nodes_dict = self._execute(leaves_ids, call_xn_dict)
 
         # 4. extract the returned value/values
         returned_values = self._get_return_values(all_nodes_dict)
@@ -632,7 +632,7 @@ class DAG:
         """
         # 1. make the graph_ids to be executed!
         leaves_ids = self._get_leaves_ids(target_nodes)
-        graph_ids = subgraph(self.graph_ids, leaves_ids)  # type: ignore
+        graph_ids = subgraph(self.graph_ids, leaves_ids)
 
         # 2. make call_xn_dict that will be modified
         call_xn_dict = self._make_call_xn_dict(*args)
@@ -843,7 +843,7 @@ class DAGExecution:
                 call_xn_dict[id_].result = result
 
         # 2. Execute the scheduler
-        self.xn_dict = dag._execute(leaves_ids, call_xn_dict)  # type: ignore
+        self.xn_dict = dag._execute(leaves_ids, call_xn_dict)
         self.results = {xn.id: xn.result for xn in self.xn_dict.values()}
 
         # 3. cache in the results
