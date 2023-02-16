@@ -45,6 +45,6 @@ def test_run_dag_executor_multiple_times():
 
 
 def test_run_sub_dag_executor():
-    executor = pipe.executor(twz_nodes=["xn1", "xn2"])
+    executor = pipe.executor(target_nodes=["xn1", "xn2"])
     r1, r2, r3 = executor(1, 2)
     assert (r1, r2, r3) == (2, 4, None)

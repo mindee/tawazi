@@ -221,13 +221,13 @@ This will be useful if you want to run a subgraph (cf. the next paragraph). It w
 * You can run a subgraph of your pipeline. During the invocation of the pipeline, you can choose your target ExecNodes (these are the leaf nodes that you want to run).
 ```Python
 # You can use the original __qual__name of the decorated function as an Identifier
-pipeline(twz_nodes=["b"])
+pipeline(target_nodes=["b"])
 # You can use the tag of an ExecNode
-pipeline(twz_nodes=["c_node"])
+pipeline(target_nodes=["c_node"])
 # You can use the calling tag to distinguish the 1st call of g from the 2nd call!
-pipeline(twz_nodes=["byebye"])
+pipeline(target_nodes=["byebye"])
 # You can even pass in the ExecNodes to run and mix identifiers types
-pipeline(twz_nodes=["b", xns_bye[0]])
+pipeline(target_nodes=["b", xns_bye[0]])
 
 ```
 

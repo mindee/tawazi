@@ -74,7 +74,7 @@ def test_cache_results_subgraph():
         os.remove(cache_path)
 
     exc = DAGExecution(
-        pipe, twz_nodes=[generate_large_zeros_array, incr_large_array], cache_in=cache_path
+        pipe, target_nodes=[generate_large_zeros_array, incr_large_array], cache_in=cache_path
     )
     zeros = np.zeros(10**6)
     ones = np.ones(10**6)
@@ -101,7 +101,7 @@ def test_running_cached_dag():
         os.remove(cache_path)
 
     exc = DAGExecution(
-        pipe, twz_nodes=[generate_large_zeros_array, incr_large_array], cache_in=cache_path
+        pipe, target_nodes=[generate_large_zeros_array, incr_large_array], cache_in=cache_path
     )
     zeros = np.zeros(10**6)
     ones = np.ones(10**6)
@@ -127,7 +127,7 @@ def test_cache_read_write():
     if Path(cache_path).is_file():
         os.remove(cache_path)
 
-    exc = DAGExecution(pipe, twz_nodes=[generate_large_zeros_array], cache_in=cache_path)
+    exc = DAGExecution(pipe, target_nodes=[generate_large_zeros_array], cache_in=cache_path)
     zeros = np.zeros(10**6)
     ones = np.ones(10**6)
     ones_ = ones
@@ -140,7 +140,7 @@ def test_cache_read_write():
     assert r4 is None
 
     exc = DAGExecution(
-        pipe, twz_nodes=[generate_large_zeros_array, incr_large_array], cache_in=cache_path
+        pipe, target_nodes=[generate_large_zeros_array, incr_large_array], cache_in=cache_path
     )
     r1, r2, r3, r4 = exc()
     assert (r1 == zeros).all()
@@ -150,7 +150,7 @@ def test_cache_read_write():
 
     exc = DAGExecution(
         pipe,
-        twz_nodes=[generate_large_zeros_array, incr_large_array, pass_large_array],
+        target_nodes=[generate_large_zeros_array, incr_large_array, pass_large_array],
         cache_in=cache_path,
     )
     r1, r2, r3, r4 = exc()
@@ -161,7 +161,7 @@ def test_cache_read_write():
 
     exc = DAGExecution(
         pipe,
-        twz_nodes=[generate_large_zeros_array, incr_large_array, pass_large_array, avg_array],
+        target_nodes=[generate_large_zeros_array, incr_large_array, pass_large_array, avg_array],
         cache_in=cache_path,
     )
     r1, r2, r3, r4 = exc()

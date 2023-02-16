@@ -405,21 +405,21 @@ class DAG:
                 )
         else:
             raise TawaziTypeError(
-                "twz_nodes must be of type ExecNode, "
+                "target_nodes must be of type ExecNode, "
                 f"str or tuple identifying the node but provided {alias}"
             )
 
-    def _get_leaves_ids(self, twz_nodes: Optional[List[Alias]] = None) -> List[IdentityHash]:
+    def _get_leaves_ids(self, target_nodes: Optional[List[Alias]] = None) -> List[IdentityHash]:
         """
-        get the ids of ExecNodes corresponding to twz_nodes.
+        get the ids of ExecNodes corresponding to target_nodes.
         The identification can be carried out using the tag, the Id, or the ExecNode itself.
-        Keep in Mind that depending on the way ExecNode is provided inside twz_nodes,
+        Keep in Mind that depending on the way ExecNode is provided inside target_nodes,
          the returned id
         if nothing is provided it will return all leaves_ids
         Handles the debug nodes
 
         Args:
-            twz_nodes (Optional[List[Alias]]): list of a ExecNode Aliases that the user might provide to run a subgraph
+            target_nodes (Optional[List[Alias]]): list of a ExecNode Aliases that the user might provide to run a subgraph
 
         Returns:
             List[IdentityHash]: Leaf ExecNodes' Identities
@@ -427,13 +427,13 @@ class DAG:
         # Raises:
         #     TawaziBaseException: if the returned List[IdentityHash] has the wrong length, this indicates a bug in the code
 
-        if twz_nodes is None:
+        if target_nodes is None:
             # TODO: make cached!
             leaves_ids = [xn.id for xn in self.exec_nodes]
         # 2. create leaves_ids
         else:
             leaves_ids = []
-            for tag_or_id_or_node in twz_nodes:
+            for tag_or_id_or_node in target_nodes:
                 leaves_ids += self._alias_to_ids(tag_or_id_or_node)
 
             # after extending leaves_ids, we should do a recheck because this might recreate another debug-able XN...
@@ -464,15 +464,15 @@ class DAG:
                             leaves_ids.append(successor_id)
         return leaves_ids
 
-    def setup(self, twz_nodes: Optional[List[Alias]] = None) -> None:
+    def setup(self, target_nodes: Optional[List[Alias]] = None) -> None:
         """Run the setup ExecNodes for the DAG.
 
-        If twz_nodes are provided, run only the necessary setup ExecNodes, otherwise will run all setup ExecNodes.
+        If target_nodes are provided, run only the necessary setup ExecNodes, otherwise will run all setup ExecNodes.
         NOTE: currently if setup ExecNodes receive arguments from the Pipeline this method won't work because it doesn't support *args.
             This might be supported in the future though
 
         Args:
-            twz_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to use in the DAG.
+            target_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to use in the DAG.
                 This might inlcude setup or non setup ExecNodes. If None is provided, will run all setup ExecNodes. Defaults to None.
         """
 
@@ -484,15 +484,15 @@ class DAG:
             if nd.setup or (isinstance(nd, ArgExecNode) and nd.executed)
         }
 
-        # 2. if twz_nodes is not provided run all setup ExecNodes
-        if twz_nodes is None:
+        # 2. if target_nodes is not provided run all setup ExecNodes
+        if target_nodes is None:
             setup_leaves_ids = list(all_setup_nodes.keys())
         else:
             # 2.1 the leaves_ids that the user wants to execute
             #  however they might contain non setup nodes... so we should extract all the nodes ids
-            #  that must be run in order to run the twz_nodes ExecNodes
+            #  that must be run in order to run the target_nodes ExecNodes
             #  afterwards we can remove the non setup nodes
-            leaves_ids = self._get_leaves_ids(twz_nodes)
+            leaves_ids = self._get_leaves_ids(target_nodes)
             graph = subgraph(self.graph_ids, leaves_ids)  # type: ignore
 
             # 2.2 filter non setup ExecNodes
@@ -500,7 +500,6 @@ class DAG:
 
         self._execute(setup_leaves_ids, all_setup_nodes)  # type: ignore
 
-    # TODO: maybe change twz_nodes name?
     def executor(self, **kwargs: Dict[str, Any]) -> "DAGExecution":
         """Generates an executor for the DAG.
 
@@ -512,13 +511,13 @@ class DAG:
         """
         return DAGExecution(self, **kwargs)  # type: ignore
 
-    def __call__(self, *args: Any, twz_nodes: Optional[List[Alias]] = None) -> Any:
+    def __call__(self, *args: Any, target_nodes: Optional[List[Alias]] = None) -> Any:
         """
         Execute the DAG scheduler via a similar interface to the function that describes the dependencies.
 
         Args:
             *args (Any): arguments to be passed to the call of the DAG
-            twz_nodes (Optional[List[XNId]], optional): target ExecNodes to execute
+            target_nodes (Optional[List[XNId]], optional): target ExecNodes to execute
                 executes the whole DAG if None. Defaults to None.
 
 
@@ -526,10 +525,10 @@ class DAG:
             Any: return value of the DAG's execution
         """
         # Raises:
-        #     TawaziTypeError: if twz_nodes contains a wrong typed identifier or if the return value contain a non LazyExecNode
+        #     TawaziTypeError: if target_nodes contains a wrong typed identifier or if the return value contain a non LazyExecNode
 
         # 1. get the leaves ids to execute in case of a subgraph
-        leaves_ids = self._get_leaves_ids(twz_nodes)
+        leaves_ids = self._get_leaves_ids(target_nodes)
         #
 
         # 2. copy the ExecNodes
@@ -619,20 +618,20 @@ class DAG:
 
     # NOTE: this function should be used in case there was a bizarre behavior noticed during
     #   the execution of the DAG via DAG.execute(...)
-    def _safe_execute(self, *args: Any, twz_nodes: Optional[List[Alias]] = None) -> Any:
+    def _safe_execute(self, *args: Any, target_nodes: Optional[List[Alias]] = None) -> Any:
         """
         Execute the ExecNodes in topological order without priority in for loop manner for debugging purposes
 
         Args:
             *args (Any): Positional arguments passed to the DAG
-            twz_nodes (Optional[List[Alias]]): the ExecNodes that should be considered to construct the subgraph
+            target_nodes (Optional[List[Alias]]): the ExecNodes that should be considered to construct the subgraph
 
         Returns:
             Any: the result of the execution of the DAG.
              If an ExecNode returns a value in the DAG but is not executed, it will return None.
         """
         # 1. make the graph_ids to be executed!
-        leaves_ids = self._get_leaves_ids(twz_nodes)
+        leaves_ids = self._get_leaves_ids(target_nodes)
         graph_ids = subgraph(self.graph_ids, leaves_ids)  # type: ignore
 
         # 2. make call_xn_dict that will be modified
@@ -759,7 +758,6 @@ class DAG:
         self.config_from_dict(json_config)
 
 
-# TODO: change the name of twz_nodes!! should be leaves_nodes
 # TODO: should implement twz_exclude_nodes
 # TODO: check if the arguments are the same, then run the DAG using the from_cache.
 #  If the arguments are not the same, then rerun the DAG!
@@ -767,7 +765,7 @@ class DAGExecution:
     def __init__(
         self,
         dag: DAG,
-        twz_nodes: Optional[List[Alias]] = None,
+        target_nodes: Optional[List[Alias]] = None,
         cache_in: str = "",
         from_cache: str = ""
         # profile = False, ?
@@ -779,7 +777,7 @@ class DAGExecution:
 
         Args:
             dag (DAG): The attached DAG.
-            twz_nodes (Optional[List[Alias]]): The leave ExecNodes to execute.
+            target_nodes (Optional[List[Alias]]): The leave ExecNodes to execute.
                 If None will execute all ExecNodes.
                 Defaults to None.
             cache_in (str):
@@ -797,14 +795,14 @@ class DAGExecution:
         # todo: Maybe we can support .dill to extend the possibilities of the exchanged values, but this won't solve the whole problem
 
         self.dag = dag
-        self.twz_nodes = twz_nodes
+        self.target_nodes = target_nodes
         self.cache_in = cache_in
         self.from_cache = from_cache
         # NOTE: from_cache is orthogonal to cache_in which means that if cache_in is set at the same time as from_cache.
         #  in this case the DAG will be loaded from_cache and the results will be saved again to the cache_in file.
 
         # get the leaves ids to execute in case of a subgraph
-        self.leaves_ids = dag._get_leaves_ids(self.twz_nodes)
+        self.leaves_ids = dag._get_leaves_ids(self.target_nodes)
 
         self.xn_dict: Dict[IdentityHash, ExecNode] = {}
         self.results: Dict[IdentityHash, Any] = {}
