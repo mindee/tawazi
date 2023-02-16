@@ -115,7 +115,7 @@ def pipe(in1):
 
 
 def test_no_nodes_running_in_subgraph():
-    assert pipe(twz_nodes=[]) == None
+    assert pipe(target_nodes=[]) == None
 
 
 # TODO: fix this problem!!!

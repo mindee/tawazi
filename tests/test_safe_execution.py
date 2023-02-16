@@ -116,10 +116,10 @@ def test_subgraph_with_safe_execution_with_setup():
     pipe_ = deepcopy(pipe)
     pytest.safe_execution_c = 0
     pytest.safe_execution_op_cst_has_run = False
-    assert pipe_._safe_execute(twz_nodes=["op1"]) == (5, None)
+    assert pipe_._safe_execute(target_nodes=["op1"]) == (5, None)
     assert pytest.safe_execution_c == 1
     assert pytest.safe_execution_op_cst_has_run == False
 
-    assert pipe_._safe_execute(twz_nodes=["op1"]) == (5, None)
+    assert pipe_._safe_execute(target_nodes=["op1"]) == (5, None)
     assert pytest.safe_execution_c == 1
     assert pytest.safe_execution_op_cst_has_run == False

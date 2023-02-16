@@ -133,7 +133,7 @@ def test_triple_incr_debug_subgraph():
     tawazi.Cfg.RUN_DEBUG_NODES = True
 
     # by only running a single dependency all subsequent debug nodes shall run
-    assert triple_incr_debug(1, twz_nodes=["1st"]) == 4
+    assert triple_incr_debug(1, target_nodes=["1st"]) == 4
 
 
 def test_reachable_debuggable_node_in_subgraph():
@@ -148,12 +148,12 @@ def test_reachable_debuggable_node_in_subgraph():
         print_(res2)
         return res1
 
-    assert pipe(2, twz_nodes=["stub"]) == 2
+    assert pipe(2, target_nodes=["stub"]) == 2
     assert pytest.prin_share_var == 3
 
     pytest.prin_share_var == None
 
-    assert pipe(0, twz_nodes=["stub", "incr"]) == 0
+    assert pipe(0, target_nodes=["stub", "incr"]) == 0
     assert pytest.prin_share_var == 1
 
 

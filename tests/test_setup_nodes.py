@@ -179,7 +179,7 @@ def test_dependencies_subgraph():
     pytest.op2 = 0
     pytest.op12 = 0
 
-    res = pipe_setup_deps(twz_nodes=["twinkle toes"])
+    res = pipe_setup_deps(target_nodes=["twinkle toes"])
     assert res is None
     assert pytest.setup_op1 == 1
     assert pytest.setup_op2 == 0
@@ -187,7 +187,7 @@ def test_dependencies_subgraph():
     assert pytest.op2 == 0
     assert pytest.op12 == 0
 
-    res = pipe_setup_deps(twz_nodes=["twinkle toes"])
+    res = pipe_setup_deps(target_nodes=["twinkle toes"])
     assert res is None
     assert pytest.setup_op1 == 1
     assert pytest.setup_op2 == 0
@@ -258,7 +258,7 @@ def test_pipeline_setup_method():
     # test running setup targetting a setup node
     pipe = deepcopy(pipe_setup_deps)
     clean()
-    pipe.setup(twz_nodes=["setup1"])
+    pipe.setup(target_nodes=["setup1"])
     assert pytest.setup_op1 == 1
     assert pytest.setup_op2 == 0
     assert pytest.op1 == 0
@@ -274,7 +274,7 @@ def test_pipeline_setup_method():
     # test running setup targeting a dependencies of setup nodes
     pipe = deepcopy(pipe_setup_deps)
     clean()
-    pipe.setup(twz_nodes=["setup2"])
+    pipe.setup(target_nodes=["setup2"])
     assert pytest.setup_op1 == 1
     assert pytest.setup_op2 == 1
     assert pytest.op1 == 0
@@ -290,13 +290,13 @@ def test_pipeline_setup_method():
     # test running setup targetting a non setup node
     pipe = deepcopy(pipe_setup_deps)
     clean()
-    pipe.setup(twz_nodes=["twinkle toes"])
+    pipe.setup(target_nodes=["twinkle toes"])
     assert pytest.setup_op1 == 1
     assert pytest.setup_op2 == 0
     assert pytest.op1 == 0
     assert pytest.op2 == 0
     assert pytest.op12 == 0
-    pipe(twz_nodes=["twinkle toes"])
+    pipe(target_nodes=["twinkle toes"])
     assert pytest.setup_op1 == 1
     assert pytest.setup_op2 == 0
     assert pytest.op1 == 1
