@@ -61,9 +61,6 @@ def test_pipeline_without_debug_node():
     assert pytest.my_len_has_ran == False
 
 
-test_pipeline_without_debug_node()
-
-
 def test_interdependant_debug_nodes():
     pytest.my_len_has_ran = False
     pytest.is_positive_len_has_ran = False
