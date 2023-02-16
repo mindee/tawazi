@@ -7,7 +7,7 @@ from tawazi.helpers import get_args_and_default_args
 
 from . import node
 from .config import Cfg
-from .node import ArgExecNode, ExecNode, LazyExecNode, exec_nodes_lock, get_return_ids
+from .node import ArgExecNode, ExecNode, LazyExecNode, exec_nodes_lock
 
 
 def xn(
@@ -118,7 +118,13 @@ def dag(
                 returned_exec_nodes = _func(*args)
 
                 # 4. Construct the DAG instance
-                d = DAG(node.exec_nodes, max_concurrency=max_concurrency, behavior=behavior)
+                d = DAG(
+                    exec_nodes=node.exec_nodes,
+                    max_concurrency=max_concurrency,
+                    behavior=behavior,
+                    input_ids=[arg.id for arg in args],
+                    return_ids=returned_exec_nodes,
+                )
 
             # clean up even in case an error is raised during dag construction
             finally:
@@ -127,13 +133,7 @@ def dag(
                 #   we can empty the global variable node.exec_nodes
                 node.exec_nodes = []
 
-            d.input_ids = [arg.id for arg in args]
-
-            # 6. make the return ids to be fetched at the end of the computation
-            d.return_ids = get_return_ids(returned_exec_nodes)
-
         functools.update_wrapper(d, _func)
-        d._validate()
         return d
 
     # case 1: arguments are provided to the decorator

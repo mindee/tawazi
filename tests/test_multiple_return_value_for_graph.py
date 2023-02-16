@@ -15,7 +15,7 @@ def test_no_return():
     def pipe():
         return
 
-    assert pipe() == None
+    assert pipe() is None
 
 
 def test_return_single():

@@ -1,6 +1,9 @@
 #  type: ignore
 from time import sleep, time
 
+import pydantic
+import pytest
+
 from tawazi import DAG, ErrorStrategy
 from tawazi.node import ExecNode
 
@@ -65,7 +68,7 @@ failing_execnodes = list_execnodes + [ExecNode(fail.__name__, fail, [en_g], is_s
 
 
 def test_dag_build():
-    g = DAG(list_execnodes, 2, behavior=ErrorStrategy.strict)
+    g = DAG(exec_nodes=list_execnodes, max_concurrency=2, behavior=ErrorStrategy.strict)
     t0 = time()
     g._execute(g._make_subgraph())  # must never fail!
     print(time() - t0)
@@ -74,14 +77,12 @@ def test_dag_build():
 
 
 def test_draw():
-    g = DAG(list_execnodes, 2, behavior=ErrorStrategy.strict)
+    g = DAG(exec_nodes=list_execnodes, max_concurrency=2, behavior=ErrorStrategy.strict)
     g.draw(display=False)
     g.draw(display=True)
 
 
 def test_bad_behaviour():
-    try:
-        g = DAG(failing_execnodes, 2, behavior="Such Bad Behavior")
+    with pytest.raises(pydantic.ValidationError):
+        g = DAG(exec_nodes=failing_execnodes, max_concurrency=2, behavior="Such Bad Behavior")
         g._execute(g._make_subgraph())
-    except NotImplementedError:
-        pass

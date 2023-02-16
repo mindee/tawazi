@@ -36,7 +36,7 @@ list_exec_nodes = [en_a, en_b, en_c]
 
 def test_circular_deps():
     try:
-        g = DAG(list_exec_nodes, 2, behavior=ErrorStrategy.strict)
+        g = DAG(exec_nodes=list_exec_nodes, max_concurrency=2, behavior=ErrorStrategy.strict)
     except NetworkXUnfeasible:
         pass
 

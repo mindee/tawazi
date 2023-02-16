@@ -13,18 +13,25 @@ import yaml
 from loguru import logger
 from networkx import find_cycle
 from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
+from pydantic import BaseModel, Extra, validator
 
 from tawazi.config import Cfg
-from tawazi.consts import ReturnIDsType
+from tawazi.consts import ReturnIDsType, Tag
 from tawazi.helpers import UniqueKeyLoader, filter_NoVal
 
 from .consts import IdentityHash
 from .digraph import DiGraphEx
 from .errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
-from .node import Alias, ArgExecNode, ExecNode
+from .node import Alias, ArgExecNode, ExecNode, LazyExecNode
 
 
-class DAG:
+class DAG(
+    BaseModel,
+    validate_assignment=True,
+    arbitrary_types_allowed=True,
+    extra=Extra.allow,
+    smart_union=True,
+):
     """
     Data Structure containing ExecNodes with interdependencies.
     The ExecNodes can be executed in parallel with the following restrictions:
@@ -32,77 +39,140 @@ class DAG:
         * Parallelization constraint of each ExecNode (is_sequential attribute)
     """
 
-    # TODO: transform into basemodel to do validation
-    def __init__(
-        self,
-        exec_nodes: List[ExecNode],
-        max_concurrency: int = 1,
-        behavior: ErrorStrategy = ErrorStrategy.strict,
-    ):
-        """
-        Args:
-            exec_nodes: all the ExecNodes
-            max_concurrency: the maximal number of threads running in parallel
-            behavior: specify the behavior if an ExecNode raises an Error. Three option are currently supported:
-                1. DAG.STRICT: stop the execution of all the DAG
-                2. DAG.ALL_CHILDREN: do not execute all children ExecNodes, and continue execution of the DAG
-                2. DAG.PERMISSIVE: continue execution of the DAG and ignore the error
-        """
-        self.graph_ids = DiGraphEx()
+    # ExecNodes can be shared between Graphs, their call signatures might also be different
+    # NOTE: maybe this should be transformed into a property because there is a deepcopy for node_dict...
+    #  this means that there are different ExecNodes that are hanging around in the same instance of the DAG
+    exec_nodes: List[ExecNode]
+    input_ids: List[IdentityHash] = []
+    max_concurrency: int = 1
+    behavior: ErrorStrategy = ErrorStrategy.strict
+    graph_ids: DiGraphEx = DiGraphEx()
 
-        # ExecNodes can be shared between Graphs, their call signatures might also be different
-        # NOTE: maybe this should be transformed into a property because there is a deepcopy for node_dict...
-        #  this means that there are different ExecNodes that are hanging arround in the same instance of the DAG
-        self.exec_nodes = exec_nodes
+    node_dict: Dict[IdentityHash, ExecNode] = {}
+    tagged_nodes: Dict[Tag, List[ExecNode]] = {}
+    node_dict_by_name: Dict[str, ExecNode] = {}
 
-        self.max_concurrency = max_concurrency
+    return_ids: ReturnIDsType = None
 
-        self.node_dict: Dict[IdentityHash, ExecNode] = {
-            exec_node.id: exec_node for exec_node in self.exec_nodes
+    # a sequence of execution to be applied in a for loop
+    exec_node_sequence: List[ExecNode] = []
+
+    bckrd_deps: Dict[IdentityHash, List[IdentityHash]] = {}
+    frwrd_deps: Dict[IdentityHash, List[IdentityHash]] = {}
+
+    @validator("graph_ids", pre=True, always=True)
+    def build_graph(cls, digraph: DiGraphEx, values: Dict[str, Any]) -> DiGraphEx:
+        # 1 add nodes
+        for xn in values["exec_nodes"]:
+            digraph.add_node(xn.id)
+
+        # 2 add edges
+        for xn in values["exec_nodes"]:
+            edges = [(dep.id, xn.id) for dep in xn.dependencies]
+            digraph.add_edges_from(edges)
+
+        # 3. check for circular dependencies
+        try:
+            cycle = find_cycle(digraph)
+        except NetworkXNoCycle:
+            cycle = None
+
+        if cycle:
+            raise NetworkXUnfeasible(f"the graph contains at least a circular dependency: {cycle}")
+
+        return digraph
+
+    @validator("node_dict", pre=True, always=True)
+    def fill_nodes(
+        cls, value: Dict[IdentityHash, ExecNode], values: Dict[str, Any]
+    ) -> Dict[IdentityHash, ExecNode]:
+        return {exec_node.id: exec_node for exec_node in values["exec_nodes"]}
+
+    @validator("bckrd_deps", pre=True, always=True)
+    def build_backward_deps(
+        cls, value: Dict[IdentityHash, List[IdentityHash]], values: Dict[str, Any]
+    ) -> Dict[IdentityHash, List[IdentityHash]]:
+        bwd_deps = {
+            xn.id: list(values["graph_ids"].predecessors(xn.id)) for xn in values["exec_nodes"]
         }
+        cls._assign_compound_priority(
+            graph_ids=values["graph_ids"], node_dict=values["node_dict"], bckrd_deps=bwd_deps
+        )
+
+        return bwd_deps
+
+    @validator("frwrd_deps", pre=True, always=True)
+    def build_forward_deps(
+        cls, value: Dict[IdentityHash, List[IdentityHash]], values: Dict[str, Any]
+    ) -> Dict[IdentityHash, List[IdentityHash]]:
+        return {xn.id: list(values["graph_ids"].successors(xn.id)) for xn in values["exec_nodes"]}
+
+    @validator("tagged_nodes", pre=True, always=True)
+    def compute_tags(
+        cls, value: Dict[Tag, List[ExecNode]], values: Dict[str, Any]
+    ) -> Dict[Tag, List[ExecNode]]:
         # Compute all the tags in the DAG to reduce overhead during computation
-        self.tagged_nodes = defaultdict(list)
-        for xn in self.exec_nodes:
+        tags_dict = defaultdict(list)
+        for xn in values["exec_nodes"]:
             if xn.tag:
-                self.tagged_nodes[xn.tag].append(xn)
+                tags_dict[xn.tag].append(xn)
 
-        # Might be useful in the future
-        self.node_dict_by_name: Dict[str, ExecNode] = {
-            exec_node.__name__: exec_node for exec_node in self.exec_nodes
-        }
-        self.return_ids: ReturnIDsType = None
-        self.input_ids: List[IdentityHash] = []
+        return tags_dict
 
-        # a sequence of execution to be applied in a for loop
-        self.exec_node_sequence: List[ExecNode] = []
+    @validator("node_dict_by_name", pre=True, always=True)
+    def extract_names(
+        cls, value: Dict[str, ExecNode], values: Dict[str, Any]
+    ) -> Dict[str, ExecNode]:
+        return {exec_node.__name__: exec_node for exec_node in values["exec_nodes"]}
 
-        self.behavior = behavior
+    @validator("exec_node_sequence", pre=True, always=True)
+    def build_sequence_from_topological_order(
+        cls, value: List[ExecNode], values: Dict[str, Any]
+    ) -> List[ExecNode]:
+        topological_order = values["graph_ids"].topologically_sorted
 
-        self._build()
+        return [values["node_dict"][xn_id] for xn_id in topological_order]
 
-        self.bckrd_deps = {
-            xn.id: list(self.graph_ids.predecessors(xn.id)) for xn in self.exec_nodes
-        }
-        self.frwrd_deps = {xn.id: list(self.graph_ids.successors(xn.id)) for xn in self.exec_nodes}
+    @validator("input_ids")
+    def check_input_ids(
+        cls, value: List[IdentityHash], values: Dict[str, Any]
+    ) -> List[IdentityHash]:
+        for xn in values["exec_nodes"]:
+            if xn.setup and any(dep.id in value for dep in xn.dependencies):
+                raise TawaziUsageError(
+                    f"The ExecNode {xn} takes as parameters one of the DAG's input parameter"
+                )
+        return value
 
-        # calculate the sum of priorities of all recursive children
-        self._assign_compound_priority()
+    @validator("return_ids", pre=True)
+    def format_return_ids(cls, returned_exec_nodes: List[ExecNode]) -> ReturnIDsType:
+        err_string = (
+            "Return type of the pipeline must be either a Single Xnode,"
+            " Tuple of Xnodes, List of Xnodes, dict of Xnodes or None"
+        )
 
-        # make a valid execution sequence to run sequentially if needed
-        topological_order = self.graph_ids.topologically_sorted
-        self.exec_node_sequence = [self.node_dict[xn_id] for xn_id in topological_order]
-
-    @property
-    def max_concurrency(self) -> int:
-        return self._max_concurrency
-
-    @max_concurrency.setter
-    def max_concurrency(self, value: int) -> None:
-        if not isinstance(value, int):
-            raise ValueError("max_concurrency must be an int")
-        if value < 1:
-            raise ValueError("Invalid maximum number of threads! Must be a positive integer")
-        self._max_concurrency = value
+        # No value returned by the execution
+        if returned_exec_nodes is None:
+            return None
+        # a single value is returned
+        elif isinstance(returned_exec_nodes, ExecNode):
+            return returned_exec_nodes.id
+        # multiple values returned
+        elif isinstance(returned_exec_nodes, tuple):
+            return tuple(rxn.id for rxn in returned_exec_nodes)
+        elif isinstance(returned_exec_nodes, list):
+            return [rxn.id for rxn in returned_exec_nodes]
+        elif isinstance(returned_exec_nodes, dict):
+            if set([type(v) for v in returned_exec_nodes.values()]).issubset(
+                {ArgExecNode, LazyExecNode}
+            ):
+                return {k: rxn.id for k, rxn in returned_exec_nodes.items()}
+            else:
+                raise TawaziTypeError("return dict should only contain ExecNodes")
+        else:
+            raise TawaziTypeError(
+                f"{err_string}. Type of the provided return: {type(returned_exec_nodes)}"
+            )
 
     # getters
     def get_nodes_by_tag(self, tag: Any) -> List[ExecNode]:
@@ -116,62 +186,24 @@ class DAG:
 
     # TODO: get node by usage (the order of call of an ExecNode)
 
-    # TODO: validate using Pydantic
-    def _find_cycle(self) -> Optional[List[Tuple[str, str]]]:
-        """
-        A DAG doesn't have any dependency cycle.
-        This method returns the cycles if found.
+    @classmethod
+    def _assign_compound_priority(
+        cls,
+        graph_ids: DiGraphEx,
+        node_dict: Dict[IdentityHash, ExecNode],
+        bckrd_deps: Dict[IdentityHash, List[IdentityHash]],
+    ) -> None:
+        """Assigns a compound priority to all nodes in the graph.
 
-        returns:
-            A list of the edges responsible for the cycles in case there are some (in forward and backward),
-             otherwise nothing. (e.g. [('taxes', 'amount_reconciliation'),('amount_reconciliation', 'taxes')])
-        """
-        try:
-            cycle: List[Tuple[str, str]] = find_cycle(self.graph_ids)
-            return cycle
-        except NetworkXNoCycle:
-            return None
-
-    def _build(self) -> None:
-        """
-        Builds the graph and the sequence order for the computation.
-
-        Raises:
-            NetworkXUnfeasible: if the graph has cycles
-        """
-        # 1. Make the graph
-        # 1.1 add nodes
-        for xn in self.exec_nodes:
-            self.graph_ids.add_node(xn.id)
-
-        # 1.2 add edges
-        for xn in self.exec_nodes:
-            edges = [(dep.id, xn.id) for dep in xn.dependencies]
-            self.graph_ids.add_edges_from(edges)
-
-        # 2. Validate the DAG: check for circular dependencies
-        cycle = self._find_cycle()
-        if cycle:
-            raise NetworkXUnfeasible(
-                f"the product contains at least a circular dependency: {cycle}"
-            )
-
-    def _validate(self) -> None:
-        # validate setup ExecNodes
-        for xn in self.exec_nodes:
-            if xn.setup and any(dep.id in self.input_ids for dep in xn.dependencies):
-                raise TawaziUsageError(
-                    f"The ExecNode {xn} takes as parameters one of the DAG's input parameter"
-                )
-        # future validations...
-
-    def _assign_compound_priority(self) -> None:
-        """
-        Assigns a compound priority to all nodes in the graph.
         The compound priority is the sum of the priorities of all children recursively.
+
+        Args:
+            graph_ids: the directed acyclic graph
+            node_dict: the mapping between the ids and the exec nodes
+            bckrd_deps: the backwards dependencies of the exec nodes
         """
         # 1. deepcopy graph_ids because it will be modified (pruned)
-        graph_ids = deepcopy(self.graph_ids)
+        graph_ids = deepcopy(graph_ids)
         leaf_ids = graph_ids.leaf_nodes
 
         # 2. assign the compound priority for all the remaining nodes in the graph:
@@ -182,11 +214,11 @@ class DAG:
         while len(graph_ids) > 0:
             # Epoch level
             for leaf_id in leaf_ids:
-                leaf_node = self.node_dict[leaf_id]
+                leaf_node = node_dict[leaf_id]
 
-                for parent_id in self.bckrd_deps[leaf_id]:
+                for parent_id in bckrd_deps[leaf_id]:
                     # increment the compound_priority of the parent node by the leaf priority
-                    parent_node = self.node_dict[parent_id]
+                    parent_node = node_dict[parent_id]
                     parent_node.compound_priority += leaf_node.compound_priority
 
                 # trim the graph from its leaf nodes
@@ -790,7 +822,7 @@ class DAG:
 
         if prio_flag:
             # if we changed the priority of some nodes we need to recompute the compound prio
-            self._assign_compound_priority()
+            self._assign_compound_priority(self.graph_ids, self.node_dict, self.bckrd_deps)
 
     def config_from_yaml(self, config_path: str) -> None:
         """
