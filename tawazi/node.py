@@ -16,6 +16,7 @@ from tawazi.consts import (
     ReturnIDsType,
     Tag,
 )
+from tawazi.profile import Profile
 
 from .config import Cfg
 from .errors import InvalidExecNodeCall, TawaziBaseException, TawaziTypeError
@@ -101,6 +102,8 @@ class ExecNode:
         self.result: Union[NoValType, Any] = NoVal
         # even though setting result to NoVal is not necessary... it clarifies debugging
 
+        self.profile = Profile()
+
     @property
     def executed(self) -> bool:
         return self.result is not NoVal
@@ -134,15 +137,34 @@ class ExecNode:
 
         if self.executed:
             logger.debug(f"Skipping execution of a pre-computed node {self.id}")
+
+            # reset the profiling
+            # (for example setup ExecNodes have a profiling on the 1st execution
+            #   but afterwards their profiling should be reset)
+            if Cfg.TAWAZI_PROFILE_ALL_NODES:
+                self.profile = Profile()
+
             return self.result
-        # 1. prepare args and kwargs for usage:
+
+        # 1. pre-
+        # 1.1 prepare the profiling
+        if Cfg.TAWAZI_PROFILE_ALL_NODES:
+            self.profile = Profile()
+            self.profile.start()
+
+        # 1.2 prepare args and kwargs for usage:
         args = [node_dict[node.id].result for node in self.args]
         kwargs = {key: node_dict[node.id].result for key, node in self.kwargs.items()}
         # args = [arg.result for arg in self.args]
         # kwargs = {key: arg.result for key, arg in self.kwargs.items()}
 
-        # 2. write the result
+        # 2 post-
+        # 2.1 write the result
         self.result = self.exec_function(*args, **kwargs)
+
+        # 2.2 finish the profiling
+        if Cfg.TAWAZI_PROFILE_ALL_NODES:
+            self.profile.finish()
 
         # 3. useless return value
         logger.debug(f"Finished executing {self.id} with task {self.exec_function}")

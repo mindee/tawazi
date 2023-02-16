@@ -819,8 +819,7 @@ class DAGExecution:
         target_nodes: Optional[List[Alias]] = None,
         exclude_nodes: Optional[List[Alias]] = None,
         cache_in: str = "",
-        from_cache: str = ""
-        # profile = False, ?
+        from_cache: str = "",
     ):
         """
         This is an instance of DAGExecution which is a disposable callable instance of a DAG.
@@ -883,6 +882,25 @@ class DAGExecution:
         if from_cache and not from_cache.endswith(".pkl"):
             raise ValueError("from_cache should end with.pkl")
         self._from_cache = from_cache
+
+    # we need to reimplement the public methods of DAG here in order to have a constant public interface
+    # getters
+    def get_nodes_by_tag(self, tag: Any) -> List[ExecNode]:
+        nodes = [ex_n for ex_n in self.xn_dict.values() if ex_n.tag == tag]
+        return nodes
+
+    def get_node_by_id(self, id_: IdentityHash) -> ExecNode:
+        # TODO: ? catch the keyError and
+        #   help the user know the id of the ExecNode by pointing to documentation!?
+        return self.xn_dict[id_]
+
+    def setup(self, twz_nodes: Optional[List[Alias]] = None) -> None:
+        """Does the same thing as DAG.setup
+
+        Args:
+            twz_nodes (Optional[List[Alias]], optional): c.f. `DAG.setup`.
+        """
+        self.dag.setup(twz_nodes)
 
     def __call__(self, *args: Any) -> Any:
         # NOTE: *args will be ignored if self.from_cache is set!
