@@ -1,10 +1,8 @@
 from copy import deepcopy
-from typing import List, Optional, Set, Union
+from typing import List, Optional, Set
 
 import networkx as nx
 from loguru import logger
-
-from tawazi.node import ExecNode
 
 from .consts import IdentityHash
 
@@ -132,16 +130,14 @@ class DiGraphEx(nx.DiGraph):
         return list(nx.topological_sort(self))
 
 
-def subgraph(
-    graph: DiGraphEx, leaves_ids: Optional[List[Union[IdentityHash, ExecNode]]]
-) -> DiGraphEx:
+def subgraph(graph: DiGraphEx, leaves_ids: Optional[List[IdentityHash]]) -> DiGraphEx:
     """
     returns a deep copy of the same graph if leaves_ids is None,
     otherwise returns a new graph by applying `graph.subgraph_leaves`
 
     Args:
         graph (DiGraphEx): graph describing the DAG
-        leaves_ids (List[Union[IdentityHash, ExecNode]]): The leaves that must be executed
+        leaves_ids (List[IdentityHash]): The leaves that must be executed
 
     Returns:
         DiGraphEx: The subgraph of the provided graph
@@ -154,11 +150,6 @@ def subgraph(
     # TODO: make the creation of subgraph possible directly from initialization
     # 1. create the subgraph
     if leaves_ids is not None:
-        # Extract the ids from the provided leaves/leaves_ids
-        leaves_str_ids = [
-            node_id.id if isinstance(node_id, ExecNode) else node_id for node_id in leaves_ids
-        ]
-
-        graph.subgraph_leaves(leaves_str_ids)
+        graph.subgraph_leaves(leaves_ids)
 
     return graph
