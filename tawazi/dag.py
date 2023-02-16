@@ -215,7 +215,7 @@ class DAG:
             plt.close()
 
     @classmethod
-    def _deepcopy_non_setup_x_nodes(cls, x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
+    def _copy_non_setup_xns(cls, x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
         """
         Deep copy all ExecNodes except setup ExecNodes because they are shared throughout the DAG instance
 
@@ -265,7 +265,7 @@ class DAG:
         #             raise TawaziBaseException(f"Setup nodes can't be provided as input to the DAG!,")
 
         # TODO: remove this deep copy because it already happens inside DAG.__call__
-        node_dict = modified_node_dict or DAG._deepcopy_non_setup_x_nodes(self.node_dict)
+        node_dict = modified_node_dict or DAG._copy_non_setup_xns(self.node_dict)
 
         # 0.3 create variables related to futures
         futures: Dict[IdentityHash, "Future[Any]"] = {}
@@ -563,7 +563,7 @@ class DAG:
             TypeError: If called with an invalid number of arguments
         """
         # 1. deepcopy the node_dict because it will be modified by the DAG's execution
-        call_xn_dict = DAG._deepcopy_non_setup_x_nodes(self.node_dict)
+        call_xn_dict = DAG._copy_non_setup_xns(self.node_dict)
 
         # 2. parse the input arguments of the pipeline
         # 2.1 default valued arguments can be skipped and not provided!
