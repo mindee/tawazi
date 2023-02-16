@@ -309,7 +309,7 @@ class LazyExecNode(ExecNode):
         # #   then skip registering this node in the list of ExecNodes to be executed
 
         # TODO: maybe change the Type of objects created.
-        #  for example: have a LazyExecNode.__call(...) return an ExecNodeCall instead of a deepcopy
+        #  for example: have a LazyExecNode.__call(...) return an ExecNodeCall instead of a copy
         # 1.1 Make a deep copy of self because every Call to an ExecNode corresponds to a new instance
         self_copy = copy(self)
         # 1.2 Assign the id
