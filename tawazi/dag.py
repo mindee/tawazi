@@ -259,25 +259,22 @@ class DAG:
         # 0.2 deepcopy the node_dict in order to modify the results inside every node and make the dag reusable
         #     modified_node_dict are used to modify the values inside the ExecNode corresponding
         #     to the input arguments provided to the whole DAG (ArgExecNode)
-        # if modified_node_dict:
-        #     for ex_n in modified_node_dict.values():
-        #         if ex_n.setup:
-        #             raise TawaziBaseException(f"Setup nodes can't be provided as input to the DAG!,")
+        xns_dict = modified_node_dict or DAG._copy_non_setup_xns(self.node_dict)
 
-        # TODO: remove this deep copy because it already happens inside DAG.__call__
-        node_dict = modified_node_dict or DAG._copy_non_setup_xns(self.node_dict)
+        # 0.3 prune the graph from the ArgExecNodes so that they don't get executed in the ThreadPool
+        precomputed_xns_ids = [id_ for id_ in graph if xns_dict[id_].executed]
+        for id_ in precomputed_xns_ids:
+            graph.remove_node(id_)
 
-        # 0.3 create variables related to futures
+        # 0.4 create variables related to futures
         futures: Dict[IdentityHash, "Future[Any]"] = {}
         done: Set["Future[Any]"] = set()
         running: Set["Future[Any]"] = set()
 
-        # TODO: optimize the execution by directly running the pre-computed ExecNodes! (setup, ArgExecNodes)
-
         # TODO: support non "threadable" ExecNodes.
         #  These are ExecNodes that can't run inside a thread because their arguments aren't pickelable!
 
-        # 0.4 create helpers functions encapsulated from the outside
+        # 0.5 create helpers functions encapsulated from the outside
         def get_num_running_threads(_futures: Dict[IdentityHash, "Future[Any]"]) -> int:
             # use not future.done() because there is no guarantee that Thread pool will directly execute
             # the submitted thread
@@ -287,9 +284,9 @@ class DAG:
             highest_priority = max(node.priority for node in nodes)
             return [node for node in nodes if node.priority == highest_priority]
 
-        # 0.5 get the candidates root nodes that can be executed
+        # 0.6 get the candidates root nodes that can be executed
         # runnable_nodes_ids will be empty if all root nodes are running
-        runnable_nodes_ids = graph.root_nodes()
+        runnable_xns_ids = graph.root_nodes()
 
         with ThreadPoolExecutor(max_workers=self.max_concurrency) as executor:
             while len(graph):
@@ -302,7 +299,7 @@ class DAG:
                 #    in both cases: block until a node finishes
                 #       => a new root node will be available
                 num_running_threads = get_num_running_threads(futures)
-                num_runnable_nodes_ids = len(runnable_nodes_ids)
+                num_runnable_nodes_ids = len(runnable_xns_ids)
                 if num_running_threads == self.max_concurrency or num_runnable_nodes_ids == 0:
                     # must wait and not submit any workers before a worker ends
                     # (that might create a new more prioritized node) to be executed
@@ -322,27 +319,26 @@ class DAG:
                         graph.remove_node(id_)
 
                 # 2. list the root nodes that aren't being executed
-                runnable_nodes_ids = list(set(graph.root_nodes()) - set(futures.keys()))
+                runnable_xns_ids = list(set(graph.root_nodes()) - set(futures.keys()))
 
                 # 3. if no runnable node exist, go to step 6 (wait for a node to finish)
                 #   (This **might** create a new root node)
-                if len(runnable_nodes_ids) == 0:
+                if len(runnable_xns_ids) == 0:
                     logger.debug("No runnable Nodes available")
                     continue
 
                 # 4. choose a node to run
                 # 4.1 get the most prioritized node to run
                 # 4.1.1 get all the nodes that have the highest priority
-                runnable_nodes = [node_dict[node_id] for node_id in runnable_nodes_ids]
-                highest_priority_nodes = get_highest_priority_nodes(runnable_nodes)
+                runnable_xns = [xns_dict[node_id] for node_id in runnable_xns_ids]
+                highest_priority_xns = get_highest_priority_nodes(runnable_xns)
 
                 # 4.1.2 get the node with the highest compound priority
                 # (randomly selected if multiple are suggested)
-                exec_node = sorted(highest_priority_nodes, key=lambda node: node.compound_priority)[
-                    -1
-                ]
+                highest_priority_xns.sort(key=lambda node: node.compound_priority)
+                xn = highest_priority_xns[-1]
 
-                logger.info(f"{exec_node.id} will run!")
+                logger.info(f"{xn.id} will run!")
 
                 # 4.2 if the current node must be run sequentially, wait for a running node to finish.
                 # in that case we must prune the graph to re-check whether a new root node
@@ -350,9 +346,9 @@ class DAG:
                 # Note: This step might run a number of times in the while loop
                 #       before the exec_node gets submitted
                 num_running_threads = get_num_running_threads(futures)
-                if exec_node.is_sequential and num_running_threads != 0:
+                if xn.is_sequential and num_running_threads != 0:
                     logger.debug(
-                        f"{exec_node.id} must not run in parallel."
+                        f"{xn.id} must not run in parallel."
                         f"Wait for the end of a node in {running}"
                     )
                     done_, running = wait(running, return_when=FIRST_COMPLETED)
@@ -362,15 +358,15 @@ class DAG:
                 # 5.1 submit the exec node to the executor
                 # TODO: make a special case if self.max_concurrency == 1
                 #   then invoke the function directly instead of launching a thread
-                exec_future = executor.submit(exec_node.execute, node_dict=node_dict)
+                exec_future = executor.submit(xn.execute, node_dict=xns_dict)
                 running.add(exec_future)
-                futures[exec_node.id] = exec_future
+                futures[xn.id] = exec_future
 
                 # 5.2 wait for the sequential node to finish
                 # TODO: not sure this code ever runs
-                if exec_node.is_sequential:
+                if xn.is_sequential:
                     wait(futures.values(), return_when=ALL_COMPLETED)
-        return node_dict
+        return xns_dict
 
     def _alias_to_ids(self, alias: Alias) -> List[IdentityHash]:
         """Extract an ExecNode ID from an Alias (Tag, ExecNode ID or ExecNode)
