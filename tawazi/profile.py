@@ -15,8 +15,8 @@ class Profile:
         >>> p1, p2, = Profile(), Profile()
         >>> p1 == p2
         True
-        >>> p2.start()
-        >>> p2.finish()
+        >>> with p2:
+        ...     pass
         >>> p1 < p2
         True
         >>> p1 == p2
@@ -35,27 +35,20 @@ class Profile:
         # [s.] (thread_time()) system & user time consumed by the thread
         self.thread_exec_time = 0.0
 
-    def start(self) -> None:
-        if not self.active:
-            return
-
-        self.abs_exec_time = perf_counter()
-        self.process_exec_time = process_time()
-        self.thread_exec_time = thread_time()
-
-    def finish(self) -> None:
-        if not self.active:
-            return
-        self.abs_exec_time = perf_counter() - self.abs_exec_time
-        self.process_exec_time = process_time() - self.process_exec_time
-        self.thread_exec_time = thread_time() - self.thread_exec_time
-
     def __enter__(self) -> "Profile":
-        self.start()
+        if self.active:
+            self.abs_exec_time = perf_counter()
+            self.process_exec_time = process_time()
+            self.thread_exec_time = thread_time()
+
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        self.finish()
+        if self.active:
+            self.abs_exec_time = perf_counter() - self.abs_exec_time
+            self.process_exec_time = process_time() - self.process_exec_time
+            self.thread_exec_time = thread_time() - self.thread_exec_time
+        return
 
     def __repr__(self) -> str:
         return f"{self.abs_exec_time=}\n" f"{self.process_exec_time=}\n" f"{self.thread_exec_time=}"
