@@ -5,9 +5,13 @@ from tawazi.errors import TawaziTypeError
 
 
 class Profile:
-    def __init__(self) -> None:
+    def __init__(self, active: bool = True) -> None:
         """
         Profile an execution
+
+        Args:
+            active (bool): Whether to activate the profile. Defaults to True.
+
         >>> p1, p2, = Profile(), Profile()
         >>> p1 == p2
         True
@@ -23,20 +27,25 @@ class Profile:
         >>> l == [p1, p2]
         True
         """
-        self.abs_exec_time = 0.0  # [s.] (perf_counter()) system wide time
-        self.process_exec_time = (
-            0.0  # [s.] (process_time()) system & user time consumed by the process
-        )
-        self.thread_exec_time = (
-            0.0  # [s.] (thread_time()) system & user time consumed by the thread
-        )
+        self.active = active
+        # [s.] (perf_counter()) system wide time
+        self.abs_exec_time = 0.0
+        # [s.] (process_time()) system & user time consumed by the process
+        self.process_exec_time = 0.0
+        # [s.] (thread_time()) system & user time consumed by the thread
+        self.thread_exec_time = 0.0
 
     def start(self) -> None:
+        if not self.active:
+            return
+
         self.abs_exec_time = perf_counter()
         self.process_exec_time = process_time()
         self.thread_exec_time = thread_time()
 
     def finish(self) -> None:
+        if not self.active:
+            return
         self.abs_exec_time = perf_counter() - self.abs_exec_time
         self.process_exec_time = process_time() - self.process_exec_time
         self.thread_exec_time = thread_time() - self.thread_exec_time
