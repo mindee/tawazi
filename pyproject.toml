@@ -10,7 +10,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.8"
 networkx = ">=2,<4"
-pydantic = "~1.0"
+pydantic = "^1.10"
 loguru = "~0.6"
 PyYaml = "~6.0"
 
