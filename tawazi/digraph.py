@@ -33,7 +33,7 @@ class DiGraphEx(nx.DiGraph):
 
     def remove_recursively(self, root_node: IdentityHash) -> None:
         """
-        Recursively removes all the nodes that depend on the provided one
+        Recursively removes all the nodes that depend on the provided one including itself
 
         Args:
             root_node (IdentityHash): the root node

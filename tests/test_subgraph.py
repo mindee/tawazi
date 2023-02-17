@@ -76,7 +76,8 @@ def test_dag_subgraph_all_nodes():
     nodes = [a, b, c, d, e, f, g, h, i]
     nodes_ids = [n.id for n in nodes]
 
-    results = dag._execute(target_ids=nodes_ids)
+    graph = dag._make_subgraph(nodes_ids)
+    results = dag._execute(graph)
     assert set("abcdefghi") == set(pytest.subgraph_comp_str)
 
 
@@ -86,7 +87,8 @@ def test_dag_subgraph_leaf_nodes():
     nodes = [b, d, f, g, i]
     nodes_ids = [n.id for n in nodes]
 
-    results = dag._execute(target_ids=nodes_ids)
+    graph = dag._make_subgraph(nodes_ids)
+    results = dag._execute(graph)
     assert set("abcdefghi") == set(pytest.subgraph_comp_str)
 
 
@@ -96,21 +98,24 @@ def test_dag_subgraph_leaf_nodes_with_extra_nodes():
     nodes = [b, c, e, h, g]
     nodes_ids = [n.id for n in nodes]
 
-    results = dag._execute(target_ids=nodes_ids)
+    graph = dag._make_subgraph(nodes_ids)
+    results = dag._execute(graph)
     assert set("abcegh") == set(pytest.subgraph_comp_str)
 
 
 def test_dag_subgraph_nodes_ids():
     pytest.subgraph_comp_str = ""
     dag = dag_describer
-    results = dag._execute(target_ids=[b.id, c.id, e.id, h.id, g.id])
+    graph = dag._make_subgraph([b.id, c.id, e.id, h.id, g.id])
+    results = dag._execute(graph)
     assert set("abcegh") == set(pytest.subgraph_comp_str)
 
 
 def test_dag_subgraph_non_existing_nodes_ids():
-    with pytest.raises(ValueError, match="nodes are not in the graph"):
+    with pytest.raises(ValueError, match="(node or tag gibirish not found)(.|\n)*"):
         dag = dag_describer
-        results = dag._execute(target_ids=["gibirish"])
+        graph = dag._make_subgraph(["gibirish"])
+        results = dag._execute(graph)
 
 
 @xn

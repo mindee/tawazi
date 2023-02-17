@@ -44,7 +44,7 @@ def test_strict_error_behavior():
     pytest.behavior_comp_str = ""
     g = DAG(list_execnodes, 1, behavior=ErrorStrategy.strict)
     try:
-        g._execute()
+        g._execute(g._make_subgraph())
     except NotImplementedError:
         pass
 
@@ -52,14 +52,14 @@ def test_strict_error_behavior():
 def test_all_children_behavior():
     pytest.behavior_comp_str = ""
     g = DAG(list_execnodes, 1, behavior=ErrorStrategy.all_children)
-    g._execute()
+    g._execute(g._make_subgraph())
     assert pytest.behavior_comp_str == "ad"
 
 
 def test_permissive_behavior():
     pytest.behavior_comp_str = ""
     g = DAG(list_execnodes, 1, behavior=ErrorStrategy.permissive)
-    g._execute()
+    g._execute(g._make_subgraph())
     assert pytest.behavior_comp_str == "acd"
 
 
