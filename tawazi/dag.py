@@ -4,6 +4,7 @@ import time
 from collections import defaultdict
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy, deepcopy
+from itertools import chain
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
@@ -18,7 +19,7 @@ from tawazi.consts import ReturnIDsType
 from tawazi.helpers import UniqueKeyLoader, filter_NoVal
 
 from .consts import IdentityHash
-from .digraph import DiGraphEx, subgraph
+from .digraph import DiGraphEx
 from .errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
 from .node import Alias, ArgExecNode, ExecNode
 
@@ -238,23 +239,20 @@ class DAG:
         return x_nodes_copy
 
     def _execute(
-        self,
-        target_ids: Optional[List[IdentityHash]] = None,
-        modified_node_dict: Optional[Dict[str, ExecNode]] = None,
+        self, graph: DiGraphEx, modified_node_dict: Optional[Dict[str, ExecNode]] = None
     ) -> Dict[IdentityHash, Any]:
         """
         Thread safe execution of the DAG...
          (Except for the setup nodes! Please run DAG.setup() in a single thread because its results will be cached).
 
         Args:
-            target_ids: The nodes (or the ids of the nodes) to be executed
+            graph: the graph ids to be executed
             modified_node_dict: A dictionary of the ExecNodes that have been modified by setting the input parameters of the DAG.
 
         Returns:
             node_dict: dictionary with keys the name of the function and value the result after the execution
         """
         # 0.1 create a subgraph of the graph if necessary
-        graph = subgraph(self.graph_ids, target_ids)
 
         # 0.2 deepcopy the node_dict in order to modify the results inside every node and make the dag reusable
         #     modified_node_dict are used to modify the values inside the ExecNode corresponding
@@ -390,7 +388,7 @@ class DAG:
             if nodes := self.tagged_nodes.get(alias):
                 return [node.id for node in nodes]
             #  2. or a node id!
-            elif isinstance(alias, IdentityHash):
+            elif isinstance(alias, IdentityHash) and alias in self.node_dict:
                 node = self.get_node_by_id(alias)
                 return [node.id]
             else:
@@ -405,7 +403,8 @@ class DAG:
                 f"str or tuple identifying the node but provided {alias}"
             )
 
-    def _get_leaves_ids(self, target_nodes: Optional[List[Alias]] = None) -> List[IdentityHash]:
+    # NOTE: this function is named wrongly!
+    def _get_target_ids(self, target_nodes: List[Alias]) -> List[IdentityHash]:
         """
         get the ids of ExecNodes corresponding to target_nodes.
         The identification can be carried out using the tag, the Id, or the ExecNode itself.
@@ -423,25 +422,9 @@ class DAG:
         # Raises:
         #     TawaziBaseException: if the returned List[IdentityHash] has the wrong length, this indicates a bug in the code
 
-        if target_nodes is None:
-            # TODO: make cached!
-            leaves_ids = [xn.id for xn in self.exec_nodes]
-        # 2. create leaves_ids
-        else:
-            leaves_ids = []
-            for tag_or_id_or_node in target_nodes:
-                leaves_ids += self._alias_to_ids(tag_or_id_or_node)
+        target_ids = list(chain(*(self._alias_to_ids(alias) for alias in target_nodes)))
 
-            # after extending leaves_ids, we should do a recheck because this might recreate another debug-able XN...
-            if Cfg.RUN_DEBUG_NODES:
-                leaves_ids = self._extend_leaves_ids_debug_xns(leaves_ids)
-
-        # 3. clean all leaves_ids from debug XNs if necessary
-        if not Cfg.RUN_DEBUG_NODES:
-            leaves_ids = [id_ for id_ in leaves_ids if not self.node_dict[id_].debug]
-
-        # TODO: review the way the interface with DAG.execute works! it is not the best interface!
-        return leaves_ids
+        return target_ids
 
     def _extend_leaves_ids_debug_xns(self, leaves_ids: List[IdentityHash]) -> List[IdentityHash]:
         new_debug_xn_discovered = True
@@ -460,7 +443,11 @@ class DAG:
                             leaves_ids.append(successor_id)
         return leaves_ids
 
-    def setup(self, target_nodes: Optional[List[Alias]] = None) -> None:
+    def setup(
+        self,
+        target_nodes: Optional[List[Alias]] = None,
+        exclude_nodes: Optional[List[Alias]] = None,
+    ) -> None:
         """Run the setup ExecNodes for the DAG.
 
         If target_nodes are provided, run only the necessary setup ExecNodes, otherwise will run all setup ExecNodes.
@@ -469,7 +456,9 @@ class DAG:
 
         Args:
             target_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to use in the DAG.
-                This might inlcude setup or non setup ExecNodes. If None is provided, will run all setup ExecNodes. Defaults to None.
+                This might include setup or non setup ExecNodes. If None is provided, will run all setup ExecNodes. Defaults to None.
+            exclude_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to exclude from the DAG.
+                The user is responsible for ensuring that the overlapping between the target_nodes and exclude_nodes is logical.
         """
 
         # 1. select all setup ExecNodes
@@ -482,19 +471,25 @@ class DAG:
 
         # 2. if target_nodes is not provided run all setup ExecNodes
         if target_nodes is None:
-            setup_leaves_ids = list(all_setup_nodes.keys())
+            target_ids = list(all_setup_nodes.keys())
+            graph = self._make_subgraph(target_ids, exclude_nodes)  # type: ignore
+
         else:
             # 2.1 the leaves_ids that the user wants to execute
             #  however they might contain non setup nodes... so we should extract all the nodes ids
             #  that must be run in order to run the target_nodes ExecNodes
             #  afterwards we can remove the non setup nodes
-            leaves_ids = self._get_leaves_ids(target_nodes)
-            graph = subgraph(self.graph_ids, leaves_ids)
+            target_ids = self._get_target_ids(target_nodes)
 
             # 2.2 filter non setup ExecNodes
-            setup_leaves_ids = [id_ for id_ in graph.nodes if id_ in all_setup_nodes]
+            graph = self._make_subgraph(target_ids, exclude_nodes)  # type: ignore
+            ids_to_remove = [id_ for id_ in graph if id_ not in all_setup_nodes]
 
-        self._execute(setup_leaves_ids, all_setup_nodes)
+            for id_ in ids_to_remove:
+                graph.remove_node(id_)
+        # TODO: handle debug XNs!
+
+        self._execute(graph, all_setup_nodes)
 
     def executor(self, **kwargs: Dict[str, Any]) -> "DAGExecution":
         """Generates an executor for the DAG.
@@ -507,7 +502,61 @@ class DAG:
         """
         return DAGExecution(self, **kwargs)  # type: ignore
 
-    def __call__(self, *args: Any, target_nodes: Optional[List[Alias]] = None) -> Any:
+    def _make_subgraph(
+        self,
+        target_nodes: Optional[List[Alias]] = None,
+        exclude_nodes: Optional[List[Alias]] = None,
+    ) -> nx.DiGraph:
+        graph = deepcopy(self.graph_ids)
+
+        if target_nodes is not None:
+            target_ids = self._get_target_ids(target_nodes)
+            graph.subgraph_leaves(target_ids)
+
+        if exclude_nodes is not None:
+            exclude_ids = list(chain(*(self._alias_to_ids(alias) for alias in exclude_nodes)))
+
+            for id_ in exclude_ids:
+                # maybe previously removed by :
+                # 1. not being inside the subgraph
+                # 2. being a successor of an excluded node
+                if id_ in graph:
+                    graph.remove_recursively(id_)
+
+        if target_nodes and exclude_nodes:
+            for id_ in target_ids:
+                if id_ not in graph:
+                    raise TawaziUsageError(
+                        f"target_nodes include {id_} which is removed by exclude_nodes: {exclude_ids}, "
+                        f"please verify that they don't overlap in a non logical way!"
+                    )
+
+        # handle debug nodes
+        if Cfg.RUN_DEBUG_NODES:
+            leaves_ids = graph.leaf_nodes
+            # after extending leaves_ids, we should do a recheck because this might recreate another debug-able XN...
+            target_ids = self._extend_leaves_ids_debug_xns(leaves_ids)
+
+            # extend the graph with the debug XNs
+            # This is not efficient but it is ok since we are debugging the code anyways
+            debug_graph = deepcopy(self.graph_ids)
+            debug_graph.subgraph_leaves(list(graph.nodes) + target_ids)
+            graph = debug_graph
+
+        # 3. clean all debug XNs if they shouldn't run!
+        else:
+            to_remove = [id_ for id_ in graph if self.node_dict[id_].debug]
+            for id_ in to_remove:
+                graph.remove_node(id_)
+
+        return graph
+
+    def __call__(
+        self,
+        *args: Any,
+        target_nodes: Optional[List[Alias]] = None,
+        exclude_nodes: Optional[List[Alias]] = None,
+    ) -> Any:
         """
         Execute the DAG scheduler via a similar interface to the function that describes the dependencies.
 
@@ -515,6 +564,8 @@ class DAG:
             *args (Any): arguments to be passed to the call of the DAG
             target_nodes (Optional[List[XNId]], optional): target ExecNodes to execute
                 executes the whole DAG if None. Defaults to None.
+            exclude_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to exclude from the DAG.
+                The user is responsible for ensuring that the overlapping between the target_nodes and exclude_nodes is logical.
 
 
         Returns:
@@ -523,22 +574,19 @@ class DAG:
         # Raises:
         #     TawaziTypeError: if target_nodes contains a wrong typed identifier or if the return value contain a non LazyExecNode
 
-        # 1. get the leaves ids to execute in case of a subgraph
-        leaves_ids = self._get_leaves_ids(target_nodes)
-        #
+        # 1. generate the subgraph to be executed
+        graph = self._make_subgraph(target_nodes=target_nodes, exclude_nodes=exclude_nodes)
 
         # 2. copy the ExecNodes
         call_xn_dict = self._make_call_xn_dict(*args)
 
         # 3. Execute the scheduler
-        all_nodes_dict = self._execute(leaves_ids, call_xn_dict)
+        all_nodes_dict = self._execute(graph, call_xn_dict)
 
         # 4. extract the returned value/values
         returned_values = self._get_return_values(all_nodes_dict)
 
         return returned_values
-
-    # def make_executor(self):
 
     def _make_call_xn_dict(self, *args: Any) -> Dict[IdentityHash, ExecNode]:
         """
@@ -614,27 +662,32 @@ class DAG:
 
     # NOTE: this function should be used in case there was a bizarre behavior noticed during
     #   the execution of the DAG via DAG.execute(...)
-    def _safe_execute(self, *args: Any, target_nodes: Optional[List[Alias]] = None) -> Any:
+    def _safe_execute(
+        self,
+        *args: Any,
+        target_nodes: Optional[List[Alias]] = None,
+        exclude_nodes: Optional[List[Alias]] = None,
+    ) -> Any:
         """
         Execute the ExecNodes in topological order without priority in for loop manner for debugging purposes
 
         Args:
             *args (Any): Positional arguments passed to the DAG
             target_nodes (Optional[List[Alias]]): the ExecNodes that should be considered to construct the subgraph
+            exclude_nodes (Optional[List[Alias]]): the ExecNodes that shouldn't run
 
         Returns:
             Any: the result of the execution of the DAG.
              If an ExecNode returns a value in the DAG but is not executed, it will return None.
         """
         # 1. make the graph_ids to be executed!
-        leaves_ids = self._get_leaves_ids(target_nodes)
-        graph_ids = subgraph(self.graph_ids, leaves_ids)
+        graph = self._make_subgraph(target_nodes, exclude_nodes)
 
         # 2. make call_xn_dict that will be modified
         call_xn_dict = self._make_call_xn_dict(*args)
 
         # 3. deep copy the node_dict to store the results in each node
-        for xn_id in graph_ids.topologically_sorted:
+        for xn_id in graph.topologically_sorted:
             # only execute ExecNodes that are part of the subgraph
             call_xn_dict[xn_id].execute(call_xn_dict)
 
@@ -676,6 +729,8 @@ class DAG:
                     # remove all its children. Current node will be removed directly afterwards
                     successors = list(graph.successors(id_))
                     for children_ids in successors:
+                        # TODO: implement a test for all_children! it should fail!
+                        # Afterwards include parameter to remove the node itself or not
                         graph.remove_recursively(children_ids)
 
                 else:
@@ -762,6 +817,7 @@ class DAGExecution:
         self,
         dag: DAG,
         target_nodes: Optional[List[Alias]] = None,
+        exclude_nodes: Optional[List[Alias]] = None,
         cache_in: str = "",
         from_cache: str = ""
         # profile = False, ?
@@ -775,6 +831,9 @@ class DAGExecution:
             dag (DAG): The attached DAG.
             target_nodes (Optional[List[Alias]]): The leave ExecNodes to execute.
                 If None will execute all ExecNodes.
+                Defaults to None.
+            exclude_nodes (Optional[List[Alias]]): The leave ExecNodes to exclude.
+                If None will exclude all ExecNodes.
                 Defaults to None.
             cache_in (str):
                 the path to the file where the execution should be cached.
@@ -792,13 +851,15 @@ class DAGExecution:
 
         self.dag = dag
         self.target_nodes = target_nodes
+        self.exclude_nodes = exclude_nodes
         self.cache_in = cache_in
         self.from_cache = from_cache
         # NOTE: from_cache is orthogonal to cache_in which means that if cache_in is set at the same time as from_cache.
         #  in this case the DAG will be loaded from_cache and the results will be saved again to the cache_in file.
 
         # get the leaves ids to execute in case of a subgraph
-        self.leaves_ids = dag._get_leaves_ids(self.target_nodes)
+        self.target_nodes = target_nodes
+        self.exclude_nodes = exclude_nodes
 
         self.xn_dict: Dict[IdentityHash, ExecNode] = {}
         self.results: Dict[IdentityHash, Any] = {}
@@ -826,7 +887,7 @@ class DAGExecution:
     def __call__(self, *args: Any) -> Any:
         # NOTE: *args will be ignored if self.from_cache is set!
         dag = self.dag
-        leaves_ids = self.leaves_ids
+        graph = dag._make_subgraph(self.target_nodes, self.exclude_nodes)
 
         # 1. copy the ExecNodes
         call_xn_dict = dag._make_call_xn_dict(*args)
@@ -839,7 +900,7 @@ class DAGExecution:
                 call_xn_dict[id_].result = result
 
         # 2. Execute the scheduler
-        self.xn_dict = dag._execute(leaves_ids, call_xn_dict)
+        self.xn_dict = dag._execute(graph, call_xn_dict)
         self.results = {xn.id: xn.result for xn in self.xn_dict.values()}
 
         # 3. cache in the results
@@ -858,3 +919,5 @@ class DAGExecution:
         returned_values = dag._get_return_values(self.xn_dict)
 
         return returned_values
+
+    # TODO: add execution order (the order in which the nodes were executed)
