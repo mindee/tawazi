@@ -77,6 +77,7 @@ class ExecNode(
     # It would be amazing if we can remove self.result and make ExecNode immutable
     # even though setting result to NoVal is not necessary... it clarifies debugging
     result: Union[NoValType, Any] = NoVal
+    profile: Optional[Profile] = None
 
     @root_validator
     def check_debug_and_setup(cls, values: Dict[str, Any]) -> Dict[str, Any]:
