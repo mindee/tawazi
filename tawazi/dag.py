@@ -239,7 +239,10 @@ class DAG:
         return x_nodes_copy
 
     def _execute(
-        self, graph: DiGraphEx, modified_node_dict: Optional[Dict[str, ExecNode]] = None
+        self,
+        graph: DiGraphEx,
+        modified_node_dict: Optional[Dict[str, ExecNode]] = None,
+        call_id: str = "",
     ) -> Dict[IdentityHash, Any]:
         """
         Thread safe execution of the DAG...
@@ -248,6 +251,9 @@ class DAG:
         Args:
             graph: the graph ids to be executed
             modified_node_dict: A dictionary of the ExecNodes that have been modified by setting the input parameters of the DAG.
+            call_id (str): A unique identifier for the execution.
+                It can be used to distinguish the id of the call inside the thread.
+                It might be useful to debug and to exchange information between the main thread and the sub-threads (per-node threads)
 
         Returns:
             node_dict: dictionary with keys the name of the function and value the result after the execution
@@ -286,7 +292,9 @@ class DAG:
         # runnable_nodes_ids will be empty if all root nodes are running
         runnable_xns_ids = graph.root_nodes()
 
-        with ThreadPoolExecutor(max_workers=self.max_concurrency) as executor:
+        with ThreadPoolExecutor(
+            max_workers=self.max_concurrency, thread_name_prefix=call_id
+        ) as executor:
             while len(graph):
                 # attempt to run **A SINGLE** root node #
 
@@ -820,6 +828,7 @@ class DAGExecution:
         exclude_nodes: Optional[List[Alias]] = None,
         cache_in: str = "",
         from_cache: str = "",
+        call_id: Optional[str] = None,
     ):
         """
         This is an instance of DAGExecution which is a disposable callable instance of a DAG.
@@ -845,6 +854,9 @@ class DAGExecution:
                 The path should end in `.pkl`.
                 Will skip loading from cache if `from_cache` is Falsy.
                 Defaults to "".
+            call_id (Optional[str]): identification of the current execution.
+                This will be inserted into thread_name_prefix while executing the threadPool.
+                It will be used in the future for identifying the execution inside Processes etc.
         """
         # todo: Maybe we can support .dill to extend the possibilities of the exchanged values, but this won't solve the whole problem
 
@@ -855,6 +867,7 @@ class DAGExecution:
         self.from_cache = from_cache
         # NOTE: from_cache is orthogonal to cache_in which means that if cache_in is set at the same time as from_cache.
         #  in this case the DAG will be loaded from_cache and the results will be saved again to the cache_in file.
+        self.call_id = call_id
 
         # get the leaves ids to execute in case of a subgraph
         self.target_nodes = target_nodes
@@ -907,6 +920,10 @@ class DAGExecution:
         dag = self.dag
         graph = dag._make_subgraph(self.target_nodes, self.exclude_nodes)
 
+        # maybe call_id will be changed to Union[int, str].
+        # Keep call_id as Optional[str] for now
+        call_id = self.call_id if self.call_id is not None else ""
+
         # 1. copy the ExecNodes
         call_xn_dict = dag._make_call_xn_dict(*args)
         if self.from_cache:
@@ -918,7 +935,7 @@ class DAGExecution:
                 call_xn_dict[id_].result = result
 
         # 2. Execute the scheduler
-        self.xn_dict = dag._execute(graph, call_xn_dict)
+        self.xn_dict = dag._execute(graph, call_xn_dict, call_id)
         self.results = {xn.id: xn.result for xn in self.xn_dict.values()}
 
         # 3. cache in the results
