@@ -817,15 +817,16 @@ class DAG:
         self.config_from_dict(json_config)
 
 
-# TODO: should implement twz_exclude_nodes
 # TODO: check if the arguments are the same, then run the DAG using the from_cache.
 #  If the arguments are not the same, then rerun the DAG!
 class DAGExecution:
     def __init__(
         self,
         dag: DAG,
+        *,
         target_nodes: Optional[List[Alias]] = None,
         exclude_nodes: Optional[List[Alias]] = None,
+        cache_deps_of: Optional[List[Alias]] = None,
         cache_in: str = "",
         from_cache: str = "",
         call_id: Optional[str] = None,
@@ -843,6 +844,8 @@ class DAGExecution:
             exclude_nodes (Optional[List[Alias]]): The leave ExecNodes to exclude.
                 If None will exclude all ExecNodes.
                 Defaults to None.
+            cache_deps_of (Optional[List[Alias]]): cache all the dependencies of these nodes.
+                This option can not be used together with target_nodes nor exclude_nodes.
             cache_in (str):
                 the path to the file where the execution should be cached.
                 The path should end in `.pkl`.
@@ -863,6 +866,7 @@ class DAGExecution:
         self.dag = dag
         self.target_nodes = target_nodes
         self.exclude_nodes = exclude_nodes
+        self.cache_deps_of = cache_deps_of
         self.cache_in = cache_in
         self.from_cache = from_cache
         # NOTE: from_cache is orthogonal to cache_in which means that if cache_in is set at the same time as from_cache.
@@ -896,6 +900,20 @@ class DAGExecution:
             raise ValueError("from_cache should end with.pkl")
         self._from_cache = from_cache
 
+    @property
+    def cache_deps_of(self) -> Optional[List[Alias]]:
+        return self._cache_deps_of
+
+    @cache_deps_of.setter
+    def cache_deps_of(self, cache_deps_of: Optional[List[Alias]]) -> None:
+        if (
+            self.target_nodes is not None or self.exclude_nodes is not None
+        ) and cache_deps_of is not None:
+            raise ValueError(
+                "cache_deps_of can not be used together with target_nodes or exclude_nodes"
+            )
+        self._cache_deps_of = cache_deps_of
+
     # we need to reimplement the public methods of DAG here in order to have a constant public interface
     # getters
     def get_nodes_by_tag(self, tag: Any) -> List[ExecNode]:
@@ -918,7 +936,11 @@ class DAGExecution:
     def __call__(self, *args: Any) -> Any:
         # NOTE: *args will be ignored if self.from_cache is set!
         dag = self.dag
-        graph = dag._make_subgraph(self.target_nodes, self.exclude_nodes)
+
+        if self.cache_deps_of is not None:
+            graph = dag._make_subgraph(self.cache_deps_of)
+        else:
+            graph = dag._make_subgraph(self.target_nodes, self.exclude_nodes)
 
         # maybe call_id will be changed to Union[int, str].
         # Keep call_id as Optional[str] for now
@@ -948,7 +970,22 @@ class DAGExecution:
                 #  for example, a setup ExecNode should stay a setup ExecNode between caching in the results and reading back the cached results
                 #  the same goes for the DAG itself, the behavior when an error is encountered & its concurrency will be controlled via the constructor
 
-                pickle.dump(self.results, f, protocol=pickle.HIGHEST_PROTOCOL, fix_imports=False)
+                if self.cache_deps_of is not None:
+                    non_cacheable_ids: Set[IdentityHash] = set()
+                    for aliases in self.cache_deps_of:
+                        ids = self.dag._alias_to_ids(aliases)
+                        non_cacheable_ids = non_cacheable_ids.union(ids)
+
+                    to_cache_results = {
+                        id_: res
+                        for id_, res in self.results.items()
+                        if id_ not in non_cacheable_ids
+                    }
+                else:
+                    to_cache_results = self.results
+                pickle.dump(
+                    to_cache_results, f, protocol=pickle.HIGHEST_PROTOCOL, fix_imports=False
+                )
 
         # 3. extract the returned value/values
         returned_values = dag._get_return_values(self.xn_dict)
