@@ -4,6 +4,7 @@ import pickle
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from tawazi import DAGExecution, dag, xn
 from tawazi.consts import NoVal
@@ -169,3 +170,93 @@ def test_cache_read_write():
     assert (r2 == ones).all()
     assert (r3 == ones_).all()
     assert r4 == avg
+
+
+def load_cached_results(cache_path):
+    with open(cache_path, "rb") as f:
+        return pickle.load(f)
+
+
+def test_cache_in_dpes():
+    with pytest.raises(ValueError):
+        exc = DAGExecution(
+            pipe,
+            cache_deps_of=[generate_large_zeros_array],
+            exclude_nodes=[generate_large_zeros_array],
+        )
+
+    with pytest.raises(ValueError):
+        exc = DAGExecution(
+            pipe, cache_deps_of=[generate_large_zeros_array], target_nodes=["twinkle toes"]
+        )
+
+    cache_path = "tests/cache_results/test_cache_in_dpes.pkl"
+    if Path(cache_path).is_file():
+        os.remove(cache_path)
+
+    zeros = np.zeros(10**6)
+    ones = np.ones(10**6)
+    ones_ = ones
+    avg = 1
+
+    # case 1 node
+    cache_deps_of = [generate_large_zeros_array]
+    exc = DAGExecution(pipe, cache_deps_of=cache_deps_of, cache_in=cache_path)
+    r1, r2, r3, r4 = exc()
+
+    assert (r1 == zeros).all()
+
+    def validate(_cache_path, _cache_deps_of):
+        cached_results = load_cached_results(_cache_path)
+        for xn in _cache_deps_of:
+            assert cached_results.get(xn.id) is None
+
+    validate(cache_path, cache_deps_of)
+
+    # case 2 nodes
+    cache_deps_of = [generate_large_zeros_array, incr_large_array]
+    exc = DAGExecution(pipe, cache_deps_of=cache_deps_of, cache_in=cache_path)
+    r1, r2, r3, r4 = exc()
+
+    assert (r1 == zeros).all()
+    assert (r2 == ones).all()
+
+    def validate(_cache_path, _cache_deps_of):
+        cached_results = load_cached_results(_cache_path)
+        for xn in _cache_deps_of:
+            assert cached_results.get(xn.id) is None
+
+    validate(cache_path, cache_deps_of)
+
+    # case 3 nodes
+    cache_deps_of = [generate_large_zeros_array, incr_large_array, pass_large_array]
+    exc = DAGExecution(pipe, cache_deps_of=cache_deps_of, cache_in=cache_path)
+    r1, r2, r3, r4 = exc()
+
+    assert (r1 == zeros).all()
+    assert (r2 == ones).all()
+    assert (r3 == ones_).all()
+
+    def validate(_cache_path, _cache_deps_of):
+        cached_results = load_cached_results(_cache_path)
+        for xn in _cache_deps_of:
+            assert cached_results.get(xn.id) is None
+
+    validate(cache_path, cache_deps_of)
+
+    # case 3 nodes
+    cache_deps_of = [generate_large_zeros_array, incr_large_array, pass_large_array, avg_array]
+    exc = DAGExecution(pipe, cache_deps_of=cache_deps_of, cache_in=cache_path)
+    r1, r2, r3, r4 = exc()
+
+    assert (r1 == zeros).all()
+    assert (r2 == ones).all()
+    assert (r3 == ones_).all()
+    assert (r4 == avg).all()
+
+    def validate(_cache_path, _cache_deps_of):
+        cached_results = load_cached_results(_cache_path)
+        for xn in _cache_deps_of:
+            assert cached_results.get(xn.id) is None
+
+    validate(cache_path, cache_deps_of)
