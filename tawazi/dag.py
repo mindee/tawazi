@@ -92,14 +92,14 @@ class DAG(
     def build_backward_deps(
         cls, value: Dict[IdentityHash, List[IdentityHash]], values: Dict[str, Any]
     ) -> Dict[IdentityHash, List[IdentityHash]]:
-        bwd_deps = {
+        bckrd_deps = {
             xn.id: list(values["graph_ids"].predecessors(xn.id)) for xn in values["exec_nodes"]
         }
         cls._assign_compound_priority(
-            graph_ids=values["graph_ids"], node_dict=values["node_dict"], bckrd_deps=bwd_deps
+            graph_ids=values["graph_ids"], node_dict=values["node_dict"], bckrd_deps=bckrd_deps
         )
 
-        return bwd_deps
+        return bckrd_deps
 
     @validator("frwrd_deps", pre=True, always=True)
     def build_forward_deps(

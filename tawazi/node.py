@@ -4,7 +4,7 @@ from types import MethodType
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
-from pydantic import BaseModel, Extra, root_validator, validator
+from pydantic import BaseModel, Extra, NonNegativeInt, root_validator, validator
 
 from tawazi.consts import (
     ARG_NAME_SEP,
@@ -61,7 +61,7 @@ class ExecNode(
     #  Consider directly setting id in the code rather than indirecting through other args
     id: IdentityHash = None  # type: ignore
     exec_function: Callable[..., Any] = lambda *args, **kwargs: None
-    priority: int = 0
+    priority: NonNegativeInt = 0
     is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL
     debug: bool = False
     tag: Optional[Tag] = None
@@ -77,7 +77,7 @@ class ExecNode(
     # It would be amazing if we can remove self.result and make ExecNode immutable
     # even though setting result to NoVal is not necessary... it clarifies debugging
     result: Union[NoValType, Any] = NoVal
-    profile: Optional[Profile] = None
+    profile: Optional[Profile] = Profile(Cfg.TAWAZI_PROFILE_ALL_NODES)
 
     @root_validator
     def check_debug_and_setup(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -93,12 +93,6 @@ class ExecNode(
             raise TypeError(f"tag should be of type {Tag} but {tag} provided")
         return tag
 
-    @validator("priority", pre=True)
-    def check_priority(cls, prio: int) -> int:
-        if not isinstance(prio, int):
-            raise ValueError(f"priority must be an int, provided {type(prio)}")
-        return prio
-
     @validator("compound_priority", always=True, pre=True)
     def set_default_compound_prio(cls, c_prio: int, values: Dict[str, Any]) -> int:
         # at initialization, defaults to priority
@@ -109,8 +103,6 @@ class ExecNode(
     @property
     def _name(self) -> str:
         return self.exec_function.__name__ if not isinstance(self.id, str) else self.id
-
-        self.profile = Profile(Cfg.TAWAZI_PROFILE_ALL_NODES)
 
     @property
     def executed(self) -> bool:
