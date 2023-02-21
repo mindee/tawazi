@@ -1,4 +1,8 @@
 # type: ignore
+import threading
+
+import pytest
+
 from tawazi import dag, xn
 
 
@@ -48,3 +52,23 @@ def test_run_sub_dag_executor():
     executor = pipe.executor(target_nodes=["xn1", "xn2"])
     r1, r2, r3 = executor(1, 2)
     assert (r1, r2, r3) == (2, 4, None)
+
+
+def test_thread_naming():
+    base_thread_name = "twinkle_toes"
+    from tawazi import ErrorStrategy
+
+    @xn
+    def xn1():
+        assert threading.current_thread().name.startswith(base_thread_name)
+
+    @dag(behavior=ErrorStrategy.strict)
+    def pipe():
+        xn1()
+
+    # should pass
+    pipe.executor(call_id=base_thread_name)()
+
+    # should fail
+    with pytest.raises(AssertionError):
+        pipe.executor(call_id="tough")()
