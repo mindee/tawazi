@@ -10,9 +10,9 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.8"
 networkx = ">=2,<4"
-pydantic = "~1.0"
-loguru = "~0.6"
-PyYaml = "~6.0"
+pydantic = "~1"
+loguru = "~0"
+PyYaml = "~6"
 
 [tool.poetry.dev-dependencies]
 # pre-commit = "^3.0.2"
