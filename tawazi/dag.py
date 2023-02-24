@@ -6,7 +6,7 @@ from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoo
 from copy import copy, deepcopy
 from itertools import chain
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Generic, List, Optional, Set, Tuple
 
 import networkx as nx
 import yaml
@@ -18,13 +18,13 @@ from tawazi.config import Cfg
 from tawazi.consts import ReturnIDsType
 from tawazi.helpers import UniqueKeyLoader, filter_NoVal
 
-from .consts import IdentityHash
+from .consts import RVDAG, IdentityHash, P, RVTypes
 from .digraph import DiGraphEx
 from .errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
 from .node import Alias, ArgExecNode, ExecNode
 
 
-class DAG:
+class DAG(Generic[P, RVDAG]):
     """
     Data Structure containing ExecNodes with interdependencies.
     The ExecNodes can be executed in parallel with the following restrictions:
@@ -499,16 +499,16 @@ class DAG:
 
         self._execute(graph, all_setup_nodes)
 
-    def executor(self, **kwargs: Dict[str, Any]) -> "DAGExecution":
+    def executor(self, **kwargs: Any) -> "DAGExecution[P, RVDAG]":
         """Generates an executor for the DAG.
 
         Args:
-            **kwargs (Dict[str, Any]): keyword arguments to be passed to DAGExecution's constructor
+            **kwargs (Any): keyword arguments to be passed to DAGExecution's constructor
 
         Returns:
             DAGExecution: an executor for the DAG
         """
-        return DAGExecution(self, **kwargs)  # type: ignore
+        return DAGExecution(self, **kwargs)
 
     def _make_subgraph(
         self,
@@ -559,28 +559,26 @@ class DAG:
 
         return graph
 
-    def __call__(
-        self,
-        *args: Any,
-        target_nodes: Optional[List[Alias]] = None,
-        exclude_nodes: Optional[List[Alias]] = None,
-    ) -> Any:
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
         """
         Execute the DAG scheduler via a similar interface to the function that describes the dependencies.
 
         Args:
             *args (Any): arguments to be passed to the call of the DAG
-            target_nodes (Optional[List[XNId]], optional): target ExecNodes to execute
-                executes the whole DAG if None. Defaults to None.
-            exclude_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to exclude from the DAG.
-                The user is responsible for ensuring that the overlapping between the target_nodes and exclude_nodes is logical.
-
+            **kwargs (Any): keyword arguments to be passed to the call of the DAG
+                target_nodes (Optional[List[XNId]], optional): target ExecNodes to execute
+                    executes the whole DAG if None. Defaults to None. TO BE REMOVED!
+                exclude_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to exclude from the DAG.
+                    The user is responsible for ensuring that the overlapping between the target_nodes and exclude_nodes is logical. TO BE REMOVED!
 
         Returns:
-            Any: return value of the DAG's execution
+            RVDAG: return value of the DAG's execution
         """
         # Raises:
         #     TawaziTypeError: if target_nodes contains a wrong typed identifier or if the return value contain a non LazyExecNode
+
+        target_nodes: Optional[List[Alias]] = kwargs.get("target_nodes")  # type: ignore
+        exclude_nodes: Optional[List[Alias]] = kwargs.get("exclude_nodes")  # type: ignore
 
         # 1. generate the subgraph to be executed
         graph = self._make_subgraph(target_nodes=target_nodes, exclude_nodes=exclude_nodes)
@@ -594,7 +592,7 @@ class DAG:
         # 4. extract the returned value/values
         returned_values = self._get_return_values(all_nodes_dict)
 
-        return returned_values
+        return returned_values  # type: ignore
 
     def _make_call_xn_dict(self, *args: Any) -> Dict[IdentityHash, ExecNode]:
         """
@@ -636,20 +634,18 @@ class DAG:
 
         return call_xn_dict
 
-    def _get_return_values(
-        self, xn_dict: Dict[IdentityHash, ExecNode]
-    ) -> Union[Any, Tuple[Any], List[Any]]:
+    def _get_return_values(self, xn_dict: Dict[IdentityHash, ExecNode]) -> RVTypes:
         """
         Extract the return value/values from the output of the DAG's scheduler!
 
         Args:
-            xn_dict (Dict[IdentityHash, ExecNode]): _description_
+            xn_dict (Dict[IdentityHash, ExecNode]): Modified ExecNodes returned by the DAG's scheduler
 
         Raises:
-            TawaziTypeError: _description_
+            TawaziTypeError: if the type of the return value is not compatible with RVTypes
 
         Returns:
-            Union[Any, Tuple[Any], List[Any]]: _description_
+            RVTypes: the actual values extracted from xn_dict
         """
         if self.return_ids is None:
             return None
@@ -819,10 +815,10 @@ class DAG:
 
 # TODO: check if the arguments are the same, then run the DAG using the from_cache.
 #  If the arguments are not the same, then rerun the DAG!
-class DAGExecution:
+class DAGExecution(Generic[P, RVDAG]):
     def __init__(
         self,
-        dag: DAG,
+        dag: DAG[P, RVDAG],
         *,
         target_nodes: Optional[List[Alias]] = None,
         exclude_nodes: Optional[List[Alias]] = None,
@@ -945,12 +941,11 @@ class DAGExecution:
         """
         self.dag.setup(twz_nodes)
 
-    def __call__(self, *args: Any) -> Any:
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
         if self.executed:
             raise TawaziUsageError(
                 "DAGExecution object should not be reused. Instantiate a new one"
             )
-
         # NOTE: *args will be ignored if self.from_cache is set!
         dag = self.dag
 
@@ -1002,6 +997,6 @@ class DAGExecution:
         # 3. extract the returned value/values
         returned_values = dag._get_return_values(self.xn_dict)
 
-        return returned_values
+        return returned_values  # type: ignore
 
     # TODO: add execution order (the order in which the nodes were executed)

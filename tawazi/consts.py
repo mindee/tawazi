@@ -1,7 +1,6 @@
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
-IdentityHash = str
-Tag = Union[None, str, tuple]  # anything immutable
+from typing_extensions import ParamSpec
 
 ARG_NAME_TAG = "twz_tag"
 
@@ -9,10 +8,6 @@ RESERVED_KWARGS = [ARG_NAME_TAG]
 ARG_NAME_SEP = ">>>"
 USE_SEP_START = "<<"
 USE_SEP_END = ">>"
-# NOTE: maybe support other key types? for example int... or even tuple...
-ReturnIDsType = Optional[
-    Union[Dict[str, IdentityHash], List[IdentityHash], Tuple[IdentityHash], IdentityHash]
-]
 
 
 class NoValType:
@@ -52,3 +47,18 @@ class NoValType:
 
 
 NoVal = NoValType()
+
+# Constant types
+
+IdentityHash = str
+Tag = Union[None, str, tuple]  # anything immutable
+
+# NOTE: maybe support other key types? for example int... or even tuple...
+ReturnIDsType = Optional[
+    Union[Dict[str, IdentityHash], List[IdentityHash], Tuple[IdentityHash], IdentityHash]
+]
+RVTypes = Union[Any, Tuple[Any], List[Any], Dict[str, Any]]
+P = ParamSpec("P")
+RVDAG = TypeVar("RVDAG", bound=RVTypes, covariant=True)
+
+RVXN = TypeVar("RVXN", covariant=True)
