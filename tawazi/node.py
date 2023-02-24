@@ -1,7 +1,7 @@
 from copy import copy
 from threading import Lock
 from types import MethodType
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, Union
 
 from loguru import logger
 
@@ -9,10 +9,12 @@ from tawazi.consts import (
     ARG_NAME_SEP,
     ARG_NAME_TAG,
     RESERVED_KWARGS,
+    RVXN,
     USE_SEP_START,
     IdentityHash,
     NoVal,
     NoValType,
+    P,
     ReturnIDsType,
     Tag,
 )
@@ -157,7 +159,7 @@ class ExecNode:
         logger.debug(f"Finished executing {self.id} with task {self.exec_function}")
         return self.result
 
-    def _assign_reserved_args(self, arg_name: str, value: Tag) -> bool:
+    def _assign_reserved_args(self, arg_name: str, value: Any) -> bool:
         # TODO: change value type to Union[Tag, Setup etc...] when other special attributes are introduced
         if arg_name == ARG_NAME_TAG:
             self.tag = value
@@ -246,6 +248,9 @@ class ArgExecNode(ExecNode):
             self.result = value
 
 
+# TODO: make the LazyExecNode call outside the dag a normal function call!
+
+
 # NOTE: how can we make a LazyExecNode more configurable ?
 #  This might not be as important as it seems actually because
 #  one can simply create Partial Functions and wrap them in an ExecNode
@@ -253,7 +258,7 @@ class ArgExecNode(ExecNode):
 #  this means that it will return its values as Tuple[LazyExecNode] or Dict[LazyExecNode]
 #  Hence ExecNode can return multiple values!
 # TODO: create a twz_deps reserved variable to support Nothing dependency
-class LazyExecNode(ExecNode):
+class LazyExecNode(ExecNode, Generic[P, RVXN]):
     """
     A lazy function simulator.
     The __call__ behavior of the original function is overridden to record the dependencies to build the DAG.
@@ -262,7 +267,7 @@ class LazyExecNode(ExecNode):
 
     def __init__(
         self,
-        func: Callable[..., Any],
+        func: Callable[P, RVXN],
         priority: int,
         is_sequential: bool,
         debug: bool,
@@ -290,7 +295,9 @@ class LazyExecNode(ExecNode):
             setup=setup,
         )
 
-    def __call__(self, *args: Any, **kwargs: Any) -> "LazyExecNode":
+    def __call__(
+        self, *args: P.args, **kwargs: P.kwargs
+    ) -> RVXN:  # in reality it returns "LazyExecNode":
         """
         Record the dependencies in a global variable to be called later in DAG.
 
@@ -372,9 +379,9 @@ class LazyExecNode(ExecNode):
                 raise TawaziBaseException(f"setup node {self_copy} depends on non setup node {dep}")
 
         exec_nodes.append(self_copy)
-        return self_copy
+        return self_copy  # type: ignore
 
-    def __get__(self, instance: "LazyExecNode", owner_cls: Optional[Any] = None) -> Any:
+    def __get__(self, instance: "LazyExecNode[P, RVXN]", owner_cls: Optional[Any] = None) -> Any:
         """
         Simulate func_descr_get() in Objects/funcobject.c
 
