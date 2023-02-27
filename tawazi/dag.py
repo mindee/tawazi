@@ -922,6 +922,10 @@ class DAGExecution:
             )
         self._cache_deps_of = cache_deps_of
 
+    @property
+    def executed(self) -> bool:
+        return len(self.graph) == 0
+
     # we need to reimplement the public methods of DAG here in order to have a constant public interface
     # getters
     def get_nodes_by_tag(self, tag: Any) -> List[ExecNode]:
@@ -942,6 +946,11 @@ class DAGExecution:
         self.dag.setup(twz_nodes)
 
     def __call__(self, *args: Any) -> Any:
+        if self.executed:
+            raise TawaziUsageError(
+                "DAGExecution object should not be reused. Instantiate a new one"
+            )
+
         # NOTE: *args will be ignored if self.from_cache is set!
         dag = self.dag
 
@@ -963,7 +972,7 @@ class DAGExecution:
         self.xn_dict = dag._execute(self.graph, call_xn_dict, call_id)
         self.results = {xn.id: xn.result for xn in self.xn_dict.values()}
 
-        # 3. cache in thegraph results
+        # 3. cache in the graph results
         if self.cache_in:
             Path(self.cache_in).parent.mkdir(parents=True, exist_ok=True)
             with open(self.cache_in, "wb") as f:
