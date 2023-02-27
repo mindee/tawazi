@@ -886,7 +886,7 @@ class DAGExecution:
         else:
             self.graph = self.dag._make_subgraph(self.target_nodes, self.exclude_nodes)
 
-        self.scheduled_nodes = self.graph.nodes
+        self.scheduled_nodes = list(self.graph.nodes)
 
     @property
     def cache_in(self) -> str:
