@@ -5,9 +5,9 @@ name: Test Workflow
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 concurrency:
@@ -20,7 +20,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
