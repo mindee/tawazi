@@ -38,10 +38,12 @@ def test_run_whole_dag_executor():
 
 
 def test_run_dag_executor_multiple_times():
-    # even though this is not guaranteed to work... but executors should be reusable but are not threadsafe!
+    # executors are used only once!
     executor = pipe.executor()
     r1, r2, r3 = executor(1, 2)
+    executor = pipe.executor()
     r4, r5, r6 = executor(3, 4)
+    executor = pipe.executor()
     r7, r8, r9 = executor(5, 6)
 
     assert (r1, r2, r3, r4, r5, r6, r7, r8, r9) == (2, 4, 6, 4, 6, 10, 6, 8, 14)
@@ -72,3 +74,9 @@ def test_thread_naming():
     # should fail
     with pytest.raises(AssertionError):
         pipe.executor(call_id="tough")()
+
+
+def test_scheduled_nodes():
+    executor = pipe.executor(target_nodes=["xn1", "xn2"])
+    assert {"xn1", "xn2"}.issubset(set(executor.scheduled_nodes))
+    assert "xn3" not in set(executor.scheduled_nodes)

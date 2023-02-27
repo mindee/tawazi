@@ -70,6 +70,20 @@ def dag_describer():
     var_i = i(var_h)
 
 
+def test_scheduled_nodes():
+    executor = dag_describer.executor(target_nodes=["a"])
+    assert {"a"} == set(executor.scheduled_nodes)
+
+    executor = dag_describer.executor(target_nodes=["b"])
+    assert {"a", "b"} == set(executor.scheduled_nodes)
+
+    executor = dag_describer.executor(target_nodes=["c"])
+    assert {"a", "c"} == set(executor.scheduled_nodes)
+
+    executor = dag_describer.executor(target_nodes=["d"])
+    assert {"a", "c", "d"} == set(executor.scheduled_nodes)
+
+
 def test_dag_subgraph_all_nodes():
     pytest.subgraph_comp_str = ""
     dag = dag_describer

@@ -880,6 +880,14 @@ class DAGExecution:
         self.xn_dict: Dict[IdentityHash, ExecNode] = {}
         self.results: Dict[IdentityHash, Any] = {}
 
+        # logic parts
+        if self.cache_deps_of is not None:
+            self.graph = self.dag._make_subgraph(self.cache_deps_of)
+        else:
+            self.graph = self.dag._make_subgraph(self.target_nodes, self.exclude_nodes)
+
+        self.scheduled_nodes = self.graph.nodes
+
     @property
     def cache_in(self) -> str:
         return self._cache_in
@@ -937,11 +945,6 @@ class DAGExecution:
         # NOTE: *args will be ignored if self.from_cache is set!
         dag = self.dag
 
-        if self.cache_deps_of is not None:
-            graph = dag._make_subgraph(self.cache_deps_of)
-        else:
-            graph = dag._make_subgraph(self.target_nodes, self.exclude_nodes)
-
         # maybe call_id will be changed to Union[int, str].
         # Keep call_id as Optional[str] for now
         call_id = self.call_id if self.call_id is not None else ""
@@ -957,10 +960,10 @@ class DAGExecution:
                 call_xn_dict[id_].result = result
 
         # 2. Execute the scheduler
-        self.xn_dict = dag._execute(graph, call_xn_dict, call_id)
+        self.xn_dict = dag._execute(self.graph, call_xn_dict, call_id)
         self.results = {xn.id: xn.result for xn in self.xn_dict.values()}
 
-        # 3. cache in the results
+        # 3. cache in thegraph results
         if self.cache_in:
             Path(self.cache_in).parent.mkdir(parents=True, exist_ok=True)
             with open(self.cache_in, "wb") as f:
