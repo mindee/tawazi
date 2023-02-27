@@ -104,9 +104,11 @@ def test_with_setup_nodes():
     pipe_.setup(exclude_nodes=[e])
     assert pytest.test_exclude_nodes.count("z") == 1
 
+    pipe_exec = pipe_.executor(exclude_nodes=[e])
     assert (None, "bc", "bd", "bcbdg") == pipe_exec()
     assert pytest.test_exclude_nodes.count("z") == 1
 
+    pipe_exec = pipe_.executor(exclude_nodes=[e])
     assert ("zef", "bc", "bd", "bcbdg") == pipe_()
     assert pytest.test_exclude_nodes.count("z") == 1
 
@@ -137,9 +139,5 @@ def test_with_debug_nodes():
 
 
 def test_impossible_situation():
-    pipe_exec = pipe.executor(target_nodes=[g], exclude_nodes=[d])
     with pytest.raises(TawaziUsageError):
-        pipe_exec()
-
-
-# test_excludenodes_basic()
+        _ = pipe.executor(target_nodes=[g], exclude_nodes=[d])
