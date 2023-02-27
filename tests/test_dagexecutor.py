@@ -4,6 +4,7 @@ import threading
 import pytest
 
 from tawazi import dag, xn
+from tawazi.errors import TawaziUsageError
 
 
 @xn
@@ -80,3 +81,42 @@ def test_scheduled_nodes():
     executor = pipe.executor(target_nodes=["xn1", "xn2"])
     assert {"xn1", "xn2"}.issubset(set(executor.scheduled_nodes))
     assert "xn3" not in set(executor.scheduled_nodes)
+
+
+def test_executed():
+    executor = pipe.executor()
+    executor(1, 2)
+
+    with pytest.raises(TawaziUsageError):
+        executor(3, 4)
+
+
+def test_executed_with_setup_nodes():
+    @xn(setup=True)
+    def setop(bla=123):
+        return bla + 1
+
+    @xn(debug=True)
+    def my_debug_node(in1, in2, in3):
+        print(in1, in2, in3)
+
+    @dag
+    def pipe(in1, in2):
+        r1 = xn1(in1)
+        r2 = xn2(in2)
+        r3 = xn3(r1, r2)
+        setop_r = setop()
+        my_debug_node(r1, r2, r3)
+        return r1, r2, r3, setop_r
+
+    executor = pipe.executor()
+    executor(1, 2)
+    assert executor.executed
+
+    executor = pipe.executor(target_nodes=[setop])
+    executor(1, 2)
+    assert executor.executed
+
+    executor = pipe.executor(target_nodes=[my_debug_node])
+    executor(1, 2)
+    assert executor.executed
