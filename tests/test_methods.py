@@ -2,10 +2,7 @@ from logging import Logger
 from typing import Union
 
 import pytest
-
-from tawazi import dag, xn
-
-"""integration test"""
+from tawazi import xn
 
 logger = Logger(name="mylogger", level="ERROR")
 
@@ -62,15 +59,13 @@ class MyClass:
 #     d1.execute()
 
 
-"""
-The use case for this feature is the following:
+# The use case for this feature is the following:
 
-The user has a Class with an instance that contains a lof of methods and attributes.
-This class contains a very complicated function that can benefit from parallelization.
-The user wants to run the dag multiple times and get the same results...
-    he is responsible for the modifications that any function might do on the instance...
-    He should be warned about the parallelization dangers when dealing with shared data (in this case self!)
-The user (in the best case scenario) will only exchange mutable data between the methods via the parameters
-This will ensure the dependency of execution will be respected!
-"""
+# The user has a Class with an instance that contains a lof of methods and attributes.
+# This class contains a very complicated function that can benefit from parallelization.
+# The user wants to run the dag multiple times and get the same results...
+#     he is responsible for the modifications that any function might do on the instance...
+#     He should be warned about the parallelization dangers when dealing with shared data (in this case self!)
+# The user (in the best case scenario) will only exchange mutable data between the methods via the parameters
+# This will ensure the dependency of execution will be respected!
 # TODO: do some advanced tests on this case!

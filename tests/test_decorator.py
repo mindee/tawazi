@@ -1,11 +1,9 @@
 from functools import wraps
 from typing import Callable, TypeVar
 
+from tawazi import dag, xn
 from typing_extensions import ParamSpec
 
-from tawazi import dag, xn
-
-"""Integration test"""
 P = ParamSpec("P")
 RV = TypeVar("RV")
 
@@ -13,9 +11,9 @@ RV = TypeVar("RV")
 def my_little_logger(func: Callable[P, RV]) -> Callable[P, RV]:
     @wraps(func)
     def log(*args: P.args, **kwargs: P.kwargs) -> RV:
-        print("this should print before execution")
+        print("this should print before execution")  # noqa: T201
         res = func(*args, **kwargs)
-        print("this should print after execution")
+        print("this should print after execution")  # noqa: T201
         return res
 
     return log
@@ -36,7 +34,7 @@ def b(a: str) -> str:
 @dag
 def pipe() -> None:
     a_ = a()
-    t = b(a_)
+    b(a_)
 
 
 def test_decorator() -> None:

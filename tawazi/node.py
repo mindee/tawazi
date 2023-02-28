@@ -1,3 +1,4 @@
+"""Module describing ExecNode Class and subclasses (The basic building Block of a DAG."""
 from copy import copy
 from threading import Lock
 from types import MethodType
@@ -22,7 +23,7 @@ from tawazi.profile import Profile
 
 from .config import Cfg
 from .errors import InvalidExecNodeCall, TawaziBaseException, TawaziTypeError
-from .helpers import lazy_xn_id, make_raise_arg_error, ordinal
+from .helpers import _lazy_xn_id, _make_raise_arg_error, ordinal
 
 # TODO: replace exec_nodes with dict
 # a temporary variable used to pass in exec_nodes to the DAG during building
@@ -33,12 +34,11 @@ Alias = Union[Tag, Identifier, "ExecNode"]  # multiple ways of identifying an XN
 
 
 class ExecNode:
-    """
-    This class is the base executable node of the Directed Acyclic Execution Graph.
+    """This class is the base executable node of the Directed Acyclic Execution Graph.
+
     An ExecNode is an Object that can be executed inside a DAG scheduler.
     It basically consists of a function (exec_function) that takes *args and **kwargs and return a Value.
-    When the ExecNode is executed in the DAG, the resulting value will be stored in the ExecNode.result instance attribute
-
+    When the ExecNode is executed in the DAG, the resulting value will be stored in the ExecNode.result instance attribute.
     """
 
     def __init__(
@@ -53,8 +53,7 @@ class ExecNode:
         tag: Tag = None,
         setup: bool = False,
     ):
-        """
-        Constructor of ExecNode
+        """Constructor of ExecNode.
 
         Args:
             id_ (Identifier): identifier of ExecNode.
@@ -108,14 +107,29 @@ class ExecNode:
 
     @property
     def executed(self) -> bool:
+        """Whether this ExecNode has been executed.
+
+        Returns:
+            bool: whether this ExecNode has been executed.
+        """
         return self.result is not NoVal
 
     def __repr__(self) -> str:
+        """Human representation of the ExecNode.
+
+        Returns:
+            str: human representation of the ExecNode.
+        """
         return f"{self.__class__.__name__} {self.id} ~ | <{hex(id(self))}>"
 
     # TODO: make cached_property ?
     @property
     def dependencies(self) -> List["ExecNode"]:
+        """The List of ExecNode dependencies of This ExecNode.
+
+        Returns:
+            List[ExecNode]: the List of ExecNode dependencies of This ExecNode.
+        """
         # Making the dependencies
         # 1. from args
         deps = self.args.copy()
@@ -125,8 +139,7 @@ class ExecNode:
         return deps
 
     def execute(self, node_dict: Dict[Identifier, "ExecNode"]) -> Optional[Any]:
-        """
-        Execute the ExecNode inside of a DAG.
+        """Execute the ExecNode inside of a DAG.
 
         Args:
             node_dict (Dict[Identifier, ExecNode]): A shared dictionary containing the other ExecNodes in the DAG;
@@ -169,6 +182,11 @@ class ExecNode:
 
     @property
     def tag(self) -> Tag:
+        """The Tag of this ExecNode.
+
+        Returns:
+            Tag: the Tag of this ExecNode.
+        """
         return self._tag
 
     @tag.setter
@@ -179,6 +197,11 @@ class ExecNode:
 
     @property
     def priority(self) -> int:
+        """The priority of this ExecNode.
+
+        Returns:
+            int: the priority of this ExecNode.
+        """
         return self._priority
 
     @priority.setter
@@ -189,11 +212,11 @@ class ExecNode:
 
 
 class ArgExecNode(ExecNode):
-    """
-    ExecNode corresponding to an Argument.
+    """ExecNode corresponding to an Argument.
+
     Every Argument is Attached to a Function or an ExecNode (especially a LazyExecNode)
     If a value is not passed to the function call / ExecNode,
-    it will raise an error similar to Python's Error
+    it will raise an error similar to Python's Error.
     """
 
     def __init__(
@@ -202,8 +225,7 @@ class ArgExecNode(ExecNode):
         name_or_order: Union[str, int],
         value: Any = NoVal,
     ):
-        """
-        Constructor of ArgExecNode
+        """Constructor of ArgExecNode.
 
         Args:
             xn_or_func_or_id (Union[ExecNode, Callable[..., Any], Identifier]): The ExecNode or function that this Argument is rattached to
@@ -221,8 +243,8 @@ class ArgExecNode(ExecNode):
         # TODO: use pydantic!
         if isinstance(xn_or_func_or_id, ExecNode):
             base_id = xn_or_func_or_id.id
-        elif isinstance(xn_or_func_or_id, Callable):  # type: ignore
-            base_id = xn_or_func_or_id.__qualname__  # type: ignore
+        elif callable(xn_or_func_or_id):
+            base_id = xn_or_func_or_id.__qualname__
         elif isinstance(xn_or_func_or_id, Identifier):
             base_id = xn_or_func_or_id
         else:
@@ -240,7 +262,7 @@ class ArgExecNode(ExecNode):
 
         id_ = f"{base_id}{ARG_NAME_SEP}{suffix}"
 
-        raise_err = make_raise_arg_error(base_id, suffix)
+        raise_err = _make_raise_arg_error(base_id, suffix)
 
         super().__init__(id_=id_, exec_function=raise_err, is_sequential=False)
 
@@ -259,8 +281,8 @@ class ArgExecNode(ExecNode):
 #  Hence ExecNode can return multiple values!
 # TODO: create a twz_deps reserved variable to support Nothing dependency
 class LazyExecNode(ExecNode, Generic[P, RVXN]):
-    """
-    A lazy function simulator.
+    """A lazy function simulator.
+
     The __call__ behavior of the original function is overridden to record the dependencies to build the DAG.
     The original function is kept to be called during the scheduling phase when calling the DAG.
     """
@@ -274,7 +296,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         tag: Any,
         setup: bool,
     ):
-        """Constructor of LazyExecNode
+        """Constructor of LazyExecNode.
 
         Args:
             func (Callable[..., Any]): Look at ExecNode's Documentation
@@ -284,7 +306,6 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             tag (Any): Look at ExecNode's Documentation
             setup (bool): Look at ExecNode's Documentation
         """
-
         super().__init__(
             id_=func.__qualname__,
             exec_function=func,
@@ -298,8 +319,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
     def __call__(
         self, *args: P.args, **kwargs: P.kwargs
     ) -> RVXN:  # in reality it returns "LazyExecNode":
-        """
-        Record the dependencies in a global variable to be called later in DAG.
+        """Record the dependencies in a global variable to be called later in DAG.
 
         Args:
             *args (Any): positional arguments passed to the function during dependency recording
@@ -331,7 +351,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         # 1.2 Assign the id
         count_usages = sum(ex_n.id.split(USE_SEP_START)[0] == self.id for ex_n in exec_nodes)
         # if ExecNode is used multiple times, <<usage_count>> is appended to its ID
-        self_copy.id = lazy_xn_id(self.id, count_usages)
+        self_copy.id = _lazy_xn_id(self.id, count_usages)
 
         # 2. Make the corresponding ExecNodes that corresponds to the Arguments
         # Make new objects because these should be different between different XN_calls
@@ -379,11 +399,10 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
                 raise TawaziBaseException(f"setup node {self_copy} depends on non setup node {dep}")
 
         exec_nodes.append(self_copy)
-        return self_copy  # type: ignore
+        return self_copy  # type: ignore[return-value]
 
     def __get__(self, instance: "LazyExecNode[P, RVXN]", owner_cls: Optional[Any] = None) -> Any:
-        """
-        Simulate func_descr_get() in Objects/funcobject.c
+        """Simulate func_descr_get() in Objects/funcobject.c.
 
         Args:
             instance (LazyExecNode): the instance that this attribute should be attached to
@@ -405,48 +424,60 @@ ReturnXNsType = Optional[Union[ExecNode, Tuple[ExecNode], List[ExecNode], Dict[s
 
 
 def get_return_ids(returned_exec_nodes: ReturnXNsType) -> ReturnIDsType:
+    """Get the IDs of the returned ExecNodes.
+
+    Args:
+        returned_exec_nodes (ReturnXNsType): Aliases of the returned ExecNodes
+
+    Raises:
+        TawaziTypeError: _description_
+        TawaziTypeError: _description_
+        TawaziTypeError: _description_
+
+    Returns:
+        ReturnIDsType: Corresponding IDs of the returned ExecNodes
+    """
     # TODO: support iterators etc.
     err_string = (
         "Return type of the pipeline must be either a Single Xnode,"
         " Tuple of Xnodes, List of Xnodes, dict of Xnodes or None"
     )
 
-    # 1 returned values can be of multiple nature
-    return_ids: ReturnIDsType = []
-    # 2 No value returned by the execution
+    # 1 No value returned by the execution
     if returned_exec_nodes is None:
-        return_ids = None
-    # 3 a single value is returned
-    elif isinstance(returned_exec_nodes, ExecNode):
-        return_ids = returned_exec_nodes.id
-    # 4 multiple values returned
-    elif isinstance(returned_exec_nodes, (tuple, list)):
-        # 4.1 Collect all the return ids
+        return None
+    # 2 a single value is returned
+    if isinstance(returned_exec_nodes, ExecNode):
+        return returned_exec_nodes.id
+    # 3 multiple values returned
+    if isinstance(returned_exec_nodes, (tuple, list)):
+        return_ids: List[Identifier] = []
+        # 3.1 Collect all the return ids
         for ren in returned_exec_nodes:
             if isinstance(ren, ExecNode):
-                return_ids.append(ren.id)  # type: ignore
+                return_ids.append(ren.id)
             else:
                 # NOTE: this error shouldn't ever raise during usage.
                 # Please report in https://github.com/mindee/tawazi/issues
                 raise TawaziTypeError(err_string)
-        # 4.2 Cast to the corresponding type
+        # 3.2 Cast to the corresponding type
         if isinstance(returned_exec_nodes, tuple):
-            return_ids = tuple(return_ids)  # type: ignore
-        # 4.3 No Cast is necessary for the List because this is the default
+            return tuple(return_ids)
+        # otherwise return a list of the return ids
+        return return_ids
+
+        # 3.3 No Cast is necessary for the List because this is the default
         # NOTE: this cast must be done when adding other types!
-    # 5 support dict
-    elif isinstance(returned_exec_nodes, dict):
-        return_ids = {}
+    # 4 support dict
+    if isinstance(returned_exec_nodes, dict):
+        return_ids_dict = {}
         for key, ren in returned_exec_nodes.items():
-            # 5.1 key should be str and value should be an ExecNode generated by running an xnode...
+            # 4.1 key should be str and value should be an ExecNode generated by running an xnode...
             if isinstance(ren, ExecNode):
-                return_ids[key] = ren.id
+                return_ids_dict[key] = ren.id
             else:
                 raise TawaziTypeError(
                     f"return dict should only contain ExecNodes, but {ren} is of type {type(ren)}"
                 )
-    else:
-        raise TawaziTypeError(
-            f"{err_string}. Type of the provided return: {type(returned_exec_nodes)}"
-        )
-    return return_ids
+        return return_ids_dict
+    raise TawaziTypeError(f"{err_string}. Type of the provided return: {type(returned_exec_nodes)}")

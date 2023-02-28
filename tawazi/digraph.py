@@ -1,3 +1,4 @@
+"""Module containing the definition of a Directed Graph Extension of networkx.DiGraph."""
 from copy import deepcopy
 from typing import List, Optional, Set
 
@@ -8,13 +9,10 @@ from .consts import Identifier
 
 
 class DiGraphEx(nx.DiGraph):
-    """
-    Extends the DiGraph with some methods
-    """
+    """Extends the DiGraph with some methods."""
 
     def root_nodes(self) -> List[Identifier]:
-        """
-        Safely gets the root nodes
+        """Safely gets the root nodes.
 
         Returns:
             List of root nodes
@@ -23,8 +21,7 @@ class DiGraphEx(nx.DiGraph):
 
     @property
     def leaf_nodes(self) -> List[Identifier]:
-        """
-        Safely gets the leaf nodes
+        """Safely get the leaf nodes.
 
         Returns:
             List of leaf nodes
@@ -32,8 +29,7 @@ class DiGraphEx(nx.DiGraph):
         return [node for node, degree in self.out_degree if degree == 0]
 
     def remove_recursively(self, root_node: Identifier) -> None:
-        """
-        Recursively removes all the nodes that depend on the provided one including itself
+        """Recursively removes all the nodes that depend on the provided one including itself.
 
         Args:
             root_node (Identifier): the root node
@@ -43,19 +39,19 @@ class DiGraphEx(nx.DiGraph):
         def dfs(n: Identifier, graph: DiGraphEx, visited: Set[Identifier]) -> None:
             if n in visited:
                 return
-            else:
-                visited.add(n)
-                for child in graph[n].keys():
-                    dfs(child, graph, visited)
+
+            visited.add(n)
+            for child in graph[n].keys():
+                dfs(child, graph, visited)
 
         dfs(root_node, self, nodes_to_remove)
         for node in nodes_to_remove:
             self.remove_node(node)
 
     def subgraph_leaves(self, nodes: List[Identifier]) -> Set[Identifier]:
-        """
-        modifies the graph to become a subgraph
-        that contains the provided nodes as leaf nodes.
+        """Modifies the graph to become a subgraph.
+
+        The generated subgraph contains the provided nodes as leaf nodes.
         For example:
         TODO: use the future print to test this function!
         graph =
@@ -89,7 +85,6 @@ class DiGraphEx(nx.DiGraph):
         Raises:
             ValueError: if the provided nodes are not in the graph
         """
-
         # works by pruning the graph until all leaf nodes
         # are contained inside the provided "nodes"
         # in the arguments of this method
@@ -121,8 +116,7 @@ class DiGraphEx(nx.DiGraph):
 
     @property
     def topologically_sorted(self) -> List[Identifier]:
-        """
-        Makes the simple topological sort of the graph nodes
+        """Makes the simple topological sort of the graph nodes.
 
         Returns:
             List of nodes of the graph listed in topological order
@@ -131,9 +125,7 @@ class DiGraphEx(nx.DiGraph):
 
 
 def subgraph(graph: DiGraphEx, leaves_ids: Optional[List[Identifier]]) -> DiGraphEx:
-    """
-    returns a deep copy of the same graph if leaves_ids is None,
-    otherwise returns a new graph by applying `graph.subgraph_leaves`
+    """Deep copy the same graph if leaves_ids is None, otherwise returns a new graph by applying `graph.subgraph_leaves`.
 
     Args:
         graph (DiGraphEx): graph describing the DAG
@@ -142,7 +134,6 @@ def subgraph(graph: DiGraphEx, leaves_ids: Optional[List[Identifier]]) -> DiGrap
     Returns:
         DiGraphEx: The subgraph of the provided graph
     """
-
     # TODO: avoid mutable state, hence avoid doing deep copies ?
     # 0. deep copy the graph ids because it will be pruned during calculation
     graph = deepcopy(graph)

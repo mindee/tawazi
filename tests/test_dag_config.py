@@ -2,7 +2,6 @@ import json
 
 import pytest
 import yaml
-
 from tawazi import dag, xn
 
 cfg = {"nodes": {"a": {"priority": 42, "is_sequential": False}}, "max_concurrency": 3}
@@ -10,21 +9,18 @@ cfg = {"nodes": {"a": {"priority": 42, "is_sequential": False}}, "max_concurrenc
 
 @xn(tag="toto")
 def a(cst: int) -> int:
-    print(cst)
     return cst
 
 
 @xn
 def b(a: int, cst: str) -> str:
-    print(a, cst)
     return str(a) + cst
 
 
 @dag
 def my_dag() -> str:
     var_a = a(1234)
-    var_b = b(var_a, "poulpe")
-    return var_b
+    return b(var_a, "poulpe")
 
 
 def test_config_from_dict() -> None:

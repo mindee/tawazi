@@ -1,12 +1,9 @@
-# type: ignore
+# type: ignore # noqa: PGH003
 from time import sleep
 from typing import Any
 
 import pytest
-
 from tawazi import dag, xn
-
-"""Internal Unit Test"""
 
 pytest.compound_priority_str: str = ""
 T = 1e-3
@@ -61,8 +58,8 @@ def test_compound_priority() -> None:
     assert dag.node_dict_by_name["e"].compound_priority == 1
 
 
-def test_compound_priority_call() -> None:
-    pytest.compound_priority_str == ""
+def test_compound_priority_execution() -> None:
+    pytest.compound_priority_str = ""
     dependency_describer()
 
     assert pytest.compound_priority_str.startswith("ab")

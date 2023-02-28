@@ -1,13 +1,10 @@
-# type: ignore
+# type: ignore # noqa: PGH003
 from copy import deepcopy
 from time import sleep
 from typing import Tuple
 
 import pytest
-
 from tawazi import dag, xn
-
-"""integration tests"""
 
 T = 0.01
 
@@ -33,7 +30,7 @@ def c(a: str, b: str) -> str:
 def run_without_dag() -> None:
     a_ = a()
     b_ = b()
-    c_ = c(a_, b_)
+    c(a_, b_)
 
 
 # apply the operation decorator
@@ -48,7 +45,7 @@ c_op = xn(c)
 def dagger() -> None:
     a_ = a_op()
     b_ = b_op()
-    c_ = c_op(a_, b_)
+    c_op(a_, b_)
 
 
 def test_normal_execution_without_dag() -> None:
@@ -119,8 +116,8 @@ def test_subgraph_with_safe_execution_with_setup() -> None:
     pytest.safe_execution_op_cst_has_run = False
     assert pipe_._safe_execute(target_nodes=["op1"]) == (5, None)
     assert pytest.safe_execution_c == 1
-    assert pytest.safe_execution_op_cst_has_run == False
+    assert pytest.safe_execution_op_cst_has_run is False
 
     assert pipe_._safe_execute(target_nodes=["op1"]) == (5, None)
     assert pytest.safe_execution_c == 1
-    assert pytest.safe_execution_op_cst_has_run == False
+    assert pytest.safe_execution_op_cst_has_run is False

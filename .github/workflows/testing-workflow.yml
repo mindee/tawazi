@@ -43,7 +43,7 @@ jobs:
       with:
         python-version: ${{ matrix.python_version }}
         cache: 'poetry'
-        # use the whole repo's hash (i.e. recalculate the deps everytime)
+        # use the whole repo's hash (i.e. recalculate the deps every time)
         cache-dependency-path: pyproject.toml
 
     - name: Install dependencies

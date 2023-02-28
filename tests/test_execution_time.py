@@ -3,8 +3,6 @@ from typing import Any
 
 from tawazi import dag, xn
 
-"""integration test"""
-
 T = 0.1
 
 
@@ -27,7 +25,7 @@ def c(a: Any, b: Any) -> None:
 def deps() -> None:
     a_ = a()
     b_ = b()
-    c_ = c(a_, b_)
+    c(a_, b_)
 
 
 def test_timing() -> None:

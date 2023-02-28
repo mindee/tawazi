@@ -124,7 +124,7 @@ assert pipeline() == (2, 3)
 Currently you can only return a single value from an `ExecNode`, in the future multiple return values will be allowed.
 
 
-* You can have setup `ExecNode`s; Theses are `ExecNode`s that will run once per DAG instance
+* You can have setup `ExecNode`s; These are `ExecNode`s that will run once per DAG instance
 
 ```Python
 from copy import deepcopy
@@ -291,7 +291,7 @@ assert res_c == "A + B = C"
 <!-- ## Limitations:
 Currently there are some limitations in the usage of tawazi that will be overcome in the future.
 1. A DAG can not reuse the same function twice inside the calculation sequence (Will be resolved in the future)
-2. All code inside a dag descriptor function must be either an @op decorated functions calls and arguments passed arguments. Otherwise the behavior of the DAG might be unpredicatble -->
+2. All code inside a dag descriptor function must be either an @op decorated functions calls and arguments passed arguments. Otherwise the behavior of the DAG might be unpredictable -->
 
 
 

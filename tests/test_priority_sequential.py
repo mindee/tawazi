@@ -1,13 +1,10 @@
-# type: ignore
+# type: ignore # noqa: PGH003
 from time import sleep
 from typing import Any
 
 import pytest
-
 from tawazi import DAG, ErrorStrategy
 from tawazi.node import ExecNode
-
-"""internal Unit test"""
 
 T = 0.01
 # global priority_sequential_comp_str

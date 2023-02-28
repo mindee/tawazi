@@ -1,7 +1,6 @@
 from typing import Dict, List, Tuple, TypeVar, Union
 
 import pytest
-
 from tawazi import dag, xn
 from tawazi.errors import TawaziTypeError
 
@@ -18,7 +17,7 @@ def test_no_return() -> None:
     def pipe() -> None:
         return
 
-    assert pipe() == None
+    assert pipe() is None
 
 
 def test_return_single() -> None:

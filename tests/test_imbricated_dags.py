@@ -15,8 +15,7 @@ def test_imbricated_dags() -> None:
     @xn
     @dag
     def op3(img: List[int]) -> int:
-        toto = op2(op1(img))
-        return toto
+        return op2(op1(img))
 
     @xn
     def op4(img: List[int]) -> int:
@@ -33,4 +32,4 @@ def test_imbricated_dags() -> None:
 
         return op5(titi, toto)
 
-    pipe = op6([1, 2, 3, 4])
+    op6([1, 2, 3, 4])

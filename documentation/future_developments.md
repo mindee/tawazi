@@ -4,7 +4,7 @@ A couple of features will be released soon:
 
 * handle problems when calling `ExecNodes` wrongly.
   * (for example when using *args as parameters but only **kwargs are provided).
-  * Calling `ExecNodes` must be similar to calling the original function (must imitate the same signature otherwise raise the correct exeception).
+  * Calling `ExecNodes` must be similar to calling the original function (must imitate the same signature otherwise raise the correct exception).
 * support mixing ExecNodes and non `ExecNodes` functions.
 * test the case where `ExecNodes` are stored in a list and then passed via * operator.
 * add feature to turn off a set of nodes in the graph.

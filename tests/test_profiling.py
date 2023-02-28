@@ -1,16 +1,10 @@
-import math
-import os
 from copy import deepcopy
-from numbers import Real
 from time import sleep, time
 from typing import Any, Tuple
 
 import numpy as np
-import pytest
-
 import tawazi
 from tawazi import dag, xn
-from tawazi.errors import TawaziBaseException
 
 
 # T = TypeVar("T", bound=Real)

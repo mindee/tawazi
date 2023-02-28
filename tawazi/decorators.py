@@ -1,3 +1,4 @@
+"""Module for decorators used in Tawazi."""
 import functools
 from typing import Any, Callable, List, Optional, Union, overload
 
@@ -37,8 +38,8 @@ def xn(
     tag: Optional[Any] = None,
     setup: bool = False,
 ) -> Union[Callable[[Callable[P, RVXN]], LazyExecNode[P, RVXN]], LazyExecNode[P, RVXN]]:
-    """
-    Decorate a function to make it an ExecNode.
+    """Decorate a function to make it an ExecNode.
+
     When the decorated function is called, you are actually calling an ExecNode.
     This way we can record the dependencies in order to build the actual DAG.
     Please check the example in the README for a guide to the usage.
@@ -78,10 +79,9 @@ def xn(
     if func is None:
         return intermediate_wrapper
     # case #2: no argument is provided to the decorator
-    else:
-        if not callable(func):
-            raise TypeError(f"{func} is not a callable. Did you use a non-keyword argument?")
-        return intermediate_wrapper(func)
+    if not callable(func):
+        raise TypeError(f"{func} is not a callable. Did you use a non-keyword argument?")
+    return intermediate_wrapper(func)
 
 
 @overload
@@ -102,8 +102,8 @@ def dag(
     max_concurrency: int = 1,
     behavior: ErrorStrategy = ErrorStrategy.strict,
 ) -> Union[Callable[[Callable[P, RVDAG]], DAG[P, RVDAG]], DAG[P, RVDAG]]:
-    """
-    Transform the declared ops into a DAG that can be executed by tawazi's scheduler.
+    """Transform the declared ops into a DAG that can be executed by tawazi's scheduler.
+
     The same DAG can be executed multiple times.
     Note: dag is thread safe because it uses an internal lock.
         If you need to construct lots of DAGs in multiple threads,
@@ -153,7 +153,7 @@ def dag(
                 # 3. Execute the dependency describer function
                 # NOTE: Only ordered parameters are supported at the moment!
                 #  No **kwargs!! Only positional Arguments
-                returned_exec_nodes = _func(*args)  # type: ignore
+                returned_exec_nodes = _func(*args)  # type: ignore[arg-type]
 
                 # 4. Construct the DAG instance
                 d: DAG[P, RVDAG] = DAG(
@@ -181,9 +181,8 @@ def dag(
         # return a decorator
         return intermediate_wrapper
     # case 2: arguments aren't provided to the decorator
-    else:
-        if not callable(declare_dag_function):
-            raise TypeError(
-                f"{declare_dag_function} is not a callable. Did you use a non-keyword argument?"
-            )
-        return intermediate_wrapper(declare_dag_function)
+    if not callable(declare_dag_function):
+        raise TypeError(
+            f"{declare_dag_function} is not a callable. Did you use a non-keyword argument?"
+        )
+    return intermediate_wrapper(declare_dag_function)

@@ -1,3 +1,4 @@
+"""Module helper to profile execution time of Tawazi ExecNodes."""
 from time import perf_counter, process_time, thread_time
 from typing import Any
 
@@ -5,9 +6,10 @@ from tawazi.errors import TawaziTypeError
 
 
 class Profile:
+    """Profile records execution time of Tawazi ExecNodes."""
+
     def __init__(self, active: bool = True) -> None:
-        """
-        Profile an execution
+        """Profile an execution.
 
         Args:
             active (bool): Whether to activate the profile. Defaults to True.
@@ -36,6 +38,11 @@ class Profile:
         self.thread_exec_time = 0.0
 
     def __enter__(self) -> "Profile":
+        """Context manager entry point.
+
+        Returns:
+            Profile: self
+        """
         if self.active:
             self.abs_exec_time = perf_counter()
             self.process_exec_time = process_time()
@@ -44,6 +51,13 @@ class Profile:
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Context manager exit point.
+
+        Args:
+            exc_type (Any): ...
+            exc_val (Any): ...
+            exc_tb (Any): ...
+        """
         if self.active:
             self.abs_exec_time = perf_counter() - self.abs_exec_time
             self.process_exec_time = process_time() - self.process_exec_time
@@ -51,21 +65,46 @@ class Profile:
         return
 
     def __repr__(self) -> str:
+        """Representation of the profile.
+
+        Returns:
+            str: profiled execution times in human-readable format
+        """
         return f"{self.abs_exec_time=}\n" f"{self.process_exec_time=}\n" f"{self.thread_exec_time=}"
 
     def __eq__(self, __o: object) -> bool:
+        """Equality operator.
+
+        Args:
+            __o (object): The other Profile object.
+
+        Raises:
+            TawaziTypeError: If the other object is not an instance of Profile.
+
+        Returns:
+            bool: Whether both are equal.
+        """
         if not isinstance(__o, Profile):
             raise TawaziTypeError(f"{__o} is not an instance of Profile")
 
-        eq = (
+        return (
             self.abs_exec_time == __o.abs_exec_time
             and self.process_exec_time == __o.process_exec_time
             and self.thread_exec_time == __o.thread_exec_time
         )
 
-        return eq
-
     def __lt__(self, __o: object) -> bool:
+        """Less than operator.
+
+        Args:
+            __o (object): The other Profile object.
+
+        Raises:
+            TawaziTypeError: if the other object is not an instance of Profile.
+
+        Returns:
+            bool: Whether this Profile is less than the other.
+        """
         if not isinstance(__o, Profile):
             raise TawaziTypeError(f"{__o} is not an instance of Profile")
 

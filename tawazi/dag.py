@@ -1,3 +1,4 @@
+"""module containing DAG and DAGExecution which are the containers that run ExecNodes in Tawazi."""
 import json
 import pickle
 import time
@@ -16,7 +17,7 @@ from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 
 from tawazi.config import Cfg
 from tawazi.consts import ReturnIDsType
-from tawazi.helpers import UniqueKeyLoader, filter_NoVal
+from tawazi.helpers import _filter_noval, _UniqueKeyLoader
 
 from .consts import RVDAG, Identifier, P, RVTypes
 from .digraph import DiGraphEx
@@ -25,8 +26,8 @@ from .node import Alias, ArgExecNode, ExecNode
 
 
 class DAG(Generic[P, RVDAG]):
-    """
-    Data Structure containing ExecNodes with interdependencies.
+    """Data Structure containing ExecNodes with interdependencies.
+
     The ExecNodes can be executed in parallel with the following restrictions:
         * Limited number of threads.
         * Parallelization constraint of each ExecNode (is_sequential attribute)
@@ -39,7 +40,8 @@ class DAG(Generic[P, RVDAG]):
         max_concurrency: int = 1,
         behavior: ErrorStrategy = ErrorStrategy.strict,
     ):
-        """
+        """Constructor of the DAG. Should not be called directly. Instead use the `dag` decorator.
+
         Args:
             exec_nodes: all the ExecNodes
             max_concurrency: the maximal number of threads running in parallel
@@ -94,10 +96,23 @@ class DAG(Generic[P, RVDAG]):
 
     @property
     def max_concurrency(self) -> int:
+        """Maximal number of threads running in parallel.
+
+        Returns:
+            int: maximum number of threads running in parallel
+        """
         return self._max_concurrency
 
     @max_concurrency.setter
     def max_concurrency(self, value: int) -> None:
+        """Set the maximal number of threads running in parallel.
+
+        Args:
+            value (int): maximum number of threads running in parallel
+
+        Raises:
+            ValueError: if value is not a positive integer
+        """
         if not isinstance(value, int):
             raise ValueError("max_concurrency must be an int")
         if value < 1:
@@ -106,10 +121,25 @@ class DAG(Generic[P, RVDAG]):
 
     # getters
     def get_nodes_by_tag(self, tag: Any) -> List[ExecNode]:
-        nodes = [ex_n for ex_n in self.exec_nodes if ex_n.tag == tag]
-        return nodes
+        """Get the ExecNodes with the given tag.
+
+        Args:
+            tag (Any): tag of the ExecNodes
+
+        Returns:
+            List[ExecNode]: corresponding ExecNodes
+        """
+        return [ex_n for ex_n in self.exec_nodes if ex_n.tag == tag]
 
     def get_node_by_id(self, id_: Identifier) -> ExecNode:
+        """Get the ExecNode with the given id.
+
+        Args:
+            id_ (Identifier): id of the ExecNode
+
+        Returns:
+            ExecNode: corresponding ExecNode
+        """
         # TODO: ? catch the keyError and
         #   help the user know the id of the ExecNode by pointing to documentation!?
         return self.node_dict[id_]
@@ -118,11 +148,9 @@ class DAG(Generic[P, RVDAG]):
 
     # TODO: validate using Pydantic
     def _find_cycle(self) -> Optional[List[Tuple[str, str]]]:
-        """
-        A DAG doesn't have any dependency cycle.
-        This method returns the cycles if found.
+        """Finds the cycles in the DAG. A DAG shouldn't have any dependency cycle.
 
-        returns:
+        Returns:
             A list of the edges responsible for the cycles in case there are some (in forward and backward),
              otherwise nothing. (e.g. [('taxes', 'amount_reconciliation'),('amount_reconciliation', 'taxes')])
         """
@@ -133,8 +161,7 @@ class DAG(Generic[P, RVDAG]):
             return None
 
     def _build(self) -> None:
-        """
-        Builds the graph and the sequence order for the computation.
+        """Builds the graph and the sequence order for the computation.
 
         Raises:
             NetworkXUnfeasible: if the graph has cycles
@@ -166,8 +193,8 @@ class DAG(Generic[P, RVDAG]):
         # future validations...
 
     def _assign_compound_priority(self) -> None:
-        """
-        Assigns a compound priority to all nodes in the graph.
+        """Assigns a compound priority to all nodes in the graph.
+
         The compound priority is the sum of the priorities of all children recursively.
         """
         # 1. deepcopy graph_ids because it will be modified (pruned)
@@ -217,8 +244,7 @@ class DAG(Generic[P, RVDAG]):
 
     @classmethod
     def _copy_non_setup_xns(cls, x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
-        """
-        Deep copy all ExecNodes except setup ExecNodes because they are shared throughout the DAG instance
+        """Deep copy all ExecNodes except setup ExecNodes because they are shared throughout the DAG instance.
 
         Args:
             x_nodes: Dict[str, ExecNode] x_nodes to be deep copied
@@ -244,9 +270,9 @@ class DAG(Generic[P, RVDAG]):
         modified_node_dict: Optional[Dict[str, ExecNode]] = None,
         call_id: str = "",
     ) -> Dict[Identifier, Any]:
-        """
-        Thread safe execution of the DAG...
-         (Except for the setup nodes! Please run DAG.setup() in a single thread because its results will be cached).
+        """Thread safe execution of the DAG.
+
+        (Except for the setup nodes! Please run DAG.setup() in a single thread because its results will be cached).
 
         Args:
             graph: the graph ids to be executed
@@ -375,7 +401,7 @@ class DAG(Generic[P, RVDAG]):
         return xns_dict
 
     def _alias_to_ids(self, alias: Alias) -> List[Identifier]:
-        """Extract an ExecNode ID from an Alias (Tag, ExecNode ID or ExecNode)
+        """Extract an ExecNode ID from an Alias (Tag, ExecNode ID or ExecNode).
 
         Args:
             alias (Alias): an Alias (Tag, ExecNode ID or ExecNode)
@@ -390,36 +416,28 @@ class DAG(Generic[P, RVDAG]):
         if isinstance(alias, ExecNode):
             return [alias.id]
         # todo: do further validation for the case of the tag!!
-        elif isinstance(alias, (Identifier, tuple)):
+        if isinstance(alias, (Identifier, tuple)):
             # if leaves_identification is not ExecNode, it can be either
             #  1. a Tag (Highest priority in case an id with the same value exists)
             if nodes := self.tagged_nodes.get(alias):
                 return [node.id for node in nodes]
             #  2. or a node id!
-            elif isinstance(alias, Identifier) and alias in self.node_dict:
+            if isinstance(alias, Identifier) and alias in self.node_dict:
                 node = self.get_node_by_id(alias)
                 return [node.id]
-            else:
-                raise ValueError(
-                    f"node or tag {alias} not found in DAG.\n"
-                    f" Available nodes are {self.node_dict}.\n"
-                    f" Available tags are {list(self.tagged_nodes.keys())}"
-                )
-        else:
-            raise TawaziTypeError(
-                "target_nodes must be of type ExecNode, "
-                f"str or tuple identifying the node but provided {alias}"
+            raise ValueError(
+                f"node or tag {alias} not found in DAG.\n"
+                f" Available nodes are {self.node_dict}.\n"
+                f" Available tags are {list(self.tagged_nodes.keys())}"
             )
+        raise TawaziTypeError(
+            "target_nodes must be of type ExecNode, "
+            f"str or tuple identifying the node but provided {alias}"
+        )
 
     # NOTE: this function is named wrongly!
     def _get_target_ids(self, target_nodes: List[Alias]) -> List[Identifier]:
-        """
-        get the ids of ExecNodes corresponding to target_nodes.
-        The identification can be carried out using the tag, the Id, or the ExecNode itself.
-        Keep in Mind that depending on the way ExecNode is provided inside target_nodes,
-         the returned id
-        if nothing is provided it will return all leaves_ids
-        Handles the debug nodes
+        """Get the ids of ExecNodes corresponding to target_nodes.
 
         Args:
             target_nodes (Optional[List[Alias]]): list of a ExecNode Aliases that the user might provide to run a subgraph
@@ -427,12 +445,7 @@ class DAG(Generic[P, RVDAG]):
         Returns:
             List[Identifier]: Leaf ExecNodes' Identities
         """
-        # Raises:
-        #     TawaziBaseException: if the returned List[Identifier] has the wrong length, this indicates a bug in the code
-
-        target_ids = list(chain(*(self._alias_to_ids(alias) for alias in target_nodes)))
-
-        return target_ids
+        return list(chain(*(self._alias_to_ids(alias) for alias in target_nodes)))
 
     def _extend_leaves_ids_debug_xns(self, leaves_ids: List[Identifier]) -> List[Identifier]:
         new_debug_xn_discovered = True
@@ -468,7 +481,6 @@ class DAG(Generic[P, RVDAG]):
             exclude_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to exclude from the DAG.
                 The user is responsible for ensuring that the overlapping between the target_nodes and exclude_nodes is logical.
         """
-
         # 1. select all setup ExecNodes
         #  do not copy the setup nodes because we want them to be modified per DAG instance!
         all_setup_nodes = {
@@ -480,7 +492,7 @@ class DAG(Generic[P, RVDAG]):
         # 2. if target_nodes is not provided run all setup ExecNodes
         if target_nodes is None:
             target_ids = list(all_setup_nodes.keys())
-            graph = self._make_subgraph(target_ids, exclude_nodes)  # type: ignore
+            graph = self._make_subgraph(target_ids, exclude_nodes)  # type: ignore[arg-type]
 
         else:
             # 2.1 the leaves_ids that the user wants to execute
@@ -490,7 +502,7 @@ class DAG(Generic[P, RVDAG]):
             target_ids = self._get_target_ids(target_nodes)
 
             # 2.2 filter non setup ExecNodes
-            graph = self._make_subgraph(target_ids, exclude_nodes)  # type: ignore
+            graph = self._make_subgraph(target_ids, exclude_nodes)  # type: ignore[arg-type]
             ids_to_remove = [id_ for id_ in graph if id_ not in all_setup_nodes]
 
             for id_ in ids_to_remove:
@@ -560,8 +572,7 @@ class DAG(Generic[P, RVDAG]):
         return graph
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
-        """
-        Execute the DAG scheduler via a similar interface to the function that describes the dependencies.
+        """Execute the DAG scheduler via a similar interface to the function that describes the dependencies.
 
         Args:
             *args (Any): arguments to be passed to the call of the DAG
@@ -577,8 +588,8 @@ class DAG(Generic[P, RVDAG]):
         # Raises:
         #     TawaziTypeError: if target_nodes contains a wrong typed identifier or if the return value contain a non LazyExecNode
 
-        target_nodes: Optional[List[Alias]] = kwargs.get("target_nodes")  # type: ignore
-        exclude_nodes: Optional[List[Alias]] = kwargs.get("exclude_nodes")  # type: ignore
+        target_nodes: Optional[List[Alias]] = kwargs.get("target_nodes")  # type: ignore[assignment]
+        exclude_nodes: Optional[List[Alias]] = kwargs.get("exclude_nodes")  # type: ignore[assignment]
 
         # 1. generate the subgraph to be executed
         graph = self._make_subgraph(target_nodes=target_nodes, exclude_nodes=exclude_nodes)
@@ -590,13 +601,11 @@ class DAG(Generic[P, RVDAG]):
         all_nodes_dict = self._execute(graph, call_xn_dict)
 
         # 4. extract the returned value/values
-        returned_values = self._get_return_values(all_nodes_dict)
-
-        return returned_values  # type: ignore
+        return self._get_return_values(all_nodes_dict)  # type: ignore[return-value]
 
     def _make_call_xn_dict(self, *args: Any) -> Dict[Identifier, ExecNode]:
-        """
-        Generate the calling ExecNode dict.
+        """Generate the calling ExecNode dict.
+
         This is a dict containing ExecNodes that will be executed (hence modified) by the DAG scheduler.
         This takes into consideration:
          1. deep copying the ExecNodes
@@ -635,8 +644,7 @@ class DAG(Generic[P, RVDAG]):
         return call_xn_dict
 
     def _get_return_values(self, xn_dict: Dict[Identifier, ExecNode]) -> RVTypes:
-        """
-        Extract the return value/values from the output of the DAG's scheduler!
+        """Extract the return value/values from the output of the DAG's scheduler!
 
         Args:
             xn_dict (Dict[Identifier, ExecNode]): Modified ExecNodes returned by the DAG's scheduler
@@ -650,16 +658,17 @@ class DAG(Generic[P, RVDAG]):
         if self.return_ids is None:
             return None
         if isinstance(self.return_ids, Identifier):
-            return filter_NoVal(xn_dict[self.return_ids].result)
+            return _filter_noval(xn_dict[self.return_ids].result)
         if isinstance(self.return_ids, (tuple, list)):
-            gen = (filter_NoVal(xn_dict[ren_id].result) for ren_id in self.return_ids)
+            gen = (_filter_noval(xn_dict[ren_id].result) for ren_id in self.return_ids)
             if isinstance(self.return_ids, tuple):
                 return tuple(gen)
             if isinstance(self.return_ids, list):
                 return list(gen)
         if isinstance(self.return_ids, dict):
             return {
-                key: filter_NoVal(xn_dict[ren_id].result) for key, ren_id in self.return_ids.items()
+                key: _filter_noval(xn_dict[ren_id].result)
+                for key, ren_id in self.return_ids.items()
             }
 
         raise TawaziTypeError("Return type for the DAG can only be a single value, Tuple or List")
@@ -672,8 +681,7 @@ class DAG(Generic[P, RVDAG]):
         target_nodes: Optional[List[Alias]] = None,
         exclude_nodes: Optional[List[Alias]] = None,
     ) -> Any:
-        """
-        Execute the ExecNodes in topological order without priority in for loop manner for debugging purposes
+        """Execute the ExecNodes in topological order without priority in for loop manner for debugging purposes.
 
         Args:
             *args (Any): Positional arguments passed to the DAG
@@ -696,14 +704,10 @@ class DAG(Generic[P, RVDAG]):
             call_xn_dict[xn_id].execute(call_xn_dict)
 
         # 4. make returned values
-        return_values = self._get_return_values(call_xn_dict)
-
-        return return_values
+        return self._get_return_values(call_xn_dict)
 
     def _handle_exception(self, graph: DiGraphEx, fut: "Future[Any]", id_: Identifier) -> None:
-        """
-        checks if futures have produced exceptions, and handles them
-        according to the specified behavior
+        """Checks if futures have produced exceptions, and handles them according to the specified behavior.
 
         Args:
             graph: the graph
@@ -713,7 +717,6 @@ class DAG(Generic[P, RVDAG]):
         Raises:
             NotImplementedError: if self.behavior is not known
         """
-
         if self.behavior == ErrorStrategy.strict:
             # will raise the first encountered exception if there's one
             # no simpler way to check for exception, and not supported by flake8
@@ -723,7 +726,7 @@ class DAG(Generic[P, RVDAG]):
             try:
                 _res = fut.result()  # noqa: F841
 
-            except Exception:
+            except Exception as e:
                 logger.exception(f"The feature {id_} encountered the following error:")
 
                 if self.behavior == ErrorStrategy.permissive:
@@ -738,30 +741,28 @@ class DAG(Generic[P, RVDAG]):
                         graph.remove_recursively(children_ids)
 
                 else:
-                    raise NotImplementedError(f"Unknown behavior name: {self.behavior}")
+                    raise NotImplementedError(f"Unknown behavior name: {self.behavior}") from e
 
     def config_from_dict(self, config: Dict[str, Any]) -> None:
-        """
-        Allows reconfiguring the parameters of the nodes from a dictionary
+        """Allows reconfiguring the parameters of the nodes from a dictionary.
 
         Args:
             config (Dict[str, Any]): the dictionary containing the config
-                    example: {"nodes": {"a": {"priority": 3, "is_sequential": True}}, "max_concurrency": 3}
+                example: {"nodes": {"a": {"priority": 3, "is_sequential": True}}, "max_concurrency": 3}
 
         Raises:
             ValueError: if two nodes are configured by the provided config (which is ambiguous)
         """
 
         def _override_node_config(n: ExecNode, cfg: Dict[str, Any]) -> bool:
-            flag = False
             if "is_sequential" in cfg:
                 n.is_sequential = cfg["is_sequential"]
 
             if "priority" in cfg:
                 n.priority = cfg["priority"]
-                flag = True
+                return True
 
-            return flag
+            return False
 
         prio_flag = False
         visited: Dict[str, Any] = {}
@@ -789,25 +790,23 @@ class DAG(Generic[P, RVDAG]):
             self._assign_compound_priority()
 
     def config_from_yaml(self, config_path: str) -> None:
-        """
-        Allows reconfiguring the parameters of the nodes from a yaml file
+        """Allows reconfiguring the parameters of the nodes from a yaml file.
 
         Args:
             config_path: the path to the yaml file
         """
-        with open(config_path, "r") as f:
-            yaml_config = yaml.load(f, Loader=UniqueKeyLoader)
+        with open(config_path) as f:
+            yaml_config = yaml.load(f, Loader=_UniqueKeyLoader)  # noqa: S506
 
         self.config_from_dict(yaml_config)
 
     def config_from_json(self, config_path: str) -> None:
-        """
-        Allows reconfiguring the parameters of the nodes from a yaml file
+        """Allows reconfiguring the parameters of the nodes from a yaml file.
 
         Args:
             config_path: the path to the json file
         """
-        with open(config_path, "r") as f:
+        with open(config_path) as f:
             json_config = json.load(f)
 
         self.config_from_dict(json_config)
@@ -816,6 +815,12 @@ class DAG(Generic[P, RVDAG]):
 # TODO: check if the arguments are the same, then run the DAG using the from_cache.
 #  If the arguments are not the same, then rerun the DAG!
 class DAGExecution(Generic[P, RVDAG]):
+    """A disposable callable instance of a DAG.
+
+    It holds information about the last execution. Hence it is not threadsafe.
+    It might be reusable, however it is not recommended to reuse an instance of DAGExecutor!.
+    """
+
     def __init__(
         self,
         dag: DAG[P, RVDAG],
@@ -827,10 +832,7 @@ class DAGExecution(Generic[P, RVDAG]):
         from_cache: str = "",
         call_id: Optional[str] = None,
     ):
-        """
-        This is an instance of DAGExecution which is a disposable callable instance of a DAG.
-        It holds information about the DAG's last execution. Hence it is not threadsafe.
-        It is reusable, however it is not recommended to reuse an instance of DAGExecutor!.
+        """Constructor.
 
         Args:
             dag (DAG): The attached DAG.
@@ -886,6 +888,11 @@ class DAGExecution(Generic[P, RVDAG]):
 
     @property
     def cache_in(self) -> str:
+        """The path to the file where the execution should be cached.
+
+        Returns:
+            str: The path to the file where the execution should be cached.
+        """
         return self._cache_in
 
     @cache_in.setter
@@ -896,6 +903,11 @@ class DAGExecution(Generic[P, RVDAG]):
 
     @property
     def from_cache(self) -> str:
+        """Get the file path from which the cached execution should be loaded.
+
+        Returns:
+            str: the file path of the cached execution
+        """
         return self._from_cache
 
     @from_cache.setter
@@ -906,6 +918,11 @@ class DAGExecution(Generic[P, RVDAG]):
 
     @property
     def cache_deps_of(self) -> Optional[List[Alias]]:
+        """Cache all the dependencies of these nodes.
+
+        Returns:
+            Optional[List[Alias]]: List of Aliases passed to cache_deps_of while instantiating DAGExecution
+        """
         return self._cache_deps_of
 
     @cache_deps_of.setter
@@ -920,21 +937,41 @@ class DAGExecution(Generic[P, RVDAG]):
 
     @property
     def executed(self) -> bool:
+        """Whether DAGExecution has been executed.
+
+        Returns:
+            bool: whether DAGExecution has been executed or not
+        """
         return len(self.graph) == 0
 
     # we need to reimplement the public methods of DAG here in order to have a constant public interface
     # getters
     def get_nodes_by_tag(self, tag: Any) -> List[ExecNode]:
-        nodes = [ex_n for ex_n in self.xn_dict.values() if ex_n.tag == tag]
-        return nodes
+        """Get all the nodes with the given tag.
+
+        Args:
+            tag (Any): tag of ExecNodes in question
+
+        Returns:
+            List[ExecNode]: corresponding ExecNodes
+        """
+        return [ex_n for ex_n in self.xn_dict.values() if ex_n.tag == tag]
 
     def get_node_by_id(self, id_: Identifier) -> ExecNode:
+        """Get node with the given id.
+
+        Args:
+            id_ (Identifier): id of the ExecNode
+
+        Returns:
+            ExecNode: Corresponding ExecNode
+        """
         # TODO: ? catch the keyError and
         #   help the user know the id of the ExecNode by pointing to documentation!?
         return self.xn_dict[id_]
 
     def setup(self, twz_nodes: Optional[List[Alias]] = None) -> None:
-        """Does the same thing as DAG.setup
+        """Does the same thing as DAG.setup.
 
         Args:
             twz_nodes (Optional[List[Alias]], optional): c.f. `DAG.setup`.
@@ -942,6 +979,18 @@ class DAGExecution(Generic[P, RVDAG]):
         self.dag.setup(twz_nodes)
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
+        """Call the DAG.
+
+        Args:
+            *args: positional arguments to pass in to the DAG
+            **kwargs: keyword arguments to pass in to the DAG
+
+        Raises:
+            TawaziUsageError: if the DAGExecution has already been executed.
+
+        Returns:
+            RVDAG: the return value of the DAG's Execution
+        """
         if self.executed:
             raise TawaziUsageError(
                 "DAGExecution object should not be reused. Instantiate a new one"
@@ -995,8 +1044,6 @@ class DAGExecution(Generic[P, RVDAG]):
                 )
 
         # 3. extract the returned value/values
-        returned_values = dag._get_return_values(self.xn_dict)
-
-        return returned_values  # type: ignore
+        return dag._get_return_values(self.xn_dict)  # type: ignore[return-value]
 
     # TODO: add execution order (the order in which the nodes were executed)

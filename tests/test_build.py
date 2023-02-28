@@ -1,11 +1,8 @@
-# type: ignore
-from time import sleep, time
+from time import sleep
 from typing import Any
 
 from tawazi import DAG, ErrorStrategy
 from tawazi.node import ExecNode
-
-"""Internal Unit Test"""
 
 T = 0.1
 
@@ -46,8 +43,7 @@ def g(e: str) -> str:
 
 
 def fail(g: Any) -> int:
-    toto = 10 / 0
-    return 1
+    return 10 / 0
 
 
 # ExecNodes can be identified using the actual function or an identification string
@@ -67,11 +63,7 @@ failing_execnodes = list_execnodes + [ExecNode(fail.__name__, fail, [en_g], is_s
 
 def test_dag_build() -> None:
     g: DAG[Any, Any] = DAG(list_execnodes, 2, behavior=ErrorStrategy.strict)
-    t0 = time()
     g._execute(g._make_subgraph())  # must never fail!
-    print(time() - t0)
-    for k, v in g.node_dict.items():
-        print(g, v, v.result)
 
 
 def test_draw() -> None:

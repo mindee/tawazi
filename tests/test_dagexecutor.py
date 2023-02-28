@@ -1,9 +1,8 @@
-# type: ignore
+# type: ignore # noqa: PGH003
 import threading
 from typing import Tuple
 
 import pytest
-
 from tawazi import dag, xn
 from tawazi.errors import TawaziUsageError
 
@@ -99,7 +98,7 @@ def test_executed_with_setup_nodes():
 
     @xn(debug=True)
     def my_debug_node(in1, in2, in3):
-        print(in1, in2, in3)
+        print(in1, in2, in3)  # noqa: T201
 
     @dag
     def pipe(in1, in2):

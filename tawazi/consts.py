@@ -1,3 +1,4 @@
+"""Module containing constants used by Tawazi."""
 from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 from typing_extensions import ParamSpec
@@ -11,8 +12,8 @@ USE_SEP_END = ">>"
 
 
 class NoValType:
-    """
-    Tawazi's special None.
+    """Tawazi's special None.
+
     This class is a singleton similar to None to determine that no value is assigned
     >>> NoVal1 = NoValType()
     >>> NoVal2 = NoValType()
@@ -26,23 +27,59 @@ class NoValType:
     _instance = None
 
     def __new__(cls: Type["NoValType"]) -> "NoValType":
+        """Constructor for NoValType.
+
+        Returns:
+            NoValType: new instance of NoValType.
+        """
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
     def __bool__(self) -> bool:
+        """Whether NoVal is Truthy or Falsy.
+
+        Returns:
+            bool: always False
+        """
         return False
 
     def __repr__(self) -> str:
+        """Representation of NoValType.
+
+        Returns:
+            str: "NoVal"
+        """
         return "NoVal"
 
     def __eq__(self, __o: object) -> bool:
+        """Check for equality.
+
+        Args:
+            __o (object): the other object
+
+        Returns:
+            bool: always returns False
+        """
         return False
 
     def __copy__(self) -> "NoValType":
+        """Copy of NoVal.
+
+        Returns:
+            NoValType: Returns the original because NoVal is a singleton.
+        """
         return self
 
     def __deepcopy__(self, _prev: Dict[Any, Any]) -> "NoValType":
+        """Deep copy NoVal.
+
+        Args:
+            _prev (Dict[Any, Any]): the previous state of the object
+
+        Returns:
+            NoValType: the original NoVal because NoVal is a singleton.
+        """
         return self
 
 
@@ -55,7 +92,7 @@ Tag = Union[None, str, tuple]  # anything immutable
 
 # NOTE: maybe support other key types? for example int... or even tuple...
 ReturnIDsType = Optional[
-    Union[Dict[str, Identifier], List[Identifier], Tuple[Identifier], Identifier]
+    Union[Dict[str, Identifier], List[Identifier], Tuple[Identifier, ...], Identifier]
 ]
 RVTypes = Union[Any, Tuple[Any], List[Any], Dict[str, Any]]
 P = ParamSpec("P")

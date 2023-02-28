@@ -2,10 +2,7 @@ from logging import Logger
 from typing import Union
 
 import pytest
-
 from tawazi import dag, xn
-
-"""integration test"""
 
 logger = Logger(name="mylogger", level="ERROR")
 

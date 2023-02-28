@@ -1,12 +1,8 @@
 from time import sleep
-from typing import Any
 
 from networkx import NetworkXUnfeasible
-
 from tawazi import DAG, ErrorStrategy
 from tawazi.node import ExecNode
-
-"""unit test"""
 
 T = 0.1
 
@@ -36,41 +32,38 @@ list_exec_nodes = [en_a, en_b, en_c]
 
 def test_circular_deps() -> None:
     try:
-        g: DAG[Any, Any] = DAG(list_exec_nodes, 2, behavior=ErrorStrategy.strict)
+        DAG(list_exec_nodes, 2, behavior=ErrorStrategy.strict)
     except NetworkXUnfeasible:
         pass
 
 
-"""
-@op
-def n1(img):
-    print(len(img))
-    return len(img)
+# @op
+# def n1(img):
+#     print(len(img))
+#     return len(img)
 
-@op
-def n2(n: int):
-    print("the length is ", n)
-    return n
+# @op
+# def n2(n: int):
+#     print("the length is ", n)
+#     return n
 
-@to_dag
-def pipeline(img):
+# @to_dag
+# def pipeline(img):
 
-    # img ?
-    _len = n1(img)
-    n = n2(_len)
+#     # img ?
+#     _len = n1(img)
+#     n = n2(_len)
 
-    # ?
-    return n
+#     # ?
+#     return n
 
-# this is the best option!
-pipeline(img)
+# # this is the best option!
+# pipeline(img)
 
-# second option if 1st isn't possible
-my_dag = pipeline.make_dag()
+# # second option if 1st isn't possible
+# my_dag = pipeline.make_dag()
 
 
-def autre_fonction(img: List[int]):
-    # called via Product.run()
-    returned_value = my_dag(img)
-
-"""
+# def autre_fonction(img: List[int]):
+#     # called via Product.run()
+#     returned_value = my_dag(img)

@@ -1,7 +1,11 @@
+"""configuration parameters for Tawazi."""
+
 from pydantic import BaseSettings, Field
 
 
 class Config(BaseSettings):
+    """Class to set configuration parameters for Tawazi."""
+
     # whether the default in tawazi is sequentiality or not.
     # This is helpful to reduce your code size and avoid repeating @xn(is_sequentiality=True/False)
     TAWAZI_IS_SEQUENTIAL: bool = False
