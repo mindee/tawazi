@@ -2,7 +2,10 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
+      - id: check-added-large-files
       - id: check-ast
+      - id: check-docstring-first
+      - id: check-symlinks
       - id: check-builtin-literals
         exclude: tests
       - id: check-merge-conflict
@@ -10,30 +13,24 @@ repos:
       - id: check-toml
       - id: debug-statements
       - id: end-of-file-fixer
+      - id: mixed-line-ending
       - id: trailing-whitespace
-  - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
-    hooks:
-      - id: isort
-      # only useful for pre-commit hooked to git
-        args: ["--profile", "black"]
 
   - repo: https://github.com/psf/black
     rev: 23.1.0
     hooks:
     - id: black
 
-  - repo: https://github.com/pycqa/flake8
-    rev: "6.0.0"
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: "v0.0.253"
     hooks:
-      - id: flake8
-        exclude: tests
+    - id: ruff
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.0.1
     hooks:
-    -   id: mypy
-        # files: tawazi
+      - id: mypy
+        files: tawazi
         args: []
         additional_dependencies:
           - pydantic
@@ -44,11 +41,11 @@ repos:
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.4
     hooks:
-    -   id: bandit
+      - id: bandit
         args: ["--ini", ".bandit", "--recursive"]
 
   - repo: https://github.com/terrencepreilly/darglint
     rev: v1.8.1
     hooks:
-    - id: darglint
-      exclude: ^(tests|scripts)/
+      - id: darglint
+        exclude: ^(tests|scripts)/
