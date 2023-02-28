@@ -1,7 +1,5 @@
 from subprocess import run
 
-"""Integration Test"""
-
 
 def test_correct_env_var() -> None:
     # Real test

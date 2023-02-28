@@ -1,5 +1,5 @@
 import os
-from typing import Any, Tuple, Union
+from typing import Any, Tuple
 
 from tawazi import dag, xn
 

@@ -1,4 +1,4 @@
-# type: ignore
+# type: ignore # noqa: PGH003
 import os
 import pickle
 from pathlib import Path
@@ -6,7 +6,6 @@ from typing import Any, List
 
 import numpy as np
 import pytest
-
 from tawazi import DAGExecution, dag, xn
 from tawazi.consts import NoVal
 
@@ -209,8 +208,8 @@ def test_cache_in_dpes() -> None:
 
     def validate(_cache_path, _cache_deps_of):
         cached_results = load_cached_results(_cache_path)
-        for xn in _cache_deps_of:
-            assert cached_results.get(xn.id) is None
+        for xn_ in _cache_deps_of:
+            assert cached_results.get(xn_.id) is None
 
     validate(cache_path, cache_deps_of)
 
@@ -224,8 +223,8 @@ def test_cache_in_dpes() -> None:
 
     def validate(_cache_path, _cache_deps_of):
         cached_results = load_cached_results(_cache_path)
-        for xn in _cache_deps_of:
-            assert cached_results.get(xn.id) is None
+        for xn_ in _cache_deps_of:
+            assert cached_results.get(xn_.id) is None
 
     validate(cache_path, cache_deps_of)
 
@@ -240,8 +239,8 @@ def test_cache_in_dpes() -> None:
 
     def validate(_cache_path: str, _cache_deps_of: List[Any]) -> None:
         cached_results = load_cached_results(_cache_path)
-        for xn in _cache_deps_of:
-            assert cached_results.get(xn.id) is None
+        for xn_ in _cache_deps_of:
+            assert cached_results.get(xn_.id) is None
 
     validate(cache_path, cache_deps_of)
 
@@ -257,7 +256,7 @@ def test_cache_in_dpes() -> None:
 
     def validate(_cache_path, _cache_deps_of):
         cached_results = load_cached_results(_cache_path)
-        for xn in _cache_deps_of:
-            assert cached_results.get(xn.id) is None
+        for xn_ in _cache_deps_of:
+            assert cached_results.get(xn_.id) is None
 
     validate(cache_path, cache_deps_of)

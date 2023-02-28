@@ -1,14 +1,15 @@
+"""Module for helper functions."""
 import inspect
 from typing import Any, Callable, Dict, List, Tuple, Union
 
 import yaml
 
 from tawazi.consts import USE_SEP_END, USE_SEP_START, Identifier, NoVal, NoValType
-from tawazi.errors import raise_arg_exc
+from tawazi.errors import _raise_arg_exc
 
 
 def ordinal(numb: int) -> str:
-    """Construct the string corresponding to the ordinal of a number
+    """Construct the string corresponding to the ordinal of a number.
 
     Args:
         numb (int): order
@@ -45,8 +46,7 @@ def ordinal(numb: int) -> str:
 
 
 def get_args_and_default_args(func: Callable[..., Any]) -> Tuple[List[str], Dict[str, Any]]:
-    """
-    Retrieves the arguments names and the default arguments of a function.
+    """Retrieves the arguments names and the default arguments of a function.
 
     Args:
         func: the target function
@@ -71,30 +71,30 @@ def get_args_and_default_args(func: Callable[..., Any]) -> Tuple[List[str], Dict
     return args, default_args
 
 
-def make_raise_arg_error(func_name: str, arg_name: str) -> Callable[[], None]:
+def _make_raise_arg_error(func_name: str, arg_name: str) -> Callable[[], None]:
     # declare a local function that will raise an error in the scheduler if
     # the user doesn't pass in This ArgExecNode as argument to the Attached LazyExecNode
-    return lambda: raise_arg_exc(func_name, arg_name)
+    return lambda: _raise_arg_exc(func_name, arg_name)
 
 
-def lazy_xn_id(base_id: Identifier, count_usages: int) -> Identifier:
+def _lazy_xn_id(base_id: Identifier, count_usages: int) -> Identifier:
     if count_usages > 0:
         return f"{base_id}{USE_SEP_START}{count_usages}{USE_SEP_END}"
 
     return base_id
 
 
-def filter_NoVal(v: Union[NoValType, Any]) -> Any:
+def _filter_noval(v: Union[NoValType, Any]) -> Any:
     if v is NoVal:
         return None
     return v
 
 
 # courtesy of https://gist.github.com/pypt/94d747fe5180851196eb?permalink_comment_id=3401011#gistcomment-3401011
-class UniqueKeyLoader(yaml.SafeLoader):
+class _UniqueKeyLoader(yaml.SafeLoader):
     def construct_mapping(self, node: Any, deep: bool = False) -> Any:
         mapping = []
-        for key_node, value_node in node.value:
+        for key_node, _value_node in node.value:
             key = self.construct_object(key_node, deep=deep)
             if key in mapping:
                 raise KeyError(f"key {key} already in yaml file")

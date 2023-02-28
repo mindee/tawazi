@@ -1,8 +1,6 @@
-# type: ignore
 from typing import Any, List, Tuple
 
 import pytest
-
 from tawazi import dag, xn
 from tawazi.errors import TawaziArgumentException, TawaziBaseException
 
@@ -14,7 +12,7 @@ def a(input_img: List[int], cst: int) -> int:
 
 @xn
 def lazy_print(*args: Any) -> None:
-    print(*args)
+    print(*args)  # noqa: T201
 
 
 @dag

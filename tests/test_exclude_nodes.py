@@ -1,9 +1,8 @@
-# type: ignore
+# type: ignore # noqa: PGH003
 from copy import deepcopy
 from typing import Tuple
 
 import pytest
-
 from tawazi import dag, xn
 from tawazi.config import Cfg
 from tawazi.errors import TawaziUsageError

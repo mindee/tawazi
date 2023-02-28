@@ -6,7 +6,6 @@ from tawazi import dag, xn
 @xn
 def abcd(i: int, b: List[str], cst: float = 0.1) -> int:
     """doc of a"""
-    print(i, b, cst)
     return i
 
 
@@ -16,8 +15,7 @@ def pipe(entry: int) -> int:
     # TODO: this should not work but it actually works even though the arguments are not complete!!
     # b = abcd(entry, entry)
 
-    b = abcd(entry, ["entry"])
-    return b
+    return abcd(entry, ["entry"])
 
 
 def test_doc_pipeline() -> None:

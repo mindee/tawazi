@@ -1,14 +1,10 @@
-# type: ignore
+# type: ignore # noqa: PGH003
 from time import sleep
 from typing import Any
 
 import pytest
-
 from tawazi import DAG, ErrorStrategy
 from tawazi.node import ExecNode
-
-"""Internal Unit tests"""
-
 
 T = 0.001
 # global behavior_comp_str

@@ -1,11 +1,8 @@
 from typing import Any
 
 import pytest
-
 from tawazi import dag, xn
 from tawazi.errors import InvalidExecNodeCall
-
-"""integration test"""
 
 
 # tests different cases of @op decoration for Python functions

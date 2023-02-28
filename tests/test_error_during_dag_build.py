@@ -1,5 +1,4 @@
 import pytest
-
 from tawazi import dag, node, xn
 
 
@@ -13,7 +12,7 @@ def test_execnodes() -> None:
         @dag
         def pipe() -> None:
             a()
-            # an undefined ExecNode
-            b()  # type: ignore[name-defined]
+            # purposefully an undefined ExecNode
+            b()  # type: ignore[name-defined] # noqa: F821
 
     assert node.exec_nodes == []

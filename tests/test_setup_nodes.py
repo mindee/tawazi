@@ -1,9 +1,8 @@
-# type: ignore
+# type: ignore # noqa: PGH003
 from copy import deepcopy
 from functools import reduce
 
 import pytest
-
 from tawazi import dag, xn
 from tawazi.errors import TawaziBaseException, TawaziUsageError
 
@@ -18,7 +17,6 @@ def test_pipeline() -> None:
 
     @xn
     def op1(a_str: str):
-        print("op1", a_str)
         pytest.op1_counter += 1
         return len(a_str)
 
@@ -115,7 +113,7 @@ def test_dependencies() -> None:
         sop2_r = setup_op2(sop1_r)
         op1_r = op1(sop1_r)
         op2_r = op2(sop2_r)
-        op12_r = op12(op1_r, op2_r)
+        op12(op1_r, op2_r)
 
     pytest.setup_op1 = 0
     pytest.setup_op2 = 0
@@ -170,8 +168,7 @@ def test_dependencies_subgraph() -> None:
         sop2_r = setup_op2(sop1_r)
         op1_r = op1(sop1_r, twz_tag="twinkle toes")
         op2_r = op2(sop2_r)
-        op12_r = op12(op1_r, op2_r)
-        return op12_r
+        return op12(op1_r, op2_r)
 
     pytest.setup_op1 = 0
     pytest.setup_op2 = 0
@@ -235,8 +232,7 @@ def test_pipeline_setup_method() -> None:
         sop2_r = setup_op2(sop1_r, twz_tag="setup2")
         op1_r = op1(sop1_r, twz_tag="twinkle toes")
         op2_r = op2(sop2_r)
-        op12_r = op12(op1_r, op2_r)
-        return op12_r
+        return op12(op1_r, op2_r)
 
     # test runninig setup without arguments
     pipe = deepcopy(pipe_setup_deps)
@@ -255,7 +251,7 @@ def test_pipeline_setup_method() -> None:
     assert pytest.op2 == 1
     assert pytest.op12 == 1
 
-    # test running setup targetting a setup node
+    # test running setup targeting a setup node
     pipe = deepcopy(pipe_setup_deps)
     clean()
     pipe.setup(target_nodes=["setup1"])
@@ -287,7 +283,7 @@ def test_pipeline_setup_method() -> None:
     assert pytest.op2 == 1
     assert pytest.op12 == 1
 
-    # test running setup targetting a non setup node
+    # test running setup targeting a non setup node
     pipe = deepcopy(pipe_setup_deps)
     clean()
     pipe.setup(target_nodes=["twinkle toes"])

@@ -1,15 +1,13 @@
-# type: ignore
+# type: ignore # noqa: PGH003
 from typing import Any, List
 
 import pytest
-
 from tawazi import dag, xn
 from tawazi.errors import TawaziBaseException
 
 
 @xn
 def stub(img: List[Any]) -> List[Any]:
-    print(f"did operation on {img}")
     return img
 
 
@@ -24,9 +22,9 @@ def my_len(img: List[Any]) -> int:
 def is_positive_len(len_img: int) -> None:
     # this node depends of the my_len!
     if len_img > 0:
-        print("positive")
+        print("positive")  # noqa: T201
     else:
-        print("negative")
+        print("negative")  # noqa: T201
 
     pytest.is_positive_len_has_ran = True
 
@@ -40,11 +38,11 @@ def test_pipeline_with_debug_node() -> None:
     @dag
     def pipeline(img: List[Any]) -> List[Any]:
         img = stub(img)
-        len_ = my_len(img)
+        my_len(img)
         return img
 
     assert [1, 2, 3] == pipeline([1, 2, 3])
-    assert pytest.my_len_has_ran == True
+    assert pytest.my_len_has_ran is True
 
 
 def test_pipeline_without_debug_node() -> None:
@@ -56,11 +54,11 @@ def test_pipeline_without_debug_node() -> None:
     @dag
     def pipeline(img: List[Any]) -> List[Any]:
         img = stub(img)
-        len_ = my_len(img)
+        my_len(img)
         return img
 
     assert [1, 2, 3] == pipeline([1, 2, 3])
-    assert pytest.my_len_has_ran == False
+    assert pytest.my_len_has_ran is False
 
 
 def test_interdependant_debug_nodes() -> None:
@@ -78,8 +76,8 @@ def test_interdependant_debug_nodes() -> None:
         return img
 
     assert [1, 2, 3] == pipeline([1, 2, 3])
-    assert pytest.my_len_has_ran == True
-    assert pytest.is_positive_len_has_ran == True
+    assert pytest.my_len_has_ran is True
+    assert pytest.is_positive_len_has_ran is True
 
 
 def test_wrongly_defined_pipeline() -> None:
@@ -123,7 +121,7 @@ def test_triple_incr_no_debug() -> None:
 
     tawazi.Cfg.RUN_DEBUG_NODES = False
 
-    assert triple_incr_debug(1) == None
+    assert triple_incr_debug(1) is None
 
 
 def test_triple_incr_debug_subgraph() -> None:
@@ -149,8 +147,6 @@ def test_reachable_debuggable_node_in_subgraph() -> None:
 
     assert pipe(2, target_nodes=["stub"]) == 2
     assert pytest.prin_share_var == 3
-
-    pytest.prin_share_var == None
 
     assert pipe(0, target_nodes=["stub", "incr"]) == 0
     assert pytest.prin_share_var == 1
