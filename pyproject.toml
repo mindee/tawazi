@@ -55,10 +55,39 @@ strict_equality = true
 module = "matplotlib.*,networkx.*,yaml.*"
 ignore_missing_imports = true
 
-[tool.isort]
-profile = "black"
-line_length = 100
-
 [tool.black]
 skip-magic-trailing-comma = true
 line-length = 100
+
+
+[tool.ruff]
+# Use of assert detected
+ignore = ["E501", "S101"]
+src = ["src"]
+line-length = 100
+target-version = "py38"
+select = [
+    "B",
+    "D",
+    "E",
+    "F",
+    "I",
+    "N",
+    "PGH",
+    "UP",
+    "S",
+    "T20",
+    "TID",
+    "W",
+    "RET"
+]
+
+[tool.ruff.per-file-ignores]
+"tests/*.py" = ["D"]
+"scripts/*.py" = ["D", "PGH"]
+
+[tool.ruff.flake8-tidy-imports]
+ban-relative-imports = "parents"
+
+[tool.ruff.pydocstyle]
+convention = "google"
