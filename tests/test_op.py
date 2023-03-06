@@ -1,4 +1,5 @@
-# type: ignore
+from typing import Any
+
 import pytest
 
 from tawazi import dag, xn
@@ -10,50 +11,50 @@ from tawazi.errors import InvalidExecNodeCall
 # tests different cases of @op decoration for Python functions
 # 1. different signatures
 @xn
-def f1():
+def f1() -> int:
     return 1
 
 
 @xn
-def f2(f1):
+def f2(f1: int) -> int:
     return 2
 
 
 @xn
-def f3(f1, f2):
+def f3(f1: int, f2: int) -> int:
     assert f1 == 1
     assert f2 == 2
     return 3
 
 
 @xn
-def f4(f1, cst=0):
+def f4(f1: int, cst: int = 0) -> int:
     # TODO: test with argument param and without argument param cst
     return 4 + cst
 
 
 @xn
-def f5(*args):
+def f5(*args: Any) -> int:
     return sum(args)
 
 
 @xn
-def f6(**kwargs):
+def f6(**kwargs: Any) -> int:
     return sum(kwargs.values())
 
 
 @xn
-def f7(*args, **kwargs):
-    return sum(args) + sum(kwargs.values())
+def f7(*args: Any, **kwargs: Any) -> int:
+    return sum(args) + sum(kwargs.values())  #  type: ignore
 
 
 @xn
-def f8(f1, *args, **kwargs):
+def f8(f1: int, *args: Any, **kwargs: Any) -> int:
     return sum([f1, *args, *(kwargs.values())])
 
 
 @dag
-def pipe():
+def pipe() -> None:
     _1 = f1()
     # import ipdb
     # ipdb.set_trace()
@@ -66,10 +67,10 @@ def pipe():
     _8 = f8(_1, _2, _3)
 
 
-def test_ops_signatures():
+def test_ops_signatures() -> None:
     pipe()
 
 
-def test_invalid_call_execnode():
+def test_invalid_call_execnode() -> None:
     with pytest.raises(InvalidExecNodeCall):
         f6()

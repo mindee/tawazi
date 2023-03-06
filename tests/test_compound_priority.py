@@ -1,5 +1,6 @@
-#  type: ignore
+# type: ignore
 from time import sleep
+from typing import Any
 
 import pytest
 
@@ -12,37 +13,37 @@ T = 1e-3
 
 
 @xn(priority=1)
-def a():
+def a() -> None:
     sleep(T)
     pytest.compound_priority_str += "a"
 
 
 @xn(priority=1)
-def b(a):
+def b(a: Any) -> None:
     sleep(T)
     pytest.compound_priority_str += "b"
 
 
 @xn(priority=1)
-def c(a):
+def c(a: Any) -> None:
     sleep(T)
     pytest.compound_priority_str += "c"
 
 
 @xn(priority=1)
-def d(b):
+def d(b: Any) -> None:
     sleep(T)
     pytest.compound_priority_str += "d"
 
 
 @xn(priority=1)
-def e():
+def e() -> None:
     sleep(T)
     pytest.compound_priority_str += "e"
 
 
 @dag
-def dependency_describer():
+def dependency_describer() -> None:
     _a = a()
     _b = b(_a)
     _c = c(_a)
@@ -50,7 +51,7 @@ def dependency_describer():
     _e = e()
 
 
-def test_compound_priority():
+def test_compound_priority() -> None:
     dag = dependency_describer
 
     assert dag.node_dict_by_name["a"].compound_priority == 4
@@ -60,7 +61,7 @@ def test_compound_priority():
     assert dag.node_dict_by_name["e"].compound_priority == 1
 
 
-def test_compound_priority():
+def test_compound_priority_call() -> None:
     pytest.compound_priority_str == ""
     dependency_describer()
 

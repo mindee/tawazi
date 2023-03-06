@@ -1,11 +1,10 @@
-# type: ignore
 from typing import List
 
 from tawazi import dag, xn
 
 
 @xn
-def abcd(i: int, b: List[str], cst: float = 0.1, **kwargs) -> int:
+def abcd(i: int, b: List[str], cst: float = 0.1) -> int:
     """doc of a"""
     print(i, b, cst)
     return i
@@ -14,23 +13,26 @@ def abcd(i: int, b: List[str], cst: float = 0.1, **kwargs) -> int:
 @dag
 def pipe(entry: int) -> int:
     """doc of my pipeline"""
-    b = abcd(entry)
+    # TODO: this should not work but it actually works even though the arguments are not complete!!
+    # b = abcd(entry, entry)
+
+    b = abcd(entry, ["entry"])
     return b
 
 
-def test_doc_pipeline():
+def test_doc_pipeline() -> None:
     assert pipe.__doc__ == """doc of my pipeline"""
 
 
-def test_name_pipeline():
-    assert pipe.__name__ == "pipe"
+def test_name_pipeline() -> None:
+    assert pipe.__name__ == "pipe"  # type: ignore[attr-defined]
 
 
-def test_doc_operation():
+def test_doc_operation() -> None:
     assert abcd.__doc__ == """doc of a"""
 
 
-def test_name_op():
+def test_name_op() -> None:
     assert abcd.__name__ == "abcd"
 
 

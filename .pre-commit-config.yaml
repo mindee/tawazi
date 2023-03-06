@@ -30,14 +30,16 @@ repos:
         exclude: tests
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.0.0
+    rev: v1.0.1
     hooks:
     -   id: mypy
-        files: tawazi
+        # files: tawazi
         args: []
         additional_dependencies:
           - pydantic
           - loguru # to be removed when loguru is removed
+          - pytest
+          - numpy
 
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.4

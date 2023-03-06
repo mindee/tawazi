@@ -1,5 +1,6 @@
 # type: ignore
 import threading
+from typing import Tuple
 
 import pytest
 
@@ -8,29 +9,29 @@ from tawazi.errors import TawaziUsageError
 
 
 @xn
-def xn1(in1):
+def xn1(in1: int) -> int:
     return in1 + 1
 
 
 @xn
-def xn2(in1):
+def xn2(in1: int) -> int:
     return in1 + 2
 
 
 @xn
-def xn3(in1, in2):
+def xn3(in1: int, in2: int) -> int:
     return in1 + in2
 
 
 @dag
-def pipe(in1, in2):
+def pipe(in1: int, in2: int) -> Tuple[int, int, int]:
     r1 = xn1(in1)
     r2 = xn2(in2)
     r3 = xn3(r1, r2)
     return r1, r2, r3
 
 
-def test_run_whole_dag_executor():
+def test_run_whole_dag_executor() -> None:
     executor = pipe.executor()
     r1, r2, r3 = executor(1, 2)
 
@@ -38,7 +39,7 @@ def test_run_whole_dag_executor():
     assert len(executor.results) == 5
 
 
-def test_run_dag_executor_multiple_times():
+def test_run_dag_executor_multiple_times() -> None:
     # executors are used only once!
     executor = pipe.executor()
     r1, r2, r3 = executor(1, 2)
@@ -51,22 +52,22 @@ def test_run_dag_executor_multiple_times():
     assert len(executor.results) == 5
 
 
-def test_run_sub_dag_executor():
+def test_run_sub_dag_executor() -> None:
     executor = pipe.executor(target_nodes=["xn1", "xn2"])
     r1, r2, r3 = executor(1, 2)
     assert (r1, r2, r3) == (2, 4, None)
 
 
-def test_thread_naming():
+def test_thread_naming() -> None:
     base_thread_name = "twinkle_toes"
     from tawazi import ErrorStrategy
 
     @xn
-    def xn1():
+    def xn1() -> None:
         assert threading.current_thread().name.startswith(base_thread_name)
 
     @dag(behavior=ErrorStrategy.strict)
-    def pipe():
+    def pipe() -> None:
         xn1()
 
     # should pass

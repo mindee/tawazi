@@ -1,5 +1,5 @@
-#  type: ignore
 from time import sleep
+from typing import Any
 
 from networkx import NetworkXUnfeasible
 
@@ -11,17 +11,17 @@ from tawazi.node import ExecNode
 T = 0.1
 
 
-def a(c):
+def a(c: str) -> str:
     sleep(T)
     return "a"
 
 
-def b(a):
+def b(a: str) -> str:
     sleep(T)
     return a + "b"
 
 
-def c(b):
+def c(b: str) -> str:
     sleep(T)
     return b + "c"
 
@@ -34,9 +34,9 @@ en_a.args = [en_c]
 list_exec_nodes = [en_a, en_b, en_c]
 
 
-def test_circular_deps():
+def test_circular_deps() -> None:
     try:
-        g = DAG(list_exec_nodes, 2, behavior=ErrorStrategy.strict)
+        g: DAG[Any, Any] = DAG(list_exec_nodes, 2, behavior=ErrorStrategy.strict)
     except NetworkXUnfeasible:
         pass
 

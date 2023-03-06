@@ -1,4 +1,3 @@
-#  type: ignore
 from logging import Logger
 from typing import Union
 
@@ -13,24 +12,26 @@ logger = Logger(name="mylogger", level="ERROR")
 
 class MyClass:
     @xn
-    def a(self):
+    def a(self) -> str:
         logger.debug("ran a")
         return "a"
 
     @xn
-    def b(self, a):
+    def b(self, a: str) -> str:
         logger.debug(f"a is {a}")
         logger.debug("ran b")
         return "b"
 
     @xn
-    def c(self, a):
+    def c(self, a: str) -> str:
         logger.debug(f"a is {a}")
         logger.debug("ran c")
         return "c"
 
     @xn
-    def d(self, b, c, third_argument: Union[str, int] = 1234, fourth_argument=6789):
+    def d(
+        self, b: str, c: str, third_argument: Union[str, int] = 1234, fourth_argument: int = 6789
+    ) -> str:
         logger.debug(f"b is {b}")
         logger.debug(f"c is {c}")
         logger.debug(f"third argument is {third_argument}")
@@ -41,18 +42,18 @@ class MyClass:
         return "d"
 
 
-#     @to_dag
-#     def my_custom_dag(self):
+#     @dag
+#     def my_custom_dag(self) -> None:
 #         vara = self.a()
 #         varb = self.b(vara)
 #         varc = self.c(vara)
 #         _vard = self.d(varb, c=varc, fourth_argument=1111)
 
 
-# def test_ops_interface():
+# def test_ops_interface() -> None:
 #     c = MyClass()
 
-#     d1 = c.my_custom_dag()
+#     d1 = c.my_custom_dag
 #     logger.debug("\n1st execution of dag")
 #     d1.execute()
 #     assert pytest.third_argument == 1234
