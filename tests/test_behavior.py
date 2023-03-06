@@ -1,5 +1,6 @@
-#  type: ignore
+# type: ignore
 from time import sleep
+from typing import Any
 
 import pytest
 
@@ -11,24 +12,24 @@ from tawazi.node import ExecNode
 
 T = 0.001
 # global behavior_comp_str
-pytest.behavior_comp_str = ""
+pytest.behavior_comp_str: str = ""
 
 
-def a():
+def a() -> None:
     sleep(T)
     pytest.behavior_comp_str += "a"
 
 
-def b(a):
+def b(a: Any) -> None:
     raise NotImplementedError
 
 
-def c(b):
+def c(b: Any) -> None:
     sleep(T)
     pytest.behavior_comp_str += "c"
 
 
-def d(a):
+def d(a: Any) -> None:
     sleep(T)
     pytest.behavior_comp_str += "d"
 
@@ -40,25 +41,25 @@ en_d = ExecNode(d.__qualname__, d, args=[en_a], priority=1, is_sequential=False)
 list_execnodes = [en_a, en_b, en_c, en_d]
 
 
-def test_strict_error_behavior():
+def test_strict_error_behavior() -> None:
     pytest.behavior_comp_str = ""
-    g = DAG(list_execnodes, 1, behavior=ErrorStrategy.strict)
+    g: DAG[Any, Any] = DAG(list_execnodes, 1, behavior=ErrorStrategy.strict)
     try:
         g._execute(g._make_subgraph())
     except NotImplementedError:
         pass
 
 
-def test_all_children_behavior():
+def test_all_children_behavior() -> None:
     pytest.behavior_comp_str = ""
-    g = DAG(list_execnodes, 1, behavior=ErrorStrategy.all_children)
+    g: DAG[Any, Any] = DAG(list_execnodes, 1, behavior=ErrorStrategy.all_children)
     g._execute(g._make_subgraph())
     assert pytest.behavior_comp_str == "ad"
 
 
-def test_permissive_behavior():
+def test_permissive_behavior() -> None:
     pytest.behavior_comp_str = ""
-    g = DAG(list_execnodes, 1, behavior=ErrorStrategy.permissive)
+    g: DAG[Any, Any] = DAG(list_execnodes, 1, behavior=ErrorStrategy.permissive)
     g._execute(g._make_subgraph())
     assert pytest.behavior_comp_str == "acd"
 

@@ -1,10 +1,9 @@
-# type: ignore
 from subprocess import run
 
 """Integration Test"""
 
 
-def test_correct_env_var():
+def test_correct_env_var() -> None:
     # Real test
     proc = run(
         "echo $(poetry env info --path)/python scripts/validate_config_options.py".split(" "),

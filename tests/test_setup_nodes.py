@@ -8,7 +8,7 @@ from tawazi import dag, xn
 from tawazi.errors import TawaziBaseException, TawaziUsageError
 
 
-def test_pipeline():
+def test_pipeline() -> None:
     @xn(setup=True)
     def setup_op(in1):
         # setup operations should run a single time!
@@ -50,7 +50,7 @@ def test_pipeline():
     assert pytest.op1_counter == 3
 
 
-def test_bad_declaration():
+def test_bad_declaration() -> None:
     @xn
     def op1():
         return True
@@ -66,7 +66,7 @@ def test_bad_declaration():
             setup_op(op1())
 
 
-def test_not_setup_and_debug():
+def test_not_setup_and_debug() -> None:
     with pytest.raises(ValueError):
 
         @xn(setup=True, debug=True)
@@ -83,7 +83,7 @@ def test_not_setup_and_debug():
 ###############
 
 
-def test_dependencies():
+def test_dependencies() -> None:
     @xn(setup=True)
     def setup_op1():
         pytest.setup_op1 += 1
@@ -138,7 +138,7 @@ def test_dependencies():
     assert pytest.op12 == 2
 
 
-def test_dependencies_subgraph():
+def test_dependencies_subgraph() -> None:
     @xn(setup=True)
     def setup_op1():
         pytest.setup_op1 += 1
@@ -196,7 +196,7 @@ def test_dependencies_subgraph():
     assert pytest.op12 == 0
 
 
-def test_pipeline_setup_method():
+def test_pipeline_setup_method() -> None:
     def clean():
         pytest.setup_op1 = 0
         pytest.setup_op2 = 0
@@ -304,7 +304,7 @@ def test_pipeline_setup_method():
     assert pytest.op12 == 0
 
 
-def test_setup_node_cst_input():
+def test_setup_node_cst_input() -> None:
     @xn(setup=True)
     def setop(k: int = 1234):
         pytest.setop += 1
@@ -334,7 +334,7 @@ def test_setup_node_cst_input():
     assert r2 == 2
 
 
-def test_setup_no_default_arg():
+def test_setup_no_default_arg() -> None:
     @xn(setup=True)
     def setup(k: int):
         pytest.setop += 1
@@ -353,7 +353,7 @@ def test_setup_no_default_arg():
     assert pytest.setop == 1
 
 
-def test_setup_multiple_usages():
+def test_setup_multiple_usages() -> None:
     @xn(setup=True)
     def get_model(mid: str):
         pytest.get_model_setup += 1
@@ -390,7 +390,7 @@ def test_setup_multiple_usages():
     assert pytest.get_model_setup == 4
 
 
-def test_setup_xn_should_not_take_input_from_pipeline_args():
+def test_setup_xn_should_not_take_input_from_pipeline_args() -> None:
     @xn(setup=True)
     def setop(in1):
         pass

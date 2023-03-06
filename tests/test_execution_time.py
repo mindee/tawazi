@@ -1,5 +1,5 @@
-# type: ignore
 from time import sleep, time
+from typing import Any
 
 from tawazi import dag, xn
 
@@ -9,28 +9,28 @@ T = 0.1
 
 
 @xn
-def a():
+def a() -> None:
     sleep(T)
 
 
 @xn
-def b():
+def b() -> None:
     sleep(T)
 
 
 @xn
-def c(a, b):
+def c(a: Any, b: Any) -> None:
     sleep(T)
 
 
 @dag(max_concurrency=2)
-def deps():
+def deps() -> None:
     a_ = a()
     b_ = b()
     c_ = c(a_, b_)
 
 
-def test_timing():
+def test_timing() -> None:
     t0 = time()
     deps()
     execution_time = time() - t0

@@ -2,6 +2,7 @@
 import os
 import pickle
 from pathlib import Path
+from typing import Any, List
 
 import numpy as np
 import pytest
@@ -11,7 +12,7 @@ from tawazi.consts import NoVal
 
 
 @xn
-def generate_large_zeros_array():
+def generate_large_zeros_array() -> np.ndarray:
     return np.zeros(1_000_000).astype(np.uint8)
 
 
@@ -40,7 +41,7 @@ def pipe():
     return zeros, ones, ones_, avg
 
 
-def test_cache_results_basic():
+def test_cache_results_basic() -> None:
     cache_path = "tests/cache_results/test_cache_results_basic.pkl"
     if Path(cache_path).is_file():
         os.remove(cache_path)
@@ -69,7 +70,7 @@ def test_cache_results_basic():
     assert cached_results["avg_array"] == avg
 
 
-def test_cache_results_subgraph():
+def test_cache_results_subgraph() -> None:
     cache_path = "tests/cache_results/test_cache_results_subgraph.pkl"
     if Path(cache_path).is_file():
         os.remove(cache_path)
@@ -96,7 +97,7 @@ def test_cache_results_subgraph():
     assert cached_results["avg_array"] is avg
 
 
-def test_running_cached_dag():
+def test_running_cached_dag() -> None:
     cache_path = "tests/cache_results/test_running_cached_dag.pkl"
     if Path(cache_path).is_file():
         os.remove(cache_path)
@@ -123,7 +124,7 @@ def test_running_cached_dag():
     assert r4 == avg
 
 
-def test_cache_read_write():
+def test_cache_read_write() -> None:
     cache_path = "tests/cache_results/test_cache_read_write.pkl"
     if Path(cache_path).is_file():
         os.remove(cache_path)
@@ -172,12 +173,12 @@ def test_cache_read_write():
     assert r4 == avg
 
 
-def load_cached_results(cache_path):
+def load_cached_results(cache_path: str) -> Any:
     with open(cache_path, "rb") as f:
         return pickle.load(f)
 
 
-def test_cache_in_dpes():
+def test_cache_in_dpes() -> None:
     with pytest.raises(ValueError):
         exc = DAGExecution(
             pipe,
@@ -237,7 +238,7 @@ def test_cache_in_dpes():
     assert (r2 == ones).all()
     assert (r3 == ones_).all()
 
-    def validate(_cache_path, _cache_deps_of):
+    def validate(_cache_path: str, _cache_deps_of: List[Any]) -> None:
         cached_results = load_cached_results(_cache_path)
         for xn in _cache_deps_of:
             assert cached_results.get(xn.id) is None

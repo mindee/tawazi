@@ -1,4 +1,3 @@
-#  type: ignore
 from logging import Logger
 from typing import Union
 
@@ -11,26 +10,28 @@ from tawazi import dag, xn
 logger = Logger(name="mylogger", level="ERROR")
 
 
-def test_ops_interface():
+def test_ops_interface() -> None:
     @xn
-    def a():
+    def a() -> str:
         logger.debug("ran a")
         return "a"
 
     @xn
-    def b(a):
+    def b(a: str) -> str:
         logger.debug(f"a is {a}")
         logger.debug("ran b")
         return "b"
 
     @xn
-    def c(a):
+    def c(a: str) -> str:
         logger.debug(f"a is {a}")
         logger.debug("ran c")
         return "c"
 
     @xn
-    def d(b, c, third_argument: Union[str, int] = 1234, fourth_argument=6789):
+    def d(
+        b: str, c: str, third_argument: Union[str, int] = 1234, fourth_argument: int = 6789
+    ) -> str:
         logger.debug(f"b is {b}")
         logger.debug(f"c is {c}")
         logger.debug(f"third argument is {third_argument}")
@@ -42,19 +43,19 @@ def test_ops_interface():
         return "d"
 
     @dag
-    def my_custom_dag():
+    def my_custom_dag() -> None:
         vara = a()
         varb = b(vara)
         varc = c(vara)
         _vard = d(varb, c=varc, fourth_argument=1111)
 
     @xn
-    def e():
+    def e() -> str:
         logger.debug("ran e")
         return "e"
 
     @xn
-    def f(a, b, c, d, e):
+    def f(a: str, b: str, c: str, d: str, e: str) -> None:
         logger.debug(f"a is {a}")
         logger.debug(f"b is {b}")
         logger.debug(f"c is {c}")
@@ -63,7 +64,7 @@ def test_ops_interface():
         logger.debug("ran f")
 
     @dag
-    def my_other_custom_dag():
+    def my_other_custom_dag() -> None:
         vara = a()
         varb = b(vara)
         varc = c(vara)

@@ -1,5 +1,6 @@
-#  type: ignore
+# type: ignore
 from time import sleep, time
+from typing import Any
 
 from tawazi import DAG, ErrorStrategy
 from tawazi.node import ExecNode
@@ -9,42 +10,42 @@ from tawazi.node import ExecNode
 T = 0.1
 
 
-def a():
+def a() -> str:
     sleep(T)
     return "a"
 
 
-def b(a):
+def b(a: str) -> str:
     sleep(T)
     return a + "b"
 
 
-def c(a):
+def c(a: str) -> str:
     sleep(T)
     return a + "c"
 
 
-def d(b, c):
+def d(b: str, c: str) -> str:
     sleep(T)
     return b + c + "d"
 
 
-def e(b):
+def e(b: str) -> str:
     sleep(T)
     return b + "e"
 
 
-def f(e):
+def f(e: str) -> str:
     sleep(T)
     return e + "f"
 
 
-def g(e):
+def g(e: str) -> str:
     sleep(T)
     return e + "g"
 
 
-def fail(g):
+def fail(g: Any) -> int:
     toto = 10 / 0
     return 1
 
@@ -64,8 +65,8 @@ list_execnodes = [en_a, en_b, en_c, en_d, en_e, en_f, en_g]
 failing_execnodes = list_execnodes + [ExecNode(fail.__name__, fail, [en_g], is_sequential=False)]
 
 
-def test_dag_build():
-    g = DAG(list_execnodes, 2, behavior=ErrorStrategy.strict)
+def test_dag_build() -> None:
+    g: DAG[Any, Any] = DAG(list_execnodes, 2, behavior=ErrorStrategy.strict)
     t0 = time()
     g._execute(g._make_subgraph())  # must never fail!
     print(time() - t0)
@@ -73,15 +74,15 @@ def test_dag_build():
         print(g, v, v.result)
 
 
-def test_draw():
-    g = DAG(list_execnodes, 2, behavior=ErrorStrategy.strict)
+def test_draw() -> None:
+    g: DAG[Any, Any] = DAG(list_execnodes, 2, behavior=ErrorStrategy.strict)
     g.draw(display=False)
     g.draw(display=True)
 
 
-def test_bad_behaviour():
+def test_bad_behaviour() -> None:
     try:
-        g = DAG(failing_execnodes, 2, behavior="Such Bad Behavior")
+        g: DAG[Any, Any] = DAG(failing_execnodes, 2, behavior="Such Bad Behavior")
         g._execute(g._make_subgraph())
     except NotImplementedError:
         pass

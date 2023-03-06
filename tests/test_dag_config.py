@@ -1,4 +1,3 @@
-# type: ignore
 import json
 
 import pytest
@@ -10,25 +9,25 @@ cfg = {"nodes": {"a": {"priority": 42, "is_sequential": False}}, "max_concurrenc
 
 
 @xn(tag="toto")
-def a(cst: int):
+def a(cst: int) -> int:
     print(cst)
     return cst
 
 
 @xn
-def b(a, cst: str):
+def b(a: int, cst: str) -> str:
     print(a, cst)
     return str(a) + cst
 
 
 @dag
-def my_dag():
+def my_dag() -> str:
     var_a = a(1234)
     var_b = b(var_a, "poulpe")
     return var_b
 
 
-def test_config_from_dict():
+def test_config_from_dict() -> None:
     d = my_dag
     d.config_from_dict(cfg)
 
@@ -37,7 +36,7 @@ def test_config_from_dict():
     assert not d.get_node_by_id("a").is_sequential
 
 
-def test_config_from_yaml(tmp_path):
+def test_config_from_yaml(tmp_path: str) -> None:
     p = f"{tmp_path}/my_cfg.yaml"
     yaml_cfg = yaml.dump(cfg)
     with open(p, "w") as f:
@@ -51,7 +50,7 @@ def test_config_from_yaml(tmp_path):
     assert not d.get_node_by_id("a").is_sequential
 
 
-def test_config_from_json(tmp_path):
+def test_config_from_json(tmp_path: str) -> None:
     p = f"{tmp_path}/my_cfg.yaml"
     with open(p, "w") as f:
         json.dump(cfg, f)
@@ -64,7 +63,7 @@ def test_config_from_json(tmp_path):
     assert not d.get_node_by_id("a").is_sequential
 
 
-def test_dup_conf_dag():
+def test_dup_conf_dag() -> None:
     dup_cfg = {
         "nodes": {"a": {"priority": 42, "is_sequential": False}, "toto": {"priority": 256}},
         "max_concurrency": 3,
@@ -74,7 +73,7 @@ def test_dup_conf_dag():
         d.config_from_dict(dup_cfg)
 
 
-def test_conf_dag_via_tag():
+def test_conf_dag_via_tag() -> None:
     tag_cfg = {"nodes": {"toto": {"priority": 256}}, "max_concurrency": 3}
     d = my_dag
     d.config_from_dict(tag_cfg)
