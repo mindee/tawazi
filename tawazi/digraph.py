@@ -4,7 +4,7 @@ from typing import List, Optional, Set
 import networkx as nx
 from loguru import logger
 
-from .consts import IdentityHash
+from .consts import Identifier
 
 
 class DiGraphEx(nx.DiGraph):
@@ -12,7 +12,7 @@ class DiGraphEx(nx.DiGraph):
     Extends the DiGraph with some methods
     """
 
-    def root_nodes(self) -> List[IdentityHash]:
+    def root_nodes(self) -> List[Identifier]:
         """
         Safely gets the root nodes
 
@@ -22,7 +22,7 @@ class DiGraphEx(nx.DiGraph):
         return [node for node, degree in self.in_degree if degree == 0]
 
     @property
-    def leaf_nodes(self) -> List[IdentityHash]:
+    def leaf_nodes(self) -> List[Identifier]:
         """
         Safely gets the leaf nodes
 
@@ -31,16 +31,16 @@ class DiGraphEx(nx.DiGraph):
         """
         return [node for node, degree in self.out_degree if degree == 0]
 
-    def remove_recursively(self, root_node: IdentityHash) -> None:
+    def remove_recursively(self, root_node: Identifier) -> None:
         """
         Recursively removes all the nodes that depend on the provided one including itself
 
         Args:
-            root_node (IdentityHash): the root node
+            root_node (Identifier): the root node
         """
-        nodes_to_remove: Set[IdentityHash] = set()
+        nodes_to_remove: Set[Identifier] = set()
 
-        def dfs(n: IdentityHash, graph: DiGraphEx, visited: Set[IdentityHash]) -> None:
+        def dfs(n: Identifier, graph: DiGraphEx, visited: Set[Identifier]) -> None:
             if n in visited:
                 return
             else:
@@ -52,7 +52,7 @@ class DiGraphEx(nx.DiGraph):
         for node in nodes_to_remove:
             self.remove_node(node)
 
-    def subgraph_leaves(self, nodes: List[IdentityHash]) -> Set[IdentityHash]:
+    def subgraph_leaves(self, nodes: List[Identifier]) -> Set[Identifier]:
         """
         modifies the graph to become a subgraph
         that contains the provided nodes as leaf nodes.
@@ -120,7 +120,7 @@ class DiGraphEx(nx.DiGraph):
         return unremovable_nodes
 
     @property
-    def topologically_sorted(self) -> List[IdentityHash]:
+    def topologically_sorted(self) -> List[Identifier]:
         """
         Makes the simple topological sort of the graph nodes
 
@@ -130,14 +130,14 @@ class DiGraphEx(nx.DiGraph):
         return list(nx.topological_sort(self))
 
 
-def subgraph(graph: DiGraphEx, leaves_ids: Optional[List[IdentityHash]]) -> DiGraphEx:
+def subgraph(graph: DiGraphEx, leaves_ids: Optional[List[Identifier]]) -> DiGraphEx:
     """
     returns a deep copy of the same graph if leaves_ids is None,
     otherwise returns a new graph by applying `graph.subgraph_leaves`
 
     Args:
         graph (DiGraphEx): graph describing the DAG
-        leaves_ids (List[IdentityHash]): The leaves that must be executed
+        leaves_ids (List[Identifier]): The leaves that must be executed
 
     Returns:
         DiGraphEx: The subgraph of the provided graph

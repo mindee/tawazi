@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, List, Tuple, Union
 
 import yaml
 
-from tawazi.consts import USE_SEP_END, USE_SEP_START, IdentityHash, NoVal, NoValType
+from tawazi.consts import USE_SEP_END, USE_SEP_START, Identifier, NoVal, NoValType
 from tawazi.errors import raise_arg_exc
 
 
@@ -77,7 +77,7 @@ def make_raise_arg_error(func_name: str, arg_name: str) -> Callable[[], None]:
     return lambda: raise_arg_exc(func_name, arg_name)
 
 
-def lazy_xn_id(base_id: IdentityHash, count_usages: int) -> IdentityHash:
+def lazy_xn_id(base_id: Identifier, count_usages: int) -> Identifier:
     if count_usages > 0:
         return f"{base_id}{USE_SEP_START}{count_usages}{USE_SEP_END}"
 

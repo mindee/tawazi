@@ -11,7 +11,7 @@ from tawazi.consts import (
     RESERVED_KWARGS,
     RVXN,
     USE_SEP_START,
-    IdentityHash,
+    Identifier,
     NoVal,
     NoValType,
     P,
@@ -29,7 +29,7 @@ from .helpers import lazy_xn_id, make_raise_arg_error, ordinal
 exec_nodes: List["ExecNode"] = []
 exec_nodes_lock = Lock()
 
-Alias = Union[Tag, IdentityHash, "ExecNode"]  # multiple ways of identifying an XN
+Alias = Union[Tag, Identifier, "ExecNode"]  # multiple ways of identifying an XN
 
 
 class ExecNode:
@@ -43,7 +43,7 @@ class ExecNode:
 
     def __init__(
         self,
-        id_: IdentityHash,
+        id_: Identifier,
         exec_function: Callable[..., Any] = lambda *args, **kwargs: None,
         args: Optional[List["ExecNode"]] = None,
         kwargs: Optional[Dict[str, "ExecNode"]] = None,
@@ -57,7 +57,7 @@ class ExecNode:
         Constructor of ExecNode
 
         Args:
-            id_ (IdentityHash): identifier of ExecNode.
+            id_ (Identifier): identifier of ExecNode.
             exec_function (Callable): a callable will be executed in the graph.
                 This is useful to make Joining ExecNodes (Nodes that enforce dependencies on the graph)
             args (Optional[List[ExecNode]], optional): *args to pass to exec_function.
@@ -89,7 +89,7 @@ class ExecNode:
             )
 
         self.args: List[ExecNode] = args or []
-        self.kwargs: Dict[IdentityHash, ExecNode] = kwargs or {}
+        self.kwargs: Dict[Identifier, ExecNode] = kwargs or {}
 
         # 2. compound_priority equals priority at the start but will be modified during the build process
         self.compound_priority = priority
@@ -124,12 +124,12 @@ class ExecNode:
 
         return deps
 
-    def execute(self, node_dict: Dict[IdentityHash, "ExecNode"]) -> Optional[Any]:
+    def execute(self, node_dict: Dict[Identifier, "ExecNode"]) -> Optional[Any]:
         """
         Execute the ExecNode inside of a DAG.
 
         Args:
-            node_dict (Dict[IdentityHash, ExecNode]): A shared dictionary containing the other ExecNodes in the DAG;
+            node_dict (Dict[Identifier, ExecNode]): A shared dictionary containing the other ExecNodes in the DAG;
                 the key is the id of the ExecNode. This node_dict refers to the current execution
 
         Returns:
@@ -198,7 +198,7 @@ class ArgExecNode(ExecNode):
 
     def __init__(
         self,
-        xn_or_func_or_id: Union[ExecNode, Callable[..., Any], IdentityHash],
+        xn_or_func_or_id: Union[ExecNode, Callable[..., Any], Identifier],
         name_or_order: Union[str, int],
         value: Any = NoVal,
     ):
@@ -206,7 +206,7 @@ class ArgExecNode(ExecNode):
         Constructor of ArgExecNode
 
         Args:
-            xn_or_func_or_id (Union[ExecNode, Callable[..., Any], IdentityHash]): The ExecNode or function that this Argument is rattached to
+            xn_or_func_or_id (Union[ExecNode, Callable[..., Any], Identifier]): The ExecNode or function that this Argument is rattached to
             name_or_order (Union[str, int]): Argument name or order in the calling function.
                 For example Python's builtin sorted function takes 3 arguments (iterable, key, reverse).
                     1. If called like this: sorted([1,2,3]) then [1,2,3] will be of type ArgExecNode with an order=0
@@ -223,7 +223,7 @@ class ArgExecNode(ExecNode):
             base_id = xn_or_func_or_id.id
         elif isinstance(xn_or_func_or_id, Callable):  # type: ignore
             base_id = xn_or_func_or_id.__qualname__  # type: ignore
-        elif isinstance(xn_or_func_or_id, IdentityHash):
+        elif isinstance(xn_or_func_or_id, Identifier):
             base_id = xn_or_func_or_id
         else:
             raise TypeError("ArgExecNode can only be attached to a LazyExecNode or a Callable")

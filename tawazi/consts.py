@@ -50,12 +50,12 @@ NoVal = NoValType()
 
 # Constant types
 
-IdentityHash = str
+Identifier = str
 Tag = Union[None, str, tuple]  # anything immutable
 
 # NOTE: maybe support other key types? for example int... or even tuple...
 ReturnIDsType = Optional[
-    Union[Dict[str, IdentityHash], List[IdentityHash], Tuple[IdentityHash], IdentityHash]
+    Union[Dict[str, Identifier], List[Identifier], Tuple[Identifier], Identifier]
 ]
 RVTypes = Union[Any, Tuple[Any], List[Any], Dict[str, Any]]
 P = ParamSpec("P")
