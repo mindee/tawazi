@@ -44,9 +44,3 @@ repos:
     hooks:
       - id: bandit
         args: ["--ini", ".bandit", "--recursive"]
-
-  - repo: https://github.com/terrencepreilly/darglint
-    rev: v1.8.1
-    hooks:
-      - id: darglint
-        exclude: ^(tests|scripts)/
