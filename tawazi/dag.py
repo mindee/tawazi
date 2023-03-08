@@ -18,7 +18,7 @@ from tawazi.config import Cfg
 from tawazi.consts import ReturnIDsType
 from tawazi.helpers import UniqueKeyLoader, filter_NoVal
 
-from .consts import RVDAG, IdentityHash, P, RVTypes
+from .consts import RVDAG, Identifier, P, RVTypes
 from .digraph import DiGraphEx
 from .errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
 from .node import Alias, ArgExecNode, ExecNode
@@ -57,7 +57,7 @@ class DAG(Generic[P, RVDAG]):
 
         self.max_concurrency = max_concurrency
 
-        self.node_dict: Dict[IdentityHash, ExecNode] = {
+        self.node_dict: Dict[Identifier, ExecNode] = {
             exec_node.id: exec_node for exec_node in self.exec_nodes
         }
         # Compute all the tags in the DAG to reduce overhead during computation
@@ -71,7 +71,7 @@ class DAG(Generic[P, RVDAG]):
             exec_node.__name__: exec_node for exec_node in self.exec_nodes
         }
         self.return_ids: ReturnIDsType = None
-        self.input_ids: List[IdentityHash] = []
+        self.input_ids: List[Identifier] = []
 
         # a sequence of execution to be applied in a for loop
         self.exec_node_sequence: List[ExecNode] = []
@@ -109,7 +109,7 @@ class DAG(Generic[P, RVDAG]):
         nodes = [ex_n for ex_n in self.exec_nodes if ex_n.tag == tag]
         return nodes
 
-    def get_node_by_id(self, id_: IdentityHash) -> ExecNode:
+    def get_node_by_id(self, id_: Identifier) -> ExecNode:
         # TODO: ? catch the keyError and
         #   help the user know the id of the ExecNode by pointing to documentation!?
         return self.node_dict[id_]
@@ -243,7 +243,7 @@ class DAG(Generic[P, RVDAG]):
         graph: DiGraphEx,
         modified_node_dict: Optional[Dict[str, ExecNode]] = None,
         call_id: str = "",
-    ) -> Dict[IdentityHash, Any]:
+    ) -> Dict[Identifier, Any]:
         """
         Thread safe execution of the DAG...
          (Except for the setup nodes! Please run DAG.setup() in a single thread because its results will be cached).
@@ -271,7 +271,7 @@ class DAG(Generic[P, RVDAG]):
             graph.remove_node(id_)
 
         # 0.4 create variables related to futures
-        futures: Dict[IdentityHash, "Future[Any]"] = {}
+        futures: Dict[Identifier, "Future[Any]"] = {}
         done: Set["Future[Any]"] = set()
         running: Set["Future[Any]"] = set()
 
@@ -279,7 +279,7 @@ class DAG(Generic[P, RVDAG]):
         #  These are ExecNodes that can't run inside a thread because their arguments aren't pickelable!
 
         # 0.5 create helpers functions encapsulated from the outside
-        def get_num_running_threads(_futures: Dict[IdentityHash, "Future[Any]"]) -> int:
+        def get_num_running_threads(_futures: Dict[Identifier, "Future[Any]"]) -> int:
             # use not future.done() because there is no guarantee that Thread pool will directly execute
             # the submitted thread
             return sum([not future.done() for future in _futures.values()])
@@ -374,7 +374,7 @@ class DAG(Generic[P, RVDAG]):
                     wait(futures.values(), return_when=ALL_COMPLETED)
         return xns_dict
 
-    def _alias_to_ids(self, alias: Alias) -> List[IdentityHash]:
+    def _alias_to_ids(self, alias: Alias) -> List[Identifier]:
         """Extract an ExecNode ID from an Alias (Tag, ExecNode ID or ExecNode)
 
         Args:
@@ -385,18 +385,18 @@ class DAG(Generic[P, RVDAG]):
 
         Raises:
             ValueError: if a requested ExecNode is not found in the DAG
-            TawaziTypeError: if the Type of the identifier is not Tag, IdentityHash or ExecNode
+            TawaziTypeError: if the Type of the identifier is not Tag, Identifier or ExecNode
         """
         if isinstance(alias, ExecNode):
             return [alias.id]
         # todo: do further validation for the case of the tag!!
-        elif isinstance(alias, (IdentityHash, tuple)):
+        elif isinstance(alias, (Identifier, tuple)):
             # if leaves_identification is not ExecNode, it can be either
             #  1. a Tag (Highest priority in case an id with the same value exists)
             if nodes := self.tagged_nodes.get(alias):
                 return [node.id for node in nodes]
             #  2. or a node id!
-            elif isinstance(alias, IdentityHash) and alias in self.node_dict:
+            elif isinstance(alias, Identifier) and alias in self.node_dict:
                 node = self.get_node_by_id(alias)
                 return [node.id]
             else:
@@ -412,7 +412,7 @@ class DAG(Generic[P, RVDAG]):
             )
 
     # NOTE: this function is named wrongly!
-    def _get_target_ids(self, target_nodes: List[Alias]) -> List[IdentityHash]:
+    def _get_target_ids(self, target_nodes: List[Alias]) -> List[Identifier]:
         """
         get the ids of ExecNodes corresponding to target_nodes.
         The identification can be carried out using the tag, the Id, or the ExecNode itself.
@@ -425,16 +425,16 @@ class DAG(Generic[P, RVDAG]):
             target_nodes (Optional[List[Alias]]): list of a ExecNode Aliases that the user might provide to run a subgraph
 
         Returns:
-            List[IdentityHash]: Leaf ExecNodes' Identities
+            List[Identifier]: Leaf ExecNodes' Identities
         """
         # Raises:
-        #     TawaziBaseException: if the returned List[IdentityHash] has the wrong length, this indicates a bug in the code
+        #     TawaziBaseException: if the returned List[Identifier] has the wrong length, this indicates a bug in the code
 
         target_ids = list(chain(*(self._alias_to_ids(alias) for alias in target_nodes)))
 
         return target_ids
 
-    def _extend_leaves_ids_debug_xns(self, leaves_ids: List[IdentityHash]) -> List[IdentityHash]:
+    def _extend_leaves_ids_debug_xns(self, leaves_ids: List[Identifier]) -> List[Identifier]:
         new_debug_xn_discovered = True
         while new_debug_xn_discovered:
             new_debug_xn_discovered = False
@@ -594,7 +594,7 @@ class DAG(Generic[P, RVDAG]):
 
         return returned_values  # type: ignore
 
-    def _make_call_xn_dict(self, *args: Any) -> Dict[IdentityHash, ExecNode]:
+    def _make_call_xn_dict(self, *args: Any) -> Dict[Identifier, ExecNode]:
         """
         Generate the calling ExecNode dict.
         This is a dict containing ExecNodes that will be executed (hence modified) by the DAG scheduler.
@@ -607,7 +607,7 @@ class DAG(Generic[P, RVDAG]):
             *args (Any): arguments to be passed to the call of the DAG
 
         Returns:
-            Dict[IdentityHash, ExecNode]: The modified ExecNode dict which will be executed by the DAG scheduler.
+            Dict[Identifier, ExecNode]: The modified ExecNode dict which will be executed by the DAG scheduler.
 
         Raises:
             TypeError: If called with an invalid number of arguments
@@ -634,12 +634,12 @@ class DAG(Generic[P, RVDAG]):
 
         return call_xn_dict
 
-    def _get_return_values(self, xn_dict: Dict[IdentityHash, ExecNode]) -> RVTypes:
+    def _get_return_values(self, xn_dict: Dict[Identifier, ExecNode]) -> RVTypes:
         """
         Extract the return value/values from the output of the DAG's scheduler!
 
         Args:
-            xn_dict (Dict[IdentityHash, ExecNode]): Modified ExecNodes returned by the DAG's scheduler
+            xn_dict (Dict[Identifier, ExecNode]): Modified ExecNodes returned by the DAG's scheduler
 
         Raises:
             TawaziTypeError: if the type of the return value is not compatible with RVTypes
@@ -649,7 +649,7 @@ class DAG(Generic[P, RVDAG]):
         """
         if self.return_ids is None:
             return None
-        if isinstance(self.return_ids, IdentityHash):
+        if isinstance(self.return_ids, Identifier):
             return filter_NoVal(xn_dict[self.return_ids].result)
         if isinstance(self.return_ids, (tuple, list)):
             gen = (filter_NoVal(xn_dict[ren_id].result) for ren_id in self.return_ids)
@@ -700,7 +700,7 @@ class DAG(Generic[P, RVDAG]):
 
         return return_values
 
-    def _handle_exception(self, graph: DiGraphEx, fut: "Future[Any]", id_: IdentityHash) -> None:
+    def _handle_exception(self, graph: DiGraphEx, fut: "Future[Any]", id_: Identifier) -> None:
         """
         checks if futures have produced exceptions, and handles them
         according to the specified behavior
@@ -708,7 +708,7 @@ class DAG(Generic[P, RVDAG]):
         Args:
             graph: the graph
             fut: the thread future
-            id_: the IdentityHash of the current ExecNode
+            id_: the Identifier of the current ExecNode
 
         Raises:
             NotImplementedError: if self.behavior is not known
@@ -873,8 +873,8 @@ class DAGExecution(Generic[P, RVDAG]):
         self.target_nodes = target_nodes
         self.exclude_nodes = exclude_nodes
 
-        self.xn_dict: Dict[IdentityHash, ExecNode] = {}
-        self.results: Dict[IdentityHash, Any] = {}
+        self.xn_dict: Dict[Identifier, ExecNode] = {}
+        self.results: Dict[Identifier, Any] = {}
 
         # logic parts
         if self.cache_deps_of is not None:
@@ -928,7 +928,7 @@ class DAGExecution(Generic[P, RVDAG]):
         nodes = [ex_n for ex_n in self.xn_dict.values() if ex_n.tag == tag]
         return nodes
 
-    def get_node_by_id(self, id_: IdentityHash) -> ExecNode:
+    def get_node_by_id(self, id_: Identifier) -> ExecNode:
         # TODO: ? catch the keyError and
         #   help the user know the id of the ExecNode by pointing to documentation!?
         return self.xn_dict[id_]
@@ -978,7 +978,7 @@ class DAGExecution(Generic[P, RVDAG]):
                 #  the same goes for the DAG itself, the behavior when an error is encountered & its concurrency will be controlled via the constructor
 
                 if self.cache_deps_of is not None:
-                    non_cacheable_ids: Set[IdentityHash] = set()
+                    non_cacheable_ids: Set[Identifier] = set()
                     for aliases in self.cache_deps_of:
                         ids = self.dag._alias_to_ids(aliases)
                         non_cacheable_ids = non_cacheable_ids.union(ids)
