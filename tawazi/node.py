@@ -17,18 +17,17 @@ from tawazi.consts import (
     NoVal,
     NoValType,
     P,
-    ReturnIDsType,
+    ReturnTypeErrString,
     Tag,
 )
 from tawazi.profile import Profile
 
 from .config import Cfg
 from .errors import InvalidExecNodeCall, TawaziBaseException, TawaziTypeError
-from .helpers import _lazy_xn_id, _make_raise_arg_error, ordinal
+from .helpers import _filter_noval, _lazy_xn_id, _make_raise_arg_error, ordinal
 
-# TODO: replace exec_nodes with dict
 # a temporary variable used to pass in exec_nodes to the DAG during building
-exec_nodes: List["ExecNode"] = []
+exec_nodes: Dict[Identifier, "ExecNode"] = {}
 exec_nodes_lock = Lock()
 
 Alias = Union[Tag, Identifier, "ExecNode"]  # multiple ways of identifying an XN
@@ -53,6 +52,7 @@ class ExecNode:
         debug: bool = False,
         tag: Tag = None,
         setup: bool = False,
+        unpack_to: Optional[int] = None,
     ):
         """Constructor of ExecNode.
 
@@ -69,6 +69,7 @@ class ExecNode:
             debug (bool): Make this ExecNode a debug Node. Defaults to False.
             tag (Tag): Attach a Tag of this ExecNode. Defaults to None.
             setup (bool): Make this ExecNode a setup Node. Defaults to False.
+            unpack_to (Optional[int]): if not None, this ExecNode's execution must return unpacked results corresponding to the given value
 
         Raises:
             ValueError: if setup and debug are both True.
@@ -82,6 +83,7 @@ class ExecNode:
         self.debug = debug  # TODO: do the fix to run debug nodes if their inputs exist
         self.tag = tag
         self.setup = setup
+        self.unpack_to = unpack_to
 
         if debug and setup:
             raise ValueError(
@@ -157,15 +159,8 @@ class ExecNode:
             return self.result
 
         # 1. prepare args and kwargs for usage:
-        def get_result(xnw: UsageExecNode, node_dict: Dict[Identifier, "ExecNode"]) -> Any:
-            if xnw.is_indexable:
-                # the user is responsible to make sure that the result is indexable
-                # NOTE: maybe do some handeling of the error to help the user with debugging?
-                return node_dict[xnw.xn.id].result[xnw.key]  # type: ignore
-            return node_dict[xnw.xn.id].result
-
-        args = [get_result(xnw, node_dict) for xnw in self.args]
-        kwargs = {key: get_result(xnw, node_dict) for key, xnw in self.kwargs.items()}
+        args = [xnw.result(node_dict) for xnw in self.args]
+        kwargs = {key: xnw.result(node_dict) for key, xnw in self.kwargs.items()}
         # args = [arg.result for arg in self.args]
         # kwargs = {key: arg.result for key, arg in self.kwargs.items()}
 
@@ -217,6 +212,30 @@ class ExecNode:
         if not isinstance(value, int):
             raise ValueError(f"priority must be an int, provided {type(value)}")
         self._priority = value
+
+    @property
+    def unpack_to(self) -> Optional[int]:
+        """The number of elements in the unpacked results of this ExecNode.
+
+        Returns:
+            Optional[int]: the number of elements in the unpacked results of this ExecNode.
+        """
+        return self._unpack_to
+
+    @unpack_to.setter
+    def unpack_to(self, value: Optional[int]) -> None:
+        if value is not None:
+            if not isinstance(value, int):
+                raise ValueError(
+                    f"unpack_to must be a positive int or None, provided {type(value)}"
+                )
+            # yes... empty tuples exist in Python
+            if value < 0:
+                raise ValueError(f"unpack_to must be a positive int or None, provided {value}")
+
+        # TODO: raise a warning if the typing of the ExecNode doesn't correspond with the number of elements in the unpacked results!
+        # NOTE: the typing supports an arbitrary number of elements in the unpacked results! support this as well!
+        self._unpack_to = value
 
 
 class ArgExecNode(ExecNode):
@@ -301,6 +320,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         debug: bool,
         tag: Any,
         setup: bool,
+        unpack_to: Optional[int],
     ):
         """Constructor of LazyExecNode.
 
@@ -311,6 +331,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             debug (bool): Look at ExecNode's Documentation
             tag (Any): Look at ExecNode's Documentation
             setup (bool): Look at ExecNode's Documentation
+            unpack_to (Optional[int]): Look at ExecNode's Documentation
         """
         super().__init__(
             id_=func.__qualname__,
@@ -320,6 +341,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             debug=debug,
             tag=tag,
             setup=setup,
+            unpack_to=unpack_to,
         )
 
     def __call__(
@@ -355,7 +377,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         # 1.1 Make a deep copy of self because every Call to an ExecNode corresponds to a new instance
         self_copy = copy(self)
         # 1.2 Assign the id
-        count_usages = sum(ex_n.id.split(USE_SEP_START)[0] == self.id for ex_n in exec_nodes)
+        count_usages = sum(xn_id.split(USE_SEP_START)[0] == self.id for xn_id in exec_nodes)
         # if ExecNode is used multiple times, <<usage_count>> is appended to its ID
         self_copy.id = _lazy_xn_id(self.id, count_usages)
 
@@ -372,8 +394,8 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
                 # arg here is definitely not a return value of a LazyExecNode!
                 # it must be a default value
                 xn = ArgExecNode(self_copy, i, arg)
-                exec_nodes.append(xn)
-                arg = UsageExecNode(xn)
+                exec_nodes[xn.id] = xn
+                arg = UsageExecNode(xn.id)
 
             self_copy.args.append(arg)
 
@@ -388,30 +410,33 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             if not isinstance(kwarg, UsageExecNode):
                 # passed in constants
                 xn = ArgExecNode(self_copy, kwarg_name, kwarg)
-                exec_nodes.append(xn)
-                kwarg = UsageExecNode(xn)
+                exec_nodes[xn.id] = xn
+                kwarg = UsageExecNode(xn.id)
 
             self_copy.kwargs[kwarg_name] = kwarg
 
         for dep in self_copy.dependencies:
             # if ExecNode is not a debug node, all its dependencies must not be debug node
-            if not self_copy.debug and dep.xn.debug:
+            if not self_copy.debug and exec_nodes[dep.id].debug:
                 raise TawaziBaseException(f"Non debug node {self_copy} depends on debug node {dep}")
 
             # if ExecNode is a setup node, all its dependencies should be either:
             # 1. setup nodes
             # 2. Constants (ArgExecNode)
             # 3. Arguments passed directly to the PipeLine (ArgExecNode)
-            accepted_case = dep.xn.setup or isinstance(dep.xn, ArgExecNode)
+            accepted_case = exec_nodes[dep.id].setup or isinstance(exec_nodes[dep.id], ArgExecNode)
             if self_copy.setup and not accepted_case:
                 raise TawaziBaseException(f"setup node {self_copy} depends on non setup node {dep}")
 
         # exec_nodes contain a single copy of self!
         # but multiple XNWrapper instances hang arround in the dag.
         # However, they might relate to the same ExecNode
-        exec_nodes.append(self_copy)
+        exec_nodes[self_copy.id] = self_copy
 
-        return UsageExecNode(self_copy)  # type: ignore[return-value]
+        if self.unpack_to is not None:
+            uxn_tuple = tuple(UsageExecNode(self_copy.id, key=i) for i in range(self.unpack_to))
+            return uxn_tuple  # type: ignore[return-value]
+        return UsageExecNode(self_copy.id)  # type: ignore[return-value]
 
     def __get__(self, instance: "LazyExecNode[P, RVXN]", owner_cls: Optional[Any] = None) -> Any:
         """Simulate func_descr_get() in Objects/funcobject.c.
@@ -432,6 +457,10 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         return MethodType(self, instance)  # func=self  # obj=instance
 
 
+# NOTE: None is hashable! In theory it can be used as a key in a dict!
+KeyType = Union[str, int, Tuple[Any, ...], None, NoValType]
+
+
 # TODO: transform this logic into the ExecNode itself ?
 @dataclass
 class UsageExecNode:
@@ -440,13 +469,12 @@ class UsageExecNode:
     If ExecNode is not indexed with a key or an int, NoVal is used as the key.
     """
 
-    xn: ExecNode
-    # NOTE: None is hashable! In theory it can be used as a key in a dict!
-    key: Union[str, int, Tuple[Any, ...], None, NoValType] = NoVal
+    id: Identifier
+    key: KeyType = NoVal
 
     # TODO: make type of key immutable or something hashable
     # used in the dag dependency description
-    def __getitem__(self, key: Union[str, int, Tuple[Any]]) -> "UsageExecNode":
+    def __getitem__(self, key: KeyType) -> "UsageExecNode":
         """Record the used key in a new UsageExecNode.
 
         Args:
@@ -454,8 +482,8 @@ class UsageExecNode:
 
         Returns:
             XNWrapper: the new UsageExecNode where the key is recorded
-        """        
-        return UsageExecNode(self.xn, key)
+        """
+        return UsageExecNode(self.id, key)
 
     @property
     def is_indexable(self) -> bool:
@@ -463,85 +491,89 @@ class UsageExecNode:
 
         Returns:
             bool: whether the ExecNode is indexable
-        """        
+        """
         return self.key is not NoVal
 
-    @property
-    def result(self) -> Any:
+    def result(self, xn_dict: Dict[Identifier, ExecNode]) -> Any:
         """Extract the result of the ExecNode corresponding to used key(s).
 
         Returns:
             Any: value inside the container
         """
+        xn = xn_dict[self.id]
         # TODO: support infinitely many indices by
         #  * either making the attribute xn a Union[ExecNode, ExecNodeUsage] and then keep fetching the value inside until reaching an ExecNode
-        #  * or make the key an infinitely recusive key ['key1', 'key2',..., 'keyN']  
+        #  * or make the key an infinitely recusive key ['key1', 'key2',..., 'keyN']
         if isinstance(self.key, NoValType):
-            return self.xn.result
+            return _filter_noval(xn.result)
         # ignore typing error because it is the responsibility of the user to insure the result contained in the XN is indexable!
         # Will raise the appropriate exception automatically
+        #  The user might have specified a subgraph to run => xn contain NoVal
+        #  or the user tried to access a non-indexable object
         # NOTE: maybe handle the 3 types of exceptions that might occur properly to help the user through debugging
-        return self.xn.result[self.key]
+        if isinstance(xn.result, NoValType):
+            raise TawaziTypeError(f"{xn} didn't run. Check DAG configuration")
+
+        return _filter_noval(xn.result[self.key])
 
 
-ReturnXNsType = Optional[Union[ExecNode, Tuple[ExecNode], List[ExecNode], Dict[str, ExecNode]]]
+# TODO: make this a subpackage
+# helpers for ExecNode
+
+ReturnUXNsType = Union[
+    None, UsageExecNode, Tuple[UsageExecNode], List[UsageExecNode], Dict[str, UsageExecNode]
+]
 
 
-def get_return_ids(returned_exec_nodes: ReturnXNsType) -> ReturnIDsType:
-    """Get the IDs of the returned ExecNodes.
+def _is_list_or_tuple(returned_uxns: ReturnUXNsType) -> bool:
+    if isinstance(returned_uxns, (tuple, list)):
+        # 3.1 Collect all the return ids
+        for ren in returned_uxns:
+            if not isinstance(ren, UsageExecNode):
+                # NOTE: this error shouldn't ever raise during usage.
+                # Please report in https://github.com/mindee/tawazi/issues
+                raise TawaziTypeError(f"{ReturnTypeErrString}. provided {ren}")
+        return True
+    return False
+
+
+def _is_dict(returned_uxns: ReturnUXNsType) -> bool:
+    if isinstance(returned_uxns, dict):
+        for ren in returned_uxns.values():
+            # 4.1 key should be str and value should be an ExecNode generated by running an xnode...
+            if not isinstance(ren, UsageExecNode):
+                raise TawaziTypeError(
+                    f"return dict should only contain ExecNodes, but {ren} is of type {type(ren)}"
+                )
+        return True
+    return False
+
+
+def validate_returned_usage_exec_nodes(returned_uxns: ReturnUXNsType) -> None:
+    """Get the IDs of the returned UsageExecNodes.
 
     Args:
-        returned_exec_nodes (ReturnXNsType): Aliases of the returned ExecNodes
+        returned_uxns (ReturnXNsType): Aliases of the returned UsageExecNodes
 
     Raises:
         TawaziTypeError: _description_
         TawaziTypeError: _description_
-        TawaziTypeError: _description_
 
     Returns:
-        ReturnIDsType: Corresponding IDs of the returned ExecNodes
+        ReturnIDsType: Corresponding IDs of the returned UsageExecNodes
     """
     # TODO: support iterators etc.
-    err_string = (
-        "Return type of the pipeline must be either a Single Xnode,"
-        " Tuple of Xnodes, List of Xnodes, dict of Xnodes or None"
-    )
 
     # 1 No value returned by the execution
-    if returned_exec_nodes is None:
-        return None
+    no_val = returned_uxns is None
     # 2 a single value is returned
-    if isinstance(returned_exec_nodes, UsageExecNode):
-        return returned_exec_nodes.xn.id
+    single_val = isinstance(returned_uxns, UsageExecNode)
     # 3 multiple values returned
-    if isinstance(returned_exec_nodes, (tuple, list)):
-        return_ids: List[Identifier] = []
-        # 3.1 Collect all the return ids
-        for ren in returned_exec_nodes:
-            if isinstance(ren, UsageExecNode):
-                return_ids.append(ren.xn.id)
-            else:
-                # NOTE: this error shouldn't ever raise during usage.
-                # Please report in https://github.com/mindee/tawazi/issues
-                raise TawaziTypeError(err_string)
-        # 3.2 Cast to the corresponding type
-        if isinstance(returned_exec_nodes, tuple):
-            return tuple(return_ids)
-        # otherwise return a list of the return ids
-        return return_ids
-
-        # 3.3 No Cast is necessary for the List because this is the default
-        # NOTE: this cast must be done when adding other types!
+    tuple_or_list_val = _is_list_or_tuple(returned_uxns)
     # 4 support dict
-    if isinstance(returned_exec_nodes, dict):
-        return_ids_dict = {}
-        for key, ren in returned_exec_nodes.items():
-            # 4.1 key should be str and value should be an ExecNode generated by running an xnode...
-            if isinstance(ren, UsageExecNode):
-                return_ids_dict[key] = ren.xn.id
-            else:
-                raise TawaziTypeError(
-                    f"return dict should only contain ExecNodes, but {ren} is of type {type(ren)}"
-                )
-        return return_ids_dict
-    raise TawaziTypeError(f"{err_string}. Type of the provided return: {type(returned_exec_nodes)}")
+    dict_val = _is_dict(returned_uxns)
+    if no_val or single_val or tuple_or_list_val or dict_val:
+        return
+    raise TawaziTypeError(
+        f"{ReturnTypeErrString}. Type of the provided return: {type(returned_uxns)}"
+    )
