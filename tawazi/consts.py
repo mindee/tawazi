@@ -1,5 +1,5 @@
 """Module containing constants used by Tawazi."""
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Dict, List, Tuple, Type, TypeVar, Union
 
 from typing_extensions import ParamSpec
 
@@ -9,6 +9,11 @@ RESERVED_KWARGS = [ARG_NAME_TAG]
 ARG_NAME_SEP = ">>>"
 USE_SEP_START = "<<"
 USE_SEP_END = ">>"
+
+ReturnTypeErrString = (
+    "Return type of the pipeline must be either a Single Xnode,"
+    " Tuple of Xnodes, List of Xnodes, dict of Xnodes or None"
+)
 
 
 class NoValType:
@@ -90,10 +95,6 @@ NoVal = NoValType()
 Identifier = str
 Tag = Union[None, str, tuple]  # anything immutable
 
-# NOTE: maybe support other key types? for example int... or even tuple...
-ReturnIDsType = Optional[
-    Union[Dict[str, Identifier], List[Identifier], Tuple[Identifier, ...], Identifier]
-]
 RVTypes = Union[Any, Tuple[Any], List[Any], Dict[str, Any]]
 P = ParamSpec("P")
 RVDAG = TypeVar("RVDAG", bound=RVTypes, covariant=True)

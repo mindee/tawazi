@@ -9,7 +9,15 @@ from tawazi.helpers import get_args_and_default_args
 from . import node
 from .config import Cfg
 from .consts import RVDAG, RVXN, P
-from .node import ArgExecNode, LazyExecNode, UsageExecNode, exec_nodes_lock, get_return_ids
+from .node import (
+    ArgExecNode,
+    ExecNode,
+    LazyExecNode,
+    ReturnUXNsType,
+    UsageExecNode,
+    exec_nodes_lock,
+    validate_returned_usage_exec_nodes,
+)
 
 
 @overload
@@ -25,6 +33,7 @@ def xn(
     debug: bool = False,
     tag: Optional[Any] = None,
     setup: bool = False,
+    unpack_to: Optional[int] = None,
 ) -> Callable[[Callable[P, RVXN]], LazyExecNode[P, RVXN]]:
     ...
 
@@ -37,6 +46,7 @@ def xn(
     debug: bool = False,
     tag: Optional[Any] = None,
     setup: bool = False,
+    unpack_to: Optional[int] = None,
 ) -> Union[Callable[[Callable[P, RVXN]], LazyExecNode[P, RVXN]], LazyExecNode[P, RVXN]]:
     """Decorate a function to make it an ExecNode.
 
@@ -62,6 +72,7 @@ def xn(
                 This is why it is best to invoke the DAG.setup method before using the DAG in a multithreaded environment.
                 This problem will be resolved in the future
         tag (Optional[Any]): Any Hashable / immutable typed variable can be used to identify nodes (str, Tuple[str, ...])
+        unpack_to (Optional[int]): if not None, this ExecNode's execution must return unpacked results corresponding to the given value
 
     Returns:
         LazyExecNode: The decorated function wrapped in a Callable.
@@ -71,7 +82,7 @@ def xn(
     """
 
     def intermediate_wrapper(_func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]:
-        lazy_exec_node = LazyExecNode(_func, priority, is_sequential, debug, tag, setup)
+        lazy_exec_node = LazyExecNode(_func, priority, is_sequential, debug, tag, setup, unpack_to)
         functools.update_wrapper(lazy_exec_node, _func)
         return lazy_exec_node
 
@@ -131,7 +142,7 @@ def dag(
         with exec_nodes_lock:
             # 1. node.exec_nodes contains all the ExecNodes that concern the DAG being built at the moment.
             #      make sure it is empty
-            node.exec_nodes = []
+            node.exec_nodes = {}
             try:
                 # 2. make ExecNodes corresponding to the arguments of the ExecNode
                 # 2.1 get the names of the arguments and the default values
@@ -139,40 +150,43 @@ def dag(
 
                 # 2.2 Construct non default arguments.
                 # Corresponding values must be provided during usage
-                args: List[UsageExecNode] = [
-                    UsageExecNode(ArgExecNode(_func, arg_name)) for arg_name in func_args
-                ]
+                args: List[ExecNode] = [ArgExecNode(_func, arg_name) for arg_name in func_args]
                 # 2.2 Construct Default arguments.
                 args.extend(
                     [
-                        UsageExecNode(ArgExecNode(_func, arg_name, arg))
+                        ArgExecNode(_func, arg_name, arg)
                         for arg_name, arg in func_default_args.items()
                     ]
                 )
                 # 2.3 Arguments are also ExecNodes that get executed inside the scheduler
-                node.exec_nodes.extend([xnw.xn for xnw in args])
+                node.exec_nodes.update({xn.id: xn for xn in args})
+                # 2.4 make UsageExecNodes for input arguments
+                uxn_args = [UsageExecNode(xn.id) for xn in args]
 
                 # 3. Execute the dependency describer function
                 # NOTE: Only ordered parameters are supported at the moment!
                 #  No **kwargs!! Only positional Arguments
-                returned_exec_nodes = _func(*args)  # type: ignore[arg-type]
+                returned_usage_exec_nodes: ReturnUXNsType = _func(*uxn_args)  # type: ignore[arg-type]
 
                 # 4. Construct the DAG instance
-                d: DAG[P, RVDAG] = DAG(
-                    node.exec_nodes, max_concurrency=max_concurrency, behavior=behavior
-                )
+                # TODO: change the constructor of the DAG to take in the node_dict directly!
+                l_xn = list(node.exec_nodes.values())
+                d: DAG[P, RVDAG] = DAG(l_xn, max_concurrency=max_concurrency, behavior=behavior)
 
             # clean up even in case an error is raised during dag construction
             finally:
                 # 5. Clean global variable
                 # node.exec_nodes are deep copied inside the DAG.
                 #   we can empty the global variable node.exec_nodes
-                node.exec_nodes = []
+                node.exec_nodes = {}
 
-            d.input_ids = [arg.xn.id for arg in args]
-
-            # 6. make the return ids to be fetched at the end of the computation
-            d.return_ids = get_return_ids(returned_exec_nodes)
+            # TODO: wrap the consts non UsageExecNodes in a UsageExecNode to support returning consts from DAG
+            # TODO: transfer these to the constructor of the DAG class
+            # 6. inject the inputs and the return UsageExecNodes in the DAG
+            #     These will be used to be fetch the results at the end of the computation
+            validate_returned_usage_exec_nodes(returned_usage_exec_nodes)
+            d.input_uxns = uxn_args
+            d.return_uxns = returned_usage_exec_nodes
 
         functools.update_wrapper(d, _func)
         d._validate()
