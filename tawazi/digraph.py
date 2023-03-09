@@ -1,9 +1,10 @@
 """Module containing the definition of a Directed Graph Extension of networkx.DiGraph."""
 from copy import deepcopy
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Tuple
 
 import networkx as nx
 from loguru import logger
+from networkx import NetworkXNoCycle, find_cycle
 
 from .consts import Identifier
 
@@ -122,6 +123,19 @@ class DiGraphEx(nx.DiGraph):
             List of nodes of the graph listed in topological order
         """
         return list(nx.topological_sort(self))
+
+    def _find_cycle(self) -> Optional[List[Tuple[Identifier, Identifier]]]:
+        """Finds the cycles in the DAG. A DAG shouldn't have any dependency cycle.
+
+        Returns:
+            A list of the edges responsible for the cycles in case there are some (in forward and backward),
+                otherwise nothing. (e.g. [('taxes', 'amount_reconciliation'),('amount_reconciliation', 'taxes')])
+        """
+        try:
+            cycle: List[Tuple[Identifier, Identifier]] = find_cycle(self)
+            return cycle
+        except NetworkXNoCycle:
+            return None
 
 
 def subgraph(graph: DiGraphEx, leaves_ids: Optional[List[Identifier]]) -> DiGraphEx:

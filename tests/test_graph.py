@@ -33,7 +33,7 @@ node_dict = {xn.id: xn for xn in list_exec_nodes}
 
 def test_circular_deps() -> None:
     try:
-        DAG(node_dict, 2, behavior=ErrorStrategy.strict)
+        DAG(node_dict, [], [], 2, behavior=ErrorStrategy.strict)
     except NetworkXUnfeasible:
         pass
 

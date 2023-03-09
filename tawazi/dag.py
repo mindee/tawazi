@@ -7,13 +7,12 @@ from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoo
 from copy import copy, deepcopy
 from itertools import chain
 from pathlib import Path
-from typing import Any, Dict, Generic, List, Optional, Set, Tuple
+from typing import Any, Dict, Generic, List, Optional, Set
 
 import networkx as nx
 import yaml
 from loguru import logger
-from networkx import find_cycle
-from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
+from networkx.exception import NetworkXUnfeasible
 
 from tawazi.config import Cfg
 from tawazi.helpers import _UniqueKeyLoader
@@ -32,10 +31,11 @@ class DAG(Generic[P, RVDAG]):
         * Parallelization constraint of each ExecNode (is_sequential attribute)
     """
 
-    # TODO: transform into basemodel to do validation
     def __init__(
         self,
         exec_nodes: Dict[Identifier, ExecNode],
+        input_uxns: List[UsageExecNode],
+        return_uxns: ReturnUXNsType,
         max_concurrency: int = 1,
         behavior: ErrorStrategy = ErrorStrategy.strict,
     ):
@@ -43,14 +43,18 @@ class DAG(Generic[P, RVDAG]):
 
         Args:
             exec_nodes: all the ExecNodes
+            input_uxns: all the input UsageExecNodes
+            return_uxns: the return UsageExecNodes. These can be of various types: None, a single value, tuple, list, dict.
             max_concurrency: the maximal number of threads running in parallel
             behavior: specify the behavior if an ExecNode raises an Error. Three option are currently supported:
                 1. DAG.STRICT: stop the execution of all the DAG
                 2. DAG.ALL_CHILDREN: do not execute all children ExecNodes, and continue execution of the DAG
                 2. DAG.PERMISSIVE: continue execution of the DAG and ignore the error
         """
-        self.graph_ids = DiGraphEx()
         self.max_concurrency = max_concurrency
+        self.behavior = behavior
+        self.return_uxns = return_uxns
+        self.input_uxns = input_uxns
 
         # ExecNodes can be shared between Graphs, their call signatures might also be different
         # NOTE: maybe this should be transformed into a property because there is a deepcopy for node_dict...
@@ -66,15 +70,8 @@ class DAG(Generic[P, RVDAG]):
         self.node_dict_by_name: Dict[str, ExecNode] = {
             exec_node.__name__: exec_node for exec_node in self.node_dict.values()
         }
-        self.return_uxns: ReturnUXNsType = None
-        self.input_uxns: List[UsageExecNode] = []
 
-        # a sequence of execution to be applied in a for loop
-        self.exec_node_sequence: List[ExecNode] = []
-
-        self.behavior = behavior
-
-        self._build_graph()
+        self.graph_ids = self._build_graph()
 
         self.bckrd_deps = {
             id_: list(self.graph_ids.predecessors(xn.id)) for id_, xn in self.node_dict.items()
@@ -89,6 +86,8 @@ class DAG(Generic[P, RVDAG]):
         # make a valid execution sequence to run sequentially if needed
         topological_order = self.graph_ids.topologically_sorted
         self.exec_node_sequence = [self.node_dict[xn_id] for xn_id in topological_order]
+
+        self._validate()
 
     @property
     def max_concurrency(self) -> int:
@@ -142,44 +141,32 @@ class DAG(Generic[P, RVDAG]):
 
     # TODO: get node by usage (the order of call of an ExecNode)
 
-    def _find_cycle(self) -> Optional[List[Tuple[str, str]]]:
-        """Finds the cycles in the DAG. A DAG shouldn't have any dependency cycle.
-
-        Returns:
-            A list of the edges responsible for the cycles in case there are some (in forward and backward),
-             otherwise nothing. (e.g. [('taxes', 'amount_reconciliation'),('amount_reconciliation', 'taxes')])
-        """
-        try:
-            cycle: List[Tuple[str, str]] = find_cycle(self.graph_ids)
-            return cycle
-        except NetworkXNoCycle:
-            return None
-
-    def _build_graph(self) -> None:
+    def _build_graph(self) -> DiGraphEx:
         """Builds the graph and the sequence order for the computation.
 
         Raises:
             NetworkXUnfeasible: if the graph has cycles
         """
+        graph_ids = DiGraphEx()
         # 1. Make the graph
         # 1.1 add nodes
         for id_ in self.node_dict.keys():
-            self.graph_ids.add_node(id_)
+            graph_ids.add_node(id_)
 
         # 1.2 add edges
         for xn in self.node_dict.values():
             edges = [(dep.id, xn.id) for dep in xn.dependencies]
-            self.graph_ids.add_edges_from(edges)
+            graph_ids.add_edges_from(edges)
 
         # 2. Validate the DAG: check for circular dependencies
-        cycle = self._find_cycle()
+        cycle = graph_ids._find_cycle()
         if cycle:
             raise NetworkXUnfeasible(
                 f"the product contains at least a circular dependency: {cycle}"
             )
+        return graph_ids
 
     def _validate(self) -> None:
-        # TODO: transfer to the DAG's __init__
         input_ids = [uxn.id for uxn in self.input_uxns]
         # validate setup ExecNodes
         for xn in self.node_dict.values():

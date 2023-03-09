@@ -166,11 +166,19 @@ def dag(
                 # 3. Execute the dependency describer function
                 # NOTE: Only ordered parameters are supported at the moment!
                 #  No **kwargs!! Only positional Arguments
+                # used to be fetch the results at the end of the computation
                 returned_usage_exec_nodes: ReturnUXNsType = _func(*uxn_args)  # type: ignore[arg-type]
+
+                # TODO: wrap the consts non UsageExecNodes in a UsageExecNode to support returning consts from DAG
+                validate_returned_usage_exec_nodes(returned_usage_exec_nodes)
 
                 # 4. Construct the DAG instance
                 d: DAG[P, RVDAG] = DAG(
-                    node.exec_nodes, max_concurrency=max_concurrency, behavior=behavior
+                    node.exec_nodes,
+                    input_uxns=uxn_args,
+                    return_uxns=returned_usage_exec_nodes,
+                    max_concurrency=max_concurrency,
+                    behavior=behavior,
                 )
 
             # clean up even in case an error is raised during dag construction
@@ -180,16 +188,7 @@ def dag(
                 #   we can empty the global variable node.exec_nodes
                 node.exec_nodes = {}
 
-            # TODO: wrap the consts non UsageExecNodes in a UsageExecNode to support returning consts from DAG
-            # TODO: transfer these to the constructor of the DAG class
-            # 6. inject the inputs and the return UsageExecNodes in the DAG
-            #     These will be used to be fetch the results at the end of the computation
-            validate_returned_usage_exec_nodes(returned_usage_exec_nodes)
-            d.input_uxns = uxn_args
-            d.return_uxns = returned_usage_exec_nodes
-
         functools.update_wrapper(d, _func)
-        d._validate()
         return d
 
     # case 1: arguments are provided to the decorator
