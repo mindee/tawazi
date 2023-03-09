@@ -23,9 +23,9 @@ def c(b: str) -> str:
 
 
 en_a = ExecNode(a.__name__, a, [], is_sequential=True)
-en_b = ExecNode(b.__name__, b, [UsageExecNode(en_a)], priority=2, is_sequential=False)
-en_c = ExecNode(c.__name__, c, [UsageExecNode(en_a)], priority=1, is_sequential=False)
-en_a.args = [UsageExecNode(en_c)]
+en_b = ExecNode(b.__name__, b, [UsageExecNode(en_a.id)], priority=2, is_sequential=False)
+en_c = ExecNode(c.__name__, c, [UsageExecNode(en_a.id)], priority=1, is_sequential=False)
+en_a.args = [UsageExecNode(en_c.id)]
 
 list_exec_nodes = [en_a, en_b, en_c]
 
