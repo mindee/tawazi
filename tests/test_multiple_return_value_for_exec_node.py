@@ -1,9 +1,11 @@
+from typing import Dict, Tuple
+
 from tawazi import dag, xn
 
 
-def test_lazy_exec_nodes_return_dict_indexed():
+def test_lazy_exec_nodes_return_dict_indexed() -> None:
     @xn
-    def generate_dict():
+    def generate_dict() -> Dict[str, int]:
         return {"1": 1, "2": 2, "3": 3}
 
     @xn
@@ -11,21 +13,21 @@ def test_lazy_exec_nodes_return_dict_indexed():
         return a + 1
 
     @dag
-    def pipe():
+    def pipe() -> Tuple[int, int, int]:
         d = generate_dict()
         return incr(d["1"]), incr(d["2"]), incr(d["3"])
 
     assert (2, 3, 4) == pipe()
 
 
-def test_lazy_exec_nodes_multiple_return_values():
+def test_lazy_exec_nodes_multiple_return_values() -> None:
     @xn(unpack_to=3)
-    def mulreturn():
+    def mulreturn() -> Tuple[int, int, int]:
         return 1, 2, 3
 
     @dag
-    def pipe():
-        r1, r2, r3 = mulreturn()
+    def pipe() -> Tuple[int, int]:
+        r1, r2, _r3 = mulreturn()
         return r1, r2
 
     assert pipe() == (1, 2)
