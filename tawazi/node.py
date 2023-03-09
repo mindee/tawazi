@@ -1,6 +1,7 @@
 """Module describing ExecNode Class and subclasses (The basic building Block of a DAG."""
-from copy import copy
-from dataclasses import dataclass
+from copy import copy, deepcopy
+from dataclasses import dataclass, field
+from functools import reduce
 from threading import Lock
 from types import MethodType
 from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, Union
@@ -434,7 +435,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         exec_nodes[self_copy.id] = self_copy
 
         if self.unpack_to is not None:
-            uxn_tuple = tuple(UsageExecNode(self_copy.id, key=i) for i in range(self.unpack_to))
+            uxn_tuple = tuple(UsageExecNode(self_copy.id, key=[i]) for i in range(self.unpack_to))
             return uxn_tuple  # type: ignore[return-value]
         return UsageExecNode(self_copy.id)  # type: ignore[return-value]
 
@@ -470,7 +471,7 @@ class UsageExecNode:
     """
 
     id: Identifier
-    key: KeyType = NoVal
+    key: List[KeyType] = field(default_factory=list)
 
     # TODO: make type of key immutable or something hashable
     # used in the dag dependency description
@@ -483,7 +484,10 @@ class UsageExecNode:
         Returns:
             XNWrapper: the new UsageExecNode where the key is recorded
         """
-        return UsageExecNode(self.id, key)
+        # deepcopy self because UsageExecNode can be reused with different indexing
+        new_uxn = deepcopy(self)
+        new_uxn.key.append(key)
+        return new_uxn
 
     @property
     def is_indexable(self) -> bool:
@@ -492,7 +496,7 @@ class UsageExecNode:
         Returns:
             bool: whether the ExecNode is indexable
         """
-        return self.key is not NoVal
+        return bool(self.key)
 
     def result(self, xn_dict: Dict[Identifier, ExecNode]) -> Any:
         """Extract the result of the ExecNode corresponding to used key(s).
@@ -501,20 +505,15 @@ class UsageExecNode:
             Any: value inside the container
         """
         xn = xn_dict[self.id]
-        # TODO: support infinitely many indices by
-        #  * either making the attribute xn a Union[ExecNode, ExecNodeUsage] and then keep fetching the value inside until reaching an ExecNode
-        #  * or make the key an infinitely recusive key ['key1', 'key2',..., 'keyN']
-        if isinstance(self.key, NoValType):
-            return _filter_noval(xn.result)
         # ignore typing error because it is the responsibility of the user to insure the result contained in the XN is indexable!
         # Will raise the appropriate exception automatically
         #  The user might have specified a subgraph to run => xn contain NoVal
         #  or the user tried to access a non-indexable object
         # NOTE: maybe handle the 3 types of exceptions that might occur properly to help the user through debugging
-        if isinstance(xn.result, NoValType):
-            raise TawaziTypeError(f"{xn} didn't run. Check DAG configuration")
+        # if isinstance(xn.result, NoValType):
+        #     raise TawaziTypeError(f"{xn} didn't run, hence its resulting value is not indexable. Check your DAG's configuration")
 
-        return _filter_noval(xn.result[self.key])
+        return _filter_noval(reduce(lambda obj, key: obj.__getitem__(key), self.key, xn.result))
 
 
 # TODO: make this a subpackage
