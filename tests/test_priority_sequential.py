@@ -49,7 +49,7 @@ def test_priority() -> None:
         list_execnodes = [en_a, en_b, en_c, en_d]
         node_dict = {xn.id: xn for xn in list_execnodes}
 
-        g: DAG[Any, Any] = DAG(node_dict, 1, behavior=ErrorStrategy.strict)
+        g: DAG[Any, Any] = DAG(node_dict, [], [], 1, behavior=ErrorStrategy.strict)
         g._execute(g._make_subgraph())
         assert pytest.priority_sequential_comp_str == "abcd", f"during {_i}th iteration"
 
@@ -66,7 +66,7 @@ def test_sequentiality() -> None:
         list_execnodes = [en_a, en_b, en_c, en_d, en_e]
         node_dict = {xn.id: xn for xn in list_execnodes}
 
-        g: DAG[Any, Any] = DAG(node_dict, 2, behavior=ErrorStrategy.strict)
+        g: DAG[Any, Any] = DAG(node_dict, [], [], 2, behavior=ErrorStrategy.strict)
         g._execute(g._make_subgraph())
         ind_a = pytest.priority_sequential_comp_str.index("a")
         ind_b = pytest.priority_sequential_comp_str.index("b")

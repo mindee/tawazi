@@ -40,7 +40,7 @@ node_dict = {xn.id: xn for xn in list_execnodes}
 
 def test_strict_error_behavior() -> None:
     pytest.behavior_comp_str = ""
-    g: DAG[Any, Any] = DAG(node_dict, 1, behavior=ErrorStrategy.strict)
+    g: DAG[Any, Any] = DAG(node_dict, [], [], 1, behavior=ErrorStrategy.strict)
     try:
         g._execute(g._make_subgraph())
     except NotImplementedError:
@@ -49,14 +49,14 @@ def test_strict_error_behavior() -> None:
 
 def test_all_children_behavior() -> None:
     pytest.behavior_comp_str = ""
-    g: DAG[Any, Any] = DAG(node_dict, 1, behavior=ErrorStrategy.all_children)
+    g: DAG[Any, Any] = DAG(node_dict, [], [], 1, behavior=ErrorStrategy.all_children)
     g._execute(g._make_subgraph())
     assert pytest.behavior_comp_str == "ad"
 
 
 def test_permissive_behavior() -> None:
     pytest.behavior_comp_str = ""
-    g: DAG[Any, Any] = DAG(node_dict, 1, behavior=ErrorStrategy.permissive)
+    g: DAG[Any, Any] = DAG(node_dict, [], [], 1, behavior=ErrorStrategy.permissive)
     g._execute(g._make_subgraph())
     assert pytest.behavior_comp_str == "acd"
 
