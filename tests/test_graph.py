@@ -28,11 +28,12 @@ en_c = ExecNode(c.__name__, c, [UsageExecNode(en_a.id)], priority=1, is_sequenti
 en_a.args = [UsageExecNode(en_c.id)]
 
 list_exec_nodes = [en_a, en_b, en_c]
+node_dict = {xn.id: xn for xn in list_exec_nodes}
 
 
 def test_circular_deps() -> None:
     try:
-        DAG(list_exec_nodes, 2, behavior=ErrorStrategy.strict)
+        DAG(node_dict, 2, behavior=ErrorStrategy.strict)
     except NetworkXUnfeasible:
         pass
 

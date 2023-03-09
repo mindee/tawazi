@@ -47,8 +47,9 @@ def test_priority() -> None:
         en_c = ExecNode(c.__name__, c, [UsageExecNode(en_b.id)], priority=2, is_sequential=False)
         en_d = ExecNode(d.__name__, d, [UsageExecNode(en_a.id)], priority=1, is_sequential=False)
         list_execnodes = [en_a, en_b, en_c, en_d]
+        node_dict = {xn.id: xn for xn in list_execnodes}
 
-        g: DAG[Any, Any] = DAG(list_execnodes, 1, behavior=ErrorStrategy.strict)
+        g: DAG[Any, Any] = DAG(node_dict, 1, behavior=ErrorStrategy.strict)
         g._execute(g._make_subgraph())
         assert pytest.priority_sequential_comp_str == "abcd", f"during {_i}th iteration"
 
@@ -63,8 +64,9 @@ def test_sequentiality() -> None:
         en_d = ExecNode(d.__name__, d, [UsageExecNode(en_b.id)], priority=2, is_sequential=False)
         en_e = ExecNode(e.__name__, e, [UsageExecNode(en_a.id)], priority=1, is_sequential=True)
         list_execnodes = [en_a, en_b, en_c, en_d, en_e]
+        node_dict = {xn.id: xn for xn in list_execnodes}
 
-        g: DAG[Any, Any] = DAG(list_execnodes, 2, behavior=ErrorStrategy.strict)
+        g: DAG[Any, Any] = DAG(node_dict, 2, behavior=ErrorStrategy.strict)
         g._execute(g._make_subgraph())
         ind_a = pytest.priority_sequential_comp_str.index("a")
         ind_b = pytest.priority_sequential_comp_str.index("b")

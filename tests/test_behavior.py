@@ -35,11 +35,12 @@ en_b = ExecNode(b.__qualname__, b, args=[UsageExecNode(en_a.id)], priority=2, is
 en_c = ExecNode(c.__qualname__, c, args=[UsageExecNode(en_b.id)], priority=2, is_sequential=False)
 en_d = ExecNode(d.__qualname__, d, args=[UsageExecNode(en_a.id)], priority=1, is_sequential=False)
 list_execnodes = [en_a, en_b, en_c, en_d]
+node_dict = {xn.id: xn for xn in list_execnodes}
 
 
 def test_strict_error_behavior() -> None:
     pytest.behavior_comp_str = ""
-    g: DAG[Any, Any] = DAG(list_execnodes, 1, behavior=ErrorStrategy.strict)
+    g: DAG[Any, Any] = DAG(node_dict, 1, behavior=ErrorStrategy.strict)
     try:
         g._execute(g._make_subgraph())
     except NotImplementedError:
@@ -48,14 +49,14 @@ def test_strict_error_behavior() -> None:
 
 def test_all_children_behavior() -> None:
     pytest.behavior_comp_str = ""
-    g: DAG[Any, Any] = DAG(list_execnodes, 1, behavior=ErrorStrategy.all_children)
+    g: DAG[Any, Any] = DAG(node_dict, 1, behavior=ErrorStrategy.all_children)
     g._execute(g._make_subgraph())
     assert pytest.behavior_comp_str == "ad"
 
 
 def test_permissive_behavior() -> None:
     pytest.behavior_comp_str = ""
-    g: DAG[Any, Any] = DAG(list_execnodes, 1, behavior=ErrorStrategy.permissive)
+    g: DAG[Any, Any] = DAG(node_dict, 1, behavior=ErrorStrategy.permissive)
     g._execute(g._make_subgraph())
     assert pytest.behavior_comp_str == "acd"
 
