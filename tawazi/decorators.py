@@ -169,9 +169,9 @@ def dag(
                 returned_usage_exec_nodes: ReturnUXNsType = _func(*uxn_args)  # type: ignore[arg-type]
 
                 # 4. Construct the DAG instance
-                # TODO: change the constructor of the DAG to take in the node_dict directly!
-                l_xn = list(node.exec_nodes.values())
-                d: DAG[P, RVDAG] = DAG(l_xn, max_concurrency=max_concurrency, behavior=behavior)
+                d: DAG[P, RVDAG] = DAG(
+                    node.exec_nodes, max_concurrency=max_concurrency, behavior=behavior
+                )
 
             # clean up even in case an error is raised during dag construction
             finally:

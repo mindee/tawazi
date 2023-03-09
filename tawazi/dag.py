@@ -35,7 +35,7 @@ class DAG(Generic[P, RVDAG]):
     # TODO: transform into basemodel to do validation
     def __init__(
         self,
-        exec_nodes: List[ExecNode],
+        exec_nodes: Dict[Identifier, ExecNode],
         max_concurrency: int = 1,
         behavior: ErrorStrategy = ErrorStrategy.strict,
     ):
@@ -50,26 +50,21 @@ class DAG(Generic[P, RVDAG]):
                 2. DAG.PERMISSIVE: continue execution of the DAG and ignore the error
         """
         self.graph_ids = DiGraphEx()
+        self.max_concurrency = max_concurrency
 
         # ExecNodes can be shared between Graphs, their call signatures might also be different
         # NOTE: maybe this should be transformed into a property because there is a deepcopy for node_dict...
         #  this means that there are different ExecNodes that are hanging arround in the same instance of the DAG
-        self.exec_nodes = exec_nodes
-
-        self.max_concurrency = max_concurrency
-
-        self.node_dict: Dict[Identifier, ExecNode] = {
-            exec_node.id: exec_node for exec_node in self.exec_nodes
-        }
+        self.node_dict = exec_nodes
         # Compute all the tags in the DAG to reduce overhead during computation
         self.tagged_nodes = defaultdict(list)
-        for xn in self.exec_nodes:
+        for xn in self.node_dict.values():
             if xn.tag:
                 self.tagged_nodes[xn.tag].append(xn)
 
         # Might be useful in the future
         self.node_dict_by_name: Dict[str, ExecNode] = {
-            exec_node.__name__: exec_node for exec_node in self.exec_nodes
+            exec_node.__name__: exec_node for exec_node in self.node_dict.values()
         }
         self.return_uxns: ReturnUXNsType = None
         self.input_uxns: List[UsageExecNode] = []
@@ -79,12 +74,14 @@ class DAG(Generic[P, RVDAG]):
 
         self.behavior = behavior
 
-        self._build()
+        self._build_graph()
 
         self.bckrd_deps = {
-            xn.id: list(self.graph_ids.predecessors(xn.id)) for xn in self.exec_nodes
+            id_: list(self.graph_ids.predecessors(xn.id)) for id_, xn in self.node_dict.items()
         }
-        self.frwrd_deps = {xn.id: list(self.graph_ids.successors(xn.id)) for xn in self.exec_nodes}
+        self.frwrd_deps = {
+            id_: list(self.graph_ids.successors(xn.id)) for id_, xn in self.node_dict.items()
+        }
 
         # calculate the sum of priorities of all recursive children
         self._assign_compound_priority()
@@ -128,7 +125,7 @@ class DAG(Generic[P, RVDAG]):
         Returns:
             List[ExecNode]: corresponding ExecNodes
         """
-        return [ex_n for ex_n in self.exec_nodes if ex_n.tag == tag]
+        return self.tagged_nodes[tag]
 
     def get_node_by_id(self, id_: Identifier) -> ExecNode:
         """Get the ExecNode with the given id.
@@ -145,7 +142,6 @@ class DAG(Generic[P, RVDAG]):
 
     # TODO: get node by usage (the order of call of an ExecNode)
 
-    # TODO: validate using Pydantic
     def _find_cycle(self) -> Optional[List[Tuple[str, str]]]:
         """Finds the cycles in the DAG. A DAG shouldn't have any dependency cycle.
 
@@ -159,7 +155,7 @@ class DAG(Generic[P, RVDAG]):
         except NetworkXNoCycle:
             return None
 
-    def _build(self) -> None:
+    def _build_graph(self) -> None:
         """Builds the graph and the sequence order for the computation.
 
         Raises:
@@ -167,11 +163,11 @@ class DAG(Generic[P, RVDAG]):
         """
         # 1. Make the graph
         # 1.1 add nodes
-        for xn in self.exec_nodes:
-            self.graph_ids.add_node(xn.id)
+        for id_ in self.node_dict.keys():
+            self.graph_ids.add_node(id_)
 
         # 1.2 add edges
-        for xn in self.exec_nodes:
+        for xn in self.node_dict.values():
             edges = [(dep.id, xn.id) for dep in xn.dependencies]
             self.graph_ids.add_edges_from(edges)
 
@@ -186,7 +182,7 @@ class DAG(Generic[P, RVDAG]):
         # TODO: transfer to the DAG's __init__
         input_ids = [uxn.id for uxn in self.input_uxns]
         # validate setup ExecNodes
-        for xn in self.exec_nodes:
+        for xn in self.node_dict.values():
             if xn.setup and any(dep.id in input_ids for dep in xn.dependencies):
                 raise TawaziUsageError(
                     f"The ExecNode {xn} takes as parameters one of the DAG's input parameter"
@@ -485,9 +481,9 @@ class DAG(Generic[P, RVDAG]):
         # 1. select all setup ExecNodes
         #  do not copy the setup nodes because we want them to be modified per DAG instance!
         all_setup_nodes = {
-            nd.id: nd
-            for nd in self.exec_nodes
-            if nd.setup or (isinstance(nd, ArgExecNode) and nd.executed)
+            id_: xn
+            for id_, xn in self.node_dict.items()
+            if xn.setup or (isinstance(xn, ArgExecNode) and xn.executed)
         }
 
         # 2. if target_nodes is not provided run all setup ExecNodes
