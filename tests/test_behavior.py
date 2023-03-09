@@ -31,9 +31,9 @@ def d(a: Any) -> None:
 
 
 en_a = ExecNode(a.__qualname__, a, priority=1, is_sequential=False)
-en_b = ExecNode(b.__qualname__, b, args=[UsageExecNode(en_a)], priority=2, is_sequential=False)
-en_c = ExecNode(c.__qualname__, c, args=[UsageExecNode(en_b)], priority=2, is_sequential=False)
-en_d = ExecNode(d.__qualname__, d, args=[UsageExecNode(en_a)], priority=1, is_sequential=False)
+en_b = ExecNode(b.__qualname__, b, args=[UsageExecNode(en_a.id)], priority=2, is_sequential=False)
+en_c = ExecNode(c.__qualname__, c, args=[UsageExecNode(en_b.id)], priority=2, is_sequential=False)
+en_d = ExecNode(d.__qualname__, d, args=[UsageExecNode(en_a.id)], priority=1, is_sequential=False)
 list_execnodes = [en_a, en_b, en_c, en_d]
 
 
