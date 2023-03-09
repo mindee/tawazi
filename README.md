@@ -291,7 +291,9 @@ assert res_c == "A + B = C"
 <!-- ## Limitations:
 Currently there are some limitations in the usage of tawazi that will be overcome in the future.
 1. A DAG can not reuse the same function twice inside the calculation sequence (Will be resolved in the future)
-2. All code inside a dag descriptor function must be either an @op decorated functions calls and arguments passed arguments. Otherwise the behavior of the DAG might be unpredictable -->
+2. All code inside a dag descriptor function must be either an @op decorated functions calls and arguments passed arguments. Otherwise the behavior of the DAG might be unpredictable
+3. Because the main function serves only for the purpose of describing the dependencies, the code that it executes only contain the dependencies. Hence when debugging your doce, it will be impossible to view the data movement inside this function. However, you can debug code inside of a node.
+-->
 
 
 
