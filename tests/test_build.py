@@ -48,29 +48,26 @@ def fail(g: Any) -> int:
 
 # ExecNodes can be identified using the actual function or an identification string
 en_a = ExecNode(a.__name__, a, is_sequential=True)
-en_b = ExecNode(b.__name__, b, [UsageExecNode(en_a)], priority=2, is_sequential=False)
-en_c = ExecNode(c.__name__, c, [UsageExecNode(en_a)], priority=1, is_sequential=False)
+en_b = ExecNode(b.__name__, b, [UsageExecNode(en_a.id)], priority=2, is_sequential=False)
+en_c = ExecNode(c.__name__, c, [UsageExecNode(en_a.id)], priority=1, is_sequential=False)
 en_d = ExecNode(
-    d.__name__, d, [UsageExecNode(en_b), UsageExecNode(en_c)], priority=1, is_sequential=False
+    d.__name__, d, [UsageExecNode(en_b.id), UsageExecNode(en_c.id)], priority=1, is_sequential=False
 )
-en_e = ExecNode(e.__name__, e, [UsageExecNode(en_b)], is_sequential=False)
-en_f = ExecNode(f.__name__, f, [UsageExecNode(en_e)], is_sequential=False)
-en_g = ExecNode(g.__name__, g, [UsageExecNode(en_e)], is_sequential=False)
+en_e = ExecNode(e.__name__, e, [UsageExecNode(en_b.id)], is_sequential=False)
+en_f = ExecNode(f.__name__, f, [UsageExecNode(en_e.id)], is_sequential=False)
+en_g = ExecNode(g.__name__, g, [UsageExecNode(en_e.id)], is_sequential=False)
 
 list_execnodes = [en_a, en_b, en_c, en_d, en_e, en_f, en_g]
 
 
 failing_execnodes = list_execnodes + [
-    ExecNode(fail.__name__, fail, [UsageExecNode(en_g)], is_sequential=False)
+    ExecNode(fail.__name__, fail, [UsageExecNode(en_g.id)], is_sequential=False)
 ]
 
 
 def test_dag_build() -> None:
     g: DAG[Any, Any] = DAG(list_execnodes, 2, behavior=ErrorStrategy.strict)
     g._execute(g._make_subgraph())  # must never fail!
-
-
-test_dag_build()
 
 
 def test_draw() -> None:
