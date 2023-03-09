@@ -16,13 +16,12 @@ from networkx import find_cycle
 from networkx.exception import NetworkXNoCycle, NetworkXUnfeasible
 
 from tawazi.config import Cfg
-from tawazi.consts import ReturnIDsType
-from tawazi.helpers import _filter_noval, _UniqueKeyLoader
+from tawazi.helpers import _UniqueKeyLoader
 
 from .consts import RVDAG, Identifier, P, RVTypes
 from .digraph import DiGraphEx
 from .errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
-from .node import Alias, ArgExecNode, ExecNode
+from .node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode
 
 
 class DAG(Generic[P, RVDAG]):
@@ -72,8 +71,8 @@ class DAG(Generic[P, RVDAG]):
         self.node_dict_by_name: Dict[str, ExecNode] = {
             exec_node.__name__: exec_node for exec_node in self.exec_nodes
         }
-        self.return_ids: ReturnIDsType = None
-        self.input_ids: List[Identifier] = []
+        self.return_uxns: ReturnUXNsType = None
+        self.input_uxns: List[UsageExecNode] = []
 
         # a sequence of execution to be applied in a for loop
         self.exec_node_sequence: List[ExecNode] = []
@@ -173,7 +172,7 @@ class DAG(Generic[P, RVDAG]):
 
         # 1.2 add edges
         for xn in self.exec_nodes:
-            edges = [(dep.xn.id, xn.id) for dep in xn.dependencies]
+            edges = [(dep.id, xn.id) for dep in xn.dependencies]
             self.graph_ids.add_edges_from(edges)
 
         # 2. Validate the DAG: check for circular dependencies
@@ -184,9 +183,11 @@ class DAG(Generic[P, RVDAG]):
             )
 
     def _validate(self) -> None:
+        # TODO: transfer to the DAG's __init__
+        input_ids = [uxn.id for uxn in self.input_uxns]
         # validate setup ExecNodes
         for xn in self.exec_nodes:
-            if xn.setup and any(dep.xn.id in self.input_ids for dep in xn.dependencies):
+            if xn.setup and any(dep.id in input_ids for dep in xn.dependencies):
                 raise TawaziUsageError(
                     f"The ExecNode {xn} takes as parameters one of the DAG's input parameter"
                 )
@@ -630,14 +631,14 @@ class DAG(Generic[P, RVDAG]):
         # inside the DAG's execution through the raise_err lambda
         if args:
             # 2.2 can't provide more than enough arguments
-            if len(args) > len(self.input_ids):
+            if len(args) > len(self.input_uxns):
                 raise TypeError(
-                    f"The DAG takes a maximum of {len(self.input_ids)} arguments. {len(args)} arguments provided"
+                    f"The DAG takes a maximum of {len(self.input_uxns)} arguments. {len(args)} arguments provided"
                 )
 
             # 2.3 modify ExecNodes corresponding to input ArgExecNodes
             for ind_arg, arg in enumerate(args):
-                node_id = self.input_ids[ind_arg]
+                node_id = self.input_uxns[ind_arg].id
 
                 call_xn_dict[node_id].result = arg
 
@@ -655,21 +656,19 @@ class DAG(Generic[P, RVDAG]):
         Returns:
             RVTypes: the actual values extracted from xn_dict
         """
-        if self.return_ids is None:
+        return_uxns = self.return_uxns
+        if return_uxns is None:
             return None
-        if isinstance(self.return_ids, Identifier):
-            return _filter_noval(xn_dict[self.return_ids].result)
-        if isinstance(self.return_ids, (tuple, list)):
-            gen = (_filter_noval(xn_dict[ren_id].result) for ren_id in self.return_ids)
-            if isinstance(self.return_ids, tuple):
+        if isinstance(return_uxns, UsageExecNode):
+            return return_uxns.result(xn_dict)
+        if isinstance(return_uxns, (tuple, list)):
+            gen = (ren_uxn.result(xn_dict) for ren_uxn in return_uxns)
+            if isinstance(return_uxns, tuple):
                 return tuple(gen)
-            if isinstance(self.return_ids, list):
+            if isinstance(return_uxns, list):
                 return list(gen)
-        if isinstance(self.return_ids, dict):
-            return {
-                key: _filter_noval(xn_dict[ren_id].result)
-                for key, ren_id in self.return_ids.items()
-            }
+        if isinstance(return_uxns, dict):
+            return {key: ren_uxn.result(xn_dict) for key, ren_uxn in return_uxns.items()}
 
         raise TawaziTypeError("Return type for the DAG can only be a single value, Tuple or List")
 
