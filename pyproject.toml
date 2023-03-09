@@ -5,6 +5,8 @@ description = "This library helps you execute a set of functions in a Directed A
 authors = ["Bashir Abdelwahed <bashir@mindee.co>", "Matthias Cremieux <matthias@mindee.co>"]
 license = "Apache 2.0"
 readme = "README.md"
+homepage = "https://pypi.org/project/tawazi/"
+repository = "https://github.com/mindee/tawazi"
 
 
 [tool.poetry.dependencies]
