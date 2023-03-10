@@ -26,6 +26,7 @@ from .node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode
 class DAG(Generic[P, RVDAG]):
     """Data Structure containing ExecNodes with interdependencies.
 
+    Please do not instantiate this class directly. Use the decorator `@dag` instead.
     The ExecNodes can be executed in parallel with the following restrictions:
         * Limited number of threads.
         * Parallelization constraint of each ExecNode (is_sequential attribute)
@@ -96,11 +97,7 @@ class DAG(Generic[P, RVDAG]):
 
     @property
     def max_concurrency(self) -> int:
-        """Maximal number of threads running in parallel.
-
-        Returns:
-            int: maximum number of threads running in parallel
-        """
+        """Maximal number of threads running in parallel. (will change!)."""
         return self._max_concurrency
 
     @max_concurrency.setter
