@@ -12,4 +12,3 @@
         - priority
         - is_sequential
         - executed
-        - result

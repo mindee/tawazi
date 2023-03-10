@@ -112,11 +112,7 @@ class ExecNode:
 
     @property
     def executed(self) -> bool:
-        """Whether this ExecNode has been executed.
-
-        Returns:
-            bool: whether this ExecNode has been executed.
-        """
+        """Whether this ExecNode has been executed."""
         return self.result is not NoVal
 
     def __repr__(self) -> str:
@@ -150,11 +146,7 @@ class ExecNode:
 
     @property
     def tag(self) -> Optional[TagOrTags]:
-        """The Tag or Tags of this ExecNode.
-
-        Returns:
-            Tag: the Tag or Tags of this ExecNode.
-        """
+        """The Tag or Tags of this ExecNode."""
         return self._tag
 
     @tag.setter
@@ -170,11 +162,7 @@ class ExecNode:
 
     @property
     def priority(self) -> int:
-        """The priority of this ExecNode.
-
-        Returns:
-            int: the priority of this ExecNode.
-        """
+        """The priority of this ExecNode."""
         return self._priority
 
     @priority.setter
