@@ -40,6 +40,51 @@ Current features are:
 
 
 ## Usage
+### decorators
+
+In [Tawazi](https://pypi.org/project/tawazi/), there 3 Classes that will be maniuplated by the user:
+1. `ExecNode`: a wrapper around a function. `ExecNode` can be executed inside a `DAG`. `ExecNode` can take arguments and return values to be used as arguments in other `ExecNode`s.
+2. `DAG`: a wrapper around a function that defines a dag dependency. This function should only contain calls to `ExecNode`s (you can not call normal Python functions inside a `DAG`!)
+3. `DAGExecution`: an instance related to `DAG` for advanced usage. It can execute a `DAG` and keeps information about the last execution. It allows checking all `ExecNode`s results, running subgraphs, caching `DAG` executions and more (c.f. section below for usage documentation).
+
+Decorators are provided to create the previous classes:
+1. `@xn`: creates `ExecNode` from a function.
+2. `@dag`: creates `DAG` from a function.
+
+### basic usage
+```Python
+from tawazi import xn, dag
+@xn
+def incr(x):
+  return x + 1
+
+# incr is no longer a function
+# incr became a `LazyExecNode` which is a subclass of `ExecNode`.
+print(type(incr))
+
+@xn
+def decr(x):
+  return x - 1
+
+@xn
+def display(x):
+  print(x)
+
+@dag
+def pipeline(x):
+  x_lo = decr(x)
+  x_hi = incr(x)
+  display(x_hi)
+  display(x_lo)
+
+# pipeline is no longer a function
+# pipeline became a `DAG`
+print(type(pipeline))
+
+# `DAG` can be executed, they behave the same as the original function without decorators.
+pipeline(0)
+```
+
 
 ### Parallelism
 You can use Tawazi to make your non CPU-Bound code Faster
@@ -47,7 +92,6 @@ You can use Tawazi to make your non CPU-Bound code Faster
 ```python
 # type: ignore
 from time import sleep, time
-from tawazi import xn, dag
 
 @xn
 def a():
@@ -216,7 +260,7 @@ assert setop_counter == 1
 assert LARGE_DATA == pipeline()
 assert setop_counter == 1 # setop_counter is skipped the second time pipe1 is invoked
 ```
-if you want to re-run the setup `ExecNode`, you have to redeclare the `DAG` or deepcopy the original `DAG` instance
+if you want to re-run the setup `ExecNode`, you have to redeclare the `DAG` or deepcopy the original `DAG` instance before executing it.
 ```Python
 @dag
 def pipeline():
@@ -325,6 +369,8 @@ pipe_exec = pipeline.executor(target_nodes=["b", xns_bye[0]])
 pipe_exec()
 
 ```
+> Because `DAGExecution` instances are mutable, they are non thread-safe. This is unlike `DAG` which is ThreadSafe
+
 
 * More functionalities will be introduced in the future...
 
