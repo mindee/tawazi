@@ -1,3 +1,4 @@
+import pytest
 from tawazi import dag, xn
 
 
@@ -19,3 +20,11 @@ def test_same_constant_name_in_two_exec_nodes() -> None:
     assert len(exec_nodes) == 4
     assert exec_nodes[a.id].result == 1234
     assert exec_nodes[b.id].result == "1234poulpe"
+
+
+def test_setup_debug_nodes() -> None:
+    with pytest.raises(ValueError):
+
+        @xn(debug=True, setup=True)
+        def a():
+            ...

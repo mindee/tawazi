@@ -381,7 +381,7 @@ class DAG(Generic[P, RVDAG]):
                 # 5.1 submit the exec node to the executor
                 # TODO: make a special case if self.max_concurrency == 1
                 #   then invoke the function directly instead of launching a thread
-                exec_future = executor.submit(xn.execute, node_dict=xns_dict)
+                exec_future = executor.submit(xn._execute, node_dict=xns_dict)
                 running.add(exec_future)
                 futures[xn.id] = exec_future
 
@@ -685,7 +685,7 @@ class DAG(Generic[P, RVDAG]):
         # 3. deep copy the node_dict to store the results in each node
         for xn_id in graph.topologically_sorted:
             # only execute ExecNodes that are part of the subgraph
-            call_xn_dict[xn_id].execute(call_xn_dict)
+            call_xn_dict[xn_id]._execute(call_xn_dict)
 
         # 4. make returned values
         return self._get_return_values(call_xn_dict)
