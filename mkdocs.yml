@@ -24,8 +24,10 @@ theme:
 
 nav:
 - Home: home.md
+- decorators: decorators.md
+- ExecNodes: nodes.md
+- DAG: dag.md
 - Future Developments: future_developments.md
-
 - Releases: https://github.com/mindee/tawazi/releases
 
 
@@ -46,6 +48,7 @@ plugins:
 - exclude:
     glob:
     - requirements.txt
+- mkdocstrings
 
 extra:
   version:

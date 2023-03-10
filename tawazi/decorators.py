@@ -1,4 +1,7 @@
-"""Module for decorators used in Tawazi."""
+"""Decorators of Tawazi.
+
+The user should use the decorators `@dag` and `@xn` to create Tawazi objects `DAG` and `ExecNode`.
+"""
 import functools
 from typing import Any, Callable, List, Optional, Union, overload
 
@@ -48,23 +51,25 @@ def xn(
     setup: bool = False,
     unpack_to: Optional[int] = None,
 ) -> Union[Callable[[Callable[P, RVXN]], LazyExecNode[P, RVXN]], LazyExecNode[P, RVXN]]:
-    """Decorate a function to make it an ExecNode.
+    """Decorate a normal function to make it an ExecNode.
 
-    When the decorated function is called, you are actually calling an ExecNode.
+    When the decorated function is called inside a `DAG`, you are actually calling an `ExecNode`.
     This way we can record the dependencies in order to build the actual DAG.
     Please check the example in the README for a guide to the usage.
 
     Args:
-        func (Callable[..., Any]): a Callable that will be executed in the DAG
-        priority (int): priority of the execution with respect to other ExecNodes
-        is_sequential (bool): whether to allow the execution of this ExecNode with others or not
-        debug (bool): if True, this node will be executed when the corresponding DAG runs in Debug mode.
-            This means that this ExecNode will run if its inputs exists
+        func ([Callable[P, RVXN]): a Callable that will be executed in the `DAG`
+        priority (int): priority of the execution with respect to other `ExecNode`s
+        is_sequential (bool): whether to allow the execution of this `ExecNode` with others or not.
+            If `True`, all other `ExecNode` currently running will stop before this one starts executing.
+        debug (bool): if `True`, will execute only when Debug mode is active.
+            a debug `ExecNode` will run its inputs exists regardless of subgraph choice.
         tag (Optional[TagOrTags]): a str or Tuple[str] to tag this ExecNode.
             If Tuple[str] is given, every value of the tuple is used as tag.
             Notice that multiple ExecNodes can have the same tag.
-        setup (bool): if True, this node will be executed only once during the lifetime of a DAG instance.
-            Setup ExecNodes are meant to be used to load heavy data only once inside the execution pipeline and then be used as if the results were cached.
+        setup (bool): if True, will be executed only once during the lifetime of a `DAG` instance.
+            Setup `ExecNode`s are meant to be used to load heavy data only once inside the execution pipeline
+            and then be used as if the results of their execution were cached.
             This can be useful if you want to load heavy ML models, heavy Data etc.
             Note that you can run all / subset of the setup nodes by invoking the DAG.setup method
             NOTE setup nodes are currently not threadsafe!
@@ -72,14 +77,13 @@ def xn(
                 If you execute the same pipeline in multiple threads during the setup phase, the behavior is undefined.
                 This is why it is best to invoke the DAG.setup method before using the DAG in a multithreaded environment.
                 This problem will be resolved in the future
-        tag (Optional[Any]): Any Hashable / immutable typed variable can be used to identify nodes (str, Tuple[str, ...])
         unpack_to (Optional[int]): if not None, this ExecNode's execution must return unpacked results corresponding to the given value
 
     Returns:
-        LazyExecNode: The decorated function wrapped in a Callable.
+        LazyExecNode: The decorated function wrapped in an `ExecNode`.
 
     Raises:
-        TypeError: If the decorated function passed is not a Callable.
+        TypeError: If the decorated function passed is not a `Callable`.
     """
 
     def intermediate_wrapper(_func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]:
@@ -114,7 +118,7 @@ def dag(
     max_concurrency: int = 1,
     behavior: ErrorStrategy = ErrorStrategy.strict,
 ) -> Union[Callable[[Callable[P, RVDAG]], DAG[P, RVDAG]], DAG[P, RVDAG]]:
-    """Transform the declared ops into a DAG that can be executed by tawazi's scheduler.
+    """Transform the declared `ExecNode`s into a DAG that can be executed by Tawazi's scheduler.
 
     The same DAG can be executed multiple times.
     Note: dag is thread safe because it uses an internal lock.
@@ -123,18 +127,19 @@ def dag(
     Please check the example in the README for a guide to the usage.
 
     Args:
-        declare_dag_function: a function that contains the execution of the DAG.
-            Currently Only @op decorated functions can be used inside the decorated function (i.e. declare_dag_function).
+        declare_dag_function: a function that describes the execution of the DAG.
+            This function should only contain calls to `ExecNode`s and data Exchange between them.
+            (i.e. You can not use a normal Python function inside it unless decorated with `@xn`.)
             However, you can use some simple python code to generate constants.
-            Note However that these constants are computed only once during DAG declaration.
+            These constants are computed only once during the `DAG` declaration.
         max_concurrency: the maximum number of concurrent threads to execute in parallel.
-        behavior: the behavior of the DAG when an error occurs during the execution of a function (ExecNode).
+        behavior: the behavior of the `DAG` when an error occurs during the execution of a function (`ExecNode`).
 
     Returns:
-        a DAG instance
+        a `DAG` instance that can be used just like a normal Python function. However it will be executed by Tawazi's scheduler.
 
     Raises:
-        TypeError: If the decorated function passed is not a Callable.
+        TypeError: If the decorated object is not a Callable.
     """
 
     # wrapper used to support parametrized and non parametrized decorators
