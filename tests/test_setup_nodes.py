@@ -176,7 +176,8 @@ def test_dependencies_subgraph() -> None:
     pytest.op2 = 0
     pytest.op12 = 0
 
-    res = pipe_setup_deps(target_nodes=["twinkle toes"])
+    exec_ = pipe_setup_deps.executor(target_nodes=["twinkle toes"])
+    res = exec_()
     assert res is None
     assert pytest.setup_op1 == 1
     assert pytest.setup_op2 == 0
@@ -184,7 +185,8 @@ def test_dependencies_subgraph() -> None:
     assert pytest.op2 == 0
     assert pytest.op12 == 0
 
-    res = pipe_setup_deps(target_nodes=["twinkle toes"])
+    exec_ = pipe_setup_deps.executor(target_nodes=["twinkle toes"])
+    res = exec_()
     assert res is None
     assert pytest.setup_op1 == 1
     assert pytest.setup_op2 == 0
@@ -292,7 +294,8 @@ def test_pipeline_setup_method() -> None:
     assert pytest.op1 == 0
     assert pytest.op2 == 0
     assert pytest.op12 == 0
-    pipe(target_nodes=["twinkle toes"])
+    exec_ = pipe.executor(target_nodes=["twinkle toes"])
+    exec_()
     assert pytest.setup_op1 == 1
     assert pytest.setup_op2 == 0
     assert pytest.op1 == 1

@@ -132,8 +132,10 @@ def test_with_debug_nodes() -> None:
     assert ("aef", "bc", "bd", "bcbdg") == pipe()
     # TODO: write clear documentation about priority of choosing exclude_nodes vs debug_nodes
     #  (debug_nodes are more prioritized!)
-    assert ("aef", "bc", "bd", "bcbdg") == pipe(exclude_nodes=[g])
-    assert ("aef", None, None, None) == pipe(exclude_nodes=[b])
+    exec_ = pipe.executor(exclude_nodes=[g])
+    assert ("aef", "bc", "bd", "bcbdg") == exec_()
+    exec_ = pipe.executor(exclude_nodes=[b])
+    assert ("aef", None, None, None) == exec_()
 
 
 # TODO: maybe write a test case with cache ?

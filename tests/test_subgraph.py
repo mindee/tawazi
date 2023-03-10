@@ -142,7 +142,8 @@ def pipe(in1: int) -> int:
 
 
 def test_no_nodes_running_in_subgraph() -> None:
-    assert pipe(target_nodes=[]) is None
+    exec_ = pipe.executor(target_nodes=[])
+    assert exec_() is None
 
 
 # TODO: fix this problem!!!
