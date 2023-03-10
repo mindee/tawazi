@@ -12,17 +12,17 @@
 
 <!-- TODO: put a link explaining what a DAG is-->
 
-The tawazi library enables **parallel** execution of functions in a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) dependency structure.
+Tawazi facilitates **parallel** execution of functions in a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) dependency structure.
 This library satisfies the following:
 * Stable, robust, well tested
 * lightweight
 * Thread Safe
 * Few dependencies
 * Legacy Python versions support (in the future)
-* pypy support (in the future)
+* MyPy compatible
 * Many Python implementations support (in the future)
 
-In the context of tawazi, the computation sequence to be run in parallel is referred to as DAG and the functions that must run in parallel are called `ExecNode`s.
+In Tawazi, a computation sequence is referred to as `DAG`. The functions called inside the computation sequence are referred to as `ExecNode`s.
 
 This library supports:
 * Limiting the number of "Threads" that the DAG uses while running
@@ -31,6 +31,9 @@ This library supports:
 * setup `ExecNode`s: These nodes only run once per DAG instance
 * debug `ExecNode`s: These are nodes that only run during when `RUN_DEBUG_NODES` environment variable is set
 * running a subgraph of the DAG instance
+* Excluding an `ExecNode` from running
+* cache the results of the execution of a `DAG` for faster development
+* and more!
 
 **Note**: The library is still at an [advanced state of development](#future-developments). Your contributions are highly welcomed.
 
