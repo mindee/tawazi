@@ -39,8 +39,8 @@ Current features are:
 **Note**: The library is still at an [advanced state of development](#future-developments). Breaking changes might happen on the minor version (v0.Minor.Patch). Please pin [Tawazi](https://pypi.org/project/tawazi/) to the __Minor Version__. Your contributions are highly welcomed.
 
 
-## Usage
-### decorators
+# Usage
+## Classes & decorators
 
 In [Tawazi](https://pypi.org/project/tawazi/), there 3 Classes that will be maniuplated by the user:
 1. `ExecNode`: a wrapper around a function. `ExecNode` can be executed inside a `DAG`. `ExecNode` can take arguments and return values to be used as arguments in other `ExecNode`s.
@@ -51,7 +51,7 @@ Decorators are provided to create the previous classes:
 1. `@xn`: creates `ExecNode` from a function.
 2. `@dag`: creates `DAG` from a function.
 
-### basic usage
+## basic usage
 ```Python
 from tawazi import xn, dag
 @xn
@@ -86,7 +86,7 @@ pipeline(0)
 ```
 
 
-### Parallelism
+## Parallelism
 You can use Tawazi to make your non CPU-Bound code Faster
 
 ```python
@@ -129,9 +129,9 @@ print(f"res = {res}")
 ```
 As you can see, the execution time of pipeline takes less than 2 seconds, which means that some part of the code ran in parallel to the other
 
-### pipeline
+## `DAG` is like a normal function
 
-* You can pass in arguments to the pipeline and get returned results back like normal functions:
+You can pass in arguments to the pipeline and get returned results back like normal functions:
 
 ```Python
 from tawazi import xn, dag
@@ -156,7 +156,7 @@ assert pipeline(1) == 4
 ```
 Currently you can not pass in named parameters to the `DAG` (will be supported in future releases). (This should not be confused with passing keyworded arguments to `ExecNode`s which is possible)
 
-* You can return multiple values from a pipeline via tuples, lists or dicts.
+You can return multiple values from a pipeline via tuples, lists or dicts.
 
 ```Python
 @dag
@@ -178,9 +178,9 @@ def pipeline_dict():
 assert pipeline_dict() == {"foo": 2, "bar": 5}
 ```
 
-* You can return multiple values from `ExecNode`s:
+You can return multiple values from `ExecNode`s:
 
-1. Either via Python `Tuple`s and `List`s but you will have to specify the unpacking number (In the future this will no longer be needed)
+1. Either via Python `Tuple`s and `List`s but you will have to specify the unpacking number
 ```Python
 @xn(unpack_to=4)
 def count_tuple(val):
@@ -231,9 +231,9 @@ assert inc_val_2 == 12
 ```
 This makes the `DAG` usage as close to using the original __pipeline__ function as possible.
 
-* You can have setup `ExecNode`s.
+## Setup `ExecNode`s
 
-Setup `ExecNode`s have their results cached in the `DAG` instance. This means that they run once per `DAG` instance. These can be used to load large consts from Disk (Machine Learning Models, Large CSV files, initialization of a resource, prewarming etc.)
+Setup `ExecNode`s have their results cached in the `DAG` instance. This means that they run once per `DAG` instance. These can be used to load large constant data from Disk (Machine Learning Models, Large CSV files, initialization of a resource, prewarming etc.)
 
 ```Python
 LARGE_DATA = "Long algorithm to generate Constant Data"
@@ -283,8 +283,41 @@ def pipeline():
 
 pipeline.setup()
 ```
+The goal of having setup `ExecNode` is to load only the necessary resources when a subgraph is executed. Here is an example demonstrating it:
+```Python
+from pprint import PrettyPrinter
+@xn(setup=True)
+def setop1():
+  return "large data 1"
 
-* You can Make Debug `ExecNode`s that will only run if `RUN_DEBUG_NODES` env variable is set. These can be visualization `ExecNode`s for example... or some complicated Assertions that helps you debug problems when needed that are hostile to the production environment:
+@xn(setup=True)
+def setop1():
+  return "large data 2"
+
+@xn
+def print_xn(val):
+  print(val)
+
+@xn
+def pprint_xn(val):
+  PrettyPrinter(indent=4).pprint(val)
+
+@dag
+def pipeline():
+  data1 = setup1()
+  data2 = setup2()
+  print_xn(data1)
+  pprint_xn(data2)
+  return data1, data2
+
+exec_ = pipeline.executor(target_nodes=["print_xn"])
+# Notice how the execution of the subgraph doesn't make the setop1 `ExecNode`. This makes development of your complex pipeline faster by reducing the time needed to load all resources
+assert "large data 1", None = exec_()
+```
+
+## Debug `ExecNode`
+
+* You can Make Debug `ExecNode`s that will only run if `RUN_DEBUG_NODES` env variable is set. These can be visualization `ExecNode`s for example... or some complicated Assertions that helps you debug problems when needed that are hostile to the production environment (they consume too much computation time):
 ```Python
 @xn
 def a(i):
@@ -305,10 +338,16 @@ def pipe():
 debug_has_run = False
 pipe()
 assert debug_has_run == False
-
 ```
 
-* Tags: you can tag an ExecNode
+# Advanced Usage
+
+## `DAGExecution`
+`DAGExecution` is a class related to `DAG`. <!-- TODO: complete it-->
+
+
+## Tag
+you can tag an ExecNode  <!-- TODO:!!! continue when tag behavior are clearly defined for tuple and List! I prefer to use List for defining multiple tags because tuple can be used as dictionary key we can disallow using tuple for the moment ?-->
 ```Python
 @xn(tag="twinkle toes")
 def a():
@@ -329,7 +368,7 @@ xn_a = pipeline.get_nodes_by_tag("twinkle toes")
 ```
 
 
-* You can even tag a specific call of an ExecNode
+You can even tag a specific call of an ExecNode:
 ```Python
 @xn
 def stub_xn(i):
@@ -351,9 +390,9 @@ pipeline()
 # multiple nodes can have the same tag!
 xns_bye = pipeline.get_nodes_by_tag("byebye")
 ```
+> This will be useful if you want to run a subgraph (cf. the next paragraph). It will also be useful if you want to access result of a specific ExecNode after an Execution
 
-This will be useful if you want to run a subgraph (cf. the next paragraph). It will also be useful if you want to access result of a specific ExecNode after an Execution
-* You can run a subgraph of your pipeline: Make a `DAGExecution` from your `DAG` and pass in the `ExecNode`s you want to run:
+You can run a subgraph of your pipeline: Make a `DAGExecution` from your `DAG` and pass in the `ExecNode`s you want to run: <!-- TODO: complete these two parts!!-->
 ```Python
 # You can use the original __qual__name of the decorated function as an Identifier
 pipe_exec = pipeline.executor(target_nodes=["b"])
@@ -375,9 +414,15 @@ pipe_exec()
 * More functionalities will be introduced in the future...
 
 
-## Advanced Usage
-
-```python
+## Fine Control of Parallel Execution
+1. You can control which node is preferred to run 1st when mutliple `ExecNode`s are available for execution. This can be achieved through modifications of `priority` of the `ExecNode`.
+1. You can even make an `ExecNode` run alone (i.e. without allowing other ExecNodes to execute in parallel to it). This can be helpful if you write code that is not thread-safe or use a library that is not thread-safe in a certain `ExecNode`.
+This is achieved by setting the `is_sequential` parameter to `True` for the `ExecNode` in question. The default value is set via the environment variable `TAWAZI_IS_SEQUENTIAL` (c.f. `tawazi.config`).
+1. You can control the behavior of the `DAG` in case an `ExecNode` fails:
+  a. `"strict"`: stop execution of the DAG
+  b. `"all-children"`:  stop the execution of the all successors
+  c. `"permissive"`: continue the execution of the whole DAG
+```Python
 
 # type: ignore
 from time import sleep, time
@@ -422,8 +467,6 @@ print(f"Graph execution took {execution_time:.2f} seconds")
 assert res_a == "A"
 assert res_b == "B"
 assert res_c == "A + B = C"
-
-
 ```
 
 <!-- ## Limitations:
@@ -443,4 +486,4 @@ The general documentation has no dedicated space at the moment and is being host
 Expect future developments on this side as well. To build it, simply run `mkdocs build` and `mkdocs serve` at the root of the repository.
 
 ## Future developments
-*This library is still in development. Breaking changes are expected.
+__This library is still in development. Breaking changes are expected.__
