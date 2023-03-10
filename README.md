@@ -240,16 +240,18 @@ def pipeline():
 pipeline.setup()
 ```
 
-* You can Make Debug ExecNodes that will only run if `RUN_DEBUG_NODES` env variable is set. These can be visualization ExecNodes for example... or some complicated Assertions that helps you debug problems when needed that are hostile to the production environment
+* You can Make Debug `ExecNode`s that will only run if `RUN_DEBUG_NODES` env variable is set. These can be visualization `ExecNode`s for example... or some complicated Assertions that helps you debug problems when needed that are hostile to the production environment:
 ```Python
 @xn
 def a(i):
   return i + 1
+
 @xn(debug=True)
 def print_debug(i):
   global debug_has_run
   debug_has_run = True
   print("DEBUG: ", i)
+
 @dag
 def pipe():
   i = a(0)
@@ -267,6 +269,7 @@ assert debug_has_run == False
 @xn(tag="twinkle toes")
 def a():
   print("I am tough")
+
 @xn
 def b():
   print("I am normal")
@@ -278,23 +281,27 @@ def pipeline():
 
 pipeline()
 xn_a = pipeline.get_nodes_by_tag("twinkle toes")
-# You can do whatever you want with this ExecNode...
+# You can do whatever you want with this ExecNode... like checking its arguments, setting its priority, changing it to become a debug `ExecNode`. This is however an advanced usage. Your methods might break more often with Tawazi releases because `ExecNode` is an internal Object.
+```
 
 
-# You can even tag a specific call of an ExecNode
+* You can even tag a specific call of an ExecNode
+```Python
 @xn
-def g(i):
+def stub_xn(i):
   return i
+
 @xn(tag="c_node")
-def c(i):
+def print_xn(i):
   print(i)
+
 @dag
 def pipeline():
   b()
-  hello = g("hello")
-  c(hello)
-  goodbye = g("goodbye")
-  c(goodbye, twz_tag="byebye")
+  hello = stub_xn("hello")
+  print_xn(hello)
+  goodbye = stub_xn("goodbye")
+  print_xn(goodbye, twz_tag="byebye")
 
 pipeline()
 # multiple nodes can have the same tag!
