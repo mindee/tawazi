@@ -134,42 +134,110 @@ def pipeline_dict():
 assert pipeline_dict() == {"foo": 2, "bar": 5}
 ```
 
-Currently you can only return a single value from an `ExecNode`, in the future multiple return values will be allowed.
+* You can return multiple values from `ExecNode`s:
+
+1. Either via Python `Tuple`s and `List`s but you will have to specify the unpacking number (In the future this will no longer be needed)
+```Python
+@xn(unpack_to=4)
+def count_tuple(val):
+  return (val, val + 1, val + 2, val + 3)
 
 
-* You can have setup `ExecNode`s; These are `ExecNode`s that will run once per DAG instance
+@xn(unpack_to=4)
+def count_list(val):
+  return [val, val + 1, val + 2, val + 3]
+
+
+@dag
+def pipeline():
+  v1, v2, v3, v4 = replicate_tuple(1)
+  v5, v6, v7, v8 = replicate_list(v4)
+  return v1, v2, v3, v4, v5, v6, v7, v8
+
+
+assert pipeline() == [1, 2, 3, 4, 4, 5, 6, 7]
+```
+2. Or via indexing (`Dict` or `List` etc.):
+```Python
+@xn
+def gen_dict(val):
+  return {"k1": val, "k2": "2", "nested_list": [1 ,11, 3]}
+
+@xn
+def gen_list(val):
+  return [val, val + 1, val + 2, val + 3]
+
+@xn
+def incr(val):
+  return val + 1
+
+@dag
+def pipeline(val):
+  d = gen_dict()
+  l = gen_list(d["k1"])
+  inc_val = incr(l[0])
+  inc_val_2 = incr(d["nested_list"][1])
+  return d, l, inc_val, inc_val_2
+
+d, l, inc_val, inc_val_2 = pipeline(123)
+assert d == {"k1": val, "k2": "2", "nested_list": [1 ,2, 3]}
+assert l == [123, 124, 125, 126]
+assert inc_val == 124
+assert inc_val_2 == 12
+```
+This makes the `DAG` usage as close to using the original __pipeline__ function as possible.
+
+* You can have setup `ExecNode`s.
+
+Setup `ExecNode`s have their results cached in the `DAG` instance. This means that they run once per `DAG` instance. These can be used to load large consts from Disk (Machine Learning Models, Large CSV files, initialization of a resource, prewarming etc.)
 
 ```Python
-from copy import deepcopy
+LARGE_DATA = "Long algorithm to generate Constant Data"
 @xn(setup=True)
 def setop():
   global setop_counter
   setop_counter += 1
-  return "Long algorithm to generate Constant Data"
+  return LARGE_DATA
 @xn
 def my_print(arg):
   print(arg)
+  return arg
+
 @dag
 def pipeline():
   cst_data = setop()
-  my_print(cst_data)
+  large_data = my_print(cst_data)
+  return large_data
 
 setop_counter = 0
 # create another instance because setup ExecNode result is cached inside the instance
-pipe1 = deepcopy(pipeline)
-pipe1.setup()
+assert LARGE_DATA == pipeline()
 assert setop_counter == 1
-pipe1()
-assert setop_counter == 1
+assert LARGE_DATA == pipeline()
+assert setop_counter == 1 # setop_counter is skipped the second time pipe1 is invoked
+```
+if you want to re-run the setup `ExecNode`, you have to redeclare the `DAG` or deepcopy the original `DAG` instance
+```Python
+@dag
+def pipeline():
+  cst_data = setop()
+  large_data = my_print(cst_data)
+  return large_data
 
+assert LARGE_DATA == pipeline()
+assert setop_counter == 2
+assert LARGE_DATA == pipeline()
+assert setop_counter == 2
+```
+You can run the setup `ExecNode`s alone:
+```Python
+@dag
+def pipeline():
+  cst_data = setop()
+  large_data = my_print(cst_data)
+  return large_data
 
-setop_counter = 0
-pipe2 = deepcopy(pipeline)
-pipe2()
-assert setop_counter == 1
-pipe2()
-assert setop_counter == 1
-
+pipeline.setup()
 ```
 
 * You can Make Debug ExecNodes that will only run if `RUN_DEBUG_NODES` env variable is set. These can be visualization ExecNodes for example... or some complicated Assertions that helps you debug problems when needed that are hostile to the production environment
