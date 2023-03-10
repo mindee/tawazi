@@ -568,22 +568,17 @@ class DAG(Generic[P, RVDAG]):
         Args:
             *args (Any): arguments to be passed to the call of the DAG
             **kwargs (Any): keyword arguments to be passed to the call of the DAG
-                target_nodes (Optional[List[XNId]], optional): target ExecNodes to execute
-                    executes the whole DAG if None. Defaults to None. TO BE REMOVED!
-                exclude_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to exclude from the DAG.
-                    The user is responsible for ensuring that the overlapping between the target_nodes and exclude_nodes is logical. TO BE REMOVED!
 
         Returns:
             RVDAG: return value of the DAG's execution
+
+        Raises:
+            TawaziUsageError: kwargs are passed
         """
-        # Raises:
-        #     TawaziTypeError: if target_nodes contains a wrong typed identifier or if the return value contain a non LazyExecNode
-
-        target_nodes: Optional[List[Alias]] = kwargs.get("target_nodes")  # type: ignore[assignment]
-        exclude_nodes: Optional[List[Alias]] = kwargs.get("exclude_nodes")  # type: ignore[assignment]
-
+        if kwargs:
+            raise TawaziUsageError(f"currently DAG does not support keyword arguments: {kwargs}")
         # 1. generate the subgraph to be executed
-        graph = self._make_subgraph(target_nodes=target_nodes, exclude_nodes=exclude_nodes)
+        graph = self._make_subgraph()
 
         # 2. copy the ExecNodes
         call_xn_dict = self._make_call_xn_dict(*args)
@@ -875,6 +870,8 @@ class DAGExecution(Generic[P, RVDAG]):
 
         self.scheduled_nodes = self.graph.nodes
 
+        self.executed = False
+
     @property
     def cache_in(self) -> str:
         """The path to the file where the execution should be cached.
@@ -923,15 +920,6 @@ class DAGExecution(Generic[P, RVDAG]):
                 "cache_deps_of can not be used together with target_nodes or exclude_nodes"
             )
         self._cache_deps_of = cache_deps_of
-
-    @property
-    def executed(self) -> bool:
-        """Whether DAGExecution has been executed.
-
-        Returns:
-            bool: whether DAGExecution has been executed or not
-        """
-        return len(self.graph) == 0
 
     # we need to reimplement the public methods of DAG here in order to have a constant public interface
     # getters
@@ -1032,6 +1020,8 @@ class DAGExecution(Generic[P, RVDAG]):
                     to_cache_results, f, protocol=pickle.HIGHEST_PROTOCOL, fix_imports=False
                 )
 
+        # TODO: make DAGExecution reusable but do not guarantee ThreadSafety!
+        self.executed = True
         # 3. extract the returned value/values
         return dag._get_return_values(self.xn_dict)  # type: ignore[return-value]
 

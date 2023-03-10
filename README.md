@@ -221,16 +221,20 @@ xns_bye = pipeline.get_nodes_by_tag("byebye")
 ```
 
 This will be useful if you want to run a subgraph (cf. the next paragraph). It will also be useful if you want to access result of a specific ExecNode after an Execution
-* You can run a subgraph of your pipeline. During the invocation of the pipeline, you can choose your target ExecNodes (these are the leaf nodes that you want to run).
+* You can run a subgraph of your pipeline: Make a `DAGExecution` from your `DAG` and pass in the `ExecNode`s you want to run:
 ```Python
 # You can use the original __qual__name of the decorated function as an Identifier
-pipeline(target_nodes=["b"])
+pipe_exec = pipeline.executor(target_nodes=["b"])
+pipe_exec()
 # You can use the tag of an ExecNode
-pipeline(target_nodes=["c_node"])
+pipe_exec = pipeline.executor(target_nodes=["c_node"])
+pipe_exec()
 # You can use the calling tag to distinguish the 1st call of g from the 2nd call!
-pipeline(target_nodes=["byebye"])
+pipe_exec = pipeline.executor(target_nodes=["byebye"])
+pipe_exec()
 # You can even pass in the ExecNodes to run and mix identifiers types
-pipeline(target_nodes=["b", xns_bye[0]])
+pipe_exec = pipeline.executor(target_nodes=["b", xns_bye[0]])
+pipe_exec()
 
 ```
 
