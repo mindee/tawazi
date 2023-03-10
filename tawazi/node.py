@@ -39,8 +39,13 @@ class ExecNode:
     """This class is the base executable node of the Directed Acyclic Execution Graph.
 
     An ExecNode is an Object that can be executed inside a DAG scheduler.
-    It basically consists of a function (exec_function) that takes *args and **kwargs and return a Value.
+
+    It basically consists of a function (exec_function) that takes args and kwargs and returns a value.
+
     When the ExecNode is executed in the DAG, the resulting value will be stored in the ExecNode.result instance attribute.
+
+    Note: This class is not meant to be instantiated directly.
+        Please use `@xn` decorator.
     """
 
     def __init__(
@@ -76,21 +81,15 @@ class ExecNode:
         Raises:
             ValueError: if setup and debug are both True.
         """
-        # NOTE: validate attributes using pydantic perhaps
         # 1. assign attributes
-        self.id = id_
+        self._id = id_
         self.exec_function = exec_function
         self.priority = priority
         self.is_sequential = is_sequential
-        self.debug = debug  # TODO: do the fix to run debug nodes if their inputs exist
+        self.debug = debug
         self.tag = tag
         self.setup = setup
         self.unpack_to = unpack_to
-
-        if debug and setup:
-            raise ValueError(
-                f"The node {self.id} can't be a setup and a debug node at the same time."
-            )
 
         self.args: List[UsageExecNode] = args or []
         self.kwargs: Dict[Identifier, UsageExecNode] = kwargs or {}
@@ -106,6 +105,7 @@ class ExecNode:
         #  when this ExecNode will be executed, self.result will be overridden
         # It would be amazing if we can remove self.result and make ExecNode immutable
         self.result: Union[NoValType, Any] = NoVal
+        """Internal attribute to store the result of the execution of this ExecNode (Might change!)."""
         # even though setting result to NoVal is not necessary... it clarifies debugging
 
         self.profile = Profile(Cfg.TAWAZI_PROFILE_ALL_NODES)
@@ -133,7 +133,7 @@ class ExecNode:
         """The List of ExecNode dependencies of This ExecNode.
 
         Returns:
-            List[ExecNode]: the List of ExecNode dependencies of This ExecNode.
+            List[UsageExecNode]: the List of ExecNode dependencies of This ExecNode.
         """
         # Making the dependencies
         # 1. from args
@@ -143,7 +143,82 @@ class ExecNode:
 
         return deps
 
-    def execute(self, node_dict: Dict[Identifier, "ExecNode"]) -> Optional[Any]:
+    @property
+    def id(self) -> Identifier:
+        """The identifier of this ExecNode."""
+        return self._id
+
+    @property
+    def tag(self) -> Optional[TagOrTags]:
+        """The Tag or Tags of this ExecNode.
+
+        Returns:
+            Tag: the Tag or Tags of this ExecNode.
+        """
+        return self._tag
+
+    @tag.setter
+    def tag(self, value: Optional[TagOrTags]) -> None:
+        is_none = value is None
+        is_tag = isinstance(value, Tag)
+        is_tuple_tag = isinstance(value, tuple) and all(isinstance(v, Tag) for v in value)
+        if not (is_none or is_tag or is_tuple_tag):
+            raise TypeError(
+                f"tag should be of type {TagOrTags} but {value} of type {type(value)} is provided"
+            )
+        self._tag = value
+
+    @property
+    def priority(self) -> int:
+        """The priority of this ExecNode.
+
+        Returns:
+            int: the priority of this ExecNode.
+        """
+        return self._priority
+
+    @priority.setter
+    def priority(self, value: int) -> None:
+        if not isinstance(value, int):
+            raise ValueError(f"priority must be an int, provided {type(value)}")
+        self._priority = value
+
+    @property
+    def is_sequential(self) -> bool:
+        """Whether `ExecNode` runs in sequential order with respect to other `ExecNode`s."""
+        return self._is_sequential
+
+    @is_sequential.setter
+    def is_sequential(self, value: bool) -> None:
+        if not isinstance(value, bool):
+            raise TypeError(f"is_sequential should be of type bool, but {value} provided")
+        self._is_sequential = value
+
+    @property
+    def debug(self) -> bool:
+        """Whether this ExecNode is a debug Node. ExecNode can't be setup and debug simultaneously."""
+        return self._debug
+
+    @debug.setter
+    def debug(self, value: bool) -> None:
+        if not isinstance(value, bool):
+            raise TypeError(f"debug must be of type bool, but {value} provided")
+        self._debug = value
+        self._validate()
+
+    @property
+    def setup(self) -> bool:
+        """Whether this ExecNode is a setup Node. ExecNode can't be setup and debug simultaneously."""
+        return self._setup
+
+    @setup.setter
+    def setup(self, value: bool) -> None:
+        if not isinstance(value, bool):
+            raise TypeError(f"setup must be of type bool, but {value} provided")
+        self._setup = value
+        self._validate()
+
+    def _execute(self, node_dict: Dict[Identifier, "ExecNode"]) -> Optional[Any]:
         """Execute the ExecNode inside of a DAG.
 
         Args:
@@ -185,40 +260,11 @@ class ExecNode:
 
         return False
 
-    @property
-    def tag(self) -> Optional[TagOrTags]:
-        """The Tag of this ExecNode.
-
-        Returns:
-            Tag: the Tag of this ExecNode.
-        """
-        return self._tag
-
-    @tag.setter
-    def tag(self, value: Optional[TagOrTags]) -> None:
-        is_none = value is None
-        is_tag = isinstance(value, Tag)
-        is_tuple_tag = isinstance(value, tuple) and all(isinstance(v, Tag) for v in value)
-        if not (is_none or is_tag or is_tuple_tag):
-            raise TypeError(
-                f"tag should be of type {TagOrTags} but {value} of type {type(value)} is provided"
+    def _validate(self) -> None:
+        if getattr(self, "debug", None) and getattr(self, "setup", None):
+            raise ValueError(
+                f"The node {self.id} can't be a setup and a debug node at the same time."
             )
-        self._tag = value
-
-    @property
-    def priority(self) -> int:
-        """The priority of this ExecNode.
-
-        Returns:
-            int: the priority of this ExecNode.
-        """
-        return self._priority
-
-    @priority.setter
-    def priority(self, value: int) -> None:
-        if not isinstance(value, int):
-            raise ValueError(f"priority must be an int, provided {type(value)}")
-        self._priority = value
 
     @property
     def unpack_to(self) -> Optional[int]:
@@ -308,9 +354,6 @@ class ArgExecNode(ExecNode):
 # NOTE: how can we make a LazyExecNode more configurable ?
 #  This might not be as important as it seems actually because
 #  one can simply create Partial Functions and wrap them in an ExecNode
-# TODO: give ExecNode the possibility to expand its result
-#  this means that it will return its values as Tuple[LazyExecNode] or Dict[LazyExecNode]
-#  Hence ExecNode can return multiple values!
 # TODO: create a twz_deps reserved variable to support Nothing dependency
 class LazyExecNode(ExecNode, Generic[P, RVXN]):
     """A lazy function simulator.
@@ -386,7 +429,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         # 1.2 Assign the id
         count_usages = sum(xn_id.split(USE_SEP_START)[0] == self.id for xn_id in exec_nodes)
         # if ExecNode is used multiple times, <<usage_count>> is appended to its ID
-        self_copy.id = _lazy_xn_id(self.id, count_usages)
+        self_copy._id = _lazy_xn_id(self.id, count_usages)
 
         # 2. Make the corresponding ExecNodes that corresponds to the Arguments
         # Make new objects because these should be different between different XN_calls

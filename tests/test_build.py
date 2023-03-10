@@ -1,6 +1,7 @@
 from time import sleep
 from typing import Any
 
+import pytest
 from tawazi import DAG, ErrorStrategy
 from tawazi.node import ExecNode, UsageExecNode
 
@@ -83,3 +84,8 @@ def test_bad_behaviour() -> None:
         g._execute(g._make_subgraph())
     except NotImplementedError:
         pass
+
+
+def test_setting_execnode_id_should_fail() -> None:
+    with pytest.raises(AttributeError):
+        en_a.id = "fdsakfjs"
