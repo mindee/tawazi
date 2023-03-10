@@ -12,7 +12,8 @@
 
 <!-- TODO: put a link explaining what a DAG is-->
 
-Tawazi facilitates **parallel** execution of functions in a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) dependency structure.
+[Tawazi](https://pypi.org/project/tawazi/) facilitates **parallel** execution of functions in a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) dependency structure.
+
 This library satisfies the following:
 * Stable, robust, well tested
 * lightweight
@@ -22,20 +23,20 @@ This library satisfies the following:
 * MyPy compatible
 * Many Python implementations support (in the future)
 
-In Tawazi, a computation sequence is referred to as `DAG`. The functions called inside the computation sequence are referred to as `ExecNode`s.
+In [Tawazi](https://pypi.org/project/tawazi/), a computation sequence is referred to as `DAG`. The functions invoked inside the computation sequence are referred to as `ExecNode`s.
 
-This library supports:
-* Limiting the number of "Threads" that the DAG uses while running
-* Priority Choice of each `ExecNode`
-* Per `ExecNode` choice of parallelization (i.e. An `ExecNode` is allowed to run in parallel with other `ExecNode`s or not)
+Current features are:
+* Limiting the number of "Threads" that the `DAG` uses
 * setup `ExecNode`s: These nodes only run once per DAG instance
 * debug `ExecNode`s: These are nodes that only run during when `RUN_DEBUG_NODES` environment variable is set
 * running a subgraph of the DAG instance
 * Excluding an `ExecNode` from running
-* cache the results of the execution of a `DAG` for faster development
+* caching the results of the execution of a `DAG` for faster subsequent execution
+* Priority Choice of each `ExecNode` for fine control of execution order
+* Per `ExecNode` choice of parallelization (i.e. An `ExecNode` is allowed to run in parallel with other `ExecNode`s or not)
 * and more!
 
-**Note**: The library is still at an [advanced state of development](#future-developments). Your contributions are highly welcomed.
+**Note**: The library is still at an [advanced state of development](#future-developments). Breaking changes might happen on the minor version (v0.Minor.Patch). Please pin [Tawazi](https://pypi.org/project/tawazi/) to the __Minor Version__. Your contributions are highly welcomed.
 
 
 ## Usage
@@ -77,7 +78,7 @@ t0 = time()
 # executing the dag takes a single line of code
 res = pipeline()
 execution_time = time() - t0
-assert execution_time < 1.5
+assert execution_time < 1.5  # a() and b() are executed in parallel
 print(f"Graph execution took {execution_time:.2f} seconds")
 print(f"res = {res}")
 
@@ -86,7 +87,7 @@ As you can see, the execution time of pipeline takes less than 2 seconds, which 
 
 ### pipeline
 
-* You can pass in arguments to the pipeline and get results back using the normal function interface:
+* You can pass in arguments to the pipeline and get returned results back like normal functions:
 
 ```Python
 from tawazi import xn, dag
@@ -109,16 +110,28 @@ assert pipeline() == 3
 # run pipeline with passed parameters
 assert pipeline(1) == 4
 ```
-You can not pass in named parameters though... (will be supported in future releases)
+Currently you can not pass in named parameters to the `DAG` (will be supported in future releases). (This should not be confused with passing keyworded arguments to `ExecNode`s which is possible)
 
-* You can return multiple values from a pipeline via tuples or lists. (Dict will be supported in the future)
+* You can return multiple values from a pipeline via tuples, lists or dicts.
 
 ```Python
 @dag
-def pipeline():
+def pipeline_tuple():
   return xn1(1), xn2(1)
 
-assert pipeline() == (2, 3)
+assert pipeline_tuple() == (2, 3)
+
+@dag
+def pipeline_list():
+  return [xn1(1), xn2(2)]
+
+assert pipeline_list() == [2, 4]
+
+@dag
+def pipeline_dict():
+  return {"foo": xn1(1), "bar": xn2(3)}
+
+assert pipeline_dict() == {"foo": 2, "bar": 5}
 ```
 
 Currently you can only return a single value from an `ExecNode`, in the future multiple return values will be allowed.
