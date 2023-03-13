@@ -941,7 +941,9 @@ class DAGExecution(Generic[P, RVDAG]):
         Returns:
             List[ExecNode]: corresponding ExecNodes
         """
-        return [ex_n for ex_n in self.xn_dict.values() if ex_n.tag == tag]
+        if self.executed:
+            return [ex_n for ex_n in self.xn_dict.values() if ex_n.tag == tag]
+        return self.dag.get_nodes_by_tag(tag)
 
     def get_node_by_id(self, id_: Identifier) -> ExecNode:
         """Get node with the given id.
@@ -954,7 +956,9 @@ class DAGExecution(Generic[P, RVDAG]):
         """
         # TODO: ? catch the keyError and
         #   help the user know the id of the ExecNode by pointing to documentation!?
-        return self.xn_dict[id_]
+        if self.executed:
+            return self.xn_dict[id_]
+        return self.dag.get_node_by_id(id_)
 
     def setup(self, twz_nodes: Optional[List[Alias]] = None) -> None:
         """Does the same thing as DAG.setup.
