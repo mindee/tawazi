@@ -960,20 +960,12 @@ class DAGExecution(Generic[P, RVDAG]):
             return self.xn_dict[id_]
         return self.dag.get_node_by_id(id_)
 
-    def setup(
-        self,
-        target_nodes: Optional[List[Alias]] = None,
-        exclude_nodes: Optional[List[Alias]] = None,
-    ) -> None:
-        """Does the same thing as DAG.setup.
-
-        Args:
-            target_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to use in the DAG.
-                This might include setup or non setup ExecNodes. If None is provided, will run all setup ExecNodes. Defaults to None.
-            exclude_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to exclude from the DAG.
-                The user is responsible for ensuring that the overlapping between the target_nodes and exclude_nodes is logical.
-        """
-        self.dag.setup(target_nodes=target_nodes, exclude_nodes=exclude_nodes)
+    def setup(self) -> None:
+        """Does the same thing as DAG.setup. However the `target_nodes` and `exclude_nodes` are taken from the DAGExecution's initization."""
+        # TODO: handle the case where cache_deps_of is provided instead of target_nodes and exclude_nodes
+        #  in which case the deps_of might have a setup node themselves which shloud not run.
+        #  This is an edge case though that is not important to handle at the current moment.
+        self.dag.setup(target_nodes=self.target_nodes, exclude_nodes=self.exclude_nodes)
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
         """Call the DAG.
