@@ -23,7 +23,7 @@ theme:
       name: "light mode"
 
 nav:
-- Home: home.md
+- Home: index.md
 - decorators: decorators.md
 - ExecNodes: nodes.md
 - DAG: dag.md
