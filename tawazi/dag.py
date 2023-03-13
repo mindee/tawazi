@@ -120,6 +120,10 @@ class DAG(Generic[P, RVDAG]):
     def get_nodes_by_tag(self, tag: Tag) -> List[ExecNode]:
         """Get the ExecNodes with the given tag.
 
+        Note: the returned ExecNode is not modified by any execution!
+            This means that you can not get the result of its execution via `DAG.get_nodes_by_tag(<tag>).result`.
+            In order to do that, you need to make a DAGExecution and then call `DAGExecution.get_nodes_by_tag(<tag>).result`, which will contain the results.
+
         Args:
             tag (Any): tag of the ExecNodes
 
@@ -132,6 +136,10 @@ class DAG(Generic[P, RVDAG]):
 
     def get_node_by_id(self, id_: Identifier) -> ExecNode:
         """Get the ExecNode with the given id.
+
+        Note: the returned ExecNode is not modified by any execution!
+            This means that you can not get the result of its execution via `DAG.get_node_by_id(<id>).result`.
+            In order to do that, you need to make a DAGExecution and then call `DAGExecution.get_node_by_id(<id>).result`, which will contain the results.
 
         Args:
             id_ (Identifier): id of the ExecNode
@@ -460,8 +468,9 @@ class DAG(Generic[P, RVDAG]):
         """Run the setup ExecNodes for the DAG.
 
         If target_nodes are provided, run only the necessary setup ExecNodes, otherwise will run all setup ExecNodes.
-        NOTE: currently if setup ExecNodes receive arguments from the Pipeline this method won't work because it doesn't support *args.
-            This might be supported in the future though
+        NOTE: `DAG` arguments should not be passed to setup ExecNodes.
+            Only pass in constants or setup `ExecNode`s results.
+
 
         Args:
             target_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to use in the DAG.
@@ -500,7 +509,7 @@ class DAG(Generic[P, RVDAG]):
         self._execute(graph, all_setup_nodes)
 
     def executor(self, **kwargs: Any) -> "DAGExecution[P, RVDAG]":
-        """Generates an executor for the DAG.
+        """Generates a DAGExecution for the DAG.
 
         Args:
             **kwargs (Any): keyword arguments to be passed to DAGExecution's constructor
@@ -562,9 +571,12 @@ class DAG(Generic[P, RVDAG]):
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
         """Execute the DAG scheduler via a similar interface to the function that describes the dependencies.
 
+        Note: Currently kwargs are not supported.
+            They will supported soon!
+
         Args:
-            *args (Any): arguments to be passed to the call of the DAG
-            **kwargs (Any): keyword arguments to be passed to the call of the DAG
+            *args (P.args): arguments to be passed to the call of the DAG
+            **kwargs (P.kwargs): keyword arguments to be passed to the call of the DAG
 
         Returns:
             RVDAG: return value of the DAG's execution
@@ -771,10 +783,10 @@ class DAG(Generic[P, RVDAG]):
             self._assign_compound_priority()
 
     def config_from_yaml(self, config_path: str) -> None:
-        """Allows reconfiguring the parameters of the nodes from a yaml file.
+        """Allows reconfiguring the parameters of the nodes from a YAML file.
 
         Args:
-            config_path: the path to the yaml file
+            config_path: the path to the YAML file
         """
         with open(config_path) as f:
             yaml_config = yaml.load(f, Loader=_UniqueKeyLoader)  # noqa: S506
@@ -782,10 +794,10 @@ class DAG(Generic[P, RVDAG]):
         self.config_from_dict(yaml_config)
 
     def config_from_json(self, config_path: str) -> None:
-        """Allows reconfiguring the parameters of the nodes from a yaml file.
+        """Allows reconfiguring the parameters of the nodes from a JSON file.
 
         Args:
-            config_path: the path to the json file
+            config_path: the path to the JSON file
         """
         with open(config_path) as f:
             json_config = json.load(f)

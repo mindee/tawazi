@@ -27,6 +27,7 @@ nav:
 - decorators: decorators.md
 - ExecNodes: nodes.md
 - DAG: dag.md
+- DAGExecution: DAGExecution.md
 - Future Developments: future_developments.md
 - Releases: https://github.com/mindee/tawazi/releases
 
