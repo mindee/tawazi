@@ -29,6 +29,12 @@ from .helpers import _filter_noval, _lazy_xn_id, _make_raise_arg_error, ordinal
 
 # a temporary variable used to pass in exec_nodes to the DAG during building
 exec_nodes: Dict[Identifier, "ExecNode"] = {}
+unpack_number: Dict[
+    Identifier, int
+] = (
+    {}
+)  # keeps the number of unpacks while doing the DAG description (0 means no unpacking, 1+ means unpacking)
+last_id: Identifier = ""
 exec_nodes_lock = Lock()
 
 Alias = Union[Tag, Identifier, "ExecNode"]  # multiple ways of identifying an XN
@@ -434,9 +440,27 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         # However, they might relate to the same ExecNode
         exec_nodes[self_copy.id] = self_copy
 
+        # store last_id for potential handeling of unpack problem
+        global last_id
+        last_id = self_copy.id
         if self.unpack_to is not None:
+            # if an unpack problem is detected, the user made a mistake!
+            # TODO: test this case!
+            unpack_number[last_id] = self.unpack_to
             uxn_tuple = tuple(UsageExecNode(self_copy.id, key=[i]) for i in range(self.unpack_to))
             return uxn_tuple  # type: ignore[return-value]
+
+        # there was an unpacking error before it was detected during execution of @dag
+        #  at 1st it will be assigned 2 (which might be True),
+        #  then it will be assigned the correct number (which is definitely correct!)
+        if potential_unpack_num := unpack_number.get(last_id):
+            uxn_tuple = tuple(
+                UsageExecNode(self_copy.id, key=[i]) for i in range(potential_unpack_num)
+            )
+            return uxn_tuple  # type: ignore[return-value]
+
+        # try to not unpack at 1st!
+        unpack_number[self_copy.id] = 0
         return UsageExecNode(self_copy.id)  # type: ignore[return-value]
 
     def __get__(self, instance: "LazyExecNode[P, RVXN]", owner_cls: Optional[Any] = None) -> Any:

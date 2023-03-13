@@ -1,6 +1,6 @@
 """configuration parameters for Tawazi."""
 
-from pydantic import BaseSettings, Field
+from pydantic import BaseSettings, Field, PositiveInt
 
 
 class Config(BaseSettings):
@@ -14,6 +14,8 @@ class Config(BaseSettings):
     # Defaults to False.
     # In the future, Tawazi might include an option to profile specific nodes, hence the variable name :).
     TAWAZI_PROFILE_ALL_NODES: bool = False
+
+    TAWAZI_MAX_UNPACK_TRIAL_ITERATIONS: PositiveInt = 10_000
 
     # Weather to run the graphs in debug mode or not
     RUN_DEBUG_NODES: bool = False
