@@ -960,13 +960,20 @@ class DAGExecution(Generic[P, RVDAG]):
             return self.xn_dict[id_]
         return self.dag.get_node_by_id(id_)
 
-    def setup(self, twz_nodes: Optional[List[Alias]] = None) -> None:
+    def setup(
+        self,
+        target_nodes: Optional[List[Alias]] = None,
+        exclude_nodes: Optional[List[Alias]] = None,
+    ) -> None:
         """Does the same thing as DAG.setup.
 
         Args:
-            twz_nodes (Optional[List[Alias]], optional): c.f. `DAG.setup`.
+            target_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to use in the DAG.
+                This might include setup or non setup ExecNodes. If None is provided, will run all setup ExecNodes. Defaults to None.
+            exclude_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to exclude from the DAG.
+                The user is responsible for ensuring that the overlapping between the target_nodes and exclude_nodes is logical.
         """
-        self.dag.setup(twz_nodes)
+        self.dag.setup(target_nodes=target_nodes, exclude_nodes=exclude_nodes)
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
         """Call the DAG.
