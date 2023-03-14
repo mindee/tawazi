@@ -324,10 +324,31 @@ def pipeline():
   b()
 
 pipeline()
-xn_a = pipeline.get_nodes_by_tag("twinkle toes")
-# You can do whatever you want with this ExecNode... like checking its arguments, setting its priority, changing it to become a debug `ExecNode`. This is however an advanced usage. Your methods might break more often with Tawazi releases because `ExecNode` is an internal Object.
+xn_a, = pipeline.get_nodes_by_tag("twinkle toes")
 ```
+You can do whatever you want with this ExecNode:
 
+1. like checking its arguments
+1. setting its priority
+1. changing it to become a debug `ExecNode`
+
+> **WARNING**: This is an advanced usage. Your methods might break more often with Tawazi releases because `ExecNode` is an internal Object. Please use with care}
+
+You can have multiple `Tag`s for the same `ExecNode` and the same `Tag` for multiple `ExecNode`s:
+```Python
+@xn(tag=("twinkle", "toes"))
+def a():
+    print("I am tough")
+@xn(tag="twinkle")
+def b():
+    print("I am light")
+@dag
+def pipeline():
+    a()
+    b()
+
+xn_a, xn_b = pipeline.get_nodes_by_tag("twinkle")
+```
 
 You can even tag a specific call of an ExecNode:
 ```Python
