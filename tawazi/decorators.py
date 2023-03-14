@@ -96,6 +96,120 @@ def xn(
     return intermediate_wrapper(func)
 
 
+# helper functions
+def _run_dag_description(
+    _func: Callable[..., ReturnUXNsType], args: List[ExecNode]
+) -> ReturnUXNsType:
+    node.exec_nodes = {}
+    # 2.3 Arguments are also ExecNodes that get executed inside the scheduler
+    node.exec_nodes.update({xn.id: xn for xn in args})
+    # 2.4 make UsageExecNodes for input arguments
+    uxn_args = [UsageExecNode(xn.id) for xn in args]
+
+    return _func(*uxn_args)
+
+
+def _unpacking_unpackable_value(unp_err: TypeError) -> bool:
+    unpack_error_msg = str(unp_err)
+    if not unpack_error_msg.startswith("cannot unpack non-iterable"):
+        return False
+    return True
+
+
+def _unpacking_with_wrong_number_of_returns(unp_err: ValueError) -> int:
+    """Returns the number of expected iteration that must be returned for the unpacking to function properly.
+
+    Args:
+        unp_err (ValueError): The received unpacking error.
+
+    Returns:
+        int: 0 if the error is not an unpacking error,
+            otherwise returns the number of expected value on the left hand side for the unpacking to work properly
+    """
+    unpack_error_msg = str(unp_err)
+    # left hand side < right hand side
+    if unpack_error_msg.startswith("too many values to unpack"):
+        return int(str(unpack_error_msg).split("expected ")[1].split(")")[0])
+    # left hand side > right hand side
+    if unpack_error_msg.startswith("not enough values to unpack"):
+        return int(str(unpack_error_msg).split("expected ")[1].split(",")[0])
+    return 0
+
+
+def _run_dag_description_automatic_unpacking(
+    _func: Callable[..., Any], args: List[ExecNode]
+) -> ReturnUXNsType:
+    """Run the DAG description with automatic unpacking.
+
+    there are 4 cases of unpacking:
+                    left side  |  right side   |  example     |  produced error
+    unpacking  |  False     |  non iter     |  a=1         |  None
+    unpacking  |  True #1   |  non iter     |  a,=1        |  TypeError: cannot unpack non-iterable <type> object
+    unpacking  |  True #2   |  non iter     |  a,b=1       |  TypeError: cannot unpack non-iterable <type> object
+    unpacking  |  False     |  iter         |  a=1,2       |  assignment of tuple or iterable...
+    unpacking  |  True <    |  True         |  a,=1,2      |  ValueError: too many values to unpack (expected 1)
+    unpacking  |  True ==   |  True         |  a,=1,       |  assignment of tuple...
+    unpacking  |  True >    |  True         |  a,b=1,      |  ValueError: not enough values to unpack (expected 2, got 1)
+
+    So the logic behind detecting the number of unpacks is as follows:
+    1. return a single value which is the default behavior of a = expression
+    2.1 if no error is produced then latest assignment is valid, remove latest id from `last_failing_id` continue
+    2.2 if error is produced, either it is a TypeError: cannot unpack non-iterable => assign `last_failing_id` should be expanded to know the expected expansion
+    2.3     during next iteration, we can get the expected unpacking number from the error message
+    2.4     we record it and we re-run the dag describing function
+    3. if an unpacking error happens even though the ExecNode.unpack_to is assigned, raise a TawaziUsageError
+
+    There is a limit of 10_000 maximum iterations for describing the DAG.
+    """
+    described_the_dag = False
+    counter = 0
+    logger.debug(f"describing {_func}")
+
+    while counter < Cfg.TAWAZI_EXPERIMENTAL_MAX_UNPACK_TRIAL_ITERATIONS and not described_the_dag:
+        logger.debug(f"trial number: {counter}")
+        logger.debug(f"{node.exec_nodes=}")
+        logger.debug(f"{node.unpack_number=}")
+        logger.debug(f"{node.last_id=}")
+
+        counter += 1
+        try:
+            returned_usage_exec_nodes: ReturnUXNsType = _run_dag_description(_func, args)
+        except TypeError as unp_err:
+            if _unpacking_unpackable_value(unp_err):
+                # try unpacking to two variables (this might be the most common case)
+                node.unpack_number[node.last_id] = 2
+            else:
+                raise unp_err from unp_err
+
+        except ValueError as unp_err:
+            expected_unpack_num = _unpacking_with_wrong_number_of_returns(unp_err)
+            if expected_unpack_num == 0:
+                raise unp_err from unp_err
+
+            # if the unpacking error comes from unpack_to, the user made a misake
+            if node.exec_nodes[node.last_id].unpack_to is not None:
+                raise unp_err from unp_err
+                # xn = node.exec_nodes[node.last_id]
+                # raise TawaziUsageError(
+                #     f"{xn} is expected to unpack its values to {xn.unpack_to}, "
+                #     f"But during DAG description, left hand side has {expected_unpack_num} variables.") from unp_err
+
+            # set the correct unpacking number
+            node.unpack_number[node.last_id] = expected_unpack_num
+
+        else:
+            described_the_dag = True
+
+    if counter == Cfg.TAWAZI_EXPERIMENTAL_MAX_UNPACK_TRIAL_ITERATIONS:
+        raise TawaziUsageError(
+            "internal problem while detecting the number of unpacks probably. "
+            "Try increasing `TAWAZI_EXPERIMENTAL_MAX_UNPACK_TRIAL_ITERATIONS` -> 1000 - 10_000 "
+            "if you have an extremely big DAG you are describing, "
+            "or make sure that you are unpacking your returned variable correctly"
+        )
+    return returned_usage_exec_nodes
+
+
 @overload
 def dag(declare_dag_function: Callable[P, RVDAG]) -> DAG[P, RVDAG]:
     ...
@@ -165,94 +279,17 @@ def dag(
                 # NOTE: Only ordered parameters are supported at the moment!
                 #  No **kwargs!! Only positional Arguments
                 # used to be fetch the results at the end of the computation
-                """
-                there are 4 cases of unpacking:
-                                left side  |  right side   |  example     |  produced error
-                unpacking  |  False     |  non iter     |  a=1         |  None
-                unpacking  |  True #1   |  non iter     |  a,=1        |  TypeError: cannot unpack non-iterable <type> object
-                unpacking  |  True #2   |  non iter     |  a,b=1       |  TypeError: cannot unpack non-iterable <type> object
-                unpacking  |  False     |  iter         |  a=1,2       |  assignment of tuple or iterable...
-                unpacking  |  True <    |  True         |  a,=1,2      |  ValueError: too many values to unpack (expected 1)
-                unpacking  |  True ==   |  True         |  a,=1,       |  assignment of tuple...
-                unpacking  |  True >    |  True         |  a,b=1,      |  ValueError: not enough values to unpack (expected 2, got 1)
-
-                So the logic behind detecting the number of unpacks is as follows:
-                1. return a single value which is the default behavior of a = expression
-                2.1 if no error is produced then latest assignment is valid, remove latest id from `last_failing_id` continue
-                2.2 if error is produced, either it is a TypeError: cannot unpack non-iterable => assign `last_failing_id` should be expanded to know the expected expansion
-                2.3     during next iteration, we can get the expected unpacking number from the error message
-                2.4     we record it and we re-run the dag describing function
-                3. if an unpacking error happens even though the ExecNode.unpack_to is assigned, raise a TawaziUsageError
-
-                There is a limit of 10_000 maximum iterations for describing the DAG.
-                """
-                described_the_dag = False
-                counter = 0
-                logger.debug(f"describing {_func}")
-
-                while (
-                    counter < Cfg.TAWAZI_EXPERIMENTAL_MAX_UNPACK_TRIAL_ITERATIONS
-                    and not described_the_dag
-                ):
-                    logger.debug(f"trial number: {counter}")
-                    logger.debug(f"{node.exec_nodes=}")
-                    logger.debug(f"{node.unpack_number=}")
-                    logger.debug(f"{node.last_id=}")
-
-                    counter += 1
-                    try:
-                        node.exec_nodes = {}
-                        # 2.3 Arguments are also ExecNodes that get executed inside the scheduler
-                        node.exec_nodes.update({xn.id: xn for xn in args})
-                        # 2.4 make UsageExecNodes for input arguments
-                        uxn_args = [UsageExecNode(xn.id) for xn in args]
-
-                        returned_usage_exec_nodes: ReturnUXNsType = _func(*uxn_args)  # type: ignore[arg-type]
-                    except TypeError as unp_err:
-                        unpack_error_msg = str(unp_err)
-                        if not unpack_error_msg.startswith("cannot unpack non-iterable"):
-                            raise unp_err from unp_err
-                        # try unpacking to two variables (this might be the most common case)
-                        node.unpack_number[node.last_id] = 2
-                    except ValueError as unp_err:
-                        unpack_error_msg = str(unp_err)
-                        # left hand side < right hand side
-                        if unpack_error_msg.startswith("too many values to unpack"):
-                            expected_unpack_num = int(
-                                str(unpack_error_msg).split("expected ")[1].split(")")[0]
-                            )
-                        # left hand side > right hand side
-                        elif unpack_error_msg.startswith("not enough values to unpack"):
-                            expected_unpack_num = int(
-                                str(unpack_error_msg).split("expected ")[1].split(",")[0]
-                            )
-                        else:
-                            raise unp_err from unp_err
-
-                        # if the unpacking error comes from unpack_to, the user made a misake
-                        if node.exec_nodes[node.last_id].unpack_to is not None:
-                            raise unp_err from unp_err
-                            # xn = node.exec_nodes[node.last_id]
-                            # raise TawaziUsageError(
-                            #     f"{xn} is expected to unpack its values to {xn.unpack_to}, "
-                            #     f"But during DAG description, left hand side has {expected_unpack_num} variables.") from unp_err
-
-                        # set the correct unpacking number
-                        node.unpack_number[node.last_id] = expected_unpack_num
-
-                    else:
-                        described_the_dag = True
-
-                if counter == Cfg.TAWAZI_EXPERIMENTAL_MAX_UNPACK_TRIAL_ITERATIONS:
-                    raise TawaziUsageError(
-                        "internal problem while detecting the number of unpacks probably. "
-                        "Try increasing `TAWAZI_EXPERIMENTAL_MAX_UNPACK_TRIAL_ITERATIONS` -> 1000 - 10_000 "
-                        "if you have an extremely big DAG you are describing, "
-                        "or make sure that you are unpacking your returned variable correctly"
-                    )
+                returned_usage_exec_nodes: ReturnUXNsType = (
+                    _run_dag_description_automatic_unpacking(_func, args)
+                    if Cfg.TAWAZI_EXPERIMENTAL_AUTOMATIC_UNPACK
+                    else _run_dag_description(_func, args)
+                )
 
                 # TODO: wrap the consts non UsageExecNodes in a UsageExecNode to support returning consts from DAG
                 validate_returned_usage_exec_nodes(returned_usage_exec_nodes)
+
+                # The next line is a duplication!
+                uxn_args = [UsageExecNode(xn.id) for xn in args]
 
                 # 4. Construct the DAG instance
                 d: DAG[P, RVDAG] = DAG(

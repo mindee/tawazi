@@ -2,6 +2,7 @@ from typing import Dict, List, Tuple
 
 import pytest
 from tawazi import Cfg, dag, xn
+from tawazi.decorators import _unpacking_unpackable_value, _unpacking_with_wrong_number_of_returns
 from tawazi.errors import TawaziUsageError
 
 
@@ -302,3 +303,30 @@ def test_multiple_return_values_unpack_no_unpack_experimental_is_not_activated()
         @dag
         def _pipe() -> None:
             v1, v2 = tuple_three()
+
+
+def test_unit_unpacking_an_non_unpackable() -> None:
+    try:
+        _a, _b = 1
+    except TypeError as e:
+        b = _unpacking_unpackable_value(e)
+
+    assert b
+
+
+def test_unit_unpacking_an_unpackable_with_less_variables_on_left_handside() -> None:
+    try:
+        _a, _b = [1, 2, 3]
+    except ValueError as e:
+        n = _unpacking_with_wrong_number_of_returns(e)
+
+    assert n == 2
+
+
+def test_unit_unpacking_an_unpackable_with_mode_variables_on_left_handside() -> None:
+    try:
+        _a, _b, _c, _d = [1, 2, 3]
+    except ValueError as e:
+        n = _unpacking_with_wrong_number_of_returns(e)
+
+    assert n == 4
