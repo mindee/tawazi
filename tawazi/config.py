@@ -28,7 +28,7 @@ class Config(BaseSettings):
     LOGURU_DIAGNOSE: bool = Field(False, env="TAWAZI_LOGGER_DIAGNOSE")
 
 
-Cfg = Config()
+Cfg = Config()  # type: ignore[call-arg]
 if Cfg.LOGURU_LEVEL == "PROD":
     from loguru import logger
 
