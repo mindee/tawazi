@@ -144,12 +144,12 @@ You can return multiple values from `ExecNode`s:
 1. Either via Python `Tuple`s and `List`s but you will have to specify the unpacking number
 ```Python
 @xn(unpack_to=4)
-def count_tuple(val):
+def replicate_tuple(val):
   return (val, val + 1, val + 2, val + 3)
 
 
 @xn(unpack_to=4)
-def count_list(val):
+def replicate_list(val):
   return [val, val + 1, val + 2, val + 3]
 
 
@@ -160,7 +160,7 @@ def pipeline():
   return v1, v2, v3, v4, v5, v6, v7, v8
 
 
-assert pipeline() == [1, 2, 3, 4, 4, 5, 6, 7]
+assert pipeline() == (1, 2, 3, 4, 4, 5, 6, 7)
 ```
 2. Or via indexing (`Dict` or `List` etc.):
 ```Python
@@ -178,14 +178,14 @@ def incr(val):
 
 @dag
 def pipeline(val):
-  d = gen_dict()
+  d = gen_dict(val)
   l = gen_list(d["k1"])
   inc_val = incr(l[0])
   inc_val_2 = incr(d["nested_list"][1])
   return d, l, inc_val, inc_val_2
 
 d, l, inc_val, inc_val_2 = pipeline(123)
-assert d == {"k1": val, "k2": "2", "nested_list": [1 ,2, 3]}
+assert d == {"k1": 123, "k2": "2", "nested_list": [1 ,11, 3]}
 assert l == [123, 124, 125, 126]
 assert inc_val == 124
 assert inc_val_2 == 12
@@ -252,7 +252,7 @@ def setop1():
   return "large data 1"
 
 @xn(setup=True)
-def setop1():
+def setop2():
   return "large data 2"
 
 @xn
@@ -265,15 +265,15 @@ def pprint_xn(val):
 
 @dag
 def pipeline():
-  data1 = setup1()
-  data2 = setup2()
+  data1 = setop1()
+  data2 = setop2()
   print_xn(data1)
   pprint_xn(data2)
   return data1, data2
 
 exec_ = pipeline.executor(target_nodes=["print_xn"])
 # Notice how the execution of the subgraph doesn't make the setop1 `ExecNode`. This makes development of your complex pipeline faster by reducing the time needed to load all resources
-assert "large data 1", None = exec_()
+assert ("large data 1", None) == exec_()
 ```
 
 ### Debug `ExecNode`

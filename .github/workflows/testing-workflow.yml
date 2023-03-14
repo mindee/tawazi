@@ -50,14 +50,14 @@ jobs:
       run: |
         poetry install --without=docs
 
-    - name: extract files from README.md
+    - name: extract files from the documentation
       run: |
-        poetry run mkcodes --github --safe --output tests/test_md.py README.md
+        poetry run mkcodes --github --safe --output tests/test_md.py documentation/index.md
 
     - name: Run tests
       run: |
         set -o pipefail
-        poetry run pytest --doctest-modules --cov=tawazi --cov-report=term-missing:skip-covered tests/ | tee pytest-coverage.txt
+        poetry run pytest --doctest-modules tests/ | tee pytest-coverage.txt
 
     # - name: Upload coverage to Codecov
     #   uses: codecov/codecov-action@v3
