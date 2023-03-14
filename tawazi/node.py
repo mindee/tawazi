@@ -20,6 +20,7 @@ from tawazi.consts import (
     P,
     ReturnTypeErrString,
     Tag,
+    TagOrTags,
 )
 from tawazi.profile import Profile
 
@@ -51,7 +52,7 @@ class ExecNode:
         priority: int = 0,
         is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
         debug: bool = False,
-        tag: Tag = None,
+        tag: Optional[TagOrTags] = None,
         setup: bool = False,
         unpack_to: Optional[int] = None,
     ):
@@ -68,7 +69,7 @@ class ExecNode:
                 When this ExecNode must be executed, all other nodes are waited to finish before starting execution.
                 Defaults to False.
             debug (bool): Make this ExecNode a debug Node. Defaults to False.
-            tag (Tag): Attach a Tag of this ExecNode. Defaults to None.
+            tag (TagOrTags): Attach a Tag or Tags to this ExecNode. Defaults to None.
             setup (bool): Make this ExecNode a setup Node. Defaults to False.
             unpack_to (Optional[int]): if not None, this ExecNode's execution must return unpacked results corresponding to the given value
 
@@ -185,7 +186,7 @@ class ExecNode:
         return False
 
     @property
-    def tag(self) -> Tag:
+    def tag(self) -> Optional[TagOrTags]:
         """The Tag of this ExecNode.
 
         Returns:
@@ -194,9 +195,14 @@ class ExecNode:
         return self._tag
 
     @tag.setter
-    def tag(self, value: Tag) -> None:
-        if not isinstance(value, (str, tuple)) and value is not None:
-            raise TypeError(f"tag should be of type {Tag} but {value} provided")
+    def tag(self, value: Optional[TagOrTags]) -> None:
+        is_none = value is None
+        is_tag = isinstance(value, Tag)
+        is_tuple_tag = isinstance(value, tuple) and all(isinstance(v, Tag) for v in value)
+        if not (is_none or is_tag or is_tuple_tag):
+            raise TypeError(
+                f"tag should be of type {TagOrTags} but {value} of type {type(value)} is provided"
+            )
         self._tag = value
 
     @property
@@ -319,7 +325,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         priority: int,
         is_sequential: bool,
         debug: bool,
-        tag: Any,
+        tag: Optional[TagOrTags],
         setup: bool,
         unpack_to: Optional[int],
     ):

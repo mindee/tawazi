@@ -8,7 +8,7 @@ from tawazi.helpers import get_args_and_default_args
 
 from . import node
 from .config import Cfg
-from .consts import RVDAG, RVXN, P
+from .consts import RVDAG, RVXN, P, TagOrTags
 from .node import (
     ArgExecNode,
     ExecNode,
@@ -44,7 +44,7 @@ def xn(
     priority: int = 0,
     is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
     debug: bool = False,
-    tag: Optional[Any] = None,
+    tag: Optional[TagOrTags] = None,
     setup: bool = False,
     unpack_to: Optional[int] = None,
 ) -> Union[Callable[[Callable[P, RVXN]], LazyExecNode[P, RVXN]], LazyExecNode[P, RVXN]]:
@@ -60,8 +60,9 @@ def xn(
         is_sequential (bool): whether to allow the execution of this ExecNode with others or not
         debug (bool): if True, this node will be executed when the corresponding DAG runs in Debug mode.
             This means that this ExecNode will run if its inputs exists
-        tag (Any): Any Hashable / immutable typed variable can be used to identify nodes (str, Tuples, int etc.).
-            It is the responsibility of the user to provide this immutability of the tag.
+        tag (Optional[TagOrTags]): a str or Tuple[str] to tag this ExecNode.
+            If Tuple[str] is given, every value of the tuple is used as tag.
+            Notice that multiple ExecNodes can have the same tag.
         setup (bool): if True, this node will be executed only once during the lifetime of a DAG instance.
             Setup ExecNodes are meant to be used to load heavy data only once inside the execution pipeline and then be used as if the results were cached.
             This can be useful if you want to load heavy ML models, heavy Data etc.

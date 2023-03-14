@@ -93,7 +93,8 @@ NoVal = NoValType()
 # Constant types
 
 Identifier = str
-Tag = Union[None, str, tuple]  # anything immutable
+Tag = str  # anything immutable but not a sequence
+TagOrTags = Union[Tag, Tuple[Tag]]  # a sequence of tags
 
 RVTypes = Union[Any, Tuple[Any], List[Any], Dict[str, Any]]
 P = ParamSpec("P")
