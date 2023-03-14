@@ -17,7 +17,7 @@ from networkx.exception import NetworkXUnfeasible
 from tawazi.config import Cfg
 from tawazi.helpers import _UniqueKeyLoader
 
-from .consts import RVDAG, Identifier, P, RVTypes
+from .consts import RVDAG, Identifier, P, RVTypes, Tag
 from .digraph import DiGraphEx
 from .errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
 from .node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode
@@ -64,7 +64,12 @@ class DAG(Generic[P, RVDAG]):
         self.tagged_nodes = defaultdict(list)
         for xn in self.node_dict.values():
             if xn.tag:
-                self.tagged_nodes[xn.tag].append(xn)
+                if isinstance(xn.tag, Tag):
+                    self.tagged_nodes[xn.tag].append(xn)
+                # isinstance(xn.tag, tuple):
+                else:
+                    for t in xn.tag:
+                        self.tagged_nodes[t].append(xn)
 
         # Might be useful in the future
         self.node_dict_by_name: Dict[str, ExecNode] = {
@@ -115,7 +120,7 @@ class DAG(Generic[P, RVDAG]):
         self._max_concurrency = value
 
     # getters
-    def get_nodes_by_tag(self, tag: Any) -> List[ExecNode]:
+    def get_nodes_by_tag(self, tag: Tag) -> List[ExecNode]:
         """Get the ExecNodes with the given tag.
 
         Args:
@@ -124,7 +129,9 @@ class DAG(Generic[P, RVDAG]):
         Returns:
             List[ExecNode]: corresponding ExecNodes
         """
-        return self.tagged_nodes[tag]
+        if isinstance(tag, Tag):
+            return self.tagged_nodes[tag]
+        raise TypeError(f"tag {tag} must be of Tag type. Got {type(tag)}")
 
     def get_node_by_id(self, id_: Identifier) -> ExecNode:
         """Get the ExecNode with the given id.
@@ -928,11 +935,11 @@ class DAGExecution(Generic[P, RVDAG]):
 
     # we need to reimplement the public methods of DAG here in order to have a constant public interface
     # getters
-    def get_nodes_by_tag(self, tag: Any) -> List[ExecNode]:
+    def get_nodes_by_tag(self, tag: Tag) -> List[ExecNode]:
         """Get all the nodes with the given tag.
 
         Args:
-            tag (Any): tag of ExecNodes in question
+            tag (Tag): tag of ExecNodes in question
 
         Returns:
             List[ExecNode]: corresponding ExecNodes
