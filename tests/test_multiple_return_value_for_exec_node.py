@@ -1,7 +1,8 @@
 from typing import Dict, List, Tuple
 
 import pytest
-from tawazi import dag, xn
+from tawazi import Cfg, dag, xn
+from tawazi.errors import TawaziUsageError
 
 
 def test_lazy_exec_nodes_return_dict_indexed() -> None:
@@ -158,3 +159,146 @@ def test_lazy_exec_nodes_multiple_return_values_wrong_lower_unpack_to_number() -
         def pipe() -> Tuple[int, int]:
             r1, r2, _r3 = mulreturn()
             return r1, r2
+
+
+# this is an edge case
+def test_multiple_return_values_unpack_no_unpack_to_specified_must_be_one() -> None:
+    Cfg.TAWAZI_EXPERIMENTAL_AUTOMATIC_UNPACK = True
+
+    @xn
+    def tuple_one() -> Tuple[int]:
+        return (1,)
+
+    @dag
+    def pipe() -> Tuple[int, int]:
+        (v1,) = tuple_one()
+        return v1, v1
+
+    assert pipe() == (1, 1)
+
+
+def test_multiple_return_values_unpack_no_unpack_to_specified_must_be_one_edge_case() -> None:
+    Cfg.TAWAZI_EXPERIMENTAL_AUTOMATIC_UNPACK = True
+
+    @xn
+    def tuple_one() -> Tuple[int]:
+        return (1,)
+
+    @dag
+    def pipe() -> Tuple[Tuple[int], Tuple[int]]:
+        v1, v2 = tuple_one(), tuple_one()
+        return v1, v2
+
+    assert pipe() == ((1,), (1,))
+
+
+def test_multiple_return_values_unpack_no_unpack_to_specified_must_be_two() -> None:
+    Cfg.TAWAZI_EXPERIMENTAL_AUTOMATIC_UNPACK = True
+
+    @xn
+    def tuple_two() -> Tuple[int, int]:
+        return 1, 2
+
+    @dag
+    def pipe() -> Tuple[int, int]:
+        v1, v2 = tuple_two()
+        return v1, v2
+
+    assert pipe() == (1, 2)
+
+
+def test_multiple_return_values_unpack_no_unpack_to_specified_must_be_three() -> None:
+    Cfg.TAWAZI_EXPERIMENTAL_AUTOMATIC_UNPACK = True
+
+    @xn
+    def tuple_three() -> Tuple[int, int, int]:
+        return 1, 2, 3
+
+    @xn
+    def incr(a: int) -> int:
+        return a + 1
+
+    @dag
+    def pipe() -> Tuple[int, int, int]:
+        v1, v2, v3 = tuple_three()
+        v1, v2, v3 = incr(v1), incr(v2), incr(v3)
+        return v1, v2, v3
+
+    assert pipe() == (2, 3, 4)
+
+
+def test_multiple_return_values_unpack_no_unpack_to_specified_must_be_two_left_less_than_right_side() -> (
+    None
+):
+    Cfg.TAWAZI_EXPERIMENTAL_AUTOMATIC_UNPACK = True
+
+    @xn(unpack_to=3)
+    def tuple_three() -> Tuple[int, int, int]:
+        return 1, 2, 3
+
+    # ValueError: too many values to unpack (expected 2)
+    with pytest.raises(ValueError, match="too many values to unpack \\(expected 2\\)"):
+
+        @dag
+        def pipe() -> None:
+            v1, v2 = tuple_three()
+
+
+def test_multiple_return_values_unpack_no_unpack_to_specified_must_be_two_left_more_than_right_side() -> (
+    None
+):
+    Cfg.TAWAZI_EXPERIMENTAL_AUTOMATIC_UNPACK = True
+
+    @xn(unpack_to=3)
+    def tuple_three() -> Tuple[int, int, int]:
+        return 1, 2, 3
+
+    # ValueError: too many values to unpack (expected 2)
+    with pytest.raises(ValueError, match="not enough values to unpack \\(expected 4, got 3\\)"):
+
+        @dag
+        def pipe() -> None:
+            v1, v2, v3, v4 = tuple_three()
+
+
+def test_multiple_return_values_unpack_no_unpack_maximum_trial_expanded() -> None:
+    Cfg.TAWAZI_EXPERIMENTAL_AUTOMATIC_UNPACK = True
+    Cfg.TAWAZI_EXPERIMENTAL_MAX_UNPACK_TRIAL_ITERATIONS = 4
+
+    @xn
+    def tuple_three() -> Tuple[int, int, int]:
+        return 1, 2, 3
+
+    @dag
+    def _pipe() -> None:
+        v1, v2, v3 = tuple_three()
+
+    @dag
+    def _pipe() -> None:
+        v1, v2, v3 = tuple_three()
+        v1, v2, v3 = tuple_three()
+
+    # adapt TAWAZI_EXPERIMENTAL_MAX_UNPACK_TRIAL_ITERATIONS
+    #  so that this test fails but the previous ones do not fail
+    # this is test is important to ensure that there is never an infinite loop
+    with pytest.raises(TawaziUsageError):
+
+        @dag
+        def _pipe() -> None:
+            v1, v2, v3 = tuple_three()
+            v1, v2, v3 = tuple_three()
+            v1, v2, v3 = tuple_three()
+
+
+def test_multiple_return_values_unpack_no_unpack_experimental_is_not_activated() -> None:
+    Cfg.TAWAZI_EXPERIMENTAL_AUTOMATIC_UNPACK = False
+
+    @xn
+    def tuple_three() -> Tuple[int, int, int]:
+        return 1, 2, 3
+
+    with pytest.raises(ValueError):
+
+        @dag
+        def _pipe() -> None:
+            v1, v2 = tuple_three()

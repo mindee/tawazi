@@ -444,8 +444,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         global last_id
         last_id = self_copy.id
         if self.unpack_to is not None:
-            # if an unpack problem is detected, the user made a mistake!
-            # TODO: test this case!
+            # if an unpack problem is detected, the user made a mistake! this is tested!
             unpack_number[last_id] = self.unpack_to
             uxn_tuple = tuple(UsageExecNode(self_copy.id, key=[i]) for i in range(self.unpack_to))
             return uxn_tuple  # type: ignore[return-value]

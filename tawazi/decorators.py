@@ -8,7 +8,7 @@ from tawazi import node
 from tawazi.config import Cfg
 from tawazi.consts import RVDAG, RVXN, P
 from tawazi.dag import DAG
-from tawazi.errors import ErrorStrategy
+from tawazi.errors import ErrorStrategy, TawaziUsageError
 from tawazi.helpers import get_args_and_default_args
 from tawazi.node import (
     ArgExecNode,
@@ -143,7 +143,6 @@ def dag(
         with exec_nodes_lock:
             # 1. node.exec_nodes contains all the ExecNodes that concern the DAG being built at the moment.
             #      make sure it is empty
-            node.exec_nodes = {}
             node.unpack_number = {}
             node.last_id = ""
             try:
@@ -161,10 +160,6 @@ def dag(
                         for arg_name, arg in func_default_args.items()
                     ]
                 )
-                # 2.3 Arguments are also ExecNodes that get executed inside the scheduler
-                node.exec_nodes.update({xn.id: xn for xn in args})
-                # 2.4 make UsageExecNodes for input arguments
-                uxn_args = [UsageExecNode(xn.id) for xn in args]
 
                 # 3. Execute the dependency describer function
                 # NOTE: Only ordered parameters are supported at the moment!
@@ -195,10 +190,23 @@ def dag(
                 counter = 0
                 logger.debug(f"describing {_func}")
 
-                while counter < Cfg.TAWAZI_MAX_UNPACK_TRIAL_ITERATIONS and not described_the_dag:
+                while (
+                    counter < Cfg.TAWAZI_EXPERIMENTAL_MAX_UNPACK_TRIAL_ITERATIONS
+                    and not described_the_dag
+                ):
                     logger.debug(f"trial number: {counter}")
+                    logger.debug(f"{node.exec_nodes=}")
+                    logger.debug(f"{node.unpack_number=}")
+                    logger.debug(f"{node.last_id=}")
+
                     counter += 1
                     try:
+                        node.exec_nodes = {}
+                        # 2.3 Arguments are also ExecNodes that get executed inside the scheduler
+                        node.exec_nodes.update({xn.id: xn for xn in args})
+                        # 2.4 make UsageExecNodes for input arguments
+                        uxn_args = [UsageExecNode(xn.id) for xn in args]
+
                         returned_usage_exec_nodes: ReturnUXNsType = _func(*uxn_args)  # type: ignore[arg-type]
                     except TypeError as unp_err:
                         unpack_error_msg = str(unp_err)
@@ -231,8 +239,17 @@ def dag(
 
                         # set the correct unpacking number
                         node.unpack_number[node.last_id] = expected_unpack_num
+
                     else:
                         described_the_dag = True
+
+                if counter == Cfg.TAWAZI_EXPERIMENTAL_MAX_UNPACK_TRIAL_ITERATIONS:
+                    raise TawaziUsageError(
+                        "internal problem while detecting the number of unpacks probably. "
+                        "Try increasing `TAWAZI_EXPERIMENTAL_MAX_UNPACK_TRIAL_ITERATIONS` -> 1000 - 10_000 "
+                        "if you have an extremely big DAG you are describing, "
+                        "or make sure that you are unpacking your returned variable correctly"
+                    )
 
                 # TODO: wrap the consts non UsageExecNodes in a UsageExecNode to support returning consts from DAG
                 validate_returned_usage_exec_nodes(returned_usage_exec_nodes)
