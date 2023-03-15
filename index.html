@@ -71,7 +71,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#tawazi" class="md-skip">
+        <a href="#usage" class="md-skip">
           Skip to content
         </a>
       
@@ -268,26 +268,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#tawazi" class="md-nav__link">
-    tawazi
-  </a>
-  
-    <nav class="md-nav" aria-label="tawazi">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#introduction" class="md-nav__link">
-    Introduction
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#usage" class="md-nav__link">
     Usage
   </a>
@@ -378,7 +358,7 @@
       
         <li class="md-nav__item">
   <a href="#limitations" class="md-nav__link">
-    Limitations:
+    Limitations
   </a>
   
 </li>
@@ -506,26 +486,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#tawazi" class="md-nav__link">
-    tawazi
-  </a>
-  
-    <nav class="md-nav" aria-label="tawazi">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#introduction" class="md-nav__link">
-    Introduction
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#usage" class="md-nav__link">
     Usage
   </a>
@@ -616,7 +576,7 @@
       
         <li class="md-nav__item">
   <a href="#limitations" class="md-nav__link">
-    Limitations:
+    Limitations
   </a>
   
 </li>
@@ -642,42 +602,6 @@
 
   <h1>Home</h1>
 
-<h2 id="tawazi">tawazi<a class="headerlink" href="#tawazi" title="Permanent link">&para;</a></h2>
-<!--Python badges -->
-<p><a href="https://www.python.org/"><img alt="Python 3.7" src="https://img.shields.io/badge/python-3.7%20|%203.8%20|%203.9%20|%203.10%20|%203.11-blue.svg" /></a>
-<a href="http://mypy-lang.org/"><img alt="Checked with mypy" src="http://www.mypy-lang.org/static/mypy_badge.svg" /></a>
-<a href="https://www.codefactor.io/repository/github/mindee/tawazi"><img alt="CodeFactor" src="https://www.codefactor.io/repository/github/mindee/tawazi/badge" /></a>
-<a href="https://pypi.org/project/tawazi/"><img alt="Downloads" src="https://img.shields.io/pypi/dm/tawazi" /></a></p>
-<!--Tawazi Badge-->
-<p><img alt="Tawazi GIF" src="tawazi_GIF.gif" /></p>
-<h3 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h3>
-<!-- TODO: put a link explaining what a DAG is-->
-
-<p><a href="https://pypi.org/project/tawazi/">Tawazi</a> facilitates <strong>parallel</strong> execution of functions in a <a href="https://en.wikipedia.org/wiki/Directed_acyclic_graph">DAG</a> dependency structure.</p>
-<p>This library satisfies the following:</p>
-<ul>
-<li>Stable, robust, well tested</li>
-<li>lightweight</li>
-<li>Thread Safe</li>
-<li>Few dependencies</li>
-<li>Legacy Python versions support (in the future)</li>
-<li>MyPy compatible</li>
-<li>Many Python implementations support (in the future)</li>
-</ul>
-<p>In <a href="https://pypi.org/project/tawazi/">Tawazi</a>, a computation sequence is referred to as <code>DAG</code>. The functions invoked inside the computation sequence are referred to as <code>ExecNode</code>s.</p>
-<p>Current features are:</p>
-<ul>
-<li>Limiting the number of "Threads" that the <code>DAG</code> uses</li>
-<li>setup <code>ExecNode</code>s: These nodes only run once per DAG instance</li>
-<li>debug <code>ExecNode</code>s: These are nodes that only run during when <code>RUN_DEBUG_NODES</code> environment variable is set</li>
-<li>running a subgraph of the DAG instance</li>
-<li>Excluding an <code>ExecNode</code> from running</li>
-<li>caching the results of the execution of a <code>DAG</code> for faster subsequent execution</li>
-<li>Priority Choice of each <code>ExecNode</code> for fine control of execution order</li>
-<li>Per <code>ExecNode</code> choice of parallelization (i.e. An <code>ExecNode</code> is allowed to run in parallel with other <code>ExecNode</code>s or not)</li>
-<li>and more!</li>
-</ul>
-<p><strong>Note</strong>: The library is still at an <a href="#future-developments">advanced state of development</a>. Breaking changes might happen on the minor version (v0.Minor.Patch). Please pin <a href="https://pypi.org/project/tawazi/">Tawazi</a> to the <strong>Minor Version</strong>. Your contributions are highly welcomed.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <h3 id="classes-decorators">Classes &amp; decorators<a class="headerlink" href="#classes-decorators" title="Permanent link">&para;</a></h3>
 <!-- TODO: put documentation about UsageExecNode -->
@@ -809,12 +733,12 @@ Currently you can not pass in named parameters to the <code>DAG</code> (will be 
 <ol>
 <li>Either via Python <code>Tuple</code>s and <code>List</code>s but you will have to specify the unpacking number
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nd">@xn</span><span class="p">(</span><span class="n">unpack_to</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">def</span> <span class="nf">count_tuple</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">def</span> <span class="nf">replicate_tuple</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>  <span class="k">return</span> <span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">val</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">val</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">val</span> <span class="o">+</span> <span class="mi">3</span><span class="p">)</span>
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
 <a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
 <a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nd">@xn</span><span class="p">(</span><span class="n">unpack_to</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="k">def</span> <span class="nf">count_list</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="k">def</span> <span class="nf">replicate_list</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
 <a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>  <span class="k">return</span> <span class="p">[</span><span class="n">val</span><span class="p">,</span> <span class="n">val</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">val</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">val</span> <span class="o">+</span> <span class="mi">3</span><span class="p">]</span>
 <a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
 <a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
@@ -825,7 +749,7 @@ Currently you can not pass in named parameters to the <code>DAG</code> (will be 
 <a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>  <span class="k">return</span> <span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">,</span> <span class="n">v3</span><span class="p">,</span> <span class="n">v4</span><span class="p">,</span> <span class="n">v5</span><span class="p">,</span> <span class="n">v6</span><span class="p">,</span> <span class="n">v7</span><span class="p">,</span> <span class="n">v8</span>
 <a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>
 <a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>
-<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="k">assert</span> <span class="n">pipeline</span><span class="p">()</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">]</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="k">assert</span> <span class="n">pipeline</span><span class="p">()</span> <span class="o">==</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
 </code></pre></div></li>
 <li>Or via indexing (<code>Dict</code> or <code>List</code> etc.):
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nd">@xn</span>
@@ -842,14 +766,14 @@ Currently you can not pass in named parameters to the <code>DAG</code> (will be 
 <a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>
 <a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="nd">@dag</span>
 <a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="k">def</span> <span class="nf">pipeline</span><span class="p">(</span><span class="n">val</span><span class="p">):</span>
-<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>  <span class="n">d</span> <span class="o">=</span> <span class="n">gen_dict</span><span class="p">()</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>  <span class="n">d</span> <span class="o">=</span> <span class="n">gen_dict</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
 <a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>  <span class="n">l</span> <span class="o">=</span> <span class="n">gen_list</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s2">&quot;k1&quot;</span><span class="p">])</span>
 <a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>  <span class="n">inc_val</span> <span class="o">=</span> <span class="n">incr</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 <a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>  <span class="n">inc_val_2</span> <span class="o">=</span> <span class="n">incr</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s2">&quot;nested_list&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
 <a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>  <span class="k">return</span> <span class="n">d</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">inc_val</span><span class="p">,</span> <span class="n">inc_val_2</span>
 <a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>
 <a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="n">d</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="n">inc_val</span><span class="p">,</span> <span class="n">inc_val_2</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>
-<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="k">assert</span> <span class="n">d</span> <span class="o">==</span> <span class="p">{</span><span class="s2">&quot;k1&quot;</span><span class="p">:</span> <span class="n">val</span><span class="p">,</span> <span class="s2">&quot;k2&quot;</span><span class="p">:</span> <span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="s2">&quot;nested_list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span> <span class="p">,</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]}</span>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="k">assert</span> <span class="n">d</span> <span class="o">==</span> <span class="p">{</span><span class="s2">&quot;k1&quot;</span><span class="p">:</span> <span class="mi">123</span><span class="p">,</span> <span class="s2">&quot;k2&quot;</span><span class="p">:</span> <span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="s2">&quot;nested_list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span> <span class="p">,</span><span class="mi">11</span><span class="p">,</span> <span class="mi">3</span><span class="p">]}</span>
 <a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a><span class="k">assert</span> <span class="n">l</span> <span class="o">==</span> <span class="p">[</span><span class="mi">123</span><span class="p">,</span> <span class="mi">124</span><span class="p">,</span> <span class="mi">125</span><span class="p">,</span> <span class="mi">126</span><span class="p">]</span>
 <a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a><span class="k">assert</span> <span class="n">inc_val</span> <span class="o">==</span> <span class="mi">124</span>
 <a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="k">assert</span> <span class="n">inc_val_2</span> <span class="o">==</span> <span class="mi">12</span>
@@ -910,7 +834,7 @@ The goal of having setup <code>ExecNode</code> is to load only the necessary res
 <a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>  <span class="k">return</span> <span class="s2">&quot;large data 1&quot;</span>
 <a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
 <a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="nd">@xn</span><span class="p">(</span><span class="n">setup</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="k">def</span> <span class="nf">setop1</span><span class="p">():</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="k">def</span> <span class="nf">setop2</span><span class="p">():</span>
 <a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>  <span class="k">return</span> <span class="s2">&quot;large data 2&quot;</span>
 <a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>
 <a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="nd">@xn</span>
@@ -923,15 +847,15 @@ The goal of having setup <code>ExecNode</code> is to load only the necessary res
 <a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>
 <a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="nd">@dag</span>
 <a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a><span class="k">def</span> <span class="nf">pipeline</span><span class="p">():</span>
-<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>  <span class="n">data1</span> <span class="o">=</span> <span class="n">setup1</span><span class="p">()</span>
-<a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a>  <span class="n">data2</span> <span class="o">=</span> <span class="n">setup2</span><span class="p">()</span>
+<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>  <span class="n">data1</span> <span class="o">=</span> <span class="n">setop1</span><span class="p">()</span>
+<a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a>  <span class="n">data2</span> <span class="o">=</span> <span class="n">setop2</span><span class="p">()</span>
 <a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a>  <span class="n">print_xn</span><span class="p">(</span><span class="n">data1</span><span class="p">)</span>
 <a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a>  <span class="n">pprint_xn</span><span class="p">(</span><span class="n">data2</span><span class="p">)</span>
 <a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a>  <span class="k">return</span> <span class="n">data1</span><span class="p">,</span> <span class="n">data2</span>
 <a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a>
 <a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a><span class="n">exec_</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">executor</span><span class="p">(</span><span class="n">target_nodes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;print_xn&quot;</span><span class="p">])</span>
 <a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a><span class="c1"># Notice how the execution of the subgraph doesn&#39;t make the setop1 `ExecNode`. This makes development of your complex pipeline faster by reducing the time needed to load all resources</span>
-<a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a><span class="k">assert</span> <span class="s2">&quot;large data 1&quot;</span><span class="p">,</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">exec_</span><span class="p">()</span>
+<a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a><span class="k">assert</span> <span class="p">(</span><span class="s2">&quot;large data 1&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="o">==</span> <span class="n">exec_</span><span class="p">()</span>
 </code></pre></div></p>
 <h3 id="debug-execnode">Debug <code>ExecNode</code><a class="headerlink" href="#debug-execnode" title="Permanent link">&para;</a></h3>
 <p>You can Make Debug <code>ExecNode</code>s that will only run if <code>RUN_DEBUG_NODES</code> env variable is set. These can be visualization <code>ExecNode</code>s for example... or some complicated Assertions that helps you debug problems when needed that are hostile to the production environment (they consume too much computation time):
@@ -974,46 +898,68 @@ The goal of having setup <code>ExecNode</code> is to load only the necessary res
 <a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>  <span class="n">b</span><span class="p">()</span>
 <a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>
 <a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="n">pipeline</span><span class="p">()</span>
-<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="n">xn_a</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">get_nodes_by_tag</span><span class="p">(</span><span class="s2">&quot;twinkle toes&quot;</span><span class="p">)</span>
-<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="c1"># You can do whatever you want with this ExecNode... like checking its arguments, setting its priority, changing it to become a debug `ExecNode`. This is however an advanced usage. Your methods might break more often with Tawazi releases because `ExecNode` is an internal Object.</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="n">xn_a</span><span class="p">,</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">get_nodes_by_tag</span><span class="p">(</span><span class="s2">&quot;twinkle toes&quot;</span><span class="p">)</span>
+</code></pre></div>
+You can do whatever you want with this ExecNode:</p>
+<ol>
+<li>like checking its arguments</li>
+<li>setting its priority</li>
+<li>changing it to become a debug <code>ExecNode</code></li>
+</ol>
+<blockquote>
+<p><strong>WARNING</strong>: This is an advanced usage. Your methods might break more often with Tawazi releases because <code>ExecNode</code> is an internal Object. Please use with care}</p>
+</blockquote>
+<p>You can have multiple <code>Tag</code>s for the same <code>ExecNode</code> and the same <code>Tag</code> for multiple <code>ExecNode</code>s:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nd">@xn</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;twinkle&quot;</span><span class="p">,</span> <span class="s2">&quot;toes&quot;</span><span class="p">))</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="k">def</span> <span class="nf">a</span><span class="p">():</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;I am tough&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="nd">@xn</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;twinkle&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="k">def</span> <span class="nf">b</span><span class="p">():</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;I am light&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="nd">@dag</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="k">def</span> <span class="nf">pipeline</span><span class="p">():</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>    <span class="n">a</span><span class="p">()</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>    <span class="n">b</span><span class="p">()</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="n">xn_a</span><span class="p">,</span> <span class="n">xn_b</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">get_nodes_by_tag</span><span class="p">(</span><span class="s2">&quot;twinkle&quot;</span><span class="p">)</span>
 </code></pre></div></p>
 <p>You can even tag a specific call of an ExecNode:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nd">@xn</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="k">def</span> <span class="nf">stub_xn</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>  <span class="k">return</span> <span class="n">i</span>
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
-<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="nd">@xn</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;c_node&quot;</span><span class="p">)</span>
-<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="k">def</span> <span class="nf">print_xn</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
-<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>  <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>
-<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="nd">@dag</span>
-<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="k">def</span> <span class="nf">pipeline</span><span class="p">():</span>
-<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>  <span class="n">b</span><span class="p">()</span>
-<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>  <span class="n">hello</span> <span class="o">=</span> <span class="n">stub_xn</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>
-<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>  <span class="n">print_xn</span><span class="p">(</span><span class="n">hello</span><span class="p">)</span>
-<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>  <span class="n">goodbye</span> <span class="o">=</span> <span class="n">stub_xn</span><span class="p">(</span><span class="s2">&quot;goodbye&quot;</span><span class="p">)</span>
-<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>  <span class="n">print_xn</span><span class="p">(</span><span class="n">goodbye</span><span class="p">,</span> <span class="n">twz_tag</span><span class="o">=</span><span class="s2">&quot;byebye&quot;</span><span class="p">)</span>
-<a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>
-<a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a><span class="n">pipeline</span><span class="p">()</span>
-<a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a><span class="c1"># multiple nodes can have the same tag!</span>
-<a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a><span class="n">xns_bye</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">get_nodes_by_tag</span><span class="p">(</span><span class="s2">&quot;byebye&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nd">@xn</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="k">def</span> <span class="nf">stub_xn</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>  <span class="k">return</span> <span class="n">i</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="nd">@xn</span><span class="p">(</span><span class="n">tag</span><span class="o">=</span><span class="s2">&quot;c_node&quot;</span><span class="p">)</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="k">def</span> <span class="nf">print_xn</span><span class="p">(</span><span class="n">i</span><span class="p">):</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>  <span class="nb">print</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="nd">@dag</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="k">def</span> <span class="nf">pipeline</span><span class="p">():</span>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>  <span class="n">b</span><span class="p">()</span>
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>  <span class="n">hello</span> <span class="o">=</span> <span class="n">stub_xn</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>  <span class="n">print_xn</span><span class="p">(</span><span class="n">hello</span><span class="p">)</span>
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>  <span class="n">goodbye</span> <span class="o">=</span> <span class="n">stub_xn</span><span class="p">(</span><span class="s2">&quot;goodbye&quot;</span><span class="p">)</span>
+<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>  <span class="n">print_xn</span><span class="p">(</span><span class="n">goodbye</span><span class="p">,</span> <span class="n">twz_tag</span><span class="o">=</span><span class="s2">&quot;byebye&quot;</span><span class="p">)</span>
+<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>
+<a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a><span class="n">pipeline</span><span class="p">()</span>
+<a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a><span class="c1"># multiple nodes can have the same tag!</span>
+<a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a><span class="n">xns_bye</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">get_nodes_by_tag</span><span class="p">(</span><span class="s2">&quot;byebye&quot;</span><span class="p">)</span>
 </code></pre></div></p>
 <blockquote>
 <p>This will be useful if you want to run a subgraph (cf. the next paragraph). It will also be useful if you want to access result of a specific ExecNode after an Execution</p>
 </blockquote>
 <p>You can run a subgraph of your pipeline: Make a <code>DAGExecution</code> from your <code>DAG</code> and pass in the <code>ExecNode</code>s you want to run: <!-- TODO: complete these two parts!!-->
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># You can use the original __qual__name of the decorated function as an Identifier</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">pipe_exec</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">executor</span><span class="p">(</span><span class="n">target_nodes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;b&quot;</span><span class="p">])</span>
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">pipe_exec</span><span class="p">()</span>
-<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="c1"># You can use the tag of an ExecNode</span>
-<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="n">pipe_exec</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">executor</span><span class="p">(</span><span class="n">target_nodes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;c_node&quot;</span><span class="p">])</span>
-<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="n">pipe_exec</span><span class="p">()</span>
-<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="c1"># You can use the calling tag to distinguish the 1st call of g from the 2nd call!</span>
-<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="n">pipe_exec</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">executor</span><span class="p">(</span><span class="n">target_nodes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;byebye&quot;</span><span class="p">])</span>
-<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="n">pipe_exec</span><span class="p">()</span>
-<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="c1"># You can even pass in the ExecNodes to run and mix identifiers types</span>
-<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="n">pipe_exec</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">executor</span><span class="p">(</span><span class="n">target_nodes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="n">xns_bye</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
-<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="n">pipe_exec</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># You can use the original __qual__name of the decorated function as an Identifier</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">pipe_exec</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">executor</span><span class="p">(</span><span class="n">target_nodes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;b&quot;</span><span class="p">])</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="n">pipe_exec</span><span class="p">()</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="c1"># You can use the tag of an ExecNode</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="n">pipe_exec</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">executor</span><span class="p">(</span><span class="n">target_nodes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;c_node&quot;</span><span class="p">])</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="n">pipe_exec</span><span class="p">()</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="c1"># You can use the calling tag to distinguish the 1st call of g from the 2nd call!</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="n">pipe_exec</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">executor</span><span class="p">(</span><span class="n">target_nodes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;byebye&quot;</span><span class="p">])</span>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="n">pipe_exec</span><span class="p">()</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="c1"># You can even pass in the ExecNodes to run and mix identifiers types</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="n">pipe_exec</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">executor</span><span class="p">(</span><span class="n">target_nodes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="n">xns_bye</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="n">pipe_exec</span><span class="p">()</span>
 </code></pre></div></p>
 <blockquote>
 <p>Because <code>DAGExecution</code> instances are mutable, they are non thread-safe. This is unlike <code>DAG</code> which is ThreadSafe</p>
@@ -1028,56 +974,57 @@ This is achieved by setting the <code>is_sequential</code> parameter to <code>Tr
   a. <code>"strict"</code>: stop execution of the DAG
   b. <code>"all-children"</code>:  stop the execution of the all successors
   c. <code>"permissive"</code>: continue the execution of the whole DAG
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># type: ignore</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">sleep</span><span class="p">,</span> <span class="n">time</span>
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="kn">from</span> <span class="nn">tawazi</span> <span class="kn">import</span> <span class="n">xn</span><span class="p">,</span> <span class="n">dag</span>
-<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>
-<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="nd">@xn</span>
-<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="k">def</span> <span class="nf">a</span><span class="p">():</span>
-<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Function &#39;a&#39; is running&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>    <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>    <span class="k">return</span> <span class="s2">&quot;A&quot;</span>
-<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>
-<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="c1"># optionally configure each ExecNode using the decorator:</span>
-<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="c1"># is_sequential = True to prevent ExecNode from running in parallel with other ExecNodes</span>
-<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="c1"># priority to choose the ExecNode in the next execution phase</span>
-<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a><span class="nd">@xn</span><span class="p">(</span><span class="n">is_sequential</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
-<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a><span class="k">def</span> <span class="nf">b</span><span class="p">():</span>
-<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Function &#39;b&#39; is running&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>    <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>    <span class="k">return</span> <span class="s2">&quot;B&quot;</span>
-<a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>
-<a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a><span class="nd">@xn</span>
-<a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a><span class="k">def</span> <span class="nf">c</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">arg_b</span><span class="p">):</span>
-<a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Function &#39;c&#39; is running&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Function &#39;c&#39; received </span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2"> from &#39;a&#39; &amp; </span><span class="si">{</span><span class="n">arg_b</span><span class="si">}</span><span class="s2"> from &#39;b&#39;&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2"> + </span><span class="si">{</span><span class="n">arg_b</span><span class="si">}</span><span class="s2"> = C&quot;</span>
-<a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a>
-<a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a><span class="c1"># optionally customize the DAG</span>
-<a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a><span class="nd">@dag</span><span class="p">(</span><span class="n">max_concurrency</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">behavior</span><span class="o">=</span><span class="s2">&quot;strict&quot;</span><span class="p">)</span>
-<a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a><span class="k">def</span> <span class="nf">deps_describer</span><span class="p">():</span>
-<a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a>  <span class="n">res_a</span> <span class="o">=</span> <span class="n">a</span><span class="p">()</span>
-<a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a>  <span class="n">res_b</span> <span class="o">=</span> <span class="n">b</span><span class="p">()</span>
-<a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a>  <span class="n">res_c</span> <span class="o">=</span> <span class="n">c</span><span class="p">(</span><span class="n">res_a</span><span class="p">,</span> <span class="n">res_b</span><span class="p">)</span>
-<a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a>  <span class="k">return</span> <span class="n">res_a</span><span class="p">,</span> <span class="n">res_b</span><span class="p">,</span> <span class="n">res_c</span>
-<a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a>
-<a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a>
-<a id="__codelineno-14-35" name="__codelineno-14-35" href="#__codelineno-14-35"></a><span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
-<a id="__codelineno-14-36" name="__codelineno-14-36" href="#__codelineno-14-36"></a><span class="c1"># the dag instance is reusable.</span>
-<a id="__codelineno-14-37" name="__codelineno-14-37" href="#__codelineno-14-37"></a><span class="c1"># This is recommended if you want to do the same computation multiple times</span>
-<a id="__codelineno-14-38" name="__codelineno-14-38" href="#__codelineno-14-38"></a><span class="n">res_a</span><span class="p">,</span> <span class="n">res_b</span><span class="p">,</span> <span class="n">res_c</span> <span class="o">=</span> <span class="n">deps_describer</span><span class="p">()</span>
-<a id="__codelineno-14-39" name="__codelineno-14-39" href="#__codelineno-14-39"></a><span class="n">execution_time</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
-<a id="__codelineno-14-40" name="__codelineno-14-40" href="#__codelineno-14-40"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Graph execution took </span><span class="si">{</span><span class="n">execution_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> seconds&quot;</span><span class="p">)</span>
-<a id="__codelineno-14-41" name="__codelineno-14-41" href="#__codelineno-14-41"></a><span class="k">assert</span> <span class="n">res_a</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span>
-<a id="__codelineno-14-42" name="__codelineno-14-42" href="#__codelineno-14-42"></a><span class="k">assert</span> <span class="n">res_b</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span>
-<a id="__codelineno-14-43" name="__codelineno-14-43" href="#__codelineno-14-43"></a><span class="k">assert</span> <span class="n">res_c</span> <span class="o">==</span> <span class="s2">&quot;A + B = C&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># type: ignore</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">sleep</span><span class="p">,</span> <span class="n">time</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="kn">from</span> <span class="nn">tawazi</span> <span class="kn">import</span> <span class="n">xn</span><span class="p">,</span> <span class="n">dag</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="nd">@xn</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="k">def</span> <span class="nf">a</span><span class="p">():</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Function &#39;a&#39; is running&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>    <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>    <span class="k">return</span> <span class="s2">&quot;A&quot;</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="c1"># optionally configure each ExecNode using the decorator:</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="c1"># is_sequential = True to prevent ExecNode from running in parallel with other ExecNodes</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="c1"># priority to choose the ExecNode in the next execution phase</span>
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="nd">@xn</span><span class="p">(</span><span class="n">is_sequential</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="k">def</span> <span class="nf">b</span><span class="p">():</span>
+<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Function &#39;b&#39; is running&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a>    <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a>    <span class="k">return</span> <span class="s2">&quot;B&quot;</span>
+<a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a>
+<a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a><span class="nd">@xn</span>
+<a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a><span class="k">def</span> <span class="nf">c</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">arg_b</span><span class="p">):</span>
+<a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Function &#39;c&#39; is running&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-15-23" name="__codelineno-15-23" href="#__codelineno-15-23"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Function &#39;c&#39; received </span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2"> from &#39;a&#39; &amp; </span><span class="si">{</span><span class="n">arg_b</span><span class="si">}</span><span class="s2"> from &#39;b&#39;&quot;</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-15-24" name="__codelineno-15-24" href="#__codelineno-15-24"></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2"> + </span><span class="si">{</span><span class="n">arg_b</span><span class="si">}</span><span class="s2"> = C&quot;</span>
+<a id="__codelineno-15-25" name="__codelineno-15-25" href="#__codelineno-15-25"></a>
+<a id="__codelineno-15-26" name="__codelineno-15-26" href="#__codelineno-15-26"></a><span class="c1"># optionally customize the DAG</span>
+<a id="__codelineno-15-27" name="__codelineno-15-27" href="#__codelineno-15-27"></a><span class="nd">@dag</span><span class="p">(</span><span class="n">max_concurrency</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">behavior</span><span class="o">=</span><span class="s2">&quot;strict&quot;</span><span class="p">)</span>
+<a id="__codelineno-15-28" name="__codelineno-15-28" href="#__codelineno-15-28"></a><span class="k">def</span> <span class="nf">deps_describer</span><span class="p">():</span>
+<a id="__codelineno-15-29" name="__codelineno-15-29" href="#__codelineno-15-29"></a>  <span class="n">res_a</span> <span class="o">=</span> <span class="n">a</span><span class="p">()</span>
+<a id="__codelineno-15-30" name="__codelineno-15-30" href="#__codelineno-15-30"></a>  <span class="n">res_b</span> <span class="o">=</span> <span class="n">b</span><span class="p">()</span>
+<a id="__codelineno-15-31" name="__codelineno-15-31" href="#__codelineno-15-31"></a>  <span class="n">res_c</span> <span class="o">=</span> <span class="n">c</span><span class="p">(</span><span class="n">res_a</span><span class="p">,</span> <span class="n">res_b</span><span class="p">)</span>
+<a id="__codelineno-15-32" name="__codelineno-15-32" href="#__codelineno-15-32"></a>  <span class="k">return</span> <span class="n">res_a</span><span class="p">,</span> <span class="n">res_b</span><span class="p">,</span> <span class="n">res_c</span>
+<a id="__codelineno-15-33" name="__codelineno-15-33" href="#__codelineno-15-33"></a>
+<a id="__codelineno-15-34" name="__codelineno-15-34" href="#__codelineno-15-34"></a>
+<a id="__codelineno-15-35" name="__codelineno-15-35" href="#__codelineno-15-35"></a><span class="n">t0</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+<a id="__codelineno-15-36" name="__codelineno-15-36" href="#__codelineno-15-36"></a><span class="c1"># the dag instance is reusable.</span>
+<a id="__codelineno-15-37" name="__codelineno-15-37" href="#__codelineno-15-37"></a><span class="c1"># This is recommended if you want to do the same computation multiple times</span>
+<a id="__codelineno-15-38" name="__codelineno-15-38" href="#__codelineno-15-38"></a><span class="n">res_a</span><span class="p">,</span> <span class="n">res_b</span><span class="p">,</span> <span class="n">res_c</span> <span class="o">=</span> <span class="n">deps_describer</span><span class="p">()</span>
+<a id="__codelineno-15-39" name="__codelineno-15-39" href="#__codelineno-15-39"></a><span class="n">execution_time</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t0</span>
+<a id="__codelineno-15-40" name="__codelineno-15-40" href="#__codelineno-15-40"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Graph execution took </span><span class="si">{</span><span class="n">execution_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> seconds&quot;</span><span class="p">)</span>
+<a id="__codelineno-15-41" name="__codelineno-15-41" href="#__codelineno-15-41"></a><span class="k">assert</span> <span class="n">res_a</span> <span class="o">==</span> <span class="s2">&quot;A&quot;</span>
+<a id="__codelineno-15-42" name="__codelineno-15-42" href="#__codelineno-15-42"></a><span class="k">assert</span> <span class="n">res_b</span> <span class="o">==</span> <span class="s2">&quot;B&quot;</span>
+<a id="__codelineno-15-43" name="__codelineno-15-43" href="#__codelineno-15-43"></a><span class="k">assert</span> <span class="n">res_c</span> <span class="o">==</span> <span class="s2">&quot;A + B = C&quot;</span>
 </code></pre></div></li>
 </ol>
-<h2 id="limitations">Limitations:<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
+<h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permanent link">&para;</a></h2>
 <p>Currently there are some limitations in the usage of tawazi that will be overcome in the future.</p>
 <ol>
 <li>A DAG can not reuse the same function twice inside the calculation sequence (Will be resolved in the future)</li>
 <li>All code inside a dag descriptor function must be either an @op decorated functions calls and arguments passed arguments. Otherwise the behavior of the DAG might be unpredictable</li>
+<li>Because the main function serves only for the purpose of describing the dependencies, the code that it executes should only describe dependencies. Hence when debugging your code, it will be impossible to view the data movement inside this function. However, you can debug code inside of a node.</li>
 </ol>
 
 
