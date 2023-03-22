@@ -552,6 +552,18 @@ class UsageExecNode:
 
         return _filter_noval(reduce(lambda obj, key: obj.__getitem__(key), self.key, xn.result))
 
+    def __eq__(self, other: Any) -> bool:
+        """Equality operator."""
+        return _uxn_eq(self, other)
+
+
+# basic operators definitions:
+def _uxn_eq(a: Any, b: Any) -> bool:
+    return a == b  # type: ignore[no-any-return]
+
+
+_uxn_eq = LazyExecNode(_uxn_eq, 0, Cfg.TAWAZI_IS_SEQUENTIAL, False, None, False, None)
+
 
 # TODO: make this a subpackage
 # helpers for ExecNode
