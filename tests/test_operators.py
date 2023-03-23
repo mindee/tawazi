@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Tuple, cast
 
 import pytest
 from tawazi import dag, xn
@@ -202,6 +202,776 @@ def test_operator_contains_uxn() -> None:
         @dag
         def pipe(in1: Any) -> bool:
             return 1 in in1
+
+
+# binary operations
+def test_operator_add_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        return in1 + in2
+
+    assert pipe(7, 3) == 10
+
+
+def test_operator_add_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return in1 + 3
+
+    assert pipe(7) == 10
+
+
+def test_operator_add_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return 3 + in1
+
+    assert pipe(7) == 10
+
+
+def test_operator_iadd_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        r = in1
+        r += in2
+        return r
+
+    assert pipe(7, 3) == 10
+
+
+def test_operator_iadd_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = in1
+        r += 3
+        return r
+
+    assert pipe(7) == 10
+
+
+def test_operator_iadd_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = 3
+        r += in1
+        return r
+
+    assert pipe(7) == 10
+
+
+def test_operator_sub_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        return in1 - in2
+
+    assert pipe(7, 3) == 4
+
+
+def test_operator_sub_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return in1 - 3
+
+    assert pipe(7) == 4
+
+
+def test_operator_sub_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return 7 - in1
+
+    assert pipe(3) == 4
+
+
+def test_operator_isub_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        r = in1
+        r -= in2
+        return r
+
+    assert pipe(7, 3) == 4
+
+
+def test_operator_isub_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = in1
+        r -= 3
+        return r
+
+    assert pipe(7) == 4
+
+
+def test_operator_isub_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = 7
+        r -= in1
+        return r
+
+    assert pipe(3) == 4
+
+
+def test_operator_mul_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        return in1 * in2
+
+    assert pipe(7, 3) == 21
+
+
+def test_operator_mul_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return in1 * 3
+
+    assert pipe(7) == 21
+
+
+def test_operator_mul_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return 7 * in1
+
+    assert pipe(3) == 21
+
+
+def test_operator_imul_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        r = in1
+        r *= in2
+        return r
+
+    assert pipe(7, 3) == 21
+
+
+def test_operator_imul_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = in1
+        r *= 3
+        return r
+
+    assert pipe(7) == 21
+
+
+def test_operator_imul_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = 7
+        r *= in1
+        return r
+
+    assert pipe(3) == 21
+
+
+def test_operator_matmul_uxn_uxn() -> None:
+    import numpy as np
+
+    @dag
+    def pipe(in1: Any, in2: Any) -> Any:
+        return in1 @ in2
+
+    assert pipe(np.array([7, 5]), np.array([3, 4])) == 41
+
+
+def test_operator_matmul_uxn_cst() -> None:
+    import numpy as np
+
+    @dag
+    def pipe(in1: Any) -> Any:
+        return in1 @ np.array([3, 4])
+
+    assert pipe(np.array([7, 5])) == 41
+
+
+# this fails because the operation between ndarray and right hand side is implemented for anything
+#  so it doesn't raise NotImplementedError nor return NotImplemented
+# def test_operator_matmul_cst_uxn() -> None:
+#     import numpy as np
+
+#     @dag
+#     def pipe(in1: Any) -> Any:
+#         return np.array([7, 5]) @ in1
+
+#     assert pipe(np.array([3, 4])) == 41
+
+
+def test_operator_imatmul_uxn_uxn() -> None:
+    import numpy as np
+
+    @dag
+    def pipe(in1: Any, in2: Any) -> Any:
+        r = in1
+        r @= in2
+        return r
+
+    assert pipe(np.array([7, 5]), np.array([3, 4])) == 41
+
+
+def test_operator_imatmul_uxn_cst() -> None:
+    import numpy as np
+
+    @dag
+    def pipe(in1: Any) -> Any:
+        r = in1
+        r @= np.array([3, 4])
+        return r
+
+    assert pipe(np.array([7, 5])) == 41
+
+
+# this fails because the operation between ndarray and right hand side is implemented for anything
+#  so it doesn't raise NotImplementedError nor return NotImplemented
+# def test_operator_imatmul_cst_uxn() -> None:
+#     import numpy as np
+
+#     @dag
+#     def pipe(in1: Any) -> Any:
+#         r = np.array([7, 5])
+#         r @= in1
+#         return r
+
+#     assert pipe(np.array([3, 4])) == 41
+
+
+def test_operator_truediv_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> float:
+        return in1 / in2
+
+    assert pipe(7, 3) == 7 / 3
+
+
+def test_operator_truediv_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> float:
+        return in1 / 3
+
+    assert pipe(7) == 7 / 3
+
+
+def test_operator_truediv_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> float:
+        return 7 / in1
+
+    assert pipe(3) == 7 / 3
+
+
+def test_operator_itruediv_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> float:
+        r = in1
+        r /= in2
+        return r
+
+    assert pipe(7, 3) == 7 / 3
+
+
+def test_operator_itruediv_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> float:
+        r = in1
+        r /= 3
+        return r
+
+    assert pipe(7) == 7 / 3
+
+
+def test_operator_itruediv_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> float:
+        r = 7
+        r /= in1
+        return r
+
+    assert pipe(3) == 7 / 3
+
+
+def test_operator_floordiv_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        return in1 // in2
+
+    assert pipe(7, 3) == 2
+
+
+def test_operator_floordiv_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return in1 // 3
+
+    assert pipe(7) == 2
+
+
+def test_operator_floordiv_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return 7 // in1
+
+    assert pipe(3) == 2
+
+
+def test_operator_ifloordiv_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        r = in1
+        r //= in2
+        return r
+
+    assert pipe(7, 3) == 2
+
+
+def test_operator_ifloordiv_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = in1
+        r //= 3
+        return r
+
+    assert pipe(7) == 2
+
+
+def test_operator_ifloordiv_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = 7
+        r //= in1
+        return r
+
+    assert pipe(3) == 2
+
+
+def test_operator_mod_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        return in1 % in2
+
+    assert pipe(7, 3) == 1
+
+
+def test_operator_mod_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return in1 % 3
+
+    assert pipe(7) == 1
+
+
+def test_operator_mod_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return 7 % in1
+
+    assert pipe(3) == 1
+
+
+def test_operator_imod_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        r = in1
+        r %= in2
+        return r
+
+    assert pipe(7, 3) == 1
+
+
+def test_operator_imod_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = in1
+        r %= 3
+        return r
+
+    assert pipe(7) == 1
+
+
+def test_operator_imod_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = 7
+        r %= in1
+        return r
+
+    assert pipe(3) == 1
+
+
+def test_operator_divmod_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> Tuple[int, int]:
+        return divmod(in1, in2)
+
+    assert pipe(7, 3) == (2, 1)
+
+
+def test_operator_divmod_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> Tuple[int, int]:
+        return divmod(in1, 3)
+
+    assert pipe(7) == (2, 1)
+
+
+def test_operator_divmod_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> Tuple[int, int]:
+        return divmod(7, in1)
+
+    assert pipe(3) == (2, 1)
+
+
+# no idivmod because builtin function with out operator equivalent
+
+
+def test_operator_pow_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        return cast(int, pow(in1, in2))
+
+    assert pipe(7, 3) == 343
+
+
+def test_operator_pow_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return pow(in1, 3)
+
+    assert pipe(7) == 343
+
+
+def test_operator_pow_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return cast(int, pow(7, in1))
+
+    assert pipe(3) == 343
+
+
+def test_operator_pow_asterics_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        return cast(int, in1**in2)
+
+    assert pipe(7, 3) == 343
+
+
+def test_operator_pow_asterics_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return in1**3
+
+    assert pipe(7) == 343
+
+
+def test_operator_pow_asterics_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return cast(int, 7**in1)
+
+    assert pipe(3) == 343
+
+
+def test_operator_ipow_asterics_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        r = in1
+        r **= in2
+        return r
+
+    assert pipe(7, 3) == 343
+
+
+def test_operator_ipow_asterics_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = in1
+        r **= 3
+        return r
+
+    assert pipe(7) == 343
+
+
+def test_operator_ipow_asterics_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = 7
+        r **= in1
+        return r
+
+    assert pipe(3) == 343
+
+
+def test_operator_lshift_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        return in1 << in2
+
+    assert pipe(7, 3) == 56
+
+
+def test_operator_lshift_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return in1 << 3
+
+    assert pipe(7) == 56
+
+
+def test_operator_lshift_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return 7 << in1
+
+    assert pipe(3) == 56
+
+
+def test_operator_ilshift_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        r = in1
+        r <<= in2
+        return r
+
+    assert pipe(7, 3) == 56
+
+
+def test_operator_ilshift_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = in1
+        r <<= 3
+        return r
+
+    assert pipe(7) == 56
+
+
+def test_operator_ilshift_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = 7
+        r <<= in1
+        return r
+
+    assert pipe(3) == 56
+
+
+def test_operator_rshift_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        return in1 >> in2
+
+    assert pipe(56, 3) == 7
+
+
+def test_operator_rshift_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return in1 >> 3
+
+    assert pipe(56) == 7
+
+
+def test_operator_rshift_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return 56 >> in1
+
+    assert pipe(3) == 7
+
+
+def test_operator_irshift_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        r = in1
+        r >>= in2
+        return r
+
+    assert pipe(56, 3) == 7
+
+
+def test_operator_irshift_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = in1
+        r >>= 3
+        return r
+
+    assert pipe(56) == 7
+
+
+def test_operator_irshift_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = 56
+        r >>= in1
+        return r
+
+    assert pipe(3) == 7
+
+
+def test_operator_and_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        return in1 & in2
+
+    assert pipe(7, 3) == 3
+
+
+def test_operator_and_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return in1 & 3
+
+    assert pipe(7) == 3
+
+
+def test_operator_and_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return 7 & in1
+
+    assert pipe(3) == 3
+
+
+def test_operator_iand_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        r = in1
+        r &= in2
+        return r
+
+    assert pipe(7, 3) == 3
+
+
+def test_operator_iand_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = in1
+        r &= 3
+        return r
+
+    assert pipe(7) == 3
+
+
+def test_operator_iand_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = 7
+        r &= in1
+        return r
+
+    assert pipe(3) == 3
+
+
+def test_operator_xor_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        return in1 ^ in2
+
+    assert pipe(7, 3) == 4
+
+
+def test_operator_xor_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return in1 ^ 3
+
+    assert pipe(7) == 4
+
+
+def test_operator_xor_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return 7 ^ in1
+
+    assert pipe(3) == 4
+
+
+def test_operator_ixor_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        r = in1
+        r ^= in2
+        return r
+
+    assert pipe(7, 3) == 4
+
+
+def test_operator_ixor_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = in1
+        r ^= 3
+        return r
+
+    assert pipe(7) == 4
+
+
+def test_operator_ixor_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = 7
+        r ^= in1
+        return r
+
+    assert pipe(3) == 4
+
+
+def test_operator_or_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        return in1 | in2
+
+    assert pipe(7, 3) == 7
+
+
+def test_operator_or_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return in1 | 3
+
+    assert pipe(7) == 7
+
+
+def test_operator_or_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return 7 | in1
+
+    assert pipe(3) == 7
+
+
+def test_operator_ior_uxn_uxn() -> None:
+    @dag
+    def pipe(in1: int, in2: int) -> int:
+        r = in1
+        r |= in2
+        return r
+
+    assert pipe(7, 3) == 7
+
+
+def test_operator_ior_uxn_cst() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = 3
+        r |= in1
+        return r
+
+    assert pipe(7) == 7
+
+
+def test_operator_ior_cst_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        r = 7
+        r |= in1
+        return r
+
+    assert pipe(3) == 7
 
 
 # TODO: complicated case (multiple and or etc in same expression)
