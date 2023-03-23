@@ -9,7 +9,6 @@ from tawazi.dag import DAG
 from tawazi.errors import ErrorStrategy
 from tawazi.helpers import get_args_and_default_args
 
-from . import node
 from .config import Cfg
 from .consts import RVDAG, RVXN, P, TagOrTags
 from .node import (
@@ -18,7 +17,7 @@ from .node import (
     LazyExecNode,
     ReturnUXNsType,
     UsageExecNode,
-    exec_nodes_lock,
+    node,
     validate_returned_usage_exec_nodes,
 )
 
@@ -145,7 +144,7 @@ def dag(
     # wrapper used to support parametrized and non parametrized decorators
     def intermediate_wrapper(_func: Callable[P, RVDAG]) -> DAG[P, RVDAG]:
         # 0. Protect against multiple threads declaring many DAGs at the same time
-        with exec_nodes_lock:
+        with node.exec_nodes_lock:
             # 1. node.exec_nodes contains all the ExecNodes that concern the DAG being built at the moment.
             #      make sure it is empty
             node.exec_nodes = {}
