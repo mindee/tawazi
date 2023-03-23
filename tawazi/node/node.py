@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from functools import reduce
 from threading import Lock
 from types import MethodType
-from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Generic, List, NoReturn, Optional, Tuple, Union
 
 from loguru import logger
 
@@ -550,14 +550,48 @@ class UsageExecNode:
 
         return _filter_noval(reduce(lambda obj, key: obj.__getitem__(key), self.key, xn.result))
 
+    def __lt__(self, other: Any) -> bool:
+        """__lt__ operator."""
+        from .basic_operations import _uxn_lt
+
+        return _uxn_lt(self, other)
+
+    def __le__(self, other: Any) -> bool:
+        """__le__ operator."""
+        from .basic_operations import _uxn_le
+
+        return _uxn_le(self, other)
+
     def __eq__(self, other: Any) -> bool:
-        """Equality operator."""
+        """__eq__ operator."""
+        from .basic_operations import _uxn_eq
+
         return _uxn_eq(self, other)
 
+    def __ne__(self, other: Any) -> bool:
+        """__ne__ operator."""
+        from .basic_operations import _uxn_ne
 
-# basic operators definitions:
-def _uxn_eq(a: Any, b: Any) -> bool:
-    return a == b  # type: ignore[no-any-return]
+        return _uxn_ne(self, other)
 
+    def __gt__(self, other: Any) -> bool:
+        """__gt__ operator."""
+        from .basic_operations import _uxn_gt
 
-_uxn_eq = LazyExecNode(_uxn_eq, 0, Cfg.TAWAZI_IS_SEQUENTIAL, False, None, False, None)
+        return _uxn_gt(self, other)
+
+    def __ge__(self, other: Any) -> bool:
+        """__ge__ operator."""
+        from .basic_operations import _uxn_ge
+
+        return _uxn_ge(self, other)
+
+    def __bool__(self) -> NoReturn:
+        """__bool__ operator."""
+        # __bool__ can not be faked because it must return True or False
+        raise NotImplementedError
+
+    def __contains__(self, other: Any) -> NoReturn:
+        """___contains__ operator."""
+        # __contains__ can not be faked because the return value gets automatically casted to bool
+        raise NotImplementedError
