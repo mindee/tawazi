@@ -15,4 +15,4 @@ def test_execnodes() -> None:
             # purposefully an undefined ExecNode
             b()  # type: ignore[name-defined] # noqa: F821
 
-    assert node.exec_nodes == {}
+    assert node.node.exec_nodes == {}
