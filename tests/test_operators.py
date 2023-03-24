@@ -974,4 +974,37 @@ def test_operator_ior_cst_uxn() -> None:
     assert pipe(3) == 7
 
 
+def test_operator_neg_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return -in1
+
+    assert pipe(123) == -123
+
+
+def test_operator_pos_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return +in1
+
+    assert pipe(123) == 123
+
+
+def test_operator_abs_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return abs(in1)
+
+    assert pipe(123) == 123
+    assert pipe(-123) == 123
+
+
+def test_operator_invert_uxn() -> None:
+    @dag
+    def pipe(in1: int) -> int:
+        return ~in1
+
+    assert pipe(1) == -2
+
+
 # TODO: complicated case (multiple and or etc in same expression)

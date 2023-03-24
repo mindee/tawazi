@@ -763,3 +763,27 @@ class UsageExecNode:
         from .basic_operations import _uxn_or
 
         return _uxn_or(other, self)
+
+    def __neg__(self) -> Any:
+        """__neg__ operator."""
+        from .basic_operations import _uxn_neg
+
+        return _uxn_neg(self)
+
+    def __pos__(self) -> Any:
+        """__pos__ operator."""
+        from .basic_operations import _uxn_pos
+
+        return _uxn_pos(self)
+
+    def __abs__(self) -> Any:
+        """__abs__ operator."""
+        from .basic_operations import _uxn_abs
+
+        return _uxn_abs(self)
+
+    def __invert__(self) -> Any:
+        """__invert__ operator."""
+        from .basic_operations import _uxn_invert
+
+        return _uxn_invert(self)
