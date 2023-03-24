@@ -121,3 +121,40 @@ def _uxn_xor(a: Any, b: Any) -> Any:
 @_xn
 def _uxn_or(a: Any, b: Any) -> Any:
     return a.__or__(b)
+
+
+# unary operations
+@_xn
+def _uxn_neg(a: Any) -> Any:
+    return a.__neg__()
+
+
+@_xn
+def _uxn_pos(a: Any) -> Any:
+    return a.__pos__()
+
+
+@_xn
+def _uxn_abs(a: Any) -> Any:
+    return a.__abs__()
+
+
+@_xn
+def _uxn_invert(a: Any) -> Any:
+    return a.__invert__()
+
+
+# built ins
+# when a value is used for indexing of another
+# can't be implemented because should return appropriate type
+# object.__index__(self)
+
+# can't be implemented because should return appropriate type
+# __complex__
+# __int__
+# __float__
+
+# __round__
+# __trunc__
+# __floor__
+# __ceil__
