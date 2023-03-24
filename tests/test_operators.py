@@ -1,7 +1,7 @@
 from typing import Any, Tuple, cast
 
 import pytest
-from tawazi import dag, xn
+from tawazi import and_, dag, not_, or_, xn
 
 
 @xn
@@ -1007,4 +1007,15 @@ def test_operator_invert_uxn() -> None:
     assert pipe(1) == -2
 
 
-# TODO: complicated case (multiple and or etc in same expression)
+def test_complicated_operator_usage() -> None:
+    @dag
+    def pipe(a: bool, b: bool, c: bool, d: bool) -> Any:
+        return and_(a, b), a & b, or_(c, d), c | d, not_(d)
+
+    r = pipe(True, True, True, False)
+
+    assert r[0] is True
+    assert r[1] is True
+    assert r[2] is True
+    assert r[2] is True
+    assert r[3] is True
