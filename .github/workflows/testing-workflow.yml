@@ -42,6 +42,9 @@ jobs:
 
     - name: Install dependencies
       run: |
+        set -o pipefail
+        pip install pip==22.2.2
+        pip install flit wheel
         flit install -s
 
     - name: Test documentation
