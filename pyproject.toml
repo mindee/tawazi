@@ -12,10 +12,8 @@ maintainers = [
     {name = "Bashir Abdelwahed"},
     {name = "Matthias Cremieux"}
 ]
-license = "Apache 2.0"
-readme = "README.md"
-homepage = "https://pypi.org/project/tawazi/"
-repository = "https://github.com/mindee/tawazi"
+license = {file = "LICENSE" }
+readme = {file = "README.md"}
 requires-python=">=3.8,<4"
 dependencies = [
     "networkx>=2,<4",
