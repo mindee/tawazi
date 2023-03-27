@@ -50,9 +50,9 @@ jobs:
       run: |
         poetry install --without=docs
 
-    - name: extract files from the documentation
+    - name: Test documentation
       run: |
-        poetry run mkcodes --github --safe --output tests/test_md.py documentation/index.md
+        poetry run pytest --codeblocks documentation
 
     - name: Run tests
       run: |

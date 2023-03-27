@@ -39,7 +39,7 @@ or to run the same ops between different DAGs with no side effects whatsoever
   * in a gunicorn application
   * for getting information from multiple resources
 * pretty-print the graph deps on the console:
-<!-- ```Python
+<!--
 # a code that can generate a graph from a list of deps by maintaining a spacing of 1 between
 the brothers
 A------
@@ -47,7 +47,7 @@ A------
 B C D   E
 | | |\  |
 E F G H I
-``` -->
+-->
 * change the behavior of the execution according to the return value of the dagger function:
   * return all the results of the execution of all returned ExecNodes
   * also return all the results just like it is being done at the moment!
