@@ -10,9 +10,9 @@ from loguru import logger
 
 from tawazi.config import Cfg
 from tawazi.consts import (
+    ARG_NAME_ACTIVATE,
     ARG_NAME_SEP,
     ARG_NAME_TAG,
-    RESERVED_KWARGS,
     RVXN,
     USE_SEP_START,
     Identifier,
@@ -88,6 +88,7 @@ class ExecNode:
         self.tag = tag
         self.setup = setup
         self.unpack_to = unpack_to
+        self.active = True
 
         self.args: List[UsageExecNode] = args or []
         self.kwargs: Dict[Identifier, UsageExecNode] = kwargs or {}
@@ -204,6 +205,19 @@ class ExecNode:
         self._setup = value
         self._validate()
 
+    @property
+    def active(self) -> Union["UsageExecNode", bool]:
+        """Whether this ExecNode is active or not."""
+        # the value is set during the DAG description
+        if isinstance(self._active, UsageExecNode):
+            return self._active
+        # the valule set is a constant value
+        return bool(self._active)
+
+    @active.setter
+    def active(self, value: Any) -> None:
+        self._active = value
+
     def _execute(self, node_dict: Dict[Identifier, "ExecNode"]) -> Optional[Any]:
         """Execute the ExecNode inside of a DAG.
 
@@ -223,7 +237,11 @@ class ExecNode:
 
         # 1. prepare args and kwargs for usage:
         args = [xnw.result(node_dict) for xnw in self.args]
-        kwargs = {key: xnw.result(node_dict) for key, xnw in self.kwargs.items()}
+        kwargs = {
+            key: xnw.result(node_dict)
+            for key, xnw in self.kwargs.items()
+            if key != ARG_NAME_ACTIVATE
+        }
         # args = [arg.result for arg in self.args]
         # kwargs = {key: arg.result for key, arg in self.kwargs.items()}
 
@@ -237,14 +255,6 @@ class ExecNode:
         # 3. useless return value
         logger.debug(f"Finished executing {self.id} with task {self.exec_function}")
         return self.result
-
-    def _assign_reserved_args(self, arg_name: str, value: Any) -> bool:
-        # TODO: change value type to Union[Tag, Setup etc...] when other special attributes are introduced
-        if arg_name == ARG_NAME_TAG:
-            self.tag = value
-            return True
-
-        return False
 
     def _validate(self) -> None:
         if getattr(self, "debug", None) and getattr(self, "setup", None):
@@ -408,8 +418,6 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         # # 0.2 if self is a debug ExecNode and Tawazi is configured to skip running debug Nodes
         # #   then skip registering this node in the list of ExecNodes to be executed
 
-        # TODO: maybe change the Type of objects created.
-        #  for example: have a LazyExecNode.__call(...) return an ExecNodeCall instead of a copy
         # 1.1 Make a deep copy of self because every Call to an ExecNode corresponds to a new instance
         self_copy = copy(self)
         # 1.2 Assign the id
@@ -440,14 +448,17 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             # support reserved kwargs for tawazi
             # These are necessary in order to pass information about the call of an ExecNode (the deep copy)
             #  independently of the original LazyExecNode
-            if kwarg_name in RESERVED_KWARGS:
-                self_copy._assign_reserved_args(kwarg_name, kwarg)
+            if kwarg_name == ARG_NAME_TAG:
+                self_copy.tag = kwarg  # type: ignore[assignment]
                 continue
             if not isinstance(kwarg, UsageExecNode):
                 # passed in constants
                 xn = ArgExecNode(self_copy, kwarg_name, kwarg)
                 exec_nodes[xn.id] = xn
                 kwarg = UsageExecNode(xn.id)
+
+            if kwarg_name == ARG_NAME_ACTIVATE:
+                self_copy.active = kwarg
 
             self_copy.kwargs[kwarg_name] = kwarg
 
