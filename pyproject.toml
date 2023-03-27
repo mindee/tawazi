@@ -25,7 +25,7 @@ matplotlib = "^3.5.3"
 # flake8 = "^5.0.4"
 pytest = "^7.1.2"
 pytest-cov = "^4.0.0"
-mkcodes = "*"
+pytest-codeblocks = "*"
 # documentation packages
 
 [tool.poetry.group.docs.dependencies]

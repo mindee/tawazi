@@ -13,7 +13,7 @@ Decorators are provided to create the previous classes:
 2. `@dag`: creates `DAG` from a function.
 
 ### basic usage
-```Python
+```python
 from tawazi import xn, dag
 @xn
 def incr(x):
@@ -49,6 +49,8 @@ pipeline(0)
 
 ### Parallelism
 You can use Tawazi to make your non CPU-Bound code Faster
+
+<!--pytest-codeblocks:cont-->
 
 ```python
 # type: ignore
@@ -94,7 +96,9 @@ As you can see, the execution time of pipeline takes less than 2 seconds, which 
 
 You can pass in arguments to the pipeline and get returned results back like normal functions:
 
-```Python
+<!--pytest-codeblocks:cont-->
+
+```python
 from tawazi import xn, dag
 @xn
 def xn1(i):
@@ -119,7 +123,9 @@ Currently you can not pass in named parameters to the `DAG` (will be supported i
 
 You can return multiple values from a pipeline via tuples, lists or dicts.
 
-```Python
+<!--pytest-codeblocks:cont-->
+
+```python
 @dag
 def pipeline_tuple():
   return xn1(1), xn2(1)
@@ -142,7 +148,9 @@ assert pipeline_dict() == {"foo": 2, "bar": 5}
 You can return multiple values from `ExecNode`s:
 
 1. Either via Python `Tuple`s and `List`s but you will have to specify the unpacking number
-```Python
+<!--pytest-codeblocks:cont-->
+
+```python
 @xn(unpack_to=4)
 def replicate_tuple(val):
   return (val, val + 1, val + 2, val + 3)
@@ -163,7 +171,9 @@ def pipeline():
 assert pipeline() == (1, 2, 3, 4, 4, 5, 6, 7)
 ```
 2. Or via indexing (`Dict` or `List` etc.):
-```Python
+<!--pytest-codeblocks:cont-->
+
+```python
 @xn
 def gen_dict(val):
   return {"k1": val, "k2": "2", "nested_list": [1 ,11, 3]}
@@ -196,7 +206,9 @@ This makes the `DAG` usage as close to using the original __pipeline__ function 
 
 Setup `ExecNode`s have their results cached in the `DAG` instance. This means that they run once per `DAG` instance. These can be used to load large constant data from Disk (Machine Learning Models, Large CSV files, initialization of a resource, prewarming etc.)
 
-```Python
+<!--pytest-codeblocks:cont-->
+
+```python
 LARGE_DATA = "Long algorithm to generate Constant Data"
 @xn(setup=True)
 def setop():
@@ -222,7 +234,9 @@ assert LARGE_DATA == pipeline()
 assert setop_counter == 1 # setop_counter is skipped the second time pipe1 is invoked
 ```
 if you want to re-run the setup `ExecNode`, you have to redeclare the `DAG` or deepcopy the original `DAG` instance before executing it.
-```Python
+<!--pytest-codeblocks:cont-->
+
+```python
 @dag
 def pipeline():
   cst_data = setop()
@@ -235,7 +249,9 @@ assert LARGE_DATA == pipeline()
 assert setop_counter == 2
 ```
 You can run the setup `ExecNode`s alone:
-```Python
+<!--pytest-codeblocks:cont-->
+
+```python
 @dag
 def pipeline():
   cst_data = setop()
@@ -245,7 +261,9 @@ def pipeline():
 pipeline.setup()
 ```
 The goal of having setup `ExecNode` is to load only the necessary resources when a subgraph is executed. Here is an example demonstrating it:
-```Python
+<!--pytest-codeblocks:cont-->
+
+```python
 from pprint import PrettyPrinter
 @xn(setup=True)
 def setop1():
@@ -279,7 +297,9 @@ assert ("large data 1", None) == exec_()
 ### Debug `ExecNode`
 
 You can Make Debug `ExecNode`s that will only run if `RUN_DEBUG_NODES` env variable is set. These can be visualization `ExecNode`s for example... or some complicated Assertions that helps you debug problems when needed that are hostile to the production environment (they consume too much computation time):
-```Python
+<!--pytest-codeblocks:cont-->
+
+```python
 @xn
 def a(i):
   return i + 1
@@ -309,7 +329,9 @@ assert debug_has_run == False
 
 ### Tag
 you can tag an ExecNode  <!-- TODO:!!! continue when tag behavior are clearly defined for tuple and List! I prefer to use List for defining multiple tags because tuple can be used as dictionary key we can disallow using tuple for the moment ?-->
-```Python
+<!--pytest-codeblocks:cont-->
+
+```python
 @xn(tag="twinkle toes")
 def a():
   print("I am tough")
@@ -335,7 +357,9 @@ You can do whatever you want with this ExecNode:
 > **WARNING**: This is an advanced usage. Your methods might break more often with Tawazi releases because `ExecNode` is an internal Object. Please use with care}
 
 You can have multiple `Tag`s for the same `ExecNode` and the same `Tag` for multiple `ExecNode`s:
-```Python
+<!--pytest-codeblocks:cont-->
+
+```python
 @xn(tag=("twinkle", "toes"))
 def a():
     print("I am tough")
@@ -351,7 +375,9 @@ xn_a, xn_b = pipeline.get_nodes_by_tag("twinkle")
 ```
 
 You can even tag a specific call of an ExecNode:
-```Python
+<!--pytest-codeblocks:cont-->
+
+```python
 @xn
 def stub_xn(i):
   return i
@@ -375,7 +401,9 @@ xns_bye = pipeline.get_nodes_by_tag("byebye")
 > This will be useful if you want to run a subgraph (cf. the next paragraph). It will also be useful if you want to access result of a specific ExecNode after an Execution
 
 You can run a subgraph of your pipeline: Make a `DAGExecution` from your `DAG` and pass in the `ExecNode`s you want to run: <!-- TODO: complete these two parts!!-->
-```Python
+<!--pytest-codeblocks:cont-->
+
+```python
 # You can use the original __qual__name of the decorated function as an Identifier
 pipe_exec = pipeline.executor(target_nodes=["b"])
 pipe_exec()
@@ -404,7 +432,9 @@ This is achieved by setting the `is_sequential` parameter to `True` for the `Exe
   a. `"strict"`: stop execution of the DAG
   b. `"all-children"`:  stop the execution of the all successors
   c. `"permissive"`: continue the execution of the whole DAG
-```Python
+<!--pytest-codeblocks:cont-->
+
+```python
 
 # type: ignore
 from time import sleep, time
