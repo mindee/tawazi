@@ -23,6 +23,12 @@ from .errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
 from .node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode
 
 
+def _xn_active_in_call(xn: ExecNode, xns_dict: Dict[Identifier, ExecNode]) -> bool:
+    if isinstance(xn.active, bool):
+        return xn.active
+    return bool(xns_dict[xn.active.id].result)
+
+
 class DAG(Generic[P, RVDAG]):
     """Data Structure containing ExecNodes with interdependencies.
 
@@ -383,14 +389,21 @@ class DAG(Generic[P, RVDAG]):
                     # go to step 6
                     continue
 
-                # 5.1 submit the exec node to the executor
+                # 5.1 dynamic graph pruning
+                if not _xn_active_in_call(xn, xns_dict):
+                    logger.debug(f"Prune {xn.id} from the graph")
+                    graph.remove_recursively(xn.id)
+                    continue
+
+                # 5.2 submit the exec node to the executor
                 # TODO: make a special case if self.max_concurrency == 1
                 #   then invoke the function directly instead of launching a thread
+                #   This should be activate according to the resource used by the ExecNode
                 exec_future = executor.submit(xn._execute, node_dict=xns_dict)
                 running.add(exec_future)
                 futures[xn.id] = exec_future
 
-                # 5.2 wait for the sequential node to finish
+                # 5.3 wait for the sequential node to finish
                 # TODO: not sure this code ever runs
                 if xn.is_sequential:
                     wait(futures.values(), return_when=ALL_COMPLETED)

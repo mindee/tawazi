@@ -4,8 +4,8 @@ from typing import Any, Dict, List, Tuple, Type, TypeVar, Union
 from typing_extensions import ParamSpec
 
 ARG_NAME_TAG = "twz_tag"
+ARG_NAME_ACTIVATE = "twz_active"
 
-RESERVED_KWARGS = [ARG_NAME_TAG]
 ARG_NAME_SEP = ">>>"
 USE_SEP_START = "<<"
 USE_SEP_END = ">>"
