@@ -451,9 +451,15 @@ assert res_b == "B"
 assert res_c == "A + B = C"
 ```
 
-## Limitations
-Currently there are some limitations in the usage of tawazi that will be overcome in the future.
+## Basic Operations between nodes
+LazyExecNodes now implement almost all basic operations (addition, substraction, ...). However, it's not possible to support
+the logical `and`, `or` and `not` operations since we can't implement the `bool` dunder (during the dependency description phase),
+the dunder bool should return a `boolean`.
 
+This problem aside, one can make use of this feature to implement a simple conditional branching to the DAG.
+
+
+## Limitations
 1. A DAG can not reuse the same function twice inside the calculation sequence (Will be resolved in the future)
 2. All code inside a dag descriptor function must be either an @op decorated functions calls and arguments passed arguments. Otherwise the behavior of the DAG might be unpredictable
 3. Because the main function serves only for the purpose of describing the dependencies, the code that it executes should only describe dependencies. Hence when debugging your code, it will be impossible to view the data movement inside this function. However, you can debug code inside of a node.
