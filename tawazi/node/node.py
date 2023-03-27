@@ -552,38 +552,26 @@ class UsageExecNode:
 
     def __lt__(self, other: Any) -> bool:
         """__lt__ operator."""
-        from .basic_operations import _uxn_lt
-
         return _uxn_lt(self, other)
 
     def __le__(self, other: Any) -> bool:
         """__le__ operator."""
-        from .basic_operations import _uxn_le
-
         return _uxn_le(self, other)
 
     def __eq__(self, other: Any) -> bool:
         """__eq__ operator."""
-        from .basic_operations import _uxn_eq
-
         return _uxn_eq(self, other)
 
     def __ne__(self, other: Any) -> bool:
         """__ne__ operator."""
-        from .basic_operations import _uxn_ne
-
         return _uxn_ne(self, other)
 
     def __gt__(self, other: Any) -> bool:
         """__gt__ operator."""
-        from .basic_operations import _uxn_gt
-
         return _uxn_gt(self, other)
 
     def __ge__(self, other: Any) -> bool:
         """__ge__ operator."""
-        from .basic_operations import _uxn_ge
-
         return _uxn_ge(self, other)
 
     def __bool__(self) -> NoReturn:
@@ -598,192 +586,280 @@ class UsageExecNode:
 
     def __add__(self, other: Any) -> Any:
         """__add__ operator."""
-        from .basic_operations import _uxn_add
-
         return _uxn_add(self, other)
 
     def __radd__(self, other: Any) -> Any:
         """__radd__ operator."""
-        from .basic_operations import _uxn_add
-
         return _uxn_add(other, self)
 
     def __sub__(self, other: Any) -> Any:
         """__sub__ operator."""
-        from .basic_operations import _uxn_sub
-
         return _uxn_sub(self, other)
 
     def __rsub__(self, other: Any) -> Any:
         """__rsub__ operator."""
-        from .basic_operations import _uxn_sub
-
         return _uxn_sub(other, self)
 
     def __mul__(self, other: Any) -> Any:
         """__mul__ operator."""
-        from .basic_operations import _uxn_mul
-
         return _uxn_mul(self, other)
 
     def __rmul__(self, other: Any) -> Any:
         """__rmul__ operator."""
-        from .basic_operations import _uxn_mul
-
         return _uxn_mul(other, self)
 
     def __matmul__(self, other: Any) -> Any:
         """__matmul__ operator."""
-        from .basic_operations import _uxn_matmul
-
         return _uxn_matmul(self, other)
 
     def __rmatmul__(self, other: Any) -> Any:
         """__rmatmul__ operator."""
-        from .basic_operations import _uxn_matmul
-
         return _uxn_matmul(other, self)
 
     def __truediv__(self, other: Any) -> Any:
         """__truediv__ operator."""
-        from .basic_operations import _uxn_truediv
-
         return _uxn_truediv(self, other)
 
     def __rtruediv__(self, other: Any) -> Any:
         """__rtruediv__ operator."""
-        from .basic_operations import _uxn_truediv
-
         return _uxn_truediv(other, self)
 
     def __floordiv__(self, other: Any) -> Any:
         """__floordiv__ operator."""
-        from .basic_operations import _uxn_floordiv
-
         return _uxn_floordiv(self, other)
 
     def __rfloordiv__(self, other: Any) -> Any:
         """__rfloordiv__ operator."""
-        from .basic_operations import _uxn_floordiv
-
         return _uxn_floordiv(other, self)
 
     def __mod__(self, other: Any) -> Any:
         """__mod__ operator."""
-        from .basic_operations import _uxn_mod
-
         return _uxn_mod(self, other)
 
     def __rmod__(self, other: Any) -> Any:
         """__rmod__ operator."""
-        from .basic_operations import _uxn_mod
-
         return _uxn_mod(other, self)
 
     def __divmod__(self, other: Any) -> Any:
         """__divmod__ operator."""
-        from .basic_operations import _uxn_divmod
-
         return _uxn_divmod(self, other)
 
     def __rdivmod__(self, other: Any) -> Any:
         """__rdivmod__ operator."""
-        from .basic_operations import _uxn_divmod
-
         return _uxn_divmod(other, self)
 
     def __pow__(self, other: Any) -> Any:
         """__pow__ operator."""
-        from .basic_operations import _uxn_pow
-
         return _uxn_pow(self, other)
 
     def __rpow__(self, other: Any) -> Any:
         """__rpow__ operator."""
-        from .basic_operations import _uxn_pow
-
         return _uxn_pow(other, self)
 
     def __lshift__(self, other: Any) -> Any:
         """__lshift__ operator."""
-        from .basic_operations import _uxn_lshift
-
         return _uxn_lshift(self, other)
 
     def __rlshift__(self, other: Any) -> Any:
         """__rlshift__ operator."""
-        from .basic_operations import _uxn_lshift
-
         return _uxn_lshift(other, self)
 
     def __rshift__(self, other: Any) -> Any:
         """__rshift__ operator."""
-        from .basic_operations import _uxn_rshift
-
         return _uxn_rshift(self, other)
 
     def __rrshift__(self, other: Any) -> Any:
         """__rrshift__ operator."""
-        from .basic_operations import _uxn_rshift
-
         return _uxn_rshift(other, self)
 
     def __and__(self, other: Any) -> Any:
         """__and__ operator."""
-        from .basic_operations import _uxn_and
-
         return _uxn_and(self, other)
 
     def __rand__(self, other: Any) -> Any:
         """__rand__ operator."""
-        from .basic_operations import _uxn_and
-
         return _uxn_and(other, self)
 
     def __xor__(self, other: Any) -> Any:
         """__xor__ operator."""
-        from .basic_operations import _uxn_xor
-
         return _uxn_xor(self, other)
 
     def __rxor__(self, other: Any) -> Any:
         """__rxor__ operator."""
-        from .basic_operations import _uxn_xor
-
         return _uxn_xor(other, self)
 
     def __or__(self, other: Any) -> Any:
         """__or__ operator."""
-        from .basic_operations import _uxn_or
-
         return _uxn_or(self, other)
 
     def __ror__(self, other: Any) -> Any:
         """__ror__ operator."""
-        from .basic_operations import _uxn_or
-
         return _uxn_or(other, self)
 
     def __neg__(self) -> Any:
         """__neg__ operator."""
-        from .basic_operations import _uxn_neg
-
         return _uxn_neg(self)
 
     def __pos__(self) -> Any:
         """__pos__ operator."""
-        from .basic_operations import _uxn_pos
-
         return _uxn_pos(self)
 
     def __abs__(self) -> Any:
         """__abs__ operator."""
-        from .basic_operations import _uxn_abs
-
         return _uxn_abs(self)
 
     def __invert__(self) -> Any:
         """__invert__ operator."""
-        from .basic_operations import _uxn_invert
-
         return _uxn_invert(self)
+
+
+def _xn(func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]:
+    return LazyExecNode(func, 0, Cfg.TAWAZI_IS_SEQUENTIAL, False, None, False, None)
+
+
+# boolean operators definitions
+# "rich comparison" methods definitions
+@_xn
+def _uxn_lt(a: Any, b: Any) -> bool:
+    return a.__lt__(b)  # type: ignore[no-any-return]
+
+
+@_xn
+def _uxn_le(a: Any, b: Any) -> bool:
+    return a.__le__(b)  # type: ignore[no-any-return]
+
+
+@_xn
+def _uxn_eq(a: Any, b: Any) -> bool:
+    return a.__eq__(b)  # type: ignore[no-any-return]
+
+
+@_xn
+def _uxn_ne(a: Any, b: Any) -> bool:
+    return a.__ne__(b)  # type: ignore[no-any-return]
+
+
+@_xn
+def _uxn_gt(a: Any, b: Any) -> bool:
+    return a.__gt__(b)  # type: ignore[no-any-return]
+
+
+@_xn
+def _uxn_ge(a: Any, b: Any) -> bool:
+    return a.__ge__(b)  # type: ignore[no-any-return]
+
+
+# "numeric emulation" methods definitions
+# https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types
+
+# binary operations
+# automatically implement:
+# 1. right hand operations (allowing float + UsageExecNode[float])
+# 2. augmented arithmetic (+=, -=, etc.)@_xn
+
+
+@_xn
+def _uxn_add(a: Any, b: Any) -> Any:
+    return a.__add__(b)
+
+
+@_xn
+def _uxn_sub(a: Any, b: Any) -> Any:
+    return a.__sub__(b)
+
+
+@_xn
+def _uxn_mul(a: Any, b: Any) -> Any:
+    return a.__mul__(b)
+
+
+@_xn
+def _uxn_matmul(a: Any, b: Any) -> Any:
+    return a.__matmul__(b)
+
+
+@_xn
+def _uxn_truediv(a: Any, b: Any) -> Any:
+    return a.__truediv__(b)
+
+
+@_xn
+def _uxn_floordiv(a: Any, b: Any) -> Any:
+    return a.__floordiv__(b)
+
+
+@_xn
+def _uxn_mod(a: Any, b: Any) -> Any:
+    return a.__mod__(b)
+
+
+@_xn
+def _uxn_divmod(a: Any, b: Any) -> Any:
+    return a.__divmod__(b)
+
+
+@_xn
+def _uxn_pow(a: Any, b: Any) -> Any:
+    return a.__pow__(b)
+
+
+@_xn
+def _uxn_lshift(a: Any, b: Any) -> Any:
+    return a.__lshift__(b)
+
+
+@_xn
+def _uxn_rshift(a: Any, b: Any) -> Any:
+    return a.__rshift__(b)
+
+
+@_xn
+def _uxn_and(a: Any, b: Any) -> Any:
+    return a.__and__(b)
+
+
+@_xn
+def _uxn_xor(a: Any, b: Any) -> Any:
+    return a.__xor__(b)
+
+
+@_xn
+def _uxn_or(a: Any, b: Any) -> Any:
+    return a.__or__(b)
+
+
+# unary operations
+@_xn
+def _uxn_neg(a: Any) -> Any:
+    return a.__neg__()
+
+
+@_xn
+def _uxn_pos(a: Any) -> Any:
+    return a.__pos__()
+
+
+@_xn
+def _uxn_abs(a: Any) -> Any:
+    return a.__abs__()
+
+
+@_xn
+def _uxn_invert(a: Any) -> Any:
+    return a.__invert__()
+
+
+# built ins
+# when a value is used for indexing of another
+# can't be implemented because should return appropriate type
+# object.__index__(self)
+
+# can't be implemented because should return appropriate type
+# __complex__
+# __int__
+# __float__
+
+# __round__
+# __trunc__
+# __floor__
+# __ceil__

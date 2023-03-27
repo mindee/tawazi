@@ -995,7 +995,7 @@ class DAGExecution(Generic[P, RVDAG]):
         call_xn_dict = dag._make_call_xn_dict(*args)
         if self.from_cache:
             with open(self.from_cache, "rb") as f:
-                cached_results = pickle.load(f)
+                cached_results = pickle.load(f)  # noqa: S301
             # set the result for the ExecNode that were previously executed
             # this will make them skip execution inside the scheduler
             for id_, result in cached_results.items():
