@@ -35,29 +35,20 @@ jobs:
       with:
         python-version: ${{ matrix.python_version }}
 
-    - name: Install Poetry
-      run: |
-        curl -sSL https://install.python-poetry.org | python3 - --version 1.2.0b2
-
     - uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python_version }}
-        cache: 'poetry'
-        # use the whole repo's hash (i.e. recalculate the deps every time)
         cache-dependency-path: pyproject.toml
 
     - name: Install dependencies
       run: |
-        poetry install --without=docs
+        flit install -s
 
     - name: Test documentation
       run: |
-        poetry run pytest --codeblocks documentation
+        pytest --codeblocks documentation
 
     - name: Run tests
       run: |
         set -o pipefail
-        poetry run pytest --doctest-modules tests/ | tee pytest-coverage.txt
-
-    # - name: Upload coverage to Codecov
-    #   uses: codecov/codecov-action@v3
+        pytest --doctest-modules tests/ | tee pytest-coverage.txt
