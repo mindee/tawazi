@@ -721,32 +721,32 @@ def _xn(func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]:
 # "rich comparison" methods definitions
 @_xn
 def _uxn_lt(a: Any, b: Any) -> bool:
-    return a.__lt__(b)  # type: ignore[no-any-return]
+    return a < b  # type: ignore[no-any-return]
 
 
 @_xn
 def _uxn_le(a: Any, b: Any) -> bool:
-    return a.__le__(b)  # type: ignore[no-any-return]
+    return a <= b  # type: ignore[no-any-return]
 
 
 @_xn
 def _uxn_eq(a: Any, b: Any) -> bool:
-    return a.__eq__(b)  # type: ignore[no-any-return]
+    return a == b  # type: ignore[no-any-return]
 
 
 @_xn
 def _uxn_ne(a: Any, b: Any) -> bool:
-    return a.__ne__(b)  # type: ignore[no-any-return]
+    return a != b  # type: ignore[no-any-return]
 
 
 @_xn
 def _uxn_gt(a: Any, b: Any) -> bool:
-    return a.__gt__(b)  # type: ignore[no-any-return]
+    return a > b  # type: ignore[no-any-return]
 
 
 @_xn
 def _uxn_ge(a: Any, b: Any) -> bool:
-    return a.__ge__(b)  # type: ignore[no-any-return]
+    return a >= b  # type: ignore[no-any-return]
 
 
 # "numeric emulation" methods definitions
@@ -760,93 +760,93 @@ def _uxn_ge(a: Any, b: Any) -> bool:
 
 @_xn
 def _uxn_add(a: Any, b: Any) -> Any:
-    return a.__add__(b)
+    return a + b
 
 
 @_xn
 def _uxn_sub(a: Any, b: Any) -> Any:
-    return a.__sub__(b)
+    return a - b
 
 
 @_xn
 def _uxn_mul(a: Any, b: Any) -> Any:
-    return a.__mul__(b)
+    return a * b
 
 
 @_xn
 def _uxn_matmul(a: Any, b: Any) -> Any:
-    return a.__matmul__(b)
+    return a @ b
 
 
 @_xn
 def _uxn_truediv(a: Any, b: Any) -> Any:
-    return a.__truediv__(b)
+    return a / b
 
 
 @_xn
 def _uxn_floordiv(a: Any, b: Any) -> Any:
-    return a.__floordiv__(b)
+    return a // b
 
 
 @_xn
 def _uxn_mod(a: Any, b: Any) -> Any:
-    return a.__mod__(b)
+    return a % b
 
 
 @_xn
 def _uxn_divmod(a: Any, b: Any) -> Any:
-    return a.__divmod__(b)
+    return divmod(a, b)
 
 
 @_xn
 def _uxn_pow(a: Any, b: Any) -> Any:
-    return a.__pow__(b)
+    return pow(a, b)
 
 
 @_xn
 def _uxn_lshift(a: Any, b: Any) -> Any:
-    return a.__lshift__(b)
+    return a << b
 
 
 @_xn
 def _uxn_rshift(a: Any, b: Any) -> Any:
-    return a.__rshift__(b)
+    return a >> b
 
 
 @_xn
 def _uxn_and(a: Any, b: Any) -> Any:
-    return a.__and__(b)
+    return a & b
 
 
 @_xn
 def _uxn_xor(a: Any, b: Any) -> Any:
-    return a.__xor__(b)
+    return a ^ b
 
 
 @_xn
 def _uxn_or(a: Any, b: Any) -> Any:
-    return a.__or__(b)
+    return a | b
 
 
 # unary operations
 @_xn
 def _uxn_neg(a: Any) -> Any:
-    return a.__neg__()
+    return -a
 
 
 @_xn
 def _uxn_pos(a: Any) -> Any:
-    return a.__pos__()
+    return +a
 
 
 @_xn
 def _uxn_abs(a: Any) -> Any:
-    return a.__abs__()
+    return abs(a)
 
 
 @_xn
 def _uxn_invert(a: Any) -> Any:
-    return a.__invert__()
+    return ~a
 
 
 # built ins

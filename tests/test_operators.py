@@ -1019,3 +1019,24 @@ def test_complicated_operator_usage() -> None:
     assert r[2] is True
     assert r[2] is True
     assert r[3] is True
+
+
+def test_different_types_eq() -> None:
+    @dag
+    def pipe(a: Any, b: Any) -> Any:
+        return a == b
+
+    assert pipe(1, 1) is True
+    assert pipe(1, 2) is False
+    assert pipe(1, 1.0) is True
+    assert pipe(1, 2.0) is False
+    assert pipe(1, "1") is False
+
+
+def test_eq_and_andop() -> None:
+    @dag
+    def pipe(a: Any, b: Any) -> Any:
+        return (a == "twinkle") & (b == "toes")
+
+    assert pipe("twinkle", "toes") is True
+    assert pipe("foo", "bar") is False
