@@ -9,12 +9,12 @@ version = "0.2.0"
 description = "This library helps you execute a set of functions in a Directed Acyclic Graph (DAG) dependency structure in parallel in a production environment."
 authors = [{name = "Mindee", email = "contact@mindee.com"}]
 maintainers = [
-    {name = "Bashir Abdelwahed"},
+    {name = "Bashir Abdel Wahed"},
     {name = "Matthias Cremieux"}
 ]
 license = {file = "LICENSE" }
 readme = "README.md"
-requires-python=">=3.8,<4"
+requires-python=">=3.7,<4"
 dependencies = [
     "networkx>=2,<4",
     "pydantic>=1.0",
