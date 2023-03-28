@@ -5,6 +5,8 @@ from typing_extensions import ParamSpec
 
 ARG_NAME_TAG = "twz_tag"
 ARG_NAME_ACTIVATE = "twz_active"
+ARG_NAME_UNPACK_TO = "twz_unpack_to"
+RESERVED_KWARGS = ARG_NAME_TAG, ARG_NAME_ACTIVATE, ARG_NAME_UNPACK_TO
 
 ARG_NAME_SEP = ">>>"
 USE_SEP_START = "<<"

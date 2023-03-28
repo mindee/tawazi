@@ -14,6 +14,8 @@ from tawazi.consts import (
     ARG_NAME_ACTIVATE,
     ARG_NAME_SEP,
     ARG_NAME_TAG,
+    ARG_NAME_UNPACK_TO,
+    RESERVED_KWARGS,
     RVXN,
     USE_SEP_START,
     Identifier,
@@ -243,7 +245,7 @@ class ExecNode:
         kwargs = {
             key: xnw.result(node_dict)
             for key, xnw in self.kwargs.items()
-            if key != ARG_NAME_ACTIVATE
+            if key not in RESERVED_KWARGS
         }
         # args = [arg.result for arg in self.args]
         # kwargs = {key: arg.result for key, arg in self.kwargs.items()}
@@ -458,6 +460,10 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             if kwarg_name == ARG_NAME_TAG:
                 self_copy.tag = kwarg  # type: ignore[assignment]
                 continue
+            if kwarg_name == ARG_NAME_UNPACK_TO:
+                self_copy.unpack_to = kwarg  # type: ignore[assignment]
+                continue
+
             if not isinstance(kwarg, UsageExecNode):
                 # passed in constants
                 xn = ArgExecNode(self_copy, kwarg_name, kwarg)
@@ -487,8 +493,10 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         # However, they might relate to the same ExecNode
         exec_nodes[self_copy.id] = self_copy
 
-        if self.unpack_to is not None:
-            uxn_tuple = tuple(UsageExecNode(self_copy.id, key=[i]) for i in range(self.unpack_to))
+        if self_copy.unpack_to is not None:
+            uxn_tuple = tuple(
+                UsageExecNode(self_copy.id, key=[i]) for i in range(self_copy.unpack_to)
+            )
             return uxn_tuple  # type: ignore[return-value]
         return UsageExecNode(self_copy.id)  # type: ignore[return-value]
 
