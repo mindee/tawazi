@@ -289,8 +289,6 @@ class ExecNode:
 
             _validate_tuple(self.exec_function, value)
 
-        # TODO: raise a warning if the typing of the ExecNode doesn't correspond with the number of elements in the unpacked results!
-        # NOTE: the typing supports an arbitrary number of elements in the unpacked results! support this as well!
         self._unpack_to = value
 
 
