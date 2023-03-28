@@ -27,6 +27,8 @@ from tawazi.errors import TawaziBaseException
 from tawazi.helpers import _filter_noval, _lazy_xn_id, _make_raise_arg_error, ordinal
 from tawazi.profile import Profile
 
+from .helpers import _validate_tuple
+
 # a temporary variable used to pass in exec_nodes to the DAG during building
 exec_nodes: Dict[Identifier, "ExecNode"] = {}
 exec_nodes_lock = Lock()
@@ -283,8 +285,8 @@ class ExecNode:
             if value < 0:
                 raise ValueError(f"unpack_to must be a positive int or None, provided {value}")
 
-        # TODO: raise a warning if the typing of the ExecNode doesn't correspond with the number of elements in the unpacked results!
-        # NOTE: the typing supports an arbitrary number of elements in the unpacked results! support this as well!
+            _validate_tuple(self.exec_function, value)
+
         self._unpack_to = value
 
 
