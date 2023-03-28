@@ -1,7 +1,7 @@
 ## Usage
 ### Classes & decorators
 <!-- TODO: put documentation about UsageExecNode -->
-In [Tawazi](https://pypi.org/project/tawazi/), there 3 Classes that will be maniuplated by the user:
+In [Tawazi](https://pypi.org/project/tawazi/), there 3 Classes that will be manipulated by the user:
 
 1. `ExecNode`: a wrapper around a function. `ExecNode` can be executed inside a `DAG`. `ExecNode` can take arguments and return values to be used as arguments in other `ExecNode`s.
 2. `DAG`: a wrapper around a function that defines a dag dependency. This function should only contain calls to `ExecNode`s (you can not call normal Python functions inside a `DAG`!)
@@ -46,7 +46,14 @@ print(type(pipeline))
 pipeline(0)
 ```
 
+`ExecNode` can still be called outside of a `DAG`. It will raise a warning.
+<!--pytest-codeblocks:cont-->
 
+```python
+display('Hello World!')
+# <stdin>:1: UserWarning: Invoking LazyExecNode display ~ | <0x7fdc03d4ebb0> outside of a `DAG`. Executing wrapped function instead of describing dependency.
+# prints Hello World!
+```
 ### Parallelism
 You can use Tawazi to make your non CPU-Bound code Faster
 
