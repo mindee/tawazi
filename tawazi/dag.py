@@ -415,7 +415,8 @@ class DAG(Generic[P, RVDAG]):
         if isinstance(alias, (Identifier, tuple)):
             # if leaves_identification is not ExecNode, it can be either
             #  1. a Tag (Highest priority in case an id with the same value exists)
-            if nodes := self.tagged_nodes.get(alias):
+            nodes = self.tagged_nodes.get(alias)
+            if nodes:
                 return [node.id for node in nodes]
             #  2. or a node id!
             if isinstance(alias, Identifier) and alias in self.node_dict:
