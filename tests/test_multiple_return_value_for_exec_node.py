@@ -4,7 +4,7 @@ import pytest
 from tawazi import dag, xn
 
 
-def test_lazy_exec_nodes_return_dict_indexed() -> None:
+def test_dict_indexed() -> None:
     @xn
     def generate_dict() -> Dict[str, int]:
         return {"1": 1, "2": 2, "3": 3}
@@ -21,7 +21,7 @@ def test_lazy_exec_nodes_return_dict_indexed() -> None:
     assert (2, 3, 4) == pipe()
 
 
-def test_lazy_exec_nodes_return_tuple_indexed() -> None:
+def test_tuple_indexed() -> None:
     @xn
     def generate_tuple() -> Tuple[int, ...]:
         return (1, 2, 3, 4)
@@ -38,7 +38,7 @@ def test_lazy_exec_nodes_return_tuple_indexed() -> None:
     assert (2, 3, 4) == pipe()
 
 
-def test_lazy_exec_nodes_return_list_indexed() -> None:
+def test_list_indexed() -> None:
     @xn
     def generate_list() -> List[int]:
         return [1, 2, 3, 4]
@@ -55,7 +55,7 @@ def test_lazy_exec_nodes_return_list_indexed() -> None:
     assert [2, 3, 4] == pipe()
 
 
-def test_lazy_exec_nodes_return_multiple_index() -> None:
+def test_multiple_index() -> None:
     @xn
     def generate_nested_list() -> Tuple[List[int], int, Tuple[int, Tuple[int]]]:
         return ([1], 2, (3, (4,)))
@@ -72,7 +72,7 @@ def test_lazy_exec_nodes_return_multiple_index() -> None:
     assert [2, 3, 4, 5] == pipe()
 
 
-def test_lazy_exec_nodes_return_multiple_index_reused() -> None:
+def test_multiple_index_reused() -> None:
     @xn
     def generate_nested_list() -> Tuple[List[int], int, Tuple[int, Tuple[int]]]:
         return ([1], 2, (3, (4,)))
@@ -95,7 +95,7 @@ def test_lazy_exec_nodes_return_multiple_index_reused() -> None:
     assert (3, 5, 7, 9) == pipe()
 
 
-def test_lazy_exec_nodes_multiple_return_values() -> None:
+def test_mrv() -> None:
     @xn(unpack_to=3)
     def mulreturn() -> Tuple[int, int, int]:
         return 1, 2, 3
@@ -108,7 +108,7 @@ def test_lazy_exec_nodes_multiple_return_values() -> None:
     assert pipe() == (1, 2)
 
 
-def test_lazy_exec_nodes_multiple_return_values_in_tuple() -> None:
+def test_mrv_in_tuple() -> None:
     @xn(unpack_to=3)
     def mulreturn() -> Tuple[int, int, int]:
         return 1, 2, 3
@@ -121,7 +121,7 @@ def test_lazy_exec_nodes_multiple_return_values_in_tuple() -> None:
     assert pipe() == (1, 2)
 
 
-def test_lazy_exec_nodes_multiple_return_values_in_list() -> None:
+def test_mrv_in_list() -> None:
     @xn(unpack_to=3)
     def mulreturn() -> Tuple[int, int, int]:
         return 1, 2, 3
@@ -134,7 +134,7 @@ def test_lazy_exec_nodes_multiple_return_values_in_list() -> None:
     assert pipe() == (1, 2)
 
 
-def test_lazy_exec_nodes_multiple_return_values_wrong_bigger_unpack_to_number() -> None:
+def test_mrv_wrong_bigger_unpack_to_number() -> None:
     @xn(unpack_to=4)
     def mulreturn() -> Tuple[int, int, int, int]:
         return 1, 2, 3
@@ -147,7 +147,7 @@ def test_lazy_exec_nodes_multiple_return_values_wrong_bigger_unpack_to_number() 
             return r1, r2
 
 
-def test_lazy_exec_nodes_multiple_return_values_wrong_lower_unpack_to_number() -> None:
+def test_mrv_wrong_lower_unpack_to_number() -> None:
     @xn(unpack_to=1)
     def mulreturn() -> Tuple[int]:
         return 1, 2, 3
@@ -161,7 +161,7 @@ def test_lazy_exec_nodes_multiple_return_values_wrong_lower_unpack_to_number() -
 
 
 # test multiple return values for exec node without typing
-def test_lazy_exec_nodes_multiple_return_values_without_typing() -> None:
+def test_mrv_without_typing() -> None:
     @xn(unpack_to=3)
     def mulreturn():  # type: ignore[no-untyped-def]
         return 1, 2, 3
@@ -175,7 +175,7 @@ def test_lazy_exec_nodes_multiple_return_values_without_typing() -> None:
 
 
 # test multiple return values for exec node with tuple typed ellipsis
-def test_lazy_exec_nodes_multiple_return_values_with_tuple_typed_ellipsis() -> None:
+def test_mrv_with_tuple_typed_ellipsis() -> None:
     @xn(unpack_to=3)
     def mulreturn() -> Tuple[int, ...]:
         return 1, 2, 3
@@ -189,7 +189,7 @@ def test_lazy_exec_nodes_multiple_return_values_with_tuple_typed_ellipsis() -> N
 
 
 # test multiple return values for exec ndoe with list typed ellipsis edge case (unpack_to=1)
-def test_lazy_exec_nodes_multiple_return_values_with_tuple_typed_ellipsis_1() -> None:
+def test_mrv_with_tuple_typed_ellipsis_1() -> None:
     @xn(unpack_to=1)
     def mulreturn() -> Tuple[int, ...]:
         return (1,)
@@ -203,7 +203,7 @@ def test_lazy_exec_nodes_multiple_return_values_with_tuple_typed_ellipsis_1() ->
 
 
 # test multiple return values for exec node wrong unpack_to number in typing
-def test_lazy_exec_nodes_multiple_return_values_wrong_unpack_to_number() -> None:
+def test_mrv_wrong_unpack_to_number() -> None:
     with pytest.raises(
         ValueError, match="unpack_to must be equal to the number of elements in the type of return"
     ):
@@ -213,7 +213,7 @@ def test_lazy_exec_nodes_multiple_return_values_wrong_unpack_to_number() -> None
             return 1, 2, 3
 
 
-def test_lazy_exec_nodes_multiple_return_values_inline_unpack_to_specify() -> None:
+def test_mrv_inline_unpack_to_specify() -> None:
     @xn
     def mulreturn() -> Tuple[int, int, int]:
         return 1, 2, 3
