@@ -136,7 +136,7 @@ def test_lazy_exec_nodes_multiple_return_values_in_list() -> None:
 
 def test_lazy_exec_nodes_multiple_return_values_wrong_bigger_unpack_to_number() -> None:
     @xn(unpack_to=4)
-    def mulreturn() -> Tuple[int, int, int]:
+    def mulreturn() -> Tuple[int, int, int, int]:
         return 1, 2, 3
 
     with pytest.raises(ValueError):
@@ -149,7 +149,7 @@ def test_lazy_exec_nodes_multiple_return_values_wrong_bigger_unpack_to_number() 
 
 def test_lazy_exec_nodes_multiple_return_values_wrong_lower_unpack_to_number() -> None:
     @xn(unpack_to=1)
-    def mulreturn() -> Tuple[int, int, int]:
+    def mulreturn() -> Tuple[int]:
         return 1, 2, 3
 
     with pytest.raises(ValueError):
@@ -158,3 +158,56 @@ def test_lazy_exec_nodes_multiple_return_values_wrong_lower_unpack_to_number() -
         def pipe() -> Tuple[int, int]:
             r1, r2, _r3 = mulreturn()
             return r1, r2
+
+
+# test multiple return values for exec node without typing
+def test_lazy_exec_nodes_multiple_return_values_without_typing() -> None:
+    @xn(unpack_to=3)
+    def mulreturn():  # type: ignore[no-untyped-def]
+        return 1, 2, 3
+
+    @dag
+    def pipe() -> Tuple[int, int]:
+        r1, r2, _r3 = mulreturn()
+        return r1, r2
+
+    assert pipe() == (1, 2)
+
+
+# test multiple return values for exec node with tuple typed ellipsis
+def test_lazy_exec_nodes_multiple_return_values_with_tuple_typed_ellipsis() -> None:
+    @xn(unpack_to=3)
+    def mulreturn() -> Tuple[int, ...]:
+        return 1, 2, 3
+
+    @dag
+    def pipe() -> Tuple[int, int]:
+        r1, r2, _r3 = mulreturn()
+        return r1, r2
+
+    assert pipe() == (1, 2)
+
+
+# test multiple return values for exec ndoe with list typed ellipsis edge case (unpack_to=1)
+def test_lazy_exec_nodes_multiple_return_values_with_tuple_typed_ellipsis_1() -> None:
+    @xn(unpack_to=1)
+    def mulreturn() -> Tuple[int, ...]:
+        return (1,)
+
+    @dag
+    def pipe() -> Tuple[int, int]:
+        (r1,) = mulreturn()
+        return r1, r1
+
+    assert pipe() == (1, 1)
+
+
+# test multiple return values for exec node wrong unpack_to number in typing
+def test_lazy_exec_nodes_multiple_return_values_wrong_unpack_to_number() -> None:
+    with pytest.raises(
+        ValueError, match="unpack_to must be equal to the number of elements in the type of return"
+    ):
+
+        @xn(unpack_to=4)
+        def mulreturn() -> Tuple[int, int, int]:
+            return 1, 2, 3
