@@ -1,4 +1,5 @@
 """Module describing ExecNode Class and subclasses (The basic building Block of a DAG."""
+import warnings
 from copy import copy, deepcopy
 from dataclasses import dataclass, field
 from functools import reduce
@@ -22,7 +23,7 @@ from tawazi.consts import (
     Tag,
     TagOrTags,
 )
-from tawazi.errors import InvalidExecNodeCall, TawaziBaseException
+from tawazi.errors import TawaziBaseException
 from tawazi.helpers import _filter_noval, _lazy_xn_id, _make_raise_arg_error, ordinal
 from tawazi.profile import Profile
 
@@ -346,7 +347,6 @@ class ArgExecNode(ExecNode):
             self.result = value
 
 
-# TODO: make the LazyExecNode call outside the dag a normal function call!
 # NOTE: how can we make a LazyExecNode more configurable ?
 #  This might not be as important as it seems actually because
 #  one can simply create Partial Functions and wrap them in an ExecNode
@@ -408,12 +408,15 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
                 1. normal ExecNode depends on debug ExecNode
                 2. setup ExecNode depends on normal ExecNode
         """
-        # 0.1 LazyExecNodes cannot be called outside DAG dependency calculation
-        #  (i.e. outside a function that is decorated with @dag)
+        # 0.1 LazyExecNodes calls outside outside DAG dependency calculation is not recommended
         if not exec_nodes_lock.locked():
-            raise InvalidExecNodeCall(
-                "Invoking ExecNode __call__ is only allowed inside a @dag decorated function"
+            warnings.warn(
+                RuntimeWarning(
+                    f"Invoking {self} outside of a `DAG`. Executing wrapped function instead of describing dependency."
+                ),
+                stacklevel=2,
             )
+            return self.exec_function(*args, **kwargs)  # type: ignore[no-any-return]
 
         # # 0.2 if self is a debug ExecNode and Tawazi is configured to skip running debug Nodes
         # #   then skip registering this node in the list of ExecNodes to be executed

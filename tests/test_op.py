@@ -2,7 +2,6 @@ from typing import Any
 
 import pytest
 from tawazi import dag, xn
-from tawazi.errors import InvalidExecNodeCall
 
 
 # tests different cases of @op decoration for Python functions
@@ -68,6 +67,8 @@ def test_ops_signatures() -> None:
     pipe()
 
 
-def test_invalid_call_execnode() -> None:
-    with pytest.raises(InvalidExecNodeCall):
-        f6()
+def test_call_directly() -> None:
+    with pytest.warns(RuntimeWarning):
+        assert 15 == f8(1, 2, 3, foo=4, bar=5)
+    with pytest.warns(RuntimeWarning):
+        assert 4 == f4(1)
