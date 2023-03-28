@@ -51,6 +51,10 @@ jobs:
       run: |
         pytest --codeblocks documentation
 
+    - name: Test docstrings
+      run: |
+        pytest --doctest-modules tawazi
+
     - name: Run tests
       run: |
         set -o pipefail
