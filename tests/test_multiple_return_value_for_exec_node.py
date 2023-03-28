@@ -211,3 +211,32 @@ def test_lazy_exec_nodes_multiple_return_values_wrong_unpack_to_number() -> None
         @xn(unpack_to=4)
         def mulreturn() -> Tuple[int, int, int]:
             return 1, 2, 3
+
+
+def test_lazy_exec_nodes_multiple_return_values_inline_unpack_to_specify() -> None:
+    @xn
+    def mulreturn() -> Tuple[int, int, int]:
+        return 1, 2, 3
+
+    @dag
+    def pipe():
+        tuple_v = mulreturn()
+        (r1, r2, r3) = mulreturn(twz_unpack_to=3)
+        tuple_vv = mulreturn()
+        return r1, r2, r3, tuple_v, tuple_vv
+
+    assert pipe() == (1, 2, 3, (1, 2, 3), (1, 2, 3))
+
+
+def test_mrv_unpack_to_with_list_type():
+    @xn
+    def mulreturn() -> List[int]:
+        return [1, 2, 3]
+
+    @dag
+    def pipe():
+        r1, r2, r3 = mulreturn(twz_unpack_to=3)
+        list_v = mulreturn()
+        return r1, r2, r3, list_v
+
+    assert pipe() == (1, 2, 3, [1, 2, 3])
