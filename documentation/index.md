@@ -53,7 +53,6 @@ You can use Tawazi to make your non CPU-Bound code Faster
 <!--pytest-codeblocks:cont-->
 
 ```python
-# type: ignore
 from time import sleep, time
 
 @xn
@@ -204,7 +203,7 @@ This makes the `DAG` usage as close to using the original __pipeline__ function 
 
 ### Setup `ExecNode`s
 
-Setup `ExecNode`s have their results cached in the `DAG` instance. This means that they run once per `DAG` instance. These can be used to load large constant data from Disk (Machine Learning Models, Large CSV files, initialization of a resource, prewarming etc.)
+__Setup__ `ExecNode`s have their results cached in the `DAG` instance. This means that they run once per `DAG` instance. These can be used to load large constant data from Disk (Machine Learning Models, Large CSV files, initialization of a resource, prewarming etc.)
 
 <!--pytest-codeblocks:cont-->
 
@@ -237,15 +236,17 @@ if you want to re-run the setup `ExecNode`, you have to redeclare the `DAG` or d
 <!--pytest-codeblocks:cont-->
 
 ```python
+from copy import deepcopy
 @dag
 def pipeline():
   cst_data = setop()
   large_data = my_print(cst_data)
   return large_data
 
-assert LARGE_DATA == pipeline()
-assert setop_counter == 2
-assert LARGE_DATA == pipeline()
+setop_counter = 0
+assert LARGE_DATA == deepcopy(pipeline)()
+assert setop_counter == 1
+assert LARGE_DATA ==  deepcopy(pipeline)()
 assert setop_counter == 2
 ```
 You can run the setup `ExecNode`s alone:
@@ -290,13 +291,14 @@ def pipeline():
   return data1, data2
 
 exec_ = pipeline.executor(target_nodes=["print_xn"])
-# Notice how the execution of the subgraph doesn't make the setop1 `ExecNode`. This makes development of your complex pipeline faster by reducing the time needed to load all resources
+# Notice how the execution of the subgraph doesn't run the setop1 `ExecNode`.
+# This makes development of your complex pipeline faster by loading only the necessary resources.
 assert ("large data 1", None) == exec_()
 ```
 
 ### Debug `ExecNode`
 
-You can Make Debug `ExecNode`s that will only run if `RUN_DEBUG_NODES` env variable is set. These can be visualization `ExecNode`s for example... or some complicated Assertions that helps you debug problems when needed that are hostile to the production environment (they consume too much computation time):
+You can Make Debug `ExecNode`s that will only run if `RUN_DEBUG_NODES` env variable is set. These can be visualization `ExecNode`s for example or some complicated Assertions that helps you debug problems when needed that are hostile to the production environment (they consume too much computation time):
 <!--pytest-codeblocks:cont-->
 
 ```python
@@ -323,12 +325,10 @@ assert debug_has_run == False
 
 ## Advanced Usage
 
-### `DAGExecution`
-`DAGExecution` is a class related to `DAG`. <!-- TODO: complete it-->
-
-
 ### Tag
-you can tag an ExecNode  <!-- TODO:!!! continue when tag behavior are clearly defined for tuple and List! I prefer to use List for defining multiple tags because tuple can be used as dictionary key we can disallow using tuple for the moment ?-->
+A _tag_ is a user defined identifier for an `ExecNode`. Every `ExecNode` can have a no _tag_ or multiple _tag_s.
+
+You can tag an `ExecNode` with an `str`. You can also tag it using multiple tags (`Tuple[str]`)
 <!--pytest-codeblocks:cont-->
 
 ```python
@@ -350,11 +350,11 @@ xn_a, = pipeline.get_nodes_by_tag("twinkle toes")
 ```
 You can do whatever you want with this ExecNode:
 
-1. like checking its arguments
+1. like looking in its arguments
 1. setting its priority
 1. changing it to become a debug `ExecNode`
 
-> **WARNING**: This is an advanced usage. Your methods might break more often with Tawazi releases because `ExecNode` is an internal Object. Please use with care}
+> **WARNING**: This is an advanced usage. Your methods might break more often with Tawazi releases because `ExecNode` is an internal Object. Please use with care
 
 You can have multiple `Tag`s for the same `ExecNode` and the same `Tag` for multiple `ExecNode`s:
 <!--pytest-codeblocks:cont-->
@@ -400,27 +400,130 @@ xns_bye = pipeline.get_nodes_by_tag("byebye")
 ```
 > This will be useful if you want to run a subgraph (cf. the next paragraph). It will also be useful if you want to access result of a specific ExecNode after an Execution
 
-You can run a subgraph of your pipeline: Make a `DAGExecution` from your `DAG` and pass in the `ExecNode`s you want to run: <!-- TODO: complete these two parts!!-->
+### `DAGExecution`
+`DAGExecution` is a class that contains a reference to the `DAG`. It is used to run a `DAG` or a subgraph of the `DAG`. After execution, the results of `ExecNode`s are stored in the `DAGExecution` instance. Hence you can access intermediate results after execution.
 <!--pytest-codeblocks:cont-->
 
 ```python
-# You can use the original __qual__name of the decorated function as an Identifier
+from tawazi import DAGExecution
+# construct a DAGExecution from a DAG by doing
+dx = DAGExecution(pipeline)
+# or
+dx = pipeline.executor()
+```
+You can run a subgraph of your pipeline: Make a `DAGExecution` from your `DAG` and use `target_nodes` parameter to specify which `ExecNode` to run.
+
+The DAG will execute until the specified `ExecNode`s and all other `ExecNode`s will be skipped.
+
+<!--pytest-codeblocks:cont-->
+
+```python
+pipe_exec = pipeline.executor(target_nodes=[b])
+pipe_exec()
+```
+You can use the `__qualname__` of the decorated function as an Identifier
+<!--pytest-codeblocks:cont-->
+
+```python
 pipe_exec = pipeline.executor(target_nodes=["b"])
 pipe_exec()
-# You can use the tag of an ExecNode
+```
+You can use the tag of an ExecNode
+<!--pytest-codeblocks:cont-->
+
+```python
 pipe_exec = pipeline.executor(target_nodes=["c_node"])
 pipe_exec()
-# You can use the calling tag to distinguish the 1st call of g from the 2nd call!
+```
+You can use the calling tag to distinguish the 1st call of g from the 2nd call!
+<!--pytest-codeblocks:cont-->
+
+```python
 pipe_exec = pipeline.executor(target_nodes=["byebye"])
 pipe_exec()
-# You can even pass in the ExecNodes to run and mix identifiers types
+```
+You can even pass in the `ExecNode`s themselves and mix identifiers types
+<!--pytest-codeblocks:cont-->
+
+```python
 pipe_exec = pipeline.executor(target_nodes=["b", xns_bye[0]])
 pipe_exec()
 
 ```
-> Because `DAGExecution` instances are mutable, they are non thread-safe. This is unlike `DAG` which is ThreadSafe
+!!! warning
 
-More functionalities will be introduced in the future...
+    Because `DAGExecution` instances are mutable, they are non thread-safe. This is unlike `DAG` which is ThreadSafe
+
+
+
+### Basic Operations between nodes
+`UsageExecNode`s implements almost all basic operations (addition, substraction, ...).
+<!--pytest-codeblocks:cont-->
+
+```python
+@xn
+def gen_data(x):
+  return (x + 1) ** 2
+@xn(debug=True)
+def my_print(x):
+  print(f"x={x}")
+@dag
+def pipe(x, y):
+  x,y = gen_data(x), gen_data(y)
+  return -x, -y, x+y, x*y
+assert pipe(1, 2) == (-4, -9, 13, 36)
+```
+It's not possible to support logical operations `and`, `or` and `not` since `__bool__` should **always** return a `boolean`. during the dependency description phase, all `xn` decorated functions return `UsageExecNode`. However bitwise logical operators are implemented so that bitwise `&` can be used inside a `DAG`.
+
+!!! note "`&`, `|` vs `and`, `or`"
+
+    `&` and `|` have different behavior than `and` and `or` in python. `and` and `or` are short-circuiting while `&` and `|` are not. This is because `and` and `or` are logical operators while `&` and `|` are bitwise operators.
+<!--pytest-codeblocks:cont-->
+
+```python
+@dag
+def pipe(x: bool, y: bool):
+  return x & y, x | y
+assert pipe(True, False) == (False, True)
+```
+### Conditional Execution
+Currently, conditional statements are not supported in `DAG`. However, `ExecNode`s can be executed conditionally by passing a `bool` to the added parameter `twz_active`. This parameter can be a constant or a result of an execution of other `ExecNode` in the `DAG`. Since basic boolean operations are implemented on `UsageExecNode`s, you can use bitwise operations (`&`, `or`) to simulate `and`, `or`; however this is not recommended, please use the provided `and_`, `or_` and `not_` `ExecNode`s instead.
+
+<!--pytest-codeblocks:cont-->
+
+```python
+from tawazi import and_
+@xn
+def f1(x):
+  return x ** 2 + 1
+@xn
+def f2(x):
+  return x ** 2 - 1
+@xn
+def f3(x):
+  return x ** 3
+@xn
+def wrap_dict(x):
+  return {"value": x}
+@dag
+def pipe(x):
+  v1 = f1(x, twz_active=x > 0)  # equivalent to if x > 0: v1 = f1(x)
+  v2 = f2(x, twz_active=x < 0)  # equivalent to if x < 0: v2 = f2(x)
+
+  # you can also write `v3 = f3(x, twz_active=(x > 1) & (x > 0))`
+  v3 = f3(x, twz_active=and_(x > 1, x > 0))
+
+  # subsequent usages only execute if the previous `ExecNode` is executed otherwise returns None
+  r1 = wrap_dict(v1)
+  r2 = wrap_dict(v2)
+  r3 = wrap_dict(v3)
+
+  return r1, r2, r3
+
+assert pipe(-1) == (None, {"value": 0}, None)
+assert pipe(2) == ({"value": 5}, None, {"value": 8})
+assert pipe(0) == (None, None, None)
+```
 
 
 ### Fine Control of Parallel Execution
@@ -436,7 +539,6 @@ This is achieved by setting the `is_sequential` parameter to `True` for the `Exe
 
 ```python
 
-# type: ignore
 from time import sleep, time
 from tawazi import xn, dag
 
@@ -481,15 +583,8 @@ assert res_b == "B"
 assert res_c == "A + B = C"
 ```
 
-## Basic Operations between nodes
-LazyExecNodes now implement almost all basic operations (addition, substraction, ...). However, it's not possible to support
-the logical `and`, `or` and `not` operations since we can't implement the `bool` dunder (during the dependency description phase),
-the dunder bool should return a `boolean`.
-
-This problem aside, one can make use of this feature to implement a simple conditional branching to the DAG.
 
 
 ## Limitations
-1. A DAG can not reuse the same function twice inside the calculation sequence (Will be resolved in the future)
-2. All code inside a dag descriptor function must be either an @op decorated functions calls and arguments passed arguments. Otherwise the behavior of the DAG might be unpredictable
+2. All code inside a dag descriptor function must be either an @xn decorated functions calls and arguments passed arguments. Otherwise the behavior of the DAG might be unpredictable
 3. Because the main function serves only for the purpose of describing the dependencies, the code that it executes should only describe dependencies. Hence when debugging your code, it will be impossible to view the data movement inside this function. However, you can debug code inside of a node.
