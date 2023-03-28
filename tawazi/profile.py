@@ -70,7 +70,7 @@ class Profile:
         Returns:
             str: profiled execution times in human-readable format
         """
-        return f"{self.abs_exec_time=}\n" f"{self.process_exec_time=}\n" f"{self.thread_exec_time=}"
+        return f"Profile(abs_exec_time={self.abs_exec_time}, process_exec_time={self.process_exec_time}, thread_exec_time={self.thread_exec_time})"
 
     def __eq__(self, __o: object) -> bool:
         """Equality operator.
