@@ -45,7 +45,7 @@ jobs:
         set -o pipefail
         pip install pip==22.2.2
         pip install flit wheel
-        flit install -s
+        flit install -s --deps develop
 
     - name: Test documentation
       run: |
