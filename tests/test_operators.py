@@ -5,6 +5,11 @@ from tawazi import and_, dag, not_, or_, xn
 
 
 @xn
+def cast_float(x: int) -> float:
+    return float(x)
+
+
+@xn
 def a(in1: int) -> int:
     return in1
 
@@ -464,7 +469,7 @@ def test_operator_truediv_cst_uxn() -> None:
 def test_operator_itruediv_uxn_uxn() -> None:
     @dag
     def pipe(in1: int, in2: int) -> float:
-        r = in1
+        r = cast_float(in1)
         r /= in2
         return r
 
@@ -474,7 +479,7 @@ def test_operator_itruediv_uxn_uxn() -> None:
 def test_operator_itruediv_uxn_cst() -> None:
     @dag
     def pipe(in1: int) -> float:
-        r = in1
+        r = cast_float(in1)
         r /= 3
         return r
 
@@ -484,7 +489,7 @@ def test_operator_itruediv_uxn_cst() -> None:
 def test_operator_itruediv_cst_uxn() -> None:
     @dag
     def pipe(in1: int) -> float:
-        r = 7
+        r = 7.0
         r /= in1
         return r
 

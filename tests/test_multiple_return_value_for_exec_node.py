@@ -137,27 +137,27 @@ def test_mrv_in_list() -> None:
 def test_mrv_wrong_bigger_unpack_to_number() -> None:
     @xn(unpack_to=4)
     def mulreturn() -> Tuple[int, int, int, int]:
-        return 1, 2, 3
+        return 1, 2, 3  # type: ignore[return-value]
 
     with pytest.raises(ValueError):
 
         @dag
         def pipe() -> Tuple[int, int]:
-            r1, r2, _r3 = mulreturn()
-            return r1, r2
+            r1, r2, _r3 = mulreturn()  # type: ignore[misc]
+            return r1, r2  # type: ignore[has-type]
 
 
 def test_mrv_wrong_lower_unpack_to_number() -> None:
     @xn(unpack_to=1)
     def mulreturn() -> Tuple[int]:
-        return 1, 2, 3
+        return 1, 2, 3  # type: ignore[return-value]
 
     with pytest.raises(ValueError):
 
         @dag
         def pipe() -> Tuple[int, int]:
-            r1, r2, _r3 = mulreturn()
-            return r1, r2
+            r1, r2, _r3 = mulreturn()  # type: ignore[misc]
+            return r1, r2  # type: ignore[has-type]
 
 
 # test multiple return values for exec node without typing
@@ -219,23 +219,23 @@ def test_mrv_inline_unpack_to_specify() -> None:
         return 1, 2, 3
 
     @dag
-    def pipe():
+    def pipe() -> Tuple[int, int, int, Tuple[int, int, int], Tuple[int, int, int]]:
         tuple_v = mulreturn()
-        (r1, r2, r3) = mulreturn(twz_unpack_to=3)
+        (r1, r2, r3) = mulreturn(twz_unpack_to=3)  # type: ignore[call-arg]
         tuple_vv = mulreturn()
         return r1, r2, r3, tuple_v, tuple_vv
 
     assert pipe() == (1, 2, 3, (1, 2, 3), (1, 2, 3))
 
 
-def test_mrv_unpack_to_with_list_type():
+def test_mrv_unpack_to_with_list_type() -> None:
     @xn
     def mulreturn() -> List[int]:
         return [1, 2, 3]
 
     @dag
-    def pipe():
-        r1, r2, r3 = mulreturn(twz_unpack_to=3)
+    def pipe() -> Tuple[int, int, int, List[int]]:
+        r1, r2, r3 = mulreturn(twz_unpack_to=3)  # type: ignore[call-arg]
         list_v = mulreturn()
         return r1, r2, r3, list_v
 

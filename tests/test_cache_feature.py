@@ -1,37 +1,37 @@
-# type: ignore # noqa: PGH003
 import os
 import pickle
 from pathlib import Path
-from typing import Any, List
+from typing import Any, List, Tuple
 
 import numpy as np
 import pytest
 from tawazi import DAGExecution, dag, xn
 from tawazi.consts import NoVal
+from tawazi.node.node import ExecNode
 
 
 @xn
-def generate_large_zeros_array() -> np.ndarray:
+def generate_large_zeros_array() -> Any:
     return np.zeros(1_000_000).astype(np.uint8)
 
 
 @xn
-def incr_large_array(array):
+def incr_large_array(array: Any) -> Any:
     return array + 1
 
 
 @xn
-def pass_large_array(array):
+def pass_large_array(array: Any) -> Any:
     return array
 
 
 @xn
-def avg_array(array):
+def avg_array(array: Any) -> Any:
     return np.mean(array)
 
 
 @dag
-def pipe():
+def pipe() -> Tuple[Any, Any, Any, Any]:
     zeros = generate_large_zeros_array()
     ones = incr_large_array(zeros)
     ones_ = pass_large_array(ones)
@@ -62,7 +62,7 @@ def test_cache_results_basic() -> None:
     # hence only zeros and ones take space with avg and ones_ taking negligeable space
 
     with open(cache_path, "rb") as f:
-        cached_results = pickle.load(f)
+        cached_results = pickle.load(f)  # noqa: S301
     assert (cached_results["generate_large_zeros_array"] == zeros).all()
     assert (cached_results["incr_large_array"] == ones).all()
     assert (cached_results["pass_large_array"] == ones_).all()
@@ -89,7 +89,7 @@ def test_cache_results_subgraph() -> None:
     assert r4 is None
 
     with open(cache_path, "rb") as f:
-        cached_results = pickle.load(f)
+        cached_results = pickle.load(f)  # noqa: S301
     assert (cached_results["generate_large_zeros_array"] == zeros).all()
     assert (cached_results["incr_large_array"] == ones).all()
     assert cached_results["pass_large_array"] is ones_
@@ -174,89 +174,104 @@ def test_cache_read_write() -> None:
 
 def load_cached_results(cache_path: str) -> Any:
     with open(cache_path, "rb") as f:
-        return pickle.load(f)
+        return pickle.load(f)  # noqa: S301
 
 
-def test_cache_in_dpes() -> None:
+def test_cache_in_deps_cache_deps_of_same_as_exclude_nodes() -> None:
     with pytest.raises(ValueError):
-        exc = DAGExecution(
+        _ = DAGExecution(
             pipe,
             cache_deps_of=[generate_large_zeros_array],
             exclude_nodes=[generate_large_zeros_array],
         )
 
+
+def test_target_nodes_non_existing() -> None:
     with pytest.raises(ValueError):
-        exc = DAGExecution(
+        _ = DAGExecution(
             pipe, cache_deps_of=[generate_large_zeros_array], target_nodes=["twinkle toes"]
         )
 
-    cache_path = "tests/cache_results/test_cache_in_dpes.pkl"
-    if Path(cache_path).is_file():
-        os.remove(cache_path)
 
+def validate(_cache_path: str, _cache_deps_of: List[Any]) -> None:
+    cached_results = load_cached_results(_cache_path)
+    for xn_ in _cache_deps_of:
+        assert cached_results.get(xn_.id) is None
+
+
+@pytest.fixture
+def res() -> Tuple[Any, Any, Any, Any]:
     zeros = np.zeros(10**6)
     ones = np.ones(10**6)
     ones_ = ones
     avg = 1
+    return zeros, ones, ones_, avg
 
+
+@pytest.fixture
+def cache_path(request: Any) -> str:
+    cache_path = (
+        f"tests/cache_results/test_cache_in_dpes-{request.node.get_closest_marker('suffix')}.pkl"
+    )
+    if Path(cache_path).is_file():
+        os.remove(cache_path)
+    return cache_path
+
+
+@pytest.mark.suffix(1)
+def test_cache_in_deps1(cache_path: str, res: Tuple[Any, ...]) -> None:
     # case 1 node
     cache_deps_of = [generate_large_zeros_array]
     exc = DAGExecution(pipe, cache_deps_of=cache_deps_of, cache_in=cache_path)
     r1, r2, r3, r4 = exc()
 
-    assert (r1 == zeros).all()
-
-    def validate(_cache_path, _cache_deps_of):
-        cached_results = load_cached_results(_cache_path)
-        for xn_ in _cache_deps_of:
-            assert cached_results.get(xn_.id) is None
+    assert (r1 == res[0]).all()
 
     validate(cache_path, cache_deps_of)
 
+
+@pytest.mark.suffix(2)
+def test_cache_in_deps2(cache_path: str, res: Tuple[Any, ...]) -> None:
     # case 2 nodes
-    cache_deps_of = [generate_large_zeros_array, incr_large_array]
+    cache_deps_of: List[ExecNode] = [generate_large_zeros_array, incr_large_array]
     exc = DAGExecution(pipe, cache_deps_of=cache_deps_of, cache_in=cache_path)
     r1, r2, r3, r4 = exc()
 
-    assert (r1 == zeros).all()
-    assert (r2 == ones).all()
-
-    def validate(_cache_path, _cache_deps_of):
-        cached_results = load_cached_results(_cache_path)
-        for xn_ in _cache_deps_of:
-            assert cached_results.get(xn_.id) is None
+    assert (r1 == res[0]).all()
+    assert (r2 == res[1]).all()
 
     validate(cache_path, cache_deps_of)
 
+
+@pytest.mark.suffix(3)
+def test_cache_in_deps3(cache_path: str, res: Tuple[Any, ...]) -> None:
     # case 3 nodes
-    cache_deps_of = [generate_large_zeros_array, incr_large_array, pass_large_array]
+    cache_deps_of: List[ExecNode] = [generate_large_zeros_array, incr_large_array, pass_large_array]
     exc = DAGExecution(pipe, cache_deps_of=cache_deps_of, cache_in=cache_path)
     r1, r2, r3, r4 = exc()
 
-    assert (r1 == zeros).all()
-    assert (r2 == ones).all()
-    assert (r3 == ones_).all()
-
-    def validate(_cache_path: str, _cache_deps_of: List[Any]) -> None:
-        cached_results = load_cached_results(_cache_path)
-        for xn_ in _cache_deps_of:
-            assert cached_results.get(xn_.id) is None
+    assert (r1 == res[0]).all()
+    assert (r2 == res[1]).all()
+    assert (r3 == res[2]).all()
 
     validate(cache_path, cache_deps_of)
 
-    # case 3 nodes
-    cache_deps_of = [generate_large_zeros_array, incr_large_array, pass_large_array, avg_array]
+
+@pytest.mark.suffix(4)
+def test_cache_in_deps4(cache_path: str, res: Tuple[Any, ...]) -> None:
+    # case 4 nodes
+    cache_deps_of: List[ExecNode] = [
+        generate_large_zeros_array,
+        incr_large_array,
+        pass_large_array,
+        avg_array,
+    ]
     exc = DAGExecution(pipe, cache_deps_of=cache_deps_of, cache_in=cache_path)
     r1, r2, r3, r4 = exc()
 
-    assert (r1 == zeros).all()
-    assert (r2 == ones).all()
-    assert (r3 == ones_).all()
-    assert (r4 == avg).all()
-
-    def validate(_cache_path, _cache_deps_of):
-        cached_results = load_cached_results(_cache_path)
-        for xn_ in _cache_deps_of:
-            assert cached_results.get(xn_.id) is None
+    assert (r1 == res[0]).all()
+    assert (r2 == res[1]).all()
+    assert (r3 == res[2]).all()
+    assert (r4 == res[3]).all()
 
     validate(cache_path, cache_deps_of)

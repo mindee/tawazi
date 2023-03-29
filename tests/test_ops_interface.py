@@ -1,10 +1,12 @@
 from logging import Logger
 from typing import Union
 
-import pytest
 from tawazi import dag, xn
 
 logger = Logger(name="mylogger", level="ERROR")
+
+glb_third_argument = None
+glb_fourth_argument = None
 
 
 def test_ops_interface() -> None:
@@ -32,9 +34,10 @@ def test_ops_interface() -> None:
         logger.debug(f"b is {b}")
         logger.debug(f"c is {c}")
         logger.debug(f"third argument is {third_argument}")
-        pytest.third_argument = third_argument
+        global glb_third_argument, glb_fourth_argument
+        glb_third_argument = third_argument
         logger.debug(f"fourth argument is {fourth_argument}")
-        pytest.fourth_argument = fourth_argument
+        glb_fourth_argument = fourth_argument
         logger.debug("ran d")
         # logger.debug(f"ran d {some_constant} {keyworded_arg}")
         return "d"
@@ -71,23 +74,23 @@ def test_ops_interface() -> None:
 
     logger.debug("\n1st execution of dag")
     my_custom_dag()
-    assert pytest.third_argument == 1234
-    assert pytest.fourth_argument == 1111
+    assert glb_third_argument == 1234
+    assert glb_fourth_argument == 1111
     logger.debug("\n2nd execution of dag")
     my_custom_dag()
-    assert pytest.third_argument == 1234
-    assert pytest.fourth_argument == 1111
+    assert glb_third_argument == 1234
+    assert glb_fourth_argument == 1111
 
     logger.debug("\n1st execution of other dag")
     my_other_custom_dag()
-    assert pytest.third_argument == "blabla"
-    assert pytest.fourth_argument == 2222
+    assert glb_third_argument == "blabla"
+    assert glb_fourth_argument == 2222
     logger.debug("\n2nd execution of other dag")
     my_other_custom_dag()
-    assert pytest.third_argument == "blabla"
-    assert pytest.fourth_argument == 2222
+    assert glb_third_argument == "blabla"
+    assert glb_fourth_argument == 2222
 
     logger.debug("\n3rd execution of dag")
     my_custom_dag()
-    assert pytest.third_argument == 1234
-    assert pytest.fourth_argument == 1111
+    assert glb_third_argument == 1234
+    assert glb_fourth_argument == 1111

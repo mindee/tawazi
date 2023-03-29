@@ -62,9 +62,6 @@ def test_return_dict2() -> None:
     assert pipe() == {1: "tata", "2": "tata", "input_value": 123}
 
 
-T = TypeVar("T")
-
-
 @xn
 def stub(x: T) -> T:
     return x

@@ -1,57 +1,65 @@
-# type: ignore # noqa: PGH003
 from typing import Any, List
 
 import pytest
 from tawazi import dag, xn
 from tawazi.node import ExecNode
 
-pytest.subgraph_comp_str = ""
+subgraph_comp_str = ""
 T = 1e-3
 
 
 @xn
 def a() -> None:
-    pytest.subgraph_comp_str += "a"
+    global subgraph_comp_str
+    subgraph_comp_str += "a"
 
 
 @xn
 def b(a: Any) -> None:
-    pytest.subgraph_comp_str += "b"
+    global subgraph_comp_str
+    subgraph_comp_str += "b"
 
 
 @xn
 def c(a: Any) -> None:
-    pytest.subgraph_comp_str += "c"
+    global subgraph_comp_str
+    subgraph_comp_str += "c"
 
 
 @xn
 def d(c: Any) -> None:
-    pytest.subgraph_comp_str += "d"
+    global subgraph_comp_str
+    subgraph_comp_str += "d"
 
 
 @xn
 def e(c: Any) -> None:
-    pytest.subgraph_comp_str += "e"
+    global subgraph_comp_str
+    subgraph_comp_str += "e"
 
 
 @xn
 def f(e: Any) -> None:
-    pytest.subgraph_comp_str += "f"
+    global subgraph_comp_str
+    subgraph_comp_str += "f"
 
 
 @xn
 def g() -> None:
-    pytest.subgraph_comp_str += "g"
+    global subgraph_comp_str
+    subgraph_comp_str += "g"
 
 
 @xn
 def h() -> None:
-    pytest.subgraph_comp_str += "h"
+    global subgraph_comp_str
+    subgraph_comp_str += "h"
 
 
 @xn
 def i(h: Any) -> None:
-    pytest.subgraph_comp_str += "i"
+    global subgraph_comp_str
+    subgraph_comp_str += "i"
 
 
 @dag
@@ -84,44 +92,48 @@ def test_scheduled_nodes() -> None:
 
 
 def test_dag_subgraph_all_nodes() -> None:
-    pytest.subgraph_comp_str = ""
+    global subgraph_comp_str
+    subgraph_comp_str = ""
     dag = dag_describer
     nodes: List[ExecNode] = [a, b, c, d, e, f, g, h, i]
     nodes_ids = [n.id for n in nodes]
 
     graph = dag._make_subgraph(nodes_ids)
     dag._execute(graph)
-    assert set("abcdefghi") == set(pytest.subgraph_comp_str)
+    assert set("abcdefghi") == set(subgraph_comp_str)
 
 
 def test_dag_subgraph_leaf_nodes() -> None:
-    pytest.subgraph_comp_str = ""
+    global subgraph_comp_str
+    subgraph_comp_str = ""
     dag = dag_describer
-    nodes = [b, d, f, g, i]
-    nodes_ids: List[ExecNode] = [n.id for n in nodes]
+    nodes: List[ExecNode] = [b, d, f, g, i]
+    nodes_ids: List[str] = [n.id for n in nodes]
 
     graph = dag._make_subgraph(nodes_ids)
     dag._execute(graph)
-    assert set("abcdefghi") == set(pytest.subgraph_comp_str)
+    assert set("abcdefghi") == set(subgraph_comp_str)
 
 
 def test_dag_subgraph_leaf_nodes_with_extra_nodes() -> None:
-    pytest.subgraph_comp_str = ""
+    global subgraph_comp_str
+    subgraph_comp_str = ""
     dag = dag_describer
     nodes: List[ExecNode] = [b, c, e, h, g]
     nodes_ids = [n.id for n in nodes]
 
     graph = dag._make_subgraph(nodes_ids)
     dag._execute(graph)
-    assert set("abcegh") == set(pytest.subgraph_comp_str)
+    assert set("abcegh") == set(subgraph_comp_str)
 
 
 def test_dag_subgraph_nodes_ids() -> None:
-    pytest.subgraph_comp_str = ""
+    global subgraph_comp_str
+    subgraph_comp_str = ""
     dag = dag_describer
     graph = dag._make_subgraph([b.id, c.id, e.id, h.id, g.id])
     dag._execute(graph)
-    assert set("abcegh") == set(pytest.subgraph_comp_str)
+    assert set("abcegh") == set(subgraph_comp_str)
 
 
 def test_dag_subgraph_non_existing_nodes_ids() -> None:
@@ -143,7 +155,7 @@ def pipe(in1: int) -> int:
 
 def test_no_nodes_running_in_subgraph() -> None:
     exec_ = pipe.executor(target_nodes=[])
-    assert exec_() is None
+    assert exec_() is None  # type: ignore[call-arg]
 
 
 # TODO: fix this problem!!!
@@ -152,5 +164,5 @@ def test_no_nodes_running_in_subgraph() -> None:
 #     def pipe_duplication():
 #         a()
 #         a()
-#     with pytest.raises(TawaziBaseException):[attr-defined]
+#     with pytest.raises(TawaziBaseException):
 #         pipe_duplication.execute([a])

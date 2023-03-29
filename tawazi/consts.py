@@ -100,7 +100,7 @@ Identifier = str
 Tag = str  # anything immutable but not a sequence
 TagOrTags = Union[Tag, Tuple[Tag]]  # a sequence of tags
 
-RVTypes = Union[Any, Tuple[Any], List[Any], Dict[str, Any]]
+RVTypes = Union[Any, Tuple[Any, ...], List[Any], Dict[str, Any]]
 P = ParamSpec("P")
 RVDAG = TypeVar("RVDAG", bound=RVTypes, covariant=True)
 
