@@ -593,5 +593,25 @@ assert res_c == "A + B = C"
 
 
 ## Limitations
-2. All code inside a dag descriptor function must be either an @xn decorated functions calls and arguments passed arguments. Otherwise the behavior of the DAG might be unpredictable
-3. Because the main function serves only for the purpose of describing the dependencies, the code that it executes should only describe dependencies. Hence when debugging your code, it will be impossible to view the data movement inside this function. However, you can debug code inside of a node.
+1. All code inside a dag descriptor function must be either an @xn decorated functions calls and arguments passed arguments. Otherwise the behavior of the DAG might be unpredictable
+1. Because the main function serves only for the purpose of describing the dependencies, the code that it executes should only describe dependencies. Hence when debugging your code, it will be impossible to view the data movement inside this function. However, you can debug code inside of a node.
+1. MyPy typing is supported. However, for certain cases it is not currently possible to support typing: (`twz_tag`, `twz_active`, `twz_unpack_to` etc.). This is because of pep612's limitation for [concatenating-keyword-parameters](https://peps.python.org/pep-0612/#concatenating-keyword-parameters). As a workaround, you can currently add `**kwargs` to your original function declaring that it can accept keyworded arguments. However none of the inline tawazi specific parameters (`twz_*`) parameters will be passed to your function:
+<!--pytest-codeblocks:cont-->
+
+```python
+@xn
+def f(x: int):
+  return x
+
+f(2)  # works
+try:
+  # f() got an unexpected keyword argument 'twz_tag'
+  f(2, twz_tag="twinkle")  # fails (mypy error)
+except TypeError:
+  ...
+@xn
+def f_with_kwargs(x: int, **kwargs):
+  return x
+
+f_with_kwargs(2, twz_tag="toes")  # works
+```
