@@ -26,5 +26,5 @@ def test_setup_debug_nodes() -> None:
     with pytest.raises(ValueError):
 
         @xn(debug=True, setup=True)
-        def a():
+        def a() -> None:
             ...

@@ -1,5 +1,5 @@
 from time import sleep
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from tawazi import DAG, ErrorStrategy
@@ -44,7 +44,7 @@ def g(e: str) -> str:
 
 
 def fail(g: Any) -> int:
-    return 10 / 0
+    return cast(int, 10 / 0)
 
 
 # ExecNodes can be identified using the actual function or an identification string
@@ -80,7 +80,7 @@ def test_draw() -> None:
 
 def test_bad_behaviour() -> None:
     try:
-        g: DAG[Any, Any] = DAG(failing_node_dict, [], [], 2, behavior="Such Bad Behavior")
+        g: DAG[Any, Any] = DAG(failing_node_dict, [], [], 2, behavior="Such Bad Behavior")  # type: ignore[arg-type]
         g._execute(g._make_subgraph())
     except NotImplementedError:
         pass
@@ -88,4 +88,4 @@ def test_bad_behaviour() -> None:
 
 def test_setting_execnode_id_should_fail() -> None:
     with pytest.raises(AttributeError):
-        en_a.id = "fdsakfjs"
+        en_a.id = "fdsakfjs"  # type: ignore[misc]

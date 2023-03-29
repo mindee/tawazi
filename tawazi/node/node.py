@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, Generic, List, NoReturn, Optional, Tuple
 
 from loguru import logger
 
-from tawazi.config import Cfg
+from tawazi.config import cfg
 from tawazi.consts import (
     ARG_NAME_ACTIVATE,
     ARG_NAME_SEP,
@@ -59,7 +59,7 @@ class ExecNode:
         args: Optional[List["UsageExecNode"]] = None,
         kwargs: Optional[Dict[str, "UsageExecNode"]] = None,
         priority: int = 0,
-        is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
+        is_sequential: bool = cfg.TAWAZI_IS_SEQUENTIAL,
         debug: bool = False,
         tag: Optional[TagOrTags] = None,
         setup: bool = False,
@@ -113,7 +113,7 @@ class ExecNode:
         """Internal attribute to store the result of the execution of this ExecNode (Might change!)."""
         # even though setting result to NoVal is not necessary... it clarifies debugging
 
-        self.profile = Profile(Cfg.TAWAZI_PROFILE_ALL_NODES)
+        self.profile = Profile(cfg.TAWAZI_PROFILE_ALL_NODES)
 
     @property
     def executed(self) -> bool:
@@ -235,7 +235,7 @@ class ExecNode:
             the result of the execution of the current ExecNode
         """
         logger.debug(f"Start executing {self.id} with task {self.exec_function}")
-        self.profile = Profile(Cfg.TAWAZI_PROFILE_ALL_NODES)
+        self.profile = Profile(cfg.TAWAZI_PROFILE_ALL_NODES)
 
         if self.executed:
             logger.debug(f"Skipping execution of a pre-computed node {self.id}")
@@ -778,7 +778,7 @@ class UsageExecNode:
 
 
 def _xn(func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]:
-    return LazyExecNode(func, 0, Cfg.TAWAZI_IS_SEQUENTIAL, False, None, False, None)
+    return LazyExecNode(func, 0, cfg.TAWAZI_IS_SEQUENTIAL, False, None, False, None)
 
 
 # boolean operators definitions

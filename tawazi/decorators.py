@@ -9,7 +9,7 @@ from tawazi.dag import DAG
 from tawazi.errors import ErrorStrategy
 from tawazi.helpers import get_args_and_default_args
 
-from .config import Cfg
+from .config import cfg
 from .consts import RVDAG, RVXN, P, TagOrTags
 from .node import (
     ArgExecNode,
@@ -29,9 +29,23 @@ def xn(func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]:
 
 @overload
 def xn(
+    func: Callable[P, RVXN],
     *,
     priority: int = 0,
-    is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
+    is_sequential: bool = cfg.TAWAZI_IS_SEQUENTIAL,
+    debug: bool = False,
+    tag: Optional[Any] = None,
+    setup: bool = False,
+    unpack_to: Optional[int] = None,
+) -> LazyExecNode[P, RVXN]:
+    ...
+
+
+@overload
+def xn(
+    *,
+    priority: int = 0,
+    is_sequential: bool = cfg.TAWAZI_IS_SEQUENTIAL,
     debug: bool = False,
     tag: Optional[Any] = None,
     setup: bool = False,
@@ -44,7 +58,7 @@ def xn(
     func: Optional[Callable[P, RVXN]] = None,
     *,
     priority: int = 0,
-    is_sequential: bool = Cfg.TAWAZI_IS_SEQUENTIAL,
+    is_sequential: bool = cfg.TAWAZI_IS_SEQUENTIAL,
     debug: bool = False,
     tag: Optional[TagOrTags] = None,
     setup: bool = False,
@@ -101,6 +115,16 @@ def xn(
 
 @overload
 def dag(declare_dag_function: Callable[P, RVDAG]) -> DAG[P, RVDAG]:
+    ...
+
+
+@overload
+def dag(
+    declare_dag_function: Callable[P, RVDAG],
+    *,
+    max_concurrency: int = 1,
+    behavior: ErrorStrategy = ErrorStrategy.strict,
+) -> DAG[P, RVDAG]:
     ...
 
 

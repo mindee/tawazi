@@ -1,4 +1,3 @@
-# type: ignore # noqa: PGH003
 from tawazi import dag, xn
 
 
@@ -27,8 +26,8 @@ def test_tag() -> None:
 def test_call_tag() -> None:
     @dag
     def pipe() -> int:
-        a_ = a(10, twz_tag="another_a_tag")
-        return b(a_, twz_tag="another_b_tag")
+        a_ = a(10, twz_tag="another_a_tag")  # type: ignore[call-arg]
+        return b(a_, twz_tag="another_b_tag")  # type: ignore[call-arg]
 
     assert pipe() == 12
     assert pipe.get_nodes_by_tag("another_a_tag") == [pipe.get_node_by_id("a")]

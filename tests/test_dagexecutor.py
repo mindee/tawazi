@@ -1,6 +1,5 @@
-# type: ignore # noqa: PGH003
 import threading
-from typing import Tuple
+from typing import Any, Tuple
 
 import pytest
 from tawazi import dag, xn
@@ -54,7 +53,7 @@ def test_run_dag_executor_multiple_times() -> None:
 def test_run_sub_dag_executor() -> None:
     executor = pipe.executor(target_nodes=["xn1", "xn2"])
     r1, r2, r3 = executor(1, 2)
-    assert (r1, r2, r3) == (2, 4, None)
+    assert (r1, r2, r3) == (2, 4, None)  # type: ignore[comparison-overlap]
 
 
 def test_thread_naming() -> None:
@@ -77,13 +76,13 @@ def test_thread_naming() -> None:
         pipe.executor(call_id="tough")()
 
 
-def test_scheduled_nodes():
+def test_scheduled_nodes() -> None:
     executor = pipe.executor(target_nodes=["xn1", "xn2"])
     assert {"xn1", "xn2"}.issubset(set(executor.scheduled_nodes))
     assert "xn3" not in set(executor.scheduled_nodes)
 
 
-def test_executed():
+def test_executed() -> None:
     executor = pipe.executor()
     executor(1, 2)
 
@@ -91,17 +90,17 @@ def test_executed():
         executor(3, 4)
 
 
-def test_executed_with_setup_nodes():
+def test_executed_with_setup_nodes() -> None:
     @xn(setup=True)
-    def setop(bla=123):
+    def setop(bla: int = 123) -> int:
         return bla + 1
 
     @xn(debug=True)
-    def my_debug_node(in1, in2, in3):
+    def my_debug_node(in1: Any, in2: Any, in3: Any) -> None:
         print(in1, in2, in3)  # noqa: T201
 
     @dag
-    def pipe(in1, in2):
+    def pipe(in1: int, in2: int) -> Tuple[int, int, int, int]:
         r1 = xn1(in1)
         r2 = xn2(in2)
         r3 = xn3(r1, r2)
