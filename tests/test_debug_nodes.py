@@ -1,39 +1,48 @@
-# type: ignore # noqa: PGH003
-from typing import Any, List
+from typing import Any, List, TypeVar
 
 import pytest
 from tawazi import dag, xn
 from tawazi.errors import TawaziBaseException
 
+my_len_has_ran = False
+is_positive_len_has_ran = False
+print_share_var = None
+inc_shared_var = 0
+
+T = TypeVar("T")
+
 
 @xn
-def stub(img: List[Any]) -> List[Any]:
+def stub(img: T) -> T:
     return img
 
 
 @xn(debug=True)
 def my_len(img: List[Any]) -> int:
     len_img = len(img)
-    pytest.my_len_has_ran = True
-    return len_img
+    global my_len_has_ran
+    my_len_has_ran = True
+    return len_img  # noqa: RET504
 
 
 @xn(debug=True)
 def is_positive_len(len_img: int) -> None:
+    global is_positive_len_has_ran
     # this node depends of the my_len!
     if len_img > 0:
         print("positive")  # noqa: T201
     else:
         print("negative")  # noqa: T201
 
-    pytest.is_positive_len_has_ran = True
+    is_positive_len_has_ran = True
 
 
 def test_pipeline_with_debug_node() -> None:
-    pytest.my_len_has_ran = False
+    global my_len_has_ran
+    my_len_has_ran = False
     import tawazi
 
-    tawazi.Cfg.RUN_DEBUG_NODES = True
+    tawazi.config.cfg.RUN_DEBUG_NODES = True
 
     @dag
     def pipeline(img: List[Any]) -> List[Any]:
@@ -42,14 +51,15 @@ def test_pipeline_with_debug_node() -> None:
         return img
 
     assert [1, 2, 3] == pipeline([1, 2, 3])
-    assert pytest.my_len_has_ran is True
+    assert my_len_has_ran is True
 
 
 def test_pipeline_without_debug_node() -> None:
-    pytest.my_len_has_ran = False
+    global my_len_has_ran
+    my_len_has_ran = False
     import tawazi
 
-    tawazi.Cfg.RUN_DEBUG_NODES = False
+    tawazi.config.cfg.RUN_DEBUG_NODES = False
 
     @dag
     def pipeline(img: List[Any]) -> List[Any]:
@@ -58,33 +68,34 @@ def test_pipeline_without_debug_node() -> None:
         return img
 
     assert [1, 2, 3] == pipeline([1, 2, 3])
-    assert pytest.my_len_has_ran is False
+    assert my_len_has_ran is False
 
 
 def test_interdependant_debug_nodes() -> None:
-    pytest.my_len_has_ran = False
-    pytest.is_positive_len_has_ran = False
+    global my_len_has_ran, is_positive_len_has_ran
+    my_len_has_ran = False
+    is_positive_len_has_ran = False
     import tawazi
 
-    tawazi.Cfg.RUN_DEBUG_NODES = True
+    tawazi.config.cfg.RUN_DEBUG_NODES = True
 
     @dag
-    def pipeline(img):
+    def pipeline(img: List[Any]) -> List[Any]:
         img = stub(img)
         len_ = my_len(img)
         is_positive_len(len_)
         return img
 
     assert [1, 2, 3] == pipeline([1, 2, 3])
-    assert pytest.my_len_has_ran is True
-    assert pytest.is_positive_len_has_ran is True
+    assert my_len_has_ran is True
+    assert is_positive_len_has_ran is True
 
 
 def test_wrongly_defined_pipeline() -> None:
     with pytest.raises(TawaziBaseException):
 
         @dag
-        def pipeline(img: List[Any]) -> List[Any]:
+        def pipeline(img: List[Any]) -> int:
             len_ = my_len(img)
             # wrongly defined dependency node!
             # a production node depends on a debug node!
@@ -93,33 +104,38 @@ def test_wrongly_defined_pipeline() -> None:
 
 @xn(debug=True)
 def print_(in1: Any) -> None:
-    pytest.prin_share_var = in1
+    global print_share_var
+    print_share_var = in1
 
 
 @xn(debug=True)
 def incr(in1: int) -> int:
     res = in1 + 1
-    pytest.inc_shared_var = res
-    return res
+    global inc_shared_var
+    inc_shared_var += 1
+    return res  # noqa: RET504
 
 
 @dag
 def triple_incr_debug(in1: int) -> int:
-    return incr(incr(incr(in1, twz_tag="1st")))
+    return incr(incr(incr(in1, twz_tag="1st")))  # type: ignore[call-arg]
 
 
 def test_triple_incr_debug() -> None:
     import tawazi
 
-    tawazi.Cfg.RUN_DEBUG_NODES = True
+    global inc_shared_var
+    inc_shared_var = 0
+    tawazi.config.cfg.RUN_DEBUG_NODES = True
 
     assert triple_incr_debug(1) == 4
+    assert inc_shared_var == 3
 
 
 def test_triple_incr_no_debug() -> None:
     import tawazi
 
-    tawazi.Cfg.RUN_DEBUG_NODES = False
+    tawazi.config.cfg.RUN_DEBUG_NODES = False
 
     assert triple_incr_debug(1) is None
 
@@ -127,7 +143,7 @@ def test_triple_incr_no_debug() -> None:
 def test_triple_incr_debug_subgraph() -> None:
     import tawazi
 
-    tawazi.Cfg.RUN_DEBUG_NODES = True
+    tawazi.config.cfg.RUN_DEBUG_NODES = True
 
     # by only running a single dependency all subsequent debug nodes shall run
     exec_ = triple_incr_debug.executor(target_nodes=["1st"])
@@ -137,10 +153,12 @@ def test_triple_incr_debug_subgraph() -> None:
 def test_reachable_debuggable_node_in_subgraph() -> None:
     import tawazi
 
-    tawazi.Cfg.RUN_DEBUG_NODES = True
+    global print_share_var, inc_shared_var
+    tawazi.config.cfg.RUN_DEBUG_NODES = True
+    inc_shared_var = 0
 
     @dag
-    def pipe(in1):
+    def pipe(in1: int) -> int:
         res1 = stub(in1)
         res2 = incr(res1)
         print_(res2)
@@ -148,11 +166,15 @@ def test_reachable_debuggable_node_in_subgraph() -> None:
 
     exec_ = pipe.executor(target_nodes=["stub"])
     assert exec_(2) == 2
-    assert pytest.prin_share_var == 3
+    assert print_share_var == 3
+    assert inc_shared_var == 1
+
+    inc_shared_var = 0
 
     exec_ = pipe.executor(target_nodes=["stub", "incr"])
     assert exec_(0) == 0
-    assert pytest.prin_share_var == 1
+    assert print_share_var == 1
+    assert inc_shared_var == 1
 
 
 # should this be True ???

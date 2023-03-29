@@ -7,16 +7,16 @@ from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoo
 from copy import copy, deepcopy
 from itertools import chain
 from pathlib import Path
-from typing import Any, Dict, Generic, List, Optional, Set
+from typing import Any, Dict, Generic, List, Optional, Sequence, Set
 
 import networkx as nx
 import yaml
 from loguru import logger
 from networkx.exception import NetworkXUnfeasible
 
-from tawazi.config import Cfg
 from tawazi.helpers import _UniqueKeyLoader
 
+from .config import cfg
 from .consts import RVDAG, Identifier, P, RVTypes, Tag
 from .digraph import DiGraphEx
 from .errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
@@ -446,7 +446,7 @@ class DAG(Generic[P, RVDAG]):
         )
 
     # NOTE: this function is named wrongly!
-    def _get_target_ids(self, target_nodes: List[Alias]) -> List[Identifier]:
+    def _get_target_ids(self, target_nodes: Sequence[Alias]) -> List[Identifier]:
         """Get the ids of ExecNodes corresponding to target_nodes.
 
         Args:
@@ -476,8 +476,8 @@ class DAG(Generic[P, RVDAG]):
 
     def setup(
         self,
-        target_nodes: Optional[List[Alias]] = None,
-        exclude_nodes: Optional[List[Alias]] = None,
+        target_nodes: Optional[Sequence[Alias]] = None,
+        exclude_nodes: Optional[Sequence[Alias]] = None,
     ) -> None:
         """Run the setup ExecNodes for the DAG.
 
@@ -503,7 +503,7 @@ class DAG(Generic[P, RVDAG]):
         # 2. if target_nodes is not provided run all setup ExecNodes
         if target_nodes is None:
             target_ids = list(all_setup_nodes.keys())
-            graph = self._make_subgraph(target_ids, exclude_nodes)  # type: ignore[arg-type]
+            graph = self._make_subgraph(target_ids, exclude_nodes)
 
         else:
             # 2.1 the leaves_ids that the user wants to execute
@@ -513,7 +513,7 @@ class DAG(Generic[P, RVDAG]):
             target_ids = self._get_target_ids(target_nodes)
 
             # 2.2 filter non setup ExecNodes
-            graph = self._make_subgraph(target_ids, exclude_nodes)  # type: ignore[arg-type]
+            graph = self._make_subgraph(target_ids, exclude_nodes)
             ids_to_remove = [id_ for id_ in graph if id_ not in all_setup_nodes]
 
             for id_ in ids_to_remove:
@@ -535,8 +535,8 @@ class DAG(Generic[P, RVDAG]):
 
     def _make_subgraph(
         self,
-        target_nodes: Optional[List[Alias]] = None,
-        exclude_nodes: Optional[List[Alias]] = None,
+        target_nodes: Optional[Sequence[Alias]] = None,
+        exclude_nodes: Optional[Sequence[Alias]] = None,
     ) -> nx.DiGraph:
         graph = deepcopy(self.graph_ids)
 
@@ -563,7 +563,7 @@ class DAG(Generic[P, RVDAG]):
                     )
 
         # handle debug nodes
-        if Cfg.RUN_DEBUG_NODES:
+        if cfg.RUN_DEBUG_NODES:
             leaves_ids = graph.leaf_nodes
             # after extending leaves_ids, we should do a recheck because this might recreate another debug-able XN...
             target_ids = self._extend_leaves_ids_debug_xns(leaves_ids)
@@ -832,9 +832,9 @@ class DAGExecution(Generic[P, RVDAG]):
         self,
         dag: DAG[P, RVDAG],
         *,
-        target_nodes: Optional[List[Alias]] = None,
-        exclude_nodes: Optional[List[Alias]] = None,
-        cache_deps_of: Optional[List[Alias]] = None,
+        target_nodes: Optional[Sequence[Alias]] = None,
+        exclude_nodes: Optional[Sequence[Alias]] = None,
+        cache_deps_of: Optional[Sequence[Alias]] = None,
         cache_in: str = "",
         from_cache: str = "",
         call_id: Optional[str] = None,
@@ -926,7 +926,7 @@ class DAGExecution(Generic[P, RVDAG]):
         self._from_cache = from_cache
 
     @property
-    def cache_deps_of(self) -> Optional[List[Alias]]:
+    def cache_deps_of(self) -> Optional[Sequence[Alias]]:
         """Cache all the dependencies of these nodes.
 
         Returns:
@@ -935,7 +935,7 @@ class DAGExecution(Generic[P, RVDAG]):
         return self._cache_deps_of
 
     @cache_deps_of.setter
-    def cache_deps_of(self, cache_deps_of: Optional[List[Alias]]) -> None:
+    def cache_deps_of(self, cache_deps_of: Optional[Sequence[Alias]]) -> None:
         if (
             self.target_nodes is not None or self.exclude_nodes is not None
         ) and cache_deps_of is not None:

@@ -1,10 +1,12 @@
 from logging import Logger
 from typing import Union
 
-import pytest
 from tawazi import xn
 
 logger = Logger(name="mylogger", level="ERROR")
+
+glb_third_argument = None
+glb_fourth_argument = None
 
 
 class MyClass:
@@ -32,9 +34,10 @@ class MyClass:
         logger.debug(f"b is {b}")
         logger.debug(f"c is {c}")
         logger.debug(f"third argument is {third_argument}")
-        pytest.third_argument = third_argument
+        global glb_third_argument, glb_fourth_argument
+        glb_third_argument = third_argument
         logger.debug(f"fourth argument is {fourth_argument}")
-        pytest.fourth_argument = fourth_argument
+        glb_fourth_argument = fourth_argument
         logger.debug("ran d")
         return "d"
 
@@ -53,8 +56,8 @@ class MyClass:
 #     d1 = c.my_custom_dag
 #     logger.debug("\n1st execution of dag")
 #     d1.execute()
-#     assert pytest.third_argument == 1234
-#     assert pytest.fourth_argument == 1111
+#     assert glb_third_argument == 1234
+#     assert glb_fourth_argument == 1111
 #     logger.debug("\n2nd execution of dag")
 #     d1.execute()
 

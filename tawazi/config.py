@@ -1,6 +1,6 @@
 """configuration parameters for Tawazi."""
 
-from pydantic import BaseSettings, Field
+from pydantic import BaseSettings, Field, validator
 
 
 class Config(BaseSettings):
@@ -24,9 +24,14 @@ class Config(BaseSettings):
     # Caution: to set to False if used in prod (exposes variable names)
     LOGURU_DIAGNOSE: bool = Field(False, env="TAWAZI_LOGGER_DIAGNOSE")
 
+    @validator("LOGURU_LEVEL")
+    def _validate_loguru_level(cls, v: str) -> str:  # noqa: N805
+        if v == "PROD":
+            from loguru import logger
 
-Cfg = Config()
-if Cfg.LOGURU_LEVEL == "PROD":
-    from loguru import logger
+            logger.disable("tawazi")
 
-    logger.disable("tawazi")
+        return v
+
+
+cfg = Config()  # type: ignore[call-arg]

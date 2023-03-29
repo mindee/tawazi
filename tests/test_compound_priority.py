@@ -1,42 +1,45 @@
-# type: ignore # noqa: PGH003
 from time import sleep
 from typing import Any
 
-import pytest
 from tawazi import dag, xn
 
-pytest.compound_priority_str: str = ""
+compound_priority_str = ""
 T = 1e-3
 
 
 @xn(priority=1)
 def a() -> None:
     sleep(T)
-    pytest.compound_priority_str += "a"
+    global compound_priority_str
+    compound_priority_str += "a"
 
 
 @xn(priority=1)
 def b(a: Any) -> None:
     sleep(T)
-    pytest.compound_priority_str += "b"
+    global compound_priority_str
+    compound_priority_str += "b"
 
 
 @xn(priority=1)
 def c(a: Any) -> None:
     sleep(T)
-    pytest.compound_priority_str += "c"
+    global compound_priority_str
+    compound_priority_str += "c"
 
 
 @xn(priority=1)
 def d(b: Any) -> None:
     sleep(T)
-    pytest.compound_priority_str += "d"
+    global compound_priority_str
+    compound_priority_str += "d"
 
 
 @xn(priority=1)
 def e() -> None:
     sleep(T)
-    pytest.compound_priority_str += "e"
+    global compound_priority_str
+    compound_priority_str += "e"
 
 
 @dag
@@ -59,8 +62,9 @@ def test_compound_priority() -> None:
 
 
 def test_compound_priority_execution() -> None:
-    pytest.compound_priority_str = ""
+    global compound_priority_str
+    compound_priority_str = ""
     dependency_describer()
 
-    assert pytest.compound_priority_str.startswith("ab")
-    assert len(pytest.compound_priority_str) == 5
+    assert compound_priority_str.startswith("ab")
+    assert len(compound_priority_str) == 5

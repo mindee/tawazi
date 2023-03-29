@@ -44,7 +44,6 @@ addopts = "--pdbcls=IPython.terminal.debugger:TerminalPdb --cov-report=term-miss
 
 [tool.mypy]
 python_version = "3.8"
-exclude = ["tests"]
 # --strict
 disallow_any_generics = true
 disallow_untyped_defs = true
