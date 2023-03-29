@@ -1,5 +1,5 @@
 """Node related Classes and functions."""
-from .functions import ReturnUXNsType, validate_returned_usage_exec_nodes
+from .functions import ReturnUXNsType, wrap_in_uxns
 from .node import Alias, ArgExecNode, ExecNode, LazyExecNode, UsageExecNode
 
 __all__ = [
@@ -9,5 +9,5 @@ __all__ = [
     "LazyExecNode",
     "ReturnUXNsType",
     "UsageExecNode",
-    "validate_returned_usage_exec_nodes",
+    "wrap_in_uxns",
 ]

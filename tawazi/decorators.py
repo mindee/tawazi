@@ -18,7 +18,7 @@ from .node import (
     ReturnUXNsType,
     UsageExecNode,
     node,
-    validate_returned_usage_exec_nodes,
+    wrap_in_uxns,
 )
 
 
@@ -172,10 +172,9 @@ def dag(
                 # NOTE: Only ordered parameters are supported at the moment!
                 #  No **kwargs!! Only positional Arguments
                 # used to be fetch the results at the end of the computation
-                returned_usage_exec_nodes: ReturnUXNsType = _func(*uxn_args)  # type: ignore[arg-type]
+                returned_val: Any = _func(*uxn_args)  # type: ignore[arg-type]
 
-                # TODO: wrap the consts non UsageExecNodes in a UsageExecNode to support returning consts from DAG
-                validate_returned_usage_exec_nodes(returned_usage_exec_nodes)
+                returned_usage_exec_nodes: ReturnUXNsType = wrap_in_uxns(_func, returned_val)
 
                 # 4. Construct the DAG instance
                 d: DAG[P, RVDAG] = DAG(
