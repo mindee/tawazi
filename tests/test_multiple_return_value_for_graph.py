@@ -1,8 +1,6 @@
 from typing import Dict, List, Tuple, TypeVar, Union
 
-import pytest
 from tawazi import dag, xn
-from tawazi.errors import TawaziTypeError
 
 T = TypeVar("T")
 
@@ -64,9 +62,65 @@ def test_return_dict2() -> None:
     assert pipe() == {1: "tata", "2": "tata", "input_value": 123}
 
 
-def test_return_invalid_type() -> None:
-    with pytest.raises(TawaziTypeError):
+T = TypeVar("T")
 
-        @dag
-        def pipe() -> str:
-            return "bhasdfkjals"
+
+@xn
+def stub(x: T) -> T:
+    return x
+
+
+def test_return_single_const() -> None:
+    @dag
+    def pipe() -> str:
+        return "v1"
+
+    assert pipe() == "v1"
+
+
+def test_return_tuple_consts() -> None:
+    @dag
+    def pipe() -> Tuple[str, str, str]:
+        return ("v1", "v2", "v3")
+
+    assert pipe() == ("v1", "v2", "v3")
+
+
+def test_return_tuple_consts_uxn() -> None:
+    @dag
+    def pipe() -> Tuple[str, str, str]:
+        return (stub("v1"), "v2", stub("v3"))
+
+    assert pipe() == ("v1", "v2", "v3")
+
+
+def test_return_list_consts() -> None:
+    @dag
+    def pipe() -> List[str]:
+        return ["v1", "v2", "v3"]
+
+    assert pipe() == ["v1", "v2", "v3"]
+
+
+def test_return_list_consts_uxn() -> None:
+    @dag
+    def pipe() -> List[str]:
+        return [stub("v1"), "v2", stub("v3")]
+
+    assert pipe() == ["v1", "v2", "v3"]
+
+
+def test_return_dict_consts() -> None:
+    @dag
+    def pipe() -> Dict[str, str]:
+        return {"r1": "v1", "r2": "v2", "r3": "r3"}
+
+    assert pipe() == {"r1": "v1", "r2": "v2", "r3": "r3"}
+
+
+def test_return_dict_consts_uxn() -> None:
+    @dag
+    def pipe() -> Dict[str, str]:
+        return {"r1": "v1", "r2": stub("v2"), "r3": stub("r3")}
+
+    assert pipe() == {"r1": "v1", "r2": "v2", "r3": "r3"}

@@ -127,7 +127,7 @@ assert pipeline(1) == 4
 ```
 Currently you can not pass in named parameters to the `DAG` (will be supported in future releases). (This should not be confused with passing keyworded arguments to `ExecNode`s which is possible)
 
-You can return multiple values from a pipeline via tuples, lists or dicts.
+You can return multiple values from a pipeline via tuples, lists or dicts (depth of 1).
 
 <!--pytest-codeblocks:cont-->
 
