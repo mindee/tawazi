@@ -16,6 +16,7 @@ from tawazi.consts import (
     ARG_NAME_TAG,
     ARG_NAME_UNPACK_TO,
     RESERVED_KWARGS,
+    RETURN_NAME_SEP,
     RVXN,
     USE_SEP_START,
     Identifier,
@@ -290,6 +291,45 @@ class ExecNode:
             _validate_tuple(self.exec_function, value)
 
         self._unpack_to = value
+
+
+class ReturnExecNode(ExecNode):
+    """ExecNode corresponding to a constant Return value of a DAG."""
+
+    def __init__(self, func: Callable[..., Any], name_or_order: Union[str, int], value: Any):
+        """Constructor of ArgExecNode.
+
+        Args:
+            func (Callable[..., Any]): The function (DAG describer) that this return is reattached to
+            name_or_order (Union[str, int]): key of the dict or order in the return.
+                For example Python's builtin sorted function takes 3 arguments (iterable, key, reverse).
+                    1. If called like this: sorted([1,2,3]) then [1,2,3] will be of type ArgExecNode with an order=0
+                    2. If called like this: sorted(iterable=[4,5,6]) then [4,5,6] will be of type ArgExecNode with a name="iterable"
+            value (Any): The preassigned value to the corresponding Return value.
+
+        Raises:
+            TypeError: if type parameter is passed (Internal)
+        """
+        if callable(func):
+            base_id = func
+        else:
+            raise TypeError("ReturnExecNode can only be attached to a Callable")
+
+        if isinstance(name_or_order, str):
+            suffix = name_or_order
+        elif isinstance(name_or_order, int):
+            suffix = f"{ordinal(name_or_order)} argument"
+        else:
+            raise TypeError(
+                f"ReturnExecNode needs the key (str) or order (int) of the returned value, "
+                f"but {name_or_order} of type {type(name_or_order)} is provided"
+            )
+
+        id_ = f"{base_id}{RETURN_NAME_SEP}{suffix}"
+
+        super().__init__(id_=id_, is_sequential=False)
+
+        self.result = value
 
 
 class ArgExecNode(ExecNode):
