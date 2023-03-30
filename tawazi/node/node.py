@@ -1,7 +1,6 @@
 """Module describing ExecNode Class and subclasses (The basic building Block of a DAG."""
 import warnings
 from copy import copy, deepcopy
-from dataclasses import dataclass, field
 from functools import reduce
 from threading import Lock
 from types import MethodType
@@ -51,6 +50,25 @@ class ExecNode:
     Note: This class is not meant to be instantiated directly.
         Please use `@xn` decorator.
     """
+
+    __slots__ = (
+        "_id",
+        "exec_function",
+        "_priority",
+        "_is_sequential",
+        "_debug",
+        "_tag",
+        "_setup",
+        "_unpack_to",
+        "_active",
+        "args",
+        "kwargs",
+        "compound_priority",
+        "__name__",
+        "result",
+        "profile",
+        "__dict__",
+    )
 
     def __init__(
         self,
@@ -296,6 +314,8 @@ class ExecNode:
 class ReturnExecNode(ExecNode):
     """ExecNode corresponding to a constant Return value of a DAG."""
 
+    __slots__ = ()
+
     def __init__(self, func: Callable[..., Any], name_or_order: Union[str, int], value: Any):
         """Constructor of ArgExecNode.
 
@@ -339,6 +359,8 @@ class ArgExecNode(ExecNode):
     If a value is not passed to the function call / ExecNode,
     it will raise an error similar to Python's Error.
     """
+
+    __slots__ = ()
 
     def __init__(
         self,
@@ -401,6 +423,8 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
     The __call__ behavior of the original function is overridden to record the dependencies to build the DAG.
     The original function is kept to be called during the scheduling phase when calling the DAG.
     """
+
+    __slots__ = ()
 
     def __init__(
         self,
@@ -562,15 +586,20 @@ KeyType = Union[str, int, Tuple[Any, ...], None, NoValType]
 
 
 # TODO: transform this logic into the ExecNode itself ?
-@dataclass
+
+
 class UsageExecNode:
     """The usage of the ExecNode / LazyExecNode inside the function describing the DAG.
 
     If ExecNode is not indexed with a key or an int, NoVal is used as the key.
     """
 
-    id: Identifier
-    key: List[KeyType] = field(default_factory=list)
+    __slots__ = ("id", "key")
+
+    def __init__(self, id: Identifier, key: Optional[List[KeyType]] = None):
+        """Constructor of UsageExecNode. Should not be used directly."""
+        self.id = id
+        self.key = key if key is not None else []
 
     # TODO: make type of key immutable or something hashable
     # used in the dag dependency description

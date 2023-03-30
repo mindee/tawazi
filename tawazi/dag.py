@@ -38,6 +38,21 @@ class DAG(Generic[P, RVDAG]):
         * Parallelization constraint of each ExecNode (is_sequential attribute)
     """
 
+    __slots__ = (
+        "_max_concurrency",
+        "behavior",
+        "return_uxns",
+        "input_uxns",
+        "node_dict",
+        "tagged_nodes",
+        "node_dict_by_name",
+        "graph_ids",
+        "bckrd_deps",
+        "frwrd_deps",
+        "exec_node_sequence",
+        "__dict__",
+    )
+
     def __init__(
         self,
         exec_nodes: Dict[Identifier, ExecNode],
@@ -827,6 +842,21 @@ class DAGExecution(Generic[P, RVDAG]):
     It holds information about the last execution. Hence it is not threadsafe.
     It might be reusable, however it is not recommended to reuse an instance of DAGExecutor!.
     """
+
+    __slots__ = (
+        "dag",
+        "target_nodes",
+        "exclude_nodes",
+        "_cache_deps_of",
+        "_cache_in",
+        "_from_cache",
+        "call_id",  # TODO: remove!
+        "xn_dict",
+        "results",
+        "graph",
+        "scheduled_nodes",
+        "executed",
+    )
 
     def __init__(
         self,
