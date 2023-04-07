@@ -38,8 +38,8 @@ markdown_extensions:
 - pymdownx.inlinehilite
 - pymdownx.snippets
 - pymdownx.superfences
-- markdown_include.include:
-    base_path: examples
+# - markdown_include.include:
+#     base_path: examples
 - toc:
     permalink: True
 - admonition
