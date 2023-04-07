@@ -3,7 +3,6 @@ from typing import Any, Tuple
 
 import pytest
 from tawazi import dag, xn
-from tawazi.errors import TawaziUsageError
 
 
 @xn
@@ -84,10 +83,10 @@ def test_scheduled_nodes() -> None:
 
 def test_executed() -> None:
     executor = pipe.executor()
-    executor(1, 2)
+    assert executor(1, 2) == (2, 4, 6)
 
-    with pytest.raises(TawaziUsageError):
-        executor(3, 4)
+    with pytest.warns(UserWarning, match="DAGExecution object's reuse is not recommended."):
+        assert executor(3, 4) == (4, 6, 10)
 
 
 def test_executed_with_setup_nodes() -> None:

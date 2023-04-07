@@ -885,15 +885,24 @@ class DAGExecution(Generic[P, RVDAG]):
         self.xn_dict: Dict[Identifier, ExecNode] = {}
         self.results: Dict[Identifier, Any] = {}
 
-        # logic parts
-        if self.cache_deps_of is not None:
-            self.graph = self.dag._make_subgraph(self.cache_deps_of)
-        else:
-            self.graph = self.dag._make_subgraph(self.target_nodes, self.exclude_nodes)
-
-        self.scheduled_nodes = self.graph.nodes
+        self._construct_dynamic_attributes()
 
         self.executed = False
+
+    def _construct_dynamic_attributes(self) -> None:
+        self.graph = self._make_graph()
+        self.scheduled_nodes = self.graph.nodes
+
+    def _make_graph(self) -> nx.DiGraph:
+        """Make the graph of the execution.
+
+        This method is called only once per instance.
+        """
+        # logic parts
+        if self.cache_deps_of is not None:
+            return self.dag._make_subgraph(self.cache_deps_of)
+
+        return self.dag._make_subgraph(self.target_nodes, self.exclude_nodes)
 
     @property
     def cache_in(self) -> str:
@@ -977,7 +986,7 @@ class DAGExecution(Generic[P, RVDAG]):
     def setup(self) -> None:
         """Does the same thing as DAG.setup. However the `target_nodes` and `exclude_nodes` are taken from the DAGExecution's initization."""
         # TODO: handle the case where cache_deps_of is provided instead of target_nodes and exclude_nodes
-        #  in which case the deps_of might have a setup node themselves which shloud not run.
+        #  in which case the deps_of might have a setup node themselves which should not run.
         #  This is an edge case though that is not important to handle at the current moment.
         self.dag.setup(target_nodes=self.target_nodes, exclude_nodes=self.exclude_nodes)
 
@@ -995,9 +1004,9 @@ class DAGExecution(Generic[P, RVDAG]):
             RVDAG: the return value of the DAG's Execution
         """
         if self.executed:
-            raise TawaziUsageError(
-                "DAGExecution object should not be reused. Instantiate a new one"
-            )
+            warnings.warn("DAGExecution object's reuse is not recommended.", stacklevel=2)
+            self._construct_dynamic_attributes()
+
         # NOTE: *args will be ignored if self.from_cache is set!
         dag = self.dag
 
