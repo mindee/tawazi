@@ -1,6 +1,6 @@
 """Module containing the definition of a Directed Graph Extension of networkx.DiGraph."""
 from copy import deepcopy
-from typing import List, Optional, Set, Tuple
+from typing import Iterable, List, Optional, Set, Tuple
 
 import networkx as nx
 from loguru import logger
@@ -136,6 +136,20 @@ class DiGraphEx(nx.DiGraph):
             return cycle
         except NetworkXNoCycle:
             return None
+
+    def ancestors_of_iter(self, nodes: Iterable[Identifier]) -> Set[Identifier]:
+        """Returns the ancestors of the provided nodes.
+
+        Args:
+            nodes (Set[Identifier]): The nodes to find the ancestors of
+
+        Returns:
+            Set[Identifier]: The ancestors of the provided nodes
+        """
+        ancestors = set()
+        for node in nodes:
+            ancestors.update(nx.ancestors(self, node))
+        return ancestors
 
 
 def subgraph(graph: DiGraphEx, leaves_ids: Optional[List[Identifier]]) -> DiGraphEx:

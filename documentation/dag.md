@@ -10,3 +10,4 @@
         - get_node_by_id
         - get_nodes_by_tag
         - setup
+        - compose

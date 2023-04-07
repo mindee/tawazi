@@ -8,17 +8,17 @@ from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoo
 from copy import copy, deepcopy
 from itertools import chain
 from pathlib import Path
-from typing import Any, Dict, Generic, List, Optional, Sequence, Set
+from typing import Any, Dict, Generic, List, NoReturn, Optional, Sequence, Set, Union
 
 import networkx as nx
 import yaml
 from loguru import logger
 from networkx.exception import NetworkXUnfeasible
 
-from tawazi.helpers import _UniqueKeyLoader
+from tawazi.helpers import _make_raise_arg_error, _UniqueKeyLoader
 
 from .config import cfg
-from .consts import RVDAG, Identifier, P, RVTypes, Tag
+from .consts import RVDAG, Identifier, NoVal, P, RVTypes, Tag
 from .digraph import DiGraphEx
 from .errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
 from .node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode
@@ -158,7 +158,205 @@ class DAG(Generic[P, RVDAG]):
         #   help the user know the id of the ExecNode by pointing to documentation!?
         return self.node_dict[id_]
 
+    def _get_single_xn_by_alias(self, alias: Alias) -> ExecNode:
+        """Get the ExecNode corresponding to the given Alias.
+
+        Args:
+            alias (Alias): the Alias to be resolved
+
+        Raises:
+            ValueError: if the Alias is not unique
+
+        Returns:
+            ExecNode: the ExecNode corresponding to the given Alias
+        """
+        xns = self._alias_to_ids(alias)
+        if len(xns) > 1:
+            raise ValueError(
+                f"Alias {alias} is not unique. It points to {len(xns)} ExecNodes: {xns}"
+            )
+        return self.node_dict[xns[0]]
+
     # TODO: get node by usage (the order of call of an ExecNode)
+
+    # TODO: implement None for outputs to indicate a None output ? (this is not a prioritized feature)
+    # TODO: implement ellipsis for composing for the input & outputs
+    # TODO: should we support kwargs when DAG.__call__ support kwargs?
+    # TODO: Maybe insert an ID into DAG that is related to the dependency describing function !? just like ExecNode
+    #  This will be necessary when we want to make a DAG containing DAGs besides ExecNodes
+    # NOTE: by doing this, we create a new ExecNode for each input.
+    #  Hence we loose all information related to the original ExecNode (tags, etc.)
+    #  Maybe a better way to do this is to transform the original ExecNode into an ArgExecNode
+
+    def compose(self, inputs: Union[Alias, Sequence[Alias]], outputs: Union[Alias, Sequence[Alias]], **kwargs: Dict[str, Any]) -> "DAG":  # type: ignore[type-arg]
+        """Compose a new DAG using inputs and outputs ExecNodes (Experimental).
+
+        All provided `Alias`es must point to unique `ExecNode`s. Otherwise ValueError is raised
+        The user is responsible to correctly specify inputs and outputs signature of the `DAG`.
+        * The inputs can be specified as a single `Alias` or a `Sequence` of `Alias`es.
+        * The outputs can be specified as a single `Alias` (a single value is returned)
+        or a `Sequence` of `Alias`es in which case a Tuple of the values are returned.
+        If outputs are specified as [], () is returned.
+        The syntax is the following:
+        >>> from tawazi import dag, xn, DAG
+        >>> from typing import Tuple, Any
+        >>> @xn
+        ... def unwanted_xn() -> int: return 42
+        >>> @xn
+        ... def x(v: Any) -> int: return int(v)
+        >>> @xn
+        ... def y(v: Any) -> str: return str(v)
+        >>> @xn
+        ... def z(x: int, y: str) -> float: return float(x) + float(y)
+        >>> @dag
+        ... def pipe() -> Tuple[int, float, int]:
+        ...     a = unwanted_xn()
+        ...     res = z(x(1), y(1))
+        ...     b = unwanted_xn()
+        ...     return a, res, b
+        >>> composed_dag = pipe.compose([x, y], z)
+        >>> assert composed_dag(1, 1) == 2.0
+        >>> # composed_dag: DAG[[int, str], float] = pipe.compose([x, y], [z])  # optional typing of the returned DAG!
+        >>> # assert composed_dag(1, 1) == 2.0  # type checked!
+
+
+        Args:
+            inputs (Alias | List[Alias]): the Inputs nodes whose results are provided.
+            outputs (Alias | List[Alias]): the Output nodes that must execute last, The ones that will generate results
+            **kwargs (Dict[str, Any]): additional arguments to be passed to the DAG's constructor
+        """
+        # what happens for edge cases ??
+        # 1. if inputs are less than sufficient to produce outputs (-> error)
+        # 2. if inputs are more than sufficient to produce outputs (-> warning)
+        # 3. if inputs are successors of outputs (-> error)
+        # 5. if inputs are successors of inputs but predecessors of outputs
+        # 1. inputs and outputs are overlapping (-> error ambiguous ? maybe not)
+        # 1. if inputs & outputs are [] (-> ())
+        # 4. cst cubgraph inputs is [], outputs is not [] but contains constants (-> works as expected)
+        # 5. inputs is not [], outputs is [] same as 2.
+        # 6. a subcase of the above (some inputs suffice to produce some of the outputs, but some inputs don't)
+        # 7. advanced usage: if inputs contain ... (i.e. Ellipsis) in this case we must expand it to reach all the remaining XN in a smart manner
+        #  we should keep the order of the inputs and outputs (future)
+        # 8. what if some arguments have default values? should they be provided by the user?
+        # 9. how to specify that arguments of the original DAG should be provided by the user? the user should provide the input's ID which is not a stable Alias yet
+
+        def _alias_or_aliases_to_ids(
+            alias_or_aliases: Union[Alias, Sequence[Alias]]
+        ) -> List[Identifier]:
+            if isinstance(alias_or_aliases, str) or isinstance(alias_or_aliases, ExecNode):
+                return [self._get_single_xn_by_alias(alias_or_aliases).id]
+            return [self._get_single_xn_by_alias(a_id).id for a_id in alias_or_aliases]
+
+        def _raise_input_successor_of_input(pred: Identifier, succ: Set[Identifier]) -> NoReturn:
+            raise ValueError(
+                f"Input ExecNodes {succ} depend on Input ExecNode {pred}."
+                f"this is ambiguous. Remove either one of them."
+            )
+
+        def _raise_missing_input(input_: Identifier) -> NoReturn:
+            raise ValueError(
+                f"ExecNode {input_} are not declared as inputs. "
+                f"Either declare them as inputs or modify the requests outputs."
+            )
+
+        def _alias_or_aliases_to_uxns(
+            alias_or_aliases: Union[Alias, Sequence[Alias]]
+        ) -> ReturnUXNsType:
+            if isinstance(alias_or_aliases, str) or isinstance(alias_or_aliases, ExecNode):
+                return UsageExecNode(self._get_single_xn_by_alias(alias_or_aliases).id)
+            return tuple(
+                UsageExecNode(self._get_single_xn_by_alias(a_id).id) for a_id in alias_or_aliases
+            )
+
+        # 1. get input ids and output ids.
+        #  Alias should correspond to a single ExecNode,
+        #  otherwise an ambiguous situation exists, raise error
+        in_ids = _alias_or_aliases_to_ids(inputs)
+        out_ids = _alias_or_aliases_to_ids(outputs)
+
+        # 2.1 contains all the ids of the nodes that will be in the new DAG
+        set_xn_ids = set(in_ids + out_ids)
+
+        # 2.2 all ancestors of the inputs
+        in_ids_ancestors: Set[Identifier] = self.graph_ids.ancestors_of_iter(in_ids)
+
+        # 3. check edge cases
+        # inputs should not be successors of inputs, otherwise (error)
+        # and inputs should produce at least one of the outputs, otherwise (warning)
+        for i in in_ids:
+            # if pred is ancestor of an input, raise error
+            if i in in_ids_ancestors:
+                _raise_input_successor_of_input(i, set_xn_ids)
+
+            # if i doesn't produce any of the wanted outputs, raise a warning!
+            descendants: Set[Identifier] = nx.descendants(self.graph_ids, i)
+            if descendants.isdisjoint(out_ids):
+                warnings.warn(
+                    f"Input ExecNode {i} is not used to produce any of the requested outputs."
+                    f"Consider removing it from the inputs.",
+                    stacklevel=2,
+                )
+
+        # 4. collect necessary ExecNodes' IDS
+
+        # 4.1 original DAG's inputs that don't contain default values.
+        # used to detect missing inputs
+        dag_inputs_ids = [
+            uxn.id for uxn in self.input_uxns if self.node_dict[uxn.id].result is NoVal
+        ]
+
+        # 4.2 define helper function
+        def _add_missing_deps(candidate_id: Identifier, set_xn_ids: Set[Identifier]) -> None:
+            """Adds missing dependency to the set of ExecNodes that will be in the new DAG.
+
+            Note: uses nonlocal variable dag_inputs_ids
+
+            Args:
+                candidate_id (Identifier): candidate id of an `ExecNode` that will be in the new DAG
+                set_xn_ids (Set[Identifier]): Set of `ExecNode`s that will be in the new DAG
+            """
+            preds = self.graph_ids.predecessors(candidate_id)
+            for pred in preds:
+                if pred not in set_xn_ids:
+                    # this candidate is necessary to produce the output,
+                    # it is an input to the original DAG
+                    # it is not provided as an input to the composed DAG
+                    # hence the user forgot to supply it! (raise error)
+                    if pred in dag_inputs_ids:
+                        _raise_missing_input(pred)
+
+                    # necessary intermediate dependency.
+                    # collect it in the set
+                    set_xn_ids.add(pred)
+                    _add_missing_deps(pred, set_xn_ids)
+
+        # 4.3 add all required dependencies for each output
+        for o_id in out_ids:
+            _add_missing_deps(o_id, set_xn_ids)
+
+        # 5.1 copy the ExecNodes that will be in the composed DAG because
+        #  maybe the composed DAG will modify them (e.g. change their tags)
+        #  and we don't want to modify the original DAG
+        xn_dict = {xn_id: copy(self.node_dict[xn_id]) for xn_id in set_xn_ids}
+
+        # 5.2 change the inputs of the ExecNodes into ArgExecNodes
+        for xn_id, xn in xn_dict.items():
+            if xn_id in in_ids:
+                logger.debug("changing Composed-DAG's input {} into ArgExecNode", xn_id)
+                xn.__class__ = ArgExecNode
+                xn.exec_function = _make_raise_arg_error("composed", xn.id)
+                # eliminate all dependencies
+                xn.args = []
+                xn.kwargs = {}
+
+        # 5.3 make the inputs and outputs UXNs for the composed DAG
+        in_uxns = [UsageExecNode(xn_id) for xn_id in in_ids]
+        # if a single value is returned make the output a single value
+        out_uxns = _alias_or_aliases_to_uxns(outputs)
+
+        # 6. return the composed DAG
+        # ignore[arg-type] because the type of the kwargs is not known
+        return DAG(xn_dict, in_uxns, out_uxns, **kwargs)  # type: ignore[arg-type]
 
     def _build_graph(self) -> DiGraphEx:
         """Builds the graph and the sequence order for the computation.
@@ -424,6 +622,8 @@ class DAG(Generic[P, RVDAG]):
             TawaziTypeError: if the Type of the identifier is not Tag, Identifier or ExecNode
         """
         if isinstance(alias, ExecNode):
+            if alias.id not in self.node_dict:
+                raise ValueError(f"ExecNode {alias} not found in DAG")
             return [alias.id]
         # todo: do further validation for the case of the tag!!
         if isinstance(alias, (Identifier, tuple)):
@@ -689,7 +889,7 @@ class DAG(Generic[P, RVDAG]):
         target_nodes: Optional[List[Alias]] = None,
         exclude_nodes: Optional[List[Alias]] = None,
     ) -> Any:
-        """Execute the ExecNodes in topological order without priority in for loop manner for debugging purposes.
+        """Execute the ExecNodes in topological order without priority in for loop manner for debugging purposes (Experimental).
 
         Args:
             *args (Any): Positional arguments passed to the DAG
