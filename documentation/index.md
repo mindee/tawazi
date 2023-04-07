@@ -618,6 +618,45 @@ assert res_c == "A + B = C"
 ```
 
 
+### DAG Composition
+!!! warning "Experimental"
+
+You can compose a sub-`DAG` from your original `DAG`. This is useful if you want to reuse a part of your `DAG`.
+Using the `DAG.compose` method, you provide the inputs and the outputs of the composed sub-`DAG`. Order is kept.
+
+Inputs and outputs are communicated via either the `ExecNode` reference or the tag/id of the `ExecNode`.
+Any ambiguity will raise an `Error`.
+
+!!! warning
+
+    All necessary inputs should be provided to produce the desired outputs. Otherwise an `ValueError` is raised.
+
+
+<!--pytest-codeblocks:cont-->
+
+```python
+@xn
+def add(x, y):
+  return x + y
+@xn
+def mul(x, y):
+  return x * y
+@dag
+def pipe(x, y, z, w):
+  v1 = add(1, x, twz_tag="add_v1")
+  v2 = add(v1, y)
+  v3 = add(v2, z, twz_tag="add_v3")
+  v4 = mul(v3, w)
+  return v4
+
+assert pipe(2,3,4,5) == 50
+# declare a sub-dag that only depends on v1, y, z and produces v3
+sub_dag = pipe.compose(inputs=["add_v1", "pipe>>>y", "pipe>>>z"], outputs="add_v3")
+assert sub_dag(2,3,4) == 9
+# notice that for inputs, we provide the return value of the ExecNode (return value of ExecNode tagged "add_v1")
+# but for the outputs, we indicate the the ExecNode whose return value must return.
+```
+
 
 ## Limitations
 1. All code inside a dag descriptor function must be either an @xn decorated functions calls and arguments passed arguments. Otherwise the behavior of the DAG might be unpredictable
