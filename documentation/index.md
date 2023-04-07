@@ -54,6 +54,33 @@ display('Hello World!')
 # <stdin>:1: UserWarning: Invoking LazyExecNode display ~ | <0x7fdc03d4ebb0> outside of a `DAG`. Executing wrapped function instead of describing dependency.
 # prints Hello World!
 ```
+
+This makes it possible - in some cases - to debug your code outside Tawazi's scheduler and see the data movements between different `ExecNode`s. Simply remove `@dag` from the `pipeline` function and run it again.
+
+<!--pytest-codeblocks:cont-->
+
+```python
+@dag
+def pipeline(x):
+  x_lo = decr(x)
+  x_hi = incr(x)
+  display(x_hi)
+  display(x_lo)
+  return x
+
+assert pipeline(10) == 10
+
+#@dag  # comment out the decorator
+def pipeline(x):
+  x_lo = decr(x)
+  x_hi = incr(x)  # put breakpoint here!
+  display(x_hi)
+  display(x_lo)
+  return x
+
+assert pipeline(10) == 10
+```
+
 ### Parallelism
 You can use Tawazi to make your non CPU-Bound code Faster
 
