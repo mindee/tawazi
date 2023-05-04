@@ -424,7 +424,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             unpack_to (Optional[int]): Look at ExecNode's Documentation
         """
         super().__init__(
-            id_=func.__qualname__,
+            id_=func.__qualname__ if hasattr(func, "__qualname__") else "__anonymous__",
             exec_function=func,
             priority=priority,
             is_sequential=is_sequential,
