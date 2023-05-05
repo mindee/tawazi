@@ -2,7 +2,7 @@
 import warnings
 from copy import copy, deepcopy
 from dataclasses import dataclass, field
-from functools import reduce
+from functools import partial, reduce
 from threading import Lock
 from types import MethodType
 from typing import Any, Callable, Dict, Generic, List, NoReturn, Optional, Tuple, Union
@@ -423,8 +423,16 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             setup (bool): Look at ExecNode's Documentation
             unpack_to (Optional[int]): Look at ExecNode's Documentation
         """
+        if isinstance(func, partial):
+            # forward the qualname and annotations to the partial function
+            func.__qualname__ = func.func.__qualname__
+            func.__annotations__ = func.func.__annotations__
+
+        if not hasattr(func, "__qualname__"):
+            func.__qualname__ = "__anonymous__"
+
         super().__init__(
-            id_=func.__qualname__ if hasattr(func, "__qualname__") else "__anonymous__",
+            id_=func.__qualname__,
             exec_function=func,
             priority=priority,
             is_sequential=is_sequential,
