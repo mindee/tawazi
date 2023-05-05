@@ -455,7 +455,8 @@ The DAG will execute until the specified `ExecNode`s and all other `ExecNode`s w
 pipe_exec = pipeline.executor(target_nodes=[b])
 pipe_exec()
 ```
-You can use the `__qualname__` of the decorated function as an Identifier
+You can use the `__qualname__` of the decorated function as an Identifier. In case the function (or the callable object)
+has no `__qualname__` attribute, tawazi dynamically sets the identifier to `__anonymous__`.
 <!--pytest-codeblocks:cont-->
 
 ```python
