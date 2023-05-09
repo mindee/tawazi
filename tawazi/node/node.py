@@ -427,9 +427,6 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         if isinstance(func, partial):
             func = functools.update_wrapper(func, func.func)
 
-        if not hasattr(func, "__qualname__"):
-            func.__qualname__ = "__anonymous__"
-
         super().__init__(
             id_=func.__qualname__,
             exec_function=func,
