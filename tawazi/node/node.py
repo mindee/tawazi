@@ -1,4 +1,5 @@
 """Module describing ExecNode Class and subclasses (The basic building Block of a DAG."""
+import functools
 import warnings
 from copy import copy, deepcopy
 from dataclasses import dataclass, field
@@ -425,8 +426,9 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         """
         if isinstance(func, partial):
             # forward the qualname and annotations to the partial function
-            func.__qualname__ = func.func.__qualname__
-            func.__annotations__ = func.func.__annotations__
+            func = functools.update_wrapper(func, func.func)
+            # func.__qualname__ = func.func.__qualname__
+            # func.__annotations__ = func.func.__annotations__
 
         if not hasattr(func, "__qualname__"):
             func.__qualname__ = "__anonymous__"
