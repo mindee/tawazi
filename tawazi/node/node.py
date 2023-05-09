@@ -425,10 +425,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             unpack_to (Optional[int]): Look at ExecNode's Documentation
         """
         if isinstance(func, partial):
-            # forward the qualname and annotations to the partial function
             func = functools.update_wrapper(func, func.func)
-            # func.__qualname__ = func.func.__qualname__
-            # func.__annotations__ = func.func.__annotations__
 
         if not hasattr(func, "__qualname__"):
             func.__qualname__ = "__anonymous__"
