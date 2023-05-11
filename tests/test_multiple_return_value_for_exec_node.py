@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Literal, Tuple, TypeVar
 
 import pytest
 from tawazi import dag, xn
@@ -240,3 +240,41 @@ def test_mrv_unpack_to_with_list_type() -> None:
         return r1, r2, r3, list_v
 
     assert pipe() == (1, 2, 3, [1, 2, 3])
+
+
+T = TypeVar("T")
+
+
+@xn
+def shunt(v: T) -> T:
+    return v
+
+
+def test_mrv_unpack_to_with_extended_unpacking_on_left_hand_side() -> None:
+    @xn(unpack_to=3)
+    def my_node() -> Tuple[Literal[1], Literal[2], Literal[3]]:
+        return 1, 2, 3
+
+    @dag
+    def tralala() -> Literal[3]:
+        a, b, *c = my_node()
+        shunt(a)
+        shunt(b)
+        return shunt(c[0])
+
+    assert tralala() == 3
+
+
+def test_mrv_unpack_to_with_extended_unpacking_on_left_and_right_hand_side() -> None:
+    @xn(unpack_to=3)
+    def my_node() -> Tuple[Literal[1], Literal[2], Literal[3]]:
+        return 1, 2, 3
+
+    @dag
+    def tralala() -> Literal[3]:
+        a, b, *c = my_node()
+        shunt(a)
+        shunt(b)
+        return shunt(*c)
+
+    assert tralala() == 3
