@@ -41,7 +41,7 @@ def f6(**kwargs: Any) -> int:
 
 @xn
 def f7(*args: Any, **kwargs: Any) -> int:
-    return sum(args) + sum(kwargs.values())  #  type: ignore
+    return sum(args) + sum(kwargs.values())  # type: ignore[no-any-return]
 
 
 @xn
