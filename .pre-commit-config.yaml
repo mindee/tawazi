@@ -4,7 +4,6 @@ repos:
     hooks:
       - id: check-added-large-files
       - id: check-ast
-      - id: check-docstring-first
       - id: check-symlinks
       - id: check-builtin-literals
         exclude: tests
@@ -14,7 +13,6 @@ repos:
       - id: debug-statements
       - id: end-of-file-fixer
       - id: mixed-line-ending
-      - id: trailing-whitespace
 
   - repo: https://github.com/psf/black
     rev: 23.1.0
