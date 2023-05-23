@@ -4,7 +4,6 @@ import pickle
 import time
 import warnings
 from collections import defaultdict
-from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy, deepcopy
 from itertools import chain
 from pathlib import Path
@@ -22,12 +21,7 @@ from tawazi.consts import RVDAG, Identifier, NoVal, P, RVTypes, Tag
 from tawazi.node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode
 
 from .digraph import DiGraphEx
-
-
-def _xn_active_in_call(xn: ExecNode, xns_dict: Dict[Identifier, ExecNode]) -> bool:
-    if isinstance(xn.active, bool):
-        return xn.active
-    return bool(xns_dict[xn.active.id].result)
+from .helpers import copy_non_setup_xns, execute
 
 
 class DAG(Generic[P, RVDAG]):
@@ -443,170 +437,20 @@ class DAG(Generic[P, RVDAG]):
             time.sleep(t)
             plt.close()
 
-    @classmethod
-    def _copy_non_setup_xns(cls, x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
-        """Deep copy all ExecNodes except setup ExecNodes because they are shared throughout the DAG instance.
-
-        Args:
-            x_nodes: Dict[str, ExecNode] x_nodes to be deep copied
-
-        Returns:
-            Dict[str, ExecNode] copy of x_nodes
-        """
-        # TODO: separate setup xnodes and non setup xndoes.
-        #  maybe use copy instead of deepcopy for the non setup xnodes!? I think this is a bad idea it won't work
-        x_nodes_copy = {}
-        for id_, x_nd in x_nodes.items():
-            # if execnode is a setup node, it shouldn't be copied
-            if x_nd.setup:
-                x_nodes_copy[id_] = x_nd
-            else:
-                # no need to deepcopy. we only need to know if self.result is NoVal or not (TODO: fix this COmment)
-                x_nodes_copy[id_] = copy(x_nd)
-        return x_nodes_copy
-
     def _execute(
         self,
         graph: DiGraphEx,
         modified_node_dict: Optional[Dict[str, ExecNode]] = None,
         call_id: str = "",
     ) -> Dict[Identifier, Any]:
-        """Thread safe execution of the DAG.
-
-        (Except for the setup nodes! Please run DAG.setup() in a single thread because its results will be cached).
-
-        Args:
-            graph: the graph ids to be executed
-            modified_node_dict: A dictionary of the ExecNodes that have been modified by setting the input parameters of the DAG.
-            call_id (str): A unique identifier for the execution.
-                It can be used to distinguish the id of the call inside the thread.
-                It might be useful to debug and to exchange information between the main thread and the sub-threads (per-node threads)
-
-        Returns:
-            node_dict: dictionary with keys the name of the function and value the result after the execution
-        """
-        # 0.1 create a subgraph of the graph if necessary
-
-        # 0.2 deepcopy the node_dict in order to modify the results inside every node and make the dag reusable
-        #     modified_node_dict are used to modify the values inside the ExecNode corresponding
-        #     to the input arguments provided to the whole DAG (ArgExecNode)
-        xns_dict = modified_node_dict or DAG._copy_non_setup_xns(self.node_dict)
-
-        # 0.3 prune the graph from the ArgExecNodes so that they don't get executed in the ThreadPool
-        precomputed_xns_ids = [id_ for id_ in graph if xns_dict[id_].executed]
-        for id_ in precomputed_xns_ids:
-            graph.remove_node(id_)
-
-        # 0.4 create variables related to futures
-        futures: Dict[Identifier, "Future[Any]"] = {}
-        done: Set["Future[Any]"] = set()
-        running: Set["Future[Any]"] = set()
-
-        # TODO: support non "threadable" ExecNodes.
-        #  These are ExecNodes that can't run inside a thread because their arguments aren't pickelable!
-
-        # 0.5 create helpers functions encapsulated from the outside
-        def get_num_running_threads(_futures: Dict[Identifier, "Future[Any]"]) -> int:
-            # use not future.done() because there is no guarantee that Thread pool will directly execute
-            # the submitted thread
-            return sum([not future.done() for future in _futures.values()])
-
-        def get_highest_priority_nodes(nodes: List[ExecNode]) -> List[ExecNode]:
-            highest_priority = max(node.priority for node in nodes)
-            return [node for node in nodes if node.priority == highest_priority]
-
-        # 0.6 get the candidates root nodes that can be executed
-        # runnable_nodes_ids will be empty if all root nodes are running
-        runnable_xns_ids = graph.root_nodes()
-
-        with ThreadPoolExecutor(
-            max_workers=self.max_concurrency, thread_name_prefix=call_id
-        ) as executor:
-            while len(graph):
-                # attempt to run **A SINGLE** root node #
-
-                # 6. block scheduler execution if no root node can be executed.
-                #    this can occur in two cases:
-                #       1. if maximum concurrency is reached
-                #       2. if no runnable node exists (i.e. all root nodes are being executed)
-                #    in both cases: block until a node finishes
-                #       => a new root node will be available
-                num_running_threads = get_num_running_threads(futures)
-                num_runnable_nodes_ids = len(runnable_xns_ids)
-                if num_running_threads == self.max_concurrency or num_runnable_nodes_ids == 0:
-                    # must wait and not submit any workers before a worker ends
-                    # (that might create a new more prioritized node) to be executed
-                    logger.debug(
-                        f"Waiting for ExecNodes {running} to finish. Finished running {done}"
-                    )
-                    done_, running = wait(running, return_when=FIRST_COMPLETED)
-                    done = done.union(done_)
-
-                # 1. among the finished futures:
-                #       1. checks for exceptions
-                #       2. and remove them from the graph
-                for id_, fut in futures.items():
-                    if fut.done() and id_ in graph:
-                        logger.debug(f"Remove ExecNode {id_} from the graph")
-                        self._handle_exception(graph, fut, id_)
-                        graph.remove_node(id_)
-
-                # 2. list the root nodes that aren't being executed
-                runnable_xns_ids = list(set(graph.root_nodes()) - set(futures.keys()))
-
-                # 3. if no runnable node exist, go to step 6 (wait for a node to finish)
-                #   (This **might** create a new root node)
-                if len(runnable_xns_ids) == 0:
-                    logger.debug("No runnable Nodes available")
-                    continue
-
-                # 4. choose a node to run
-                # 4.1 get the most prioritized node to run
-                # 4.1.1 get all the nodes that have the highest priority
-                runnable_xns = [xns_dict[node_id] for node_id in runnable_xns_ids]
-                highest_priority_xns = get_highest_priority_nodes(runnable_xns)
-
-                # 4.1.2 get the node with the highest compound priority
-                # (randomly selected if multiple are suggested)
-                highest_priority_xns.sort(key=lambda node: node.compound_priority)
-                xn = highest_priority_xns[-1]
-
-                logger.info(f"{xn.id} will run!")
-
-                # 4.2 if the current node must be run sequentially, wait for a running node to finish.
-                # in that case we must prune the graph to re-check whether a new root node
-                # (maybe with a higher priority) has been created => continue the loop
-                # Note: This step might run a number of times in the while loop
-                #       before the exec_node gets submitted
-                num_running_threads = get_num_running_threads(futures)
-                if xn.is_sequential and num_running_threads != 0:
-                    logger.debug(
-                        f"{xn.id} must not run in parallel."
-                        f"Wait for the end of a node in {running}"
-                    )
-                    done_, running = wait(running, return_when=FIRST_COMPLETED)
-                    # go to step 6
-                    continue
-
-                # 5.1 dynamic graph pruning
-                if not _xn_active_in_call(xn, xns_dict):
-                    logger.debug(f"Prune {xn.id} from the graph")
-                    graph.remove_recursively(xn.id)
-                    continue
-
-                # 5.2 submit the exec node to the executor
-                # TODO: make a special case if self.max_concurrency == 1
-                #   then invoke the function directly instead of launching a thread
-                #   This should be activate according to the resource used by the ExecNode
-                exec_future = executor.submit(xn._execute, node_dict=xns_dict)
-                running.add(exec_future)
-                futures[xn.id] = exec_future
-
-                # 5.3 wait for the sequential node to finish
-                # TODO: not sure this code ever runs
-                if xn.is_sequential:
-                    wait(futures.values(), return_when=ALL_COMPLETED)
-        return xns_dict
+        return execute(
+            node_dict=self.node_dict,
+            max_concurrency=self.max_concurrency,
+            behavior=self.behavior,
+            graph=graph,
+            modified_node_dict=modified_node_dict,
+            call_id=call_id,
+        )
 
     def _alias_to_ids(self, alias: Alias) -> List[Identifier]:
         """Extract an ExecNode ID from an Alias (Tag, ExecNode ID or ExecNode).
@@ -832,7 +676,7 @@ class DAG(Generic[P, RVDAG]):
             TypeError: If called with an invalid number of arguments
         """
         # 1. deepcopy the node_dict because it will be modified by the DAG's execution
-        call_xn_dict = DAG._copy_non_setup_xns(self.node_dict)
+        call_xn_dict = copy_non_setup_xns(self.node_dict)
 
         # 2. parse the input arguments of the pipeline
         # 2.1 default valued arguments can be skipped and not provided!
@@ -913,43 +757,6 @@ class DAG(Generic[P, RVDAG]):
 
         # 4. make returned values
         return self._get_return_values(call_xn_dict)
-
-    def _handle_exception(self, graph: DiGraphEx, fut: "Future[Any]", id_: Identifier) -> None:
-        """Checks if futures have produced exceptions, and handles them according to the specified behavior.
-
-        Args:
-            graph: the graph
-            fut: the thread future
-            id_: the Identifier of the current ExecNode
-
-        Raises:
-            NotImplementedError: if self.behavior is not known
-        """
-        if self.behavior == ErrorStrategy.strict:
-            # will raise the first encountered exception if there's one
-            # no simpler way to check for exception, and not supported by flake8
-            _res = fut.result()  # noqa: F841
-
-        else:
-            try:
-                _res = fut.result()  # noqa: F841
-
-            except Exception as e:
-                logger.exception(f"The feature {id_} encountered the following error:")
-
-                if self.behavior == ErrorStrategy.permissive:
-                    logger.warning("Ignoring exception as the behavior is set to permissive")
-
-                elif self.behavior == ErrorStrategy.all_children:
-                    # remove all its children. Current node will be removed directly afterwards
-                    successors = list(graph.successors(id_))
-                    for children_ids in successors:
-                        # TODO: implement a test for all_children! it should fail!
-                        # Afterwards include parameter to remove the node itself or not
-                        graph.remove_recursively(children_ids)
-
-                else:
-                    raise NotImplementedError(f"Unknown behavior name: {self.behavior}") from e
 
     def config_from_dict(self, config: Dict[str, Any]) -> None:
         """Allows reconfiguring the parameters of the nodes from a dictionary.
