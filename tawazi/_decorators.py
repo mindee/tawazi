@@ -5,13 +5,13 @@ The user should use the decorators `@dag` and `@xn` to create Tawazi objects `DA
 import functools
 from typing import Any, Callable, List, Optional, Union, overload
 
-from tawazi.dag import DAG
-from tawazi.errors import ErrorStrategy
-from tawazi.helpers import get_args_and_default_args
+from tawazi._dag import DAG
+from tawazi._errors import ErrorStrategy
+from tawazi._helpers import get_args_and_default_args
 
-from .config import cfg
-from .consts import RVDAG, RVXN, P, TagOrTags
-from .node import (
+from ._config import cfg
+from ._consts import RVDAG, RVXN, P, TagOrTags
+from ._node import (
     ArgExecNode,
     ExecNode,
     LazyExecNode,

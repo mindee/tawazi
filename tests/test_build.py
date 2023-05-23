@@ -3,7 +3,7 @@ from typing import Any, cast
 
 import pytest
 from tawazi import DAG, ErrorStrategy
-from tawazi.node import ExecNode, UsageExecNode
+from tawazi._node import ExecNode, UsageExecNode
 
 T = 0.1
 

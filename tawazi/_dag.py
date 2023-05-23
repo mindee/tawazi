@@ -15,13 +15,13 @@ import yaml
 from loguru import logger
 from networkx.exception import NetworkXUnfeasible
 
-from tawazi.helpers import _make_raise_arg_error, _UniqueKeyLoader
+from tawazi._helpers import _make_raise_arg_error, _UniqueKeyLoader
 
-from .config import cfg
-from .consts import RVDAG, Identifier, NoVal, P, RVTypes, Tag
-from .digraph import DiGraphEx
-from .errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
-from .node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode
+from ._config import cfg
+from ._consts import RVDAG, Identifier, NoVal, P, RVTypes, Tag
+from ._digraph import DiGraphEx
+from ._errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
+from ._node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode
 
 
 def _xn_active_in_call(xn: ExecNode, xns_dict: Dict[Identifier, ExecNode]) -> bool:
