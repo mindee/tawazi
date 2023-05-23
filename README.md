@@ -116,7 +116,10 @@ Current features are:
 * Per `ExecNode` choice of parallelization (i.e. An `ExecNode` is allowed to run in parallel with other `ExecNode`s or not)
 * and more!
 
-You can find the documentation here: [Tawazi](https://mindee.github.io/tawazi/)
+### Documentation
+You can find the documentation here: [Tawazi](https://mindee.github.io/tawazi/).
+
+In [this blog](https://blog.mindee.com/directed-acyclic-graph-dag-scheduler-library/) we also talk about the purpose of using `Tawazi` in more detail.
 
 **Note**: The library is still at an [advanced state of development](#future-developments). Breaking changes might happen on the minor version (v0.Minor.Patch). Please pin [Tawazi](https://pypi.org/project/tawazi/) to the __Minor Version__. Your contributions are highly welcomed.
 
