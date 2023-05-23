@@ -6,7 +6,7 @@ import networkx as nx
 from loguru import logger
 from networkx import NetworkXNoCycle, find_cycle
 
-from ._consts import Identifier
+from .consts import Identifier
 
 
 class DiGraphEx(nx.DiGraph):

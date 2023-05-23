@@ -10,7 +10,6 @@ from tawazi._errors import ErrorStrategy
 from tawazi._helpers import get_args_and_default_args
 
 from ._config import cfg
-from ._consts import RVDAG, RVXN, P, TagOrTags
 from ._node import (
     ArgExecNode,
     ExecNode,
@@ -20,6 +19,7 @@ from ._node import (
     node,
     wrap_in_uxns,
 )
+from .consts import RVDAG, RVXN, P, TagOrTags
 
 
 @overload

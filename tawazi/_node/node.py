@@ -11,7 +11,10 @@ from typing import Any, Callable, Dict, Generic, List, NoReturn, Optional, Tuple
 from loguru import logger
 
 from tawazi._config import cfg
-from tawazi._consts import (
+from tawazi._errors import TawaziBaseException
+from tawazi._helpers import _filter_noval, _lazy_xn_id, _make_raise_arg_error, ordinal
+from tawazi._profile import Profile
+from tawazi.consts import (
     ARG_NAME_ACTIVATE,
     ARG_NAME_SEP,
     ARG_NAME_TAG,
@@ -27,9 +30,6 @@ from tawazi._consts import (
     Tag,
     TagOrTags,
 )
-from tawazi._errors import TawaziBaseException
-from tawazi._helpers import _filter_noval, _lazy_xn_id, _make_raise_arg_error, ordinal
-from tawazi._profile import Profile
 
 from .helpers import _validate_tuple
 
