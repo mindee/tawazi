@@ -2,7 +2,7 @@
 
 from typing import Any, TypeVar, Union
 
-from .decorators import xn
+from ._decorators import xn
 
 T = TypeVar("T")
 V = TypeVar("V")

@@ -46,7 +46,7 @@ def pipe(t: float) -> Tuple[float, float, Any]:
 
 
 def test_profiler_basic() -> None:
-    tawazi.config.cfg.TAWAZI_PROFILE_ALL_NODES = True
+    tawazi._config.cfg.TAWAZI_PROFILE_ALL_NODES = True
 
     pipe_ = deepcopy(pipe)
     exec_pipe = pipe_.executor()
@@ -73,7 +73,7 @@ def test_profiler_basic() -> None:
 
 
 def test_profiler_setop() -> None:
-    tawazi.config.cfg.TAWAZI_PROFILE_ALL_NODES = True
+    tawazi._config.cfg.TAWAZI_PROFILE_ALL_NODES = True
     pipe_ = deepcopy(pipe)
     exec_pipe = pipe_.executor()
     exec_pipe.setup()

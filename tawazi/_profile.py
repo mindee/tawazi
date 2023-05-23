@@ -2,7 +2,7 @@
 from time import perf_counter, process_time, thread_time
 from typing import Any
 
-from tawazi.errors import TawaziTypeError
+from tawazi._errors import TawaziTypeError
 
 
 class Profile:
