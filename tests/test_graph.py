@@ -2,7 +2,7 @@ from time import sleep
 
 from networkx import NetworkXUnfeasible
 from tawazi import DAG, ErrorStrategy
-from tawazi._node import ExecNode, UsageExecNode
+from tawazi.node import ExecNode, UsageExecNode
 
 T = 0.1
 

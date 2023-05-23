@@ -2,7 +2,7 @@ from time import sleep
 from typing import Any
 
 from tawazi import DAG, ErrorStrategy
-from tawazi._node import ExecNode, UsageExecNode
+from tawazi.node import ExecNode, UsageExecNode
 
 T = 0.001
 # global behavior_comp_str
