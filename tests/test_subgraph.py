@@ -2,7 +2,7 @@ from typing import Any, List
 
 import pytest
 from tawazi import dag, xn
-from tawazi._node import ExecNode
+from tawazi.node import ExecNode
 
 subgraph_comp_str = ""
 T = 1e-3

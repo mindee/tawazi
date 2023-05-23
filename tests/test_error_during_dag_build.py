@@ -1,5 +1,5 @@
 import pytest
-from tawazi import _node, dag, xn
+from tawazi import dag, node, xn
 
 
 def test_execnodes() -> None:
@@ -15,4 +15,4 @@ def test_execnodes() -> None:
             # purposefully an undefined ExecNode
             b()  # type: ignore[name-defined] # noqa: F821
 
-    assert _node.node.exec_nodes == {}
+    assert node.node.exec_nodes == {}

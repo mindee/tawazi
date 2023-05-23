@@ -3,8 +3,8 @@ from typing import Tuple
 
 import pytest
 from tawazi import dag, xn
-from tawazi._config import cfg
 from tawazi._errors import TawaziUsageError
+from tawazi.config import cfg
 
 test_exclude_nodes = ""
 

@@ -42,7 +42,7 @@ def test_pipeline_with_debug_node() -> None:
     my_len_has_ran = False
     import tawazi
 
-    tawazi._config.cfg.RUN_DEBUG_NODES = True
+    tawazi.config.cfg.RUN_DEBUG_NODES = True
 
     @dag
     def pipeline(img: List[Any]) -> List[Any]:
@@ -59,7 +59,7 @@ def test_pipeline_without_debug_node() -> None:
     my_len_has_ran = False
     import tawazi
 
-    tawazi._config.cfg.RUN_DEBUG_NODES = False
+    tawazi.config.cfg.RUN_DEBUG_NODES = False
 
     @dag
     def pipeline(img: List[Any]) -> List[Any]:
@@ -77,7 +77,7 @@ def test_interdependant_debug_nodes() -> None:
     is_positive_len_has_ran = False
     import tawazi
 
-    tawazi._config.cfg.RUN_DEBUG_NODES = True
+    tawazi.config.cfg.RUN_DEBUG_NODES = True
 
     @dag
     def pipeline(img: List[Any]) -> List[Any]:
@@ -126,7 +126,7 @@ def test_triple_incr_debug() -> None:
 
     global inc_shared_var
     inc_shared_var = 0
-    tawazi._config.cfg.RUN_DEBUG_NODES = True
+    tawazi.config.cfg.RUN_DEBUG_NODES = True
 
     assert triple_incr_debug(1) == 4
     assert inc_shared_var == 3
@@ -135,7 +135,7 @@ def test_triple_incr_debug() -> None:
 def test_triple_incr_no_debug() -> None:
     import tawazi
 
-    tawazi._config.cfg.RUN_DEBUG_NODES = False
+    tawazi.config.cfg.RUN_DEBUG_NODES = False
 
     assert triple_incr_debug(1) is None
 
@@ -143,7 +143,7 @@ def test_triple_incr_no_debug() -> None:
 def test_triple_incr_debug_subgraph() -> None:
     import tawazi
 
-    tawazi._config.cfg.RUN_DEBUG_NODES = True
+    tawazi.config.cfg.RUN_DEBUG_NODES = True
 
     # by only running a single dependency all subsequent debug nodes shall run
     exec_ = triple_incr_debug.executor(target_nodes=["1st"])
@@ -154,7 +154,7 @@ def test_reachable_debuggable_node_in_subgraph() -> None:
     import tawazi
 
     global print_share_var, inc_shared_var
-    tawazi._config.cfg.RUN_DEBUG_NODES = True
+    tawazi.config.cfg.RUN_DEBUG_NODES = True
     inc_shared_var = 0
 
     @dag

@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 from tawazi import DAG, ErrorStrategy, xn
-from tawazi._node import ExecNode, UsageExecNode
+from tawazi.node import ExecNode, UsageExecNode
 
 T = 0.01
 # global priority_sequential_comp_str
