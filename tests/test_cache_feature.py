@@ -6,8 +6,8 @@ from typing import Any, List, Tuple
 import numpy as np
 import pytest
 from tawazi import DAGExecution, dag, xn
-from tawazi._consts import NoVal
 from tawazi._node.node import ExecNode
+from tawazi.consts import NoVal
 
 
 @xn

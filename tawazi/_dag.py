@@ -18,10 +18,10 @@ from networkx.exception import NetworkXUnfeasible
 from tawazi._helpers import _make_raise_arg_error, _UniqueKeyLoader
 
 from ._config import cfg
-from ._consts import RVDAG, Identifier, NoVal, P, RVTypes, Tag
 from ._digraph import DiGraphEx
 from ._errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
 from ._node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode
+from .consts import RVDAG, Identifier, NoVal, P, RVTypes, Tag
 
 
 def _xn_active_in_call(xn: ExecNode, xns_dict: Dict[Identifier, ExecNode]) -> bool:
