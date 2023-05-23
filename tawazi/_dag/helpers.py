@@ -99,111 +99,87 @@ def execute(
 
     with ThreadPoolExecutor(max_workers=max_concurrency, thread_name_prefix=call_id) as executor:
         while len(graph):
-            _execute_single_node(
-                executor=executor,
-                xns_dict=xns_dict,
-                futures=futures,
-                max_concurrency=max_concurrency,
-                behavior=behavior,
-                graph=graph,
-                runnable_xns_ids=runnable_xns_ids,
-                running=running,
-                done=done,
-            )
+            # Attempt to run **A SINGLE** root node.
+
+            # 6. block scheduler execution if no root node can be executed.
+            #    this can occur in two cases:
+            #       1. if maximum concurrency is reached
+            #       2. if no runnable node exists (i.e. all root nodes are being executed)
+            #    in both cases: block until a node finishes
+            #       => a new root node will be available
+            num_running_threads = get_num_running_threads(futures)
+            num_runnable_nodes_ids = len(runnable_xns_ids)
+            if num_running_threads == max_concurrency or num_runnable_nodes_ids == 0:
+                # must wait and not submit any workers before a worker ends
+                # (that might create a new more prioritized node) to be executed
+                logger.debug(f"Waiting for ExecNodes {running} to finish. Finished running {done}")
+                done_, running = wait(running, return_when=FIRST_COMPLETED)
+                done = done.union(done_)
+
+            # 1. among the finished futures:
+            #       1. checks for exceptions
+            #       2. and remove them from the graph
+            for id_, fut in futures.items():
+                if fut.done() and id_ in graph:
+                    logger.debug(f"Remove ExecNode {id_} from the graph")
+                    handle_exception(behavior, graph, fut, id_)
+                    graph.remove_node(id_)
+
+            # 2. list the root nodes that aren't being executed
+            runnable_xns_ids = list(set(graph.root_nodes()) - set(futures.keys()))
+
+            # 3. if no runnable node exist, go to step 6 (wait for a node to finish)
+            #   (This **might** create a new root node)
+            if len(runnable_xns_ids) == 0:
+                logger.debug("No runnable Nodes available")
+                continue
+
+            # 4. choose a node to run
+            # 4.1 get the most prioritized node to run
+            # 4.1.1 get all the nodes that have the highest priority
+            runnable_xns = [xns_dict[node_id] for node_id in runnable_xns_ids]
+            highest_priority_xns = get_highest_priority_nodes(runnable_xns)
+
+            # 4.1.2 get the node with the highest compound priority
+            # (randomly selected if multiple are suggested)
+            highest_priority_xns.sort(key=lambda node: node.compound_priority)
+            xn = highest_priority_xns[-1]
+
+            logger.info(f"{xn.id} will run!")
+
+            # 4.2 if the current node must be run sequentially, wait for a running node to finish.
+            # in that case we must prune the graph to re-check whether a new root node
+            # (maybe with a higher priority) has been created => continue the loop
+            # Note: This step might run a number of times in the while loop
+            #       before the exec_node gets submitted
+            num_running_threads = get_num_running_threads(futures)
+            if xn.is_sequential and num_running_threads != 0:
+                logger.debug(
+                    f"{xn.id} must not run in parallel." f"Wait for the end of a node in {running}"
+                )
+                done_, running = wait(running, return_when=FIRST_COMPLETED)
+                # go to step 6
+                continue
+
+            # 5.1 dynamic graph pruning
+            if not _xn_active_in_call(xn, xns_dict):
+                logger.debug(f"Prune {xn.id} from the graph")
+                graph.remove_recursively(xn.id)
+                continue
+
+            # 5.2 submit the exec node to the executor
+            # TODO: make a special case if self.max_concurrency == 1
+            #   then invoke the function directly instead of launching a thread
+            #   This should be activate according to the resource used by the ExecNode
+            exec_future = executor.submit(xn._execute, node_dict=xns_dict)
+            running.add(exec_future)
+            futures[xn.id] = exec_future
+
+            # 5.3 wait for the sequential node to finish
+            # not sure this code ever runs
+            if xn.is_sequential:
+                wait(futures.values(), return_when=ALL_COMPLETED)
     return xns_dict
-
-
-def _execute_single_node(
-    *,
-    executor: ThreadPoolExecutor,
-    xns_dict: Dict[Identifier, ExecNode],
-    futures: Dict[Identifier, "Future[Any]"],
-    max_concurrency: int,
-    behavior: ErrorStrategy,
-    graph: DiGraphEx,
-    runnable_xns_ids: List[Identifier],
-    running: Set["Future[Any]"],
-    done: Set["Future[Any]"],
-) -> None:
-    """Attempt to run **A SINGLE** root node."""
-    # 6. block scheduler execution if no root node can be executed.
-    #    this can occur in two cases:
-    #       1. if maximum concurrency is reached
-    #       2. if no runnable node exists (i.e. all root nodes are being executed)
-    #    in both cases: block until a node finishes
-    #       => a new root node will be available
-    num_running_threads = get_num_running_threads(futures)
-    num_runnable_nodes_ids = len(runnable_xns_ids)
-    if num_running_threads == max_concurrency or num_runnable_nodes_ids == 0:
-        # must wait and not submit any workers before a worker ends
-        # (that might create a new more prioritized node) to be executed
-        logger.debug(f"Waiting for ExecNodes {running} to finish. Finished running {done}")
-        done_, running = wait(running, return_when=FIRST_COMPLETED)
-        done = done.union(done_)
-
-    # 1. among the finished futures:
-    #       1. checks for exceptions
-    #       2. and remove them from the graph
-    for id_, fut in futures.items():
-        if fut.done() and id_ in graph:
-            logger.debug(f"Remove ExecNode {id_} from the graph")
-            handle_exception(behavior, graph, fut, id_)
-            graph.remove_node(id_)
-
-    # 2. list the root nodes that aren't being executed
-    runnable_xns_ids = list(set(graph.root_nodes()) - set(futures.keys()))
-
-    # 3. if no runnable node exist, go to step 6 (wait for a node to finish)
-    #   (This **might** create a new root node)
-    if len(runnable_xns_ids) == 0:
-        logger.debug("No runnable Nodes available")
-        return
-
-    # 4. choose a node to run
-    # 4.1 get the most prioritized node to run
-    # 4.1.1 get all the nodes that have the highest priority
-    runnable_xns = [xns_dict[node_id] for node_id in runnable_xns_ids]
-    highest_priority_xns = get_highest_priority_nodes(runnable_xns)
-
-    # 4.1.2 get the node with the highest compound priority
-    # (randomly selected if multiple are suggested)
-    highest_priority_xns.sort(key=lambda node: node.compound_priority)
-    xn = highest_priority_xns[-1]
-
-    logger.info(f"{xn.id} will run!")
-
-    # 4.2 if the current node must be run sequentially, wait for a running node to finish.
-    # in that case we must prune the graph to re-check whether a new root node
-    # (maybe with a higher priority) has been created => continue the loop
-    # Note: This step might run a number of times in the while loop
-    #       before the exec_node gets submitted
-    num_running_threads = get_num_running_threads(futures)
-    if xn.is_sequential and num_running_threads != 0:
-        logger.debug(
-            f"{xn.id} must not run in parallel." f"Wait for the end of a node in {running}"
-        )
-        done_, running = wait(running, return_when=FIRST_COMPLETED)
-        # go to step 6
-        return
-
-    # 5.1 dynamic graph pruning
-    if not _xn_active_in_call(xn, xns_dict):
-        logger.debug(f"Prune {xn.id} from the graph")
-        graph.remove_recursively(xn.id)
-        return
-
-    # 5.2 submit the exec node to the executor
-    # TODO: make a special case if self.max_concurrency == 1
-    #   then invoke the function directly instead of launching a thread
-    #   This should be activate according to the resource used by the ExecNode
-    exec_future = executor.submit(xn._execute, node_dict=xns_dict)
-    running.add(exec_future)
-    futures[xn.id] = exec_future
-
-    # 5.3 wait for the sequential node to finish
-    # not sure this code ever runs
-    if xn.is_sequential:
-        wait(futures.values(), return_when=ALL_COMPLETED)
 
 
 def handle_exception(
