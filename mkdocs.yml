@@ -28,6 +28,7 @@ nav:
 - ExecNodes: nodes.md
 - DAG: dag.md
 - DAGExecution: DAGExecution.md
+- Others: others.md
 - Future Developments: future_developments.md
 - Releases: https://github.com/mindee/tawazi/releases
 
