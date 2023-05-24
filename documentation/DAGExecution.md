@@ -1,4 +1,4 @@
-::: tawazi.dag.DAGExecution
+::: tawazi._dag.DAGExecution
     options:
       members:
         - __init__

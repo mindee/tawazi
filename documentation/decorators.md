@@ -1,4 +1,4 @@
-::: tawazi.decorators
+::: tawazi._decorators
     options:
       members:
         - xn
