@@ -12,7 +12,6 @@ from loguru import logger
 
 from tawazi._errors import TawaziBaseException
 from tawazi._helpers import _filter_noval, _lazy_xn_id, _make_raise_arg_error, ordinal
-from tawazi._profile import Profile
 from tawazi.config import cfg
 from tawazi.consts import (
     ARG_NAME_ACTIVATE,
@@ -30,6 +29,7 @@ from tawazi.consts import (
     Tag,
     TagOrTags,
 )
+from tawazi.profile import Profile
 
 from .helpers import _validate_tuple
 
