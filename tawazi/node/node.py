@@ -25,6 +25,7 @@ from tawazi.consts import (
     NoVal,
     NoValType,
     P,
+    Resource,
     Tag,
     TagOrTags,
     XNOutsideDAGCall,
@@ -66,6 +67,7 @@ class ExecNode:
         tag: Optional[TagOrTags] = None,
         setup: bool = False,
         unpack_to: Optional[int] = None,
+        resource: Resource = Resource.thread,
     ):
         """Constructor of ExecNode.
 
@@ -83,6 +85,7 @@ class ExecNode:
             tag (TagOrTags): Attach a Tag or Tags to this ExecNode. Defaults to None.
             setup (bool): Make this ExecNode a setup Node. Defaults to False.
             unpack_to (Optional[int]): if not None, this ExecNode's execution must return unpacked results corresponding to the given value
+            resource (str): the resource to use to execute this ExecNode. Defaults to "thread".
 
         Raises:
             ValueError: if setup and debug are both True.
@@ -97,6 +100,7 @@ class ExecNode:
         self.setup = setup
         self.unpack_to = unpack_to
         self.active = True
+        self.resource = resource
 
         self.args: List[UsageExecNode] = args or []
         self.kwargs: Dict[Identifier, UsageExecNode] = kwargs or {}
@@ -177,6 +181,18 @@ class ExecNode:
         if not isinstance(value, int):
             raise ValueError(f"priority must be an int, provided {type(value)}")
         self._priority = value
+
+    @property
+    def resource(self) -> Resource:
+        """The resource used to run this ExecNode."""
+        return self._resource
+
+    @resource.setter
+    def resource(self, value: Resource) -> None:
+        if not isinstance(value, Resource):
+            raise ValueError(f"resource must be of type {Resource}, provided {type(value)}")
+
+        self._resource = value
 
     @property
     def is_sequential(self) -> bool:
@@ -413,6 +429,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         tag: Optional[TagOrTags],
         setup: bool,
         unpack_to: Optional[int],
+        resource: Resource,
     ):
         """Constructor of LazyExecNode.
 
@@ -424,6 +441,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             tag (Any): Look at ExecNode's Documentation
             setup (bool): Look at ExecNode's Documentation
             unpack_to (Optional[int]): Look at ExecNode's Documentation
+            resource (Resource): Look at ExecNode's Documentation
         """
         if isinstance(func, partial):
             func = functools.update_wrapper(func, func.func)
@@ -437,6 +455,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             tag=tag,
             setup=setup,
             unpack_to=unpack_to,
+            resource=resource,
         )
 
     # in reality it returns "XNWrapper":
@@ -783,7 +802,16 @@ class UsageExecNode:
 
 
 def _xn(func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]:
-    return LazyExecNode(func, 0, cfg.TAWAZI_IS_SEQUENTIAL, False, None, False, None)
+    return LazyExecNode(
+        func=func,
+        priority=0,
+        is_sequential=cfg.TAWAZI_IS_SEQUENTIAL,
+        debug=False,
+        tag=None,
+        setup=False,
+        unpack_to=None,
+        resource=Resource.thread,  # TODO: change resource to main-thread!
+    )
 
 
 # boolean operators definitions
