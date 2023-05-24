@@ -10,7 +10,7 @@ from tawazi._helpers import get_args_and_default_args
 from tawazi.errors import ErrorStrategy
 
 from .config import cfg
-from .consts import RVDAG, RVXN, P, TagOrTags
+from .consts import RVDAG, RVXN, P, Resource, TagOrTags
 from .node import (
     ArgExecNode,
     ExecNode,
@@ -37,6 +37,7 @@ def xn(
     tag: Optional[Any] = None,
     setup: bool = False,
     unpack_to: Optional[int] = None,
+    resource: Resource = Resource.thread,
 ) -> LazyExecNode[P, RVXN]:
     ...
 
@@ -50,6 +51,7 @@ def xn(
     tag: Optional[Any] = None,
     setup: bool = False,
     unpack_to: Optional[int] = None,
+    resource: Resource = Resource.thread,
 ) -> Callable[[Callable[P, RVXN]], LazyExecNode[P, RVXN]]:
     ...
 
@@ -63,6 +65,7 @@ def xn(
     tag: Optional[TagOrTags] = None,
     setup: bool = False,
     unpack_to: Optional[int] = None,
+    resource: Resource = Resource.thread,
 ) -> Union[Callable[[Callable[P, RVXN]], LazyExecNode[P, RVXN]], LazyExecNode[P, RVXN]]:
     """Decorate a normal function to make it an ExecNode.
 
@@ -91,6 +94,7 @@ def xn(
                 This is why it is best to invoke the DAG.setup method before using the DAG in a multithreaded environment.
                 This problem will be resolved in the future
         unpack_to (Optional[int]): if not None, this ExecNode's execution must return unpacked results corresponding to the given value
+        resource (str): the resource to use to execute this ExecNode. Defaults to "thread".
 
     Returns:
         LazyExecNode: The decorated function wrapped in an `ExecNode`.
@@ -100,7 +104,9 @@ def xn(
     """
 
     def intermediate_wrapper(_func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]:
-        lazy_exec_node = LazyExecNode(_func, priority, is_sequential, debug, tag, setup, unpack_to)
+        lazy_exec_node = LazyExecNode(
+            _func, priority, is_sequential, debug, tag, setup, unpack_to, resource
+        )
         functools.update_wrapper(lazy_exec_node, _func)
         return lazy_exec_node
 

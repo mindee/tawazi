@@ -107,6 +107,18 @@ RVDAG = TypeVar("RVDAG", bound=RVTypes, covariant=True)
 
 RVXN = TypeVar("RVXN", covariant=True)
 
+
+@unique
+class Resource(str, Enum):
+    """The Resource to use launching ExecNodes inside the DAG scheduler a DAG."""
+
+    # supported behavior following a raised error
+    thread: str = "thread"  # stop the execution of the whole DAG (Default)
+    main: str = "main-thread"  # stop the execution of the all successors
+    # process: str = "process"  # Reserved for the future
+    # sub_interpreter: str = "sub-interpreter"  # Reserved for the future
+
+
 # ImmutableType = Union[str, int, float, bool, Tuple[ImmutableType]]  # doesn't work because of cyclic typing
 
 
