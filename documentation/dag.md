@@ -1,4 +1,4 @@
-::: tawazi.dag.DAG
+::: tawazi._dag.DAG
     options:
       members:
         - __call__
