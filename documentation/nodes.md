@@ -12,3 +12,4 @@
         - priority
         - is_sequential
         - executed
+        - timeout
