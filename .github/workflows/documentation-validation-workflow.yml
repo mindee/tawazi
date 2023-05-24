@@ -1,0 +1,34 @@
+name: Build Docs
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.11'
+        cache-dependency-path: pyproject.toml
+
+    - name: Install Flit
+      run: |
+        set -o pipefail
+        pip install pip==22.2.2
+        pip install flit wheel
+
+    - name: Install dependencies
+      run: |
+        flit install --deps=develop --only-deps
+
+    - name: Build docs
+      run: |
+        mkdocs build --clean --strict
