@@ -35,6 +35,12 @@ class TawaziUsageError(TawaziBaseException):
     pass
 
 
+class TawaziTimeoutError(TawaziBaseException):
+    """Raised when a node times out."""
+
+    pass
+
+
 def _raise_arg_exc(func_or_func_name: Union[str, Callable[[Any], Any]], arg_name: str) -> None:
     if isinstance(func_or_func_name, str):
         raise TawaziArgumentException(func_or_func_name, arg_name)

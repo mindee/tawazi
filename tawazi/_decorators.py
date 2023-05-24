@@ -37,6 +37,7 @@ def xn(
     tag: Optional[Any] = None,
     setup: bool = False,
     unpack_to: Optional[int] = None,
+    timeout: Optional[float] = cfg.TAWAZI_DEFAULT_TIMEOUT,
 ) -> LazyExecNode[P, RVXN]:
     ...
 
@@ -50,6 +51,7 @@ def xn(
     tag: Optional[Any] = None,
     setup: bool = False,
     unpack_to: Optional[int] = None,
+    timeout: Optional[float] = cfg.TAWAZI_DEFAULT_TIMEOUT,
 ) -> Callable[[Callable[P, RVXN]], LazyExecNode[P, RVXN]]:
     ...
 
@@ -63,6 +65,7 @@ def xn(
     tag: Optional[TagOrTags] = None,
     setup: bool = False,
     unpack_to: Optional[int] = None,
+    timeout: Optional[float] = cfg.TAWAZI_DEFAULT_TIMEOUT,
 ) -> Union[Callable[[Callable[P, RVXN]], LazyExecNode[P, RVXN]], LazyExecNode[P, RVXN]]:
     """Decorate a normal function to make it an ExecNode.
 
@@ -91,6 +94,9 @@ def xn(
                 This is why it is best to invoke the DAG.setup method before using the DAG in a multithreaded environment.
                 This problem will be resolved in the future
         unpack_to (Optional[int]): if not None, this ExecNode's execution must return unpacked results corresponding to the given value
+        timeout (Optional[float]): if not positive (<= 0) no timeout is applied. If positive (> 0),
+            this ExecNode's execution must finish within the given timeout, otherwise it is discarded and
+            a TawaziTimeoutError is raised if the timeout is reached. (This behavior might change in the future)
 
     Returns:
         LazyExecNode: The decorated function wrapped in an `ExecNode`.
@@ -100,7 +106,9 @@ def xn(
     """
 
     def intermediate_wrapper(_func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]:
-        lazy_exec_node = LazyExecNode(_func, priority, is_sequential, debug, tag, setup, unpack_to)
+        lazy_exec_node = LazyExecNode(
+            _func, priority, is_sequential, debug, tag, setup, unpack_to, timeout
+        )
         functools.update_wrapper(lazy_exec_node, _func)
         return lazy_exec_node
 

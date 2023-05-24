@@ -1,5 +1,8 @@
 """configuration parameters for Tawazi."""
 
+
+from typing import Optional
+
 from pydantic import BaseSettings, Field, validator
 
 
@@ -17,6 +20,9 @@ class Config(BaseSettings):
 
     # Weather to run the graphs in debug mode or not
     RUN_DEBUG_NODES: bool = False
+
+    # Default timeout for all nodes
+    TAWAZI_DEFAULT_TIMEOUT: Optional[float] = None
 
     # Logger settings
     LOGURU_LEVEL: str = Field("PROD", env="TAWAZI_LOGGER_LEVEL")

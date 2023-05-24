@@ -1,11 +1,12 @@
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy
+from time import monotonic
 from typing import Any, Dict, List, Optional, Set
 
 from loguru import logger
 
 from tawazi._dag.digraph import DiGraphEx
-from tawazi._errors import ErrorStrategy
+from tawazi._errors import ErrorStrategy, TawaziTimeoutError
 from tawazi.consts import Identifier
 from tawazi.node.node import ExecNode
 
@@ -38,7 +39,11 @@ def copy_non_setup_xns(x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
     return x_nodes_copy
 
 
-# 0.5 create helpers functions encapsulated from the outside
+#####################
+# scheduler Functions
+#####################
+
+
 def get_num_running_threads(_futures: Dict[Identifier, "Future[Any]"]) -> int:
     # use not future.done() because there is no guarantee that Thread pool will directly execute
     # the submitted thread
@@ -48,6 +53,51 @@ def get_num_running_threads(_futures: Dict[Identifier, "Future[Any]"]) -> int:
 def get_highest_priority_nodes(nodes: List[ExecNode]) -> List[ExecNode]:
     highest_priority = max(node.priority for node in nodes)
     return [node for node in nodes if node.priority == highest_priority]
+
+
+def get_next_timeout(
+    futures_launch_time: Dict[Identifier, float],
+    futures: Dict[Identifier, "Future[Any]"],
+    xns_dict: Dict[Identifier, ExecNode],
+) -> Optional[float]:
+    """Get the timeout to wait before an ExecNode issuance date arrives.
+
+    Args:
+        futures_launch_time (Dict[Identifier, float]): The launch time of the futures (submission time).
+        futures (Dict[Identifier, &quot;Future[Any]&quot;]): The futures that are submitted (running, scheduled & done).
+        xns_dict (Dict[Identifier, ExecNode]): The ExecNodes whose Futures are submitted.
+
+    Returns:
+        Optional[float]: The next timeout to use in wait.
+    """
+    # start next_timeout as infinity.
+    # 1st timeout encountered will reduce it to a finite number.
+    next_timeout = float("inf")
+    for id_, fut in futures.items():
+        # if future is not done, then it should be running (This is not guaranteed in ThreadPoolExecutor)
+        if not fut.done():
+            launch_time = futures_launch_time[id_]
+            timeout = xns_dict[id_].timeout
+            logger.debug(
+                f"next_timeout: {next_timeout}, launch_time: {launch_time}, timeout: {timeout}"
+            )
+
+            if timeout is not None:
+                next_timeout = min(next_timeout, launch_time + timeout)
+
+    if next_timeout == float("inf"):
+        return None
+    return next_timeout - monotonic()
+
+
+def raise_timeout_error_conditionally(
+    done_: Set["Future[Any]"], running: Set["Future[Any]"], next_timeout: Optional[float]
+) -> None:
+    # done_ doesn't contain any future. => timeout reached
+    if not done_:
+        raise TawaziTimeoutError(
+            f"Timeout reached while waiting for {running} to finish. Waited a total of {next_timeout} seconds"
+        )
 
 
 ################
@@ -93,6 +143,7 @@ def execute(
     futures: Dict[Identifier, "Future[Any]"] = {}
     done: Set["Future[Any]"] = set()
     running: Set["Future[Any]"] = set()
+    futures_launch_time: Dict[Identifier, float] = {}
 
     # 0.4 get the candidates root nodes that can be executed
     # runnable_nodes_ids will be empty if all root nodes are running
@@ -114,9 +165,17 @@ def execute(
                 # must wait and not submit any workers before a worker ends
                 # (that might create a new more prioritized node) to be executed
                 logger.debug(f"Waiting for ExecNodes {running} to finish. Finished running {done}")
-                done_, running = wait(running, return_when=FIRST_COMPLETED)
+
+                # next_timeout is used to determine the timeout of the next node to be executed
+                next_timeout = get_next_timeout(futures_launch_time, futures, xns_dict)
+
+                done_, running = wait(running, return_when=FIRST_COMPLETED, timeout=next_timeout)
+
+                raise_timeout_error_conditionally(done_, running, next_timeout)
+
                 done = done.union(done_)
 
+            # TODO: Optimize this part! I can just check for a the node or nodes in done_!
             # 1. among the finished futures:
             #       1. checks for exceptions
             #       2. and remove them from the graph
@@ -156,9 +215,15 @@ def execute(
             num_running_threads = get_num_running_threads(futures)
             if xn.is_sequential and num_running_threads != 0:
                 logger.debug(
-                    f"{xn.id} must not run in parallel." f"Wait for the end of a node in {running}"
+                    f"{xn.id} must not run in parallel. Wait for the end of a node in {running}"
                 )
-                done_, running = wait(running, return_when=FIRST_COMPLETED)
+                # next_timeout is used to determine the timeout of the next node to be executed
+                next_timeout = get_next_timeout(futures_launch_time, futures, xns_dict)
+
+                done_, running = wait(running, return_when=FIRST_COMPLETED, timeout=next_timeout)
+
+                raise_timeout_error_conditionally(done_, running, next_timeout)
+
                 # go to step 6
                 continue
 
@@ -169,17 +234,26 @@ def execute(
                 continue
 
             # 5.2 submit the exec node to the executor
-            # TODO: make a special case if self.max_concurrency == 1
-            #   then invoke the function directly instead of launching a thread
-            #   This should be activate according to the resource used by the ExecNode
             exec_future = executor.submit(xn._execute, node_dict=xns_dict)
             running.add(exec_future)
             futures[xn.id] = exec_future
+            futures_launch_time[xn.id] = monotonic()
 
             # 5.3 wait for the sequential node to finish
-            # not sure this code ever runs
+            # This code is executed only if this node is being executed purely by itself
             if xn.is_sequential:
-                wait(futures.values(), return_when=ALL_COMPLETED)
+                logger.debug(f"Wait for all Futures to finish because {xn.id} is sequential.")
+
+                # next_timeout is used to determine the timeout of the next node to be executed
+                next_timeout = get_next_timeout(futures_launch_time, futures, xns_dict)
+
+                # ALL_COMPLETED is equivalent to FIRST_COMPLETED because there is only a single future running!
+                done_, running = wait(
+                    futures.values(), return_when=ALL_COMPLETED, timeout=next_timeout
+                )
+
+                raise_timeout_error_conditionally(done_, running, next_timeout)
+
     return xns_dict
 
 

@@ -65,6 +65,7 @@ class ExecNode:
         tag: Optional[TagOrTags] = None,
         setup: bool = False,
         unpack_to: Optional[int] = None,
+        timeout: Optional[float] = cfg.TAWAZI_DEFAULT_TIMEOUT,
     ):
         """Constructor of ExecNode.
 
@@ -82,6 +83,9 @@ class ExecNode:
             tag (TagOrTags): Attach a Tag or Tags to this ExecNode. Defaults to None.
             setup (bool): Make this ExecNode a setup Node. Defaults to False.
             unpack_to (Optional[int]): if not None, this ExecNode's execution must return unpacked results corresponding to the given value
+            timeout (Optional[float]): if timeout is a float,
+                this ExecNode's execution must finish within the given timeout, otherwise it is discarded and
+                a TawaziTimeoutError is raised if the timeout is reached. (This behavior might change in the future)
 
         Raises:
             ValueError: if setup and debug are both True.
@@ -96,6 +100,7 @@ class ExecNode:
         self.setup = setup
         self.unpack_to = unpack_to
         self.active = True
+        self.timeout = timeout
 
         self.args: List[UsageExecNode] = args or []
         self.kwargs: Dict[Identifier, UsageExecNode] = kwargs or {}
@@ -176,6 +181,17 @@ class ExecNode:
         if not isinstance(value, int):
             raise ValueError(f"priority must be an int, provided {type(value)}")
         self._priority = value
+
+    @property
+    def timeout(self) -> Optional[float]:
+        """The timeout for the execution of this ExecNode."""
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, value: Optional[float]) -> None:
+        if not isinstance(value, float) and value is not None:
+            raise ValueError(f"priority must be an float or None, provided {type(value)}")
+        self._timeout = value
 
     @property
     def is_sequential(self) -> bool:
@@ -412,6 +428,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         tag: Optional[TagOrTags],
         setup: bool,
         unpack_to: Optional[int],
+        timeout: Optional[float],
     ):
         """Constructor of LazyExecNode.
 
@@ -423,6 +440,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             tag (Any): Look at ExecNode's Documentation
             setup (bool): Look at ExecNode's Documentation
             unpack_to (Optional[int]): Look at ExecNode's Documentation
+            timeout (Optional[float]): Look at ExecNode's Documentation
         """
         if isinstance(func, partial):
             func = functools.update_wrapper(func, func.func)
@@ -436,6 +454,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             tag=tag,
             setup=setup,
             unpack_to=unpack_to,
+            timeout=timeout,
         )
 
     def __call__(
@@ -782,7 +801,16 @@ class UsageExecNode:
 
 
 def _xn(func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]:
-    return LazyExecNode(func, 0, cfg.TAWAZI_IS_SEQUENTIAL, False, None, False, None)
+    return LazyExecNode(
+        func=func,
+        priority=0,
+        is_sequential=cfg.TAWAZI_IS_SEQUENTIAL,
+        debug=False,
+        tag=None,
+        setup=False,
+        unpack_to=None,
+        timeout=cfg.TAWAZI_DEFAULT_TIMEOUT,
+    )
 
 
 # boolean operators definitions
