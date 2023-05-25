@@ -110,11 +110,20 @@ RVXN = TypeVar("RVXN", covariant=True)
 
 @unique
 class Resource(str, Enum):
-    """The Resource to use launching ExecNodes inside the DAG scheduler a DAG."""
+    """The Resource to use launching ExecNodes inside the DAG scheduler a DAG.
+
+    Resource can be either:
+    1. "thread": Launch the ExecNode in a thread (Default)
+    2. "main-thread": Launch the ExecNode inside the main thread, directly inside the main scheduler.
+
+    Notice that when "main-thread" is used, some of the scheduler functionalities stop working as previously expected:
+    1. No new ExecNode will be launched during the execution of the corresponding ExecNode
+    2. If timeout is set on the corresponding ExecNode, it is not guaranteed to work properly.
+    """
 
     # supported behavior following a raised error
-    thread: str = "thread"  # stop the execution of the whole DAG (Default)
-    main: str = "main-thread"  # stop the execution of the all successors
+    thread: str = "thread"
+    main: str = "main-thread"
     # process: str = "process"  # Reserved for the future
     # sub_interpreter: str = "sub-interpreter"  # Reserved for the future
 

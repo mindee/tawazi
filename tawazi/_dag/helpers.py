@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Set
 from loguru import logger
 
 from tawazi._dag.digraph import DiGraphEx
-from tawazi.consts import Identifier
+from tawazi.consts import Identifier, Resource
 from tawazi.errors import ErrorStrategy
 from tawazi.node.node import ExecNode
 
@@ -166,17 +166,26 @@ def execute(
                 continue
 
             # 5.2 submit the exec node to the executor
-            # TODO: make a special case if self.max_concurrency == 1
-            #   then invoke the function directly instead of launching a thread
-            #   This should be activate according to the resource used by the ExecNode
-            exec_future = executor.submit(xn._execute, node_dict=xns_dict)
-            running.add(exec_future)
-            futures[xn.id] = exec_future
+            if xn.resource == Resource.thread:
+                exec_future = executor.submit(xn._execute, node_dict=xns_dict)
+                running.add(exec_future)
+                futures[xn.id] = exec_future
+            else:
+                # a single execution will be launched and will end.
+                # it doesn't count as an additional thread that is running.
+                logger.debug(f"Executing {xn.id} in main thread")
+                xn._execute(node_dict=xns_dict)
+
+                logger.debug(f"Remove ExecNode {xn.id} from the graph")
+                graph.remove_node(xn.id)
 
             # 5.3 wait for the sequential node to finish
-            # not sure this code ever runs
-            if xn.is_sequential:
-                wait(futures.values(), return_when=ALL_COMPLETED)
+            # This code is executed only if this node is being executed purely by itself
+            if xn.resource == Resource.thread and xn.is_sequential:
+                logger.debug(f"Wait for all Futures to finish because {xn.id} is sequential.")
+                # ALL_COMPLETED is equivalent to FIRST_COMPLETED because there is only a single future running!
+                done_, running = wait(futures.values(), return_when=ALL_COMPLETED)
+
     return xns_dict
 
 
