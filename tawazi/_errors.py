@@ -35,7 +35,7 @@ class TawaziUsageError(TawaziBaseException):
     pass
 
 
-class TawaziTimeoutError(TawaziBaseException):
+class TawaziTimeoutError(TawaziBaseException, TimeoutError):
     """Raised when a node times out."""
 
     pass
