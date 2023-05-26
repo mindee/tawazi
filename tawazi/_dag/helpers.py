@@ -175,7 +175,7 @@ def execute(
 
                 done = done.union(done_)
 
-            # TODO: Optimize this part! I can just check for a the node or nodes in done_!
+            # TODO: Optimize this part! I can check the finished nodes by looking at done_ instead of checking all futures
             # 1. among the finished futures:
             #       1. checks for exceptions
             #       2. and remove them from the graph
