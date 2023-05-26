@@ -90,7 +90,7 @@ def get_next_timeout(
     return next_timeout - monotonic()
 
 
-def raise_timeout_error_conditionally(
+def check_timeout(
     done_: Set["Future[Any]"], running: Set["Future[Any]"], next_timeout: Optional[float]
 ) -> None:
     # done_ doesn't contain any future. => timeout reached
@@ -171,7 +171,7 @@ def execute(
 
                 done_, running = wait(running, return_when=FIRST_COMPLETED, timeout=next_timeout)
 
-                raise_timeout_error_conditionally(done_, running, next_timeout)
+                check_timeout(done_, running, next_timeout)
 
                 done = done.union(done_)
 
@@ -222,7 +222,7 @@ def execute(
 
                 done_, running = wait(running, return_when=FIRST_COMPLETED, timeout=next_timeout)
 
-                raise_timeout_error_conditionally(done_, running, next_timeout)
+                check_timeout(done_, running, next_timeout)
 
                 # go to step 6
                 continue
@@ -252,7 +252,7 @@ def execute(
                     futures.values(), return_when=ALL_COMPLETED, timeout=next_timeout
                 )
 
-                raise_timeout_error_conditionally(done_, running, next_timeout)
+                check_timeout(done_, running, next_timeout)
 
     return xns_dict
 
