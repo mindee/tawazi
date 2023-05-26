@@ -64,3 +64,23 @@ def test_timeout_parallel_xn_fail() -> None:
 
     with pytest.raises(TawaziTimeoutError):
         d()
+
+
+# def test_timeout_cpu_bound_task() -> None:
+#     @xn(timeout=0.1)
+#     def cpu_bound()->int:
+#         s = 0
+#         for i in range(10**7):
+#             s += i
+#         return s
+#         # return sum(range(10**8))
+
+#     @dag
+#     def d()->int:
+#         return cpu_bound()
+
+#     with pytest.raises(TawaziTimeoutError):
+#         d()
+#     print("I ended")
+
+# test_timeout_cpu_bound_task()
