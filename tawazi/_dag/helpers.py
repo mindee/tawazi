@@ -25,8 +25,6 @@ def copy_non_setup_xns(x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
     Returns:
         Dict[str, ExecNode] copy of x_nodes
     """
-    # TODO: separate setup xnodes and non setup xndoes.
-    #  maybe use copy instead of deepcopy for the non setup xnodes!? I think this is a bad idea it won't work
     x_nodes_copy = {}
     for id_, x_nd in x_nodes.items():
         # if execnode is a setup node, it shouldn't be copied
@@ -81,7 +79,7 @@ def execute(
     # 0.1 deepcopy the node_dict in order to modify the results inside every node and make the dag reusable
     #     modified_node_dict are used to modify the values inside the ExecNode corresponding
     #     to the input arguments provided to the whole DAG (ArgExecNode)
-    xns_dict = modified_node_dict or copy_non_setup_xns(node_dict)
+    xns_dict = copy_non_setup_xns(node_dict) if modified_node_dict is None else modified_node_dict
 
     # 0.2 prune the graph from the ArgExecNodes so that they don't get executed in the ThreadPool
     precomputed_xns_ids = [id_ for id_ in graph if xns_dict[id_].executed]
