@@ -120,7 +120,7 @@ def execute(
             for id_, fut in futures.items():
                 if fut.done() and id_ in graph:
                     logger.debug(f"Remove ExecNode {id_} from the graph")
-                    handle_exception(behavior, graph, fut, id_)
+                    handle_future_exception(behavior, graph, fut, id_)
                     graph.remove_node(id_)
 
             # 2. list the root nodes that aren't being executed
@@ -189,7 +189,7 @@ def execute(
     return xns_dict
 
 
-def handle_exception(
+def handle_future_exception(
     behavior: ErrorStrategy, graph: DiGraphEx, fut: "Future[Any]", id_: Identifier
 ) -> None:
     """Checks if futures have produced exceptions, and handles them according to the specified behavior.
@@ -219,12 +219,10 @@ def handle_exception(
                 logger.warning("Ignoring exception as the behavior is set to permissive")
 
             elif behavior == ErrorStrategy.all_children:
-                # remove all its children. Current node will be removed directly afterwards
-                successors = list(graph.successors(id_))
-                for children_ids in successors:
-                    # TODO: implement a test for all_children! it should fail!
-                    # Afterwards include parameter to remove the node itself or not
-                    graph.remove_recursively(children_ids)
+                # remove all its children.
+                # Skip removing root Node.
+                # It will be removed by default afterwards outside handle_exception
+                graph.remove_recursively(id_, remove_root_node=False)
 
             else:
                 raise NotImplementedError(f"Unknown behavior name: {behavior}") from e
