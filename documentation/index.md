@@ -670,6 +670,39 @@ assert sub_dag(2,3,4) == 9
 ```
 
 
+### Resource Usage for Execution
+
+You can control the resource used to run a specific `ExecNode`. By default, all `ExecNode`s run in threads inside a ThreadPoolExecutor.
+This can be changed by setting the `resource` parameter of the `ExecNode`. Currently only two values are supported: 
+1. "thread": Run the `ExecNode` inside a thread
+2. "main-thread": Run the `ExecNode` inside the main thread without Pickling the data to pass it to the threads etc.
+
+<!--pytest-codeblocks:cont-->
+
+```python
+from tawazi.consts import Resource
+import threading
+
+@xn(resource=Resource.main)
+def run_in_main_thread(main_thread_id):
+  assert main_thread_id == threading.get_ident()
+  print(f"I am running in the main thread with thread id {threading.get_ident()}")
+
+@xn(resource=Resource.thread)
+def run_in_thread(main_thread_id):
+  assert main_thread_id != threading.get_ident()
+  print(f"I am running in a thread with thread id {threading.get_ident()}")
+
+@dag
+def dag_with_resource(main_thread_id):
+  run_in_main_thread(main_thread_id)
+  run_in_thread(main_thread_id)
+
+dag_with_resource(threading.get_ident())
+
+```
+
+
 ## Limitations
 1. All code inside a dag descriptor function must be either an @xn decorated functions calls and arguments passed arguments. Otherwise the behavior of the DAG might be unpredictable
 1. Because the main function serves only for the purpose of describing the dependencies, the code that it executes should only describe dependencies. Hence when debugging your code, it will be impossible to view the data movement inside this function. However, you can debug code inside of a node.
