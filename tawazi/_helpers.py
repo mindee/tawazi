@@ -4,8 +4,8 @@ from typing import Any, Callable, Dict, List, Tuple, Union
 
 import yaml
 
-from tawazi._errors import _raise_arg_exc
 from tawazi.consts import USE_SEP_END, USE_SEP_START, Identifier, NoVal, NoValType
+from tawazi.errors import _raise_arg_exc
 
 
 def ordinal(numb: int) -> str:

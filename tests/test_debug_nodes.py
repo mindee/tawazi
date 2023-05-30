@@ -2,7 +2,7 @@ from typing import Any, List, TypeVar
 
 import pytest
 from tawazi import dag, xn
-from tawazi._errors import TawaziBaseException
+from tawazi.errors import TawaziBaseException
 
 my_len_has_ran = False
 is_positive_len_has_ran = False

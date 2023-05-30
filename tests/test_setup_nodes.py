@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 from tawazi import dag, xn
-from tawazi._errors import TawaziBaseException, TawaziUsageError
+from tawazi.errors import TawaziBaseException, TawaziUsageError
 
 
 def test_pipeline() -> None:

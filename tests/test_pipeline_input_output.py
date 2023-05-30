@@ -2,7 +2,7 @@ from typing import Any, List, Tuple
 
 import pytest
 from tawazi import dag, xn
-from tawazi._errors import TawaziArgumentException, TawaziBaseException
+from tawazi.errors import TawaziArgumentException, TawaziBaseException
 
 
 @xn

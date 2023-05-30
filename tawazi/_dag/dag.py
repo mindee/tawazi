@@ -14,10 +14,10 @@ import yaml
 from loguru import logger
 from networkx.exception import NetworkXUnfeasible
 
-from tawazi._errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
 from tawazi._helpers import _make_raise_arg_error, _UniqueKeyLoader
 from tawazi.config import cfg
 from tawazi.consts import RVDAG, Identifier, NoVal, P, RVTypes, Tag
+from tawazi.errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
 from tawazi.node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode
 
 from .digraph import DiGraphEx
