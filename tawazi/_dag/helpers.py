@@ -174,7 +174,13 @@ def execute(
                 # a single execution will be launched and will end.
                 # it doesn't count as an additional thread that is running.
                 logger.debug(f"Executing {xn.id} in main thread")
-                xn._execute(node_dict=xns_dict)
+                try:
+                    xn._execute(node_dict=xns_dict)
+                except Exception as e:
+                    if behavior == ErrorStrategy.strict:
+                        raise e from e
+                    # else:
+                    handle_exception(behavior, graph, xn.id, e)
 
                 logger.debug(f"Remove ExecNode {xn.id} from the graph")
                 graph.remove_node(xn.id)
@@ -213,16 +219,22 @@ def handle_future_exception(
             _res = fut.result()  # noqa: F841
 
         except Exception as e:
-            logger.exception(f"The feature {id_} encountered the following error:")
+            handle_exception(behavior, graph, id_, e)
 
-            if behavior == ErrorStrategy.permissive:
-                logger.warning("Ignoring exception as the behavior is set to permissive")
 
-            elif behavior == ErrorStrategy.all_children:
-                # remove all its children.
-                # Skip removing root Node.
-                # It will be removed by default afterwards outside handle_exception
-                graph.remove_recursively(id_, remove_root_node=False)
+def handle_exception(
+    behavior: ErrorStrategy, graph: DiGraphEx, id_: Identifier, e: Exception
+) -> None:
+    logger.exception(f"The feature {id_} encountered the following error:")
 
-            else:
-                raise NotImplementedError(f"Unknown behavior name: {behavior}") from e
+    if behavior == ErrorStrategy.permissive:
+        logger.warning("Ignoring exception as the behavior is set to permissive")
+
+    elif behavior == ErrorStrategy.all_children:
+        # remove all its children.
+        # Skip removing root Node.
+        # It will be removed by default afterwards outside handle_exception
+        graph.remove_recursively(id_, remove_root_node=False)
+
+    else:
+        raise NotImplementedError(f"Unknown behavior name: {behavior}") from e
