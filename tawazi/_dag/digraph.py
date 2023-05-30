@@ -29,11 +29,12 @@ class DiGraphEx(nx.DiGraph):
         """
         return [node for node, degree in self.out_degree if degree == 0]
 
-    def remove_recursively(self, root_node: Identifier) -> None:
-        """Recursively removes all the nodes that depend on the provided one including itself.
+    def remove_recursively(self, root_node: Identifier, remove_root_node: bool = True) -> None:
+        """Recursively removes all the nodes that depend on the provided.
 
         Args:
             root_node (Identifier): the root node
+            remove_root_node (bool, optional): whether to remove the root node or not. Defaults to True.
         """
         nodes_to_remove: Set[Identifier] = set()
 
@@ -46,6 +47,11 @@ class DiGraphEx(nx.DiGraph):
                 dfs(child, graph, visited)
 
         dfs(root_node, self, nodes_to_remove)
+
+        # skip removing the root node if requested
+        if not remove_root_node:
+            nodes_to_remove.remove(root_node)
+
         for node in nodes_to_remove:
             self.remove_node(node)
 
