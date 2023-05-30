@@ -10,7 +10,6 @@ from typing import Any, Callable, Dict, Generic, List, NoReturn, Optional, Tuple
 
 from loguru import logger
 
-from tawazi._errors import TawaziBaseException
 from tawazi._helpers import _filter_noval, _lazy_xn_id, _make_raise_arg_error, ordinal
 from tawazi.config import cfg
 from tawazi.consts import (
@@ -29,6 +28,7 @@ from tawazi.consts import (
     Tag,
     TagOrTags,
 )
+from tawazi.errors import TawaziBaseException
 from tawazi.profile import Profile
 
 from .helpers import _validate_tuple

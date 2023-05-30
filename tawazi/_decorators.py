@@ -6,8 +6,8 @@ import functools
 from typing import Any, Callable, List, Optional, Union, overload
 
 from tawazi._dag import DAG
-from tawazi._errors import ErrorStrategy
 from tawazi._helpers import get_args_and_default_args
+from tawazi.errors import ErrorStrategy
 
 from .config import cfg
 from .consts import RVDAG, RVXN, P, TagOrTags

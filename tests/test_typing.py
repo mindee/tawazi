@@ -5,7 +5,7 @@ from typing import Tuple
 
 import pytest
 from tawazi import dag, xn
-from tawazi._errors import ErrorStrategy
+from tawazi.errors import ErrorStrategy
 
 
 @xn

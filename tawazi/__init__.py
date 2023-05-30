@@ -3,9 +3,9 @@
 # exposing useful objects / Classes
 from ._dag import DAG, DAGExecution
 from ._decorators import dag, xn
-from ._errors import ErrorStrategy
 from ._object_helpers import and_, not_, or_
 from .config import cfg
+from .errors import ErrorStrategy
 
 __version__ = "0.3.0a0"
 

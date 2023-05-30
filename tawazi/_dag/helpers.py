@@ -5,8 +5,8 @@ from typing import Any, Dict, List, Optional, Set
 from loguru import logger
 
 from tawazi._dag.digraph import DiGraphEx
-from tawazi._errors import ErrorStrategy
 from tawazi.consts import Identifier
+from tawazi.errors import ErrorStrategy
 from tawazi.node.node import ExecNode
 
 
