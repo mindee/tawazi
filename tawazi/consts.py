@@ -123,7 +123,7 @@ class Resource(str, Enum):
 
     # supported behavior following a raised error
     thread: str = "thread"
-    main: str = "main-thread"
+    main_thread: str = "main-thread"
     # process: str = "process"  # Reserved for the future
     # sub_interpreter: str = "sub-interpreter"  # Reserved for the future
 

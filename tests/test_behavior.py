@@ -72,26 +72,26 @@ def test_permissive_behavior() -> None:
     assert behavior_comp_str == "acd"
 
 
-@xn(resource=Resource.main)
+@xn(resource=Resource.main_thread)
 def a_main() -> None:
     sleep(T)
     global behavior_comp_str
     behavior_comp_str += "a"
 
 
-@xn(priority=2, resource=Resource.main)
+@xn(priority=2, resource=Resource.main_thread)
 def b_main(a: Any) -> None:
     raise NotImplementedError
 
 
-@xn(priority=2, resource=Resource.main)
+@xn(priority=2, resource=Resource.main_thread)
 def c_main(b: Any) -> None:
     sleep(T)
     global behavior_comp_str
     behavior_comp_str += "c"
 
 
-@xn(resource=Resource.main)
+@xn(resource=Resource.main_thread)
 def d_main(a: Any) -> None:
     sleep(T)
     global behavior_comp_str

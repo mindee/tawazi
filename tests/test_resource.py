@@ -10,7 +10,7 @@ T = 0.1
 def test_main_thread_resource_thread_name() -> None:
     main_thread_name = threading.current_thread().name
 
-    @xn(resource=Resource.main)
+    @xn(resource=Resource.main_thread)
     def xn1() -> int:
         assert threading.current_thread().name == main_thread_name
         return 1
@@ -30,7 +30,7 @@ def test_main_thread_resource_thread_name() -> None:
 def test_main_thread_resource_computation_time() -> None:
     main_thread_name = threading.current_thread().name
 
-    @xn(resource=Resource.main, priority=1)
+    @xn(resource=Resource.main_thread, priority=1)
     def xn1() -> int:
         assert threading.current_thread().name == main_thread_name
         sleep(T)
@@ -54,7 +54,7 @@ def test_main_thread_resource_computation_time() -> None:
 
 
 def test_main_thread_sequential_exec_node() -> None:
-    @xn(resource=Resource.main, is_sequential=True)
+    @xn(resource=Resource.main_thread, is_sequential=True)
     def xn1() -> int:
         return 1
 
