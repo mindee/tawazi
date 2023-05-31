@@ -46,10 +46,22 @@ print(type(pipeline))
 pipeline(0)
 ```
 
-`ExecNode` can still be called outside of a `DAG`. It will raise a warning.
+By default, calling `ExecNode` outside of a `DAG` describing function will raise an error. 
+
+However, the user can control this behavior by setting the environment variable `TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR` to:
+
+1. `"error"`: raise an error if an `ExecNode` is called outside of `DAG` description (default)
+2. `"warning"`: raise a warning if an `ExecNode` is called outside of `DAG` description, but execute the wrapped function anyway
+3. `"ignore"`: execute the wrapped function anyway.
+
+This way, `ExecNode` can still be called outside of a `DAG`. It will raise a warning.
 <!--pytest-codeblocks:cont-->
 
 ```python
+# set environment variable to warning
+from tawazi import cfg
+cfg.TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR = "warning"
+
 display('Hello World!')
 # <stdin>:1: UserWarning: Invoking LazyExecNode display ~ | <0x7fdc03d4ebb0> outside of a `DAG`. Executing wrapped function instead of describing dependency.
 # prints Hello World!
@@ -73,7 +85,7 @@ assert pipeline(10) == 10
 #@dag  # comment out the decorator
 def pipeline(x):
   x_lo = decr(x)
-  x_hi = incr(x)  # put breakpoint here!
+  x_hi = incr(x)  # put breakpoint here and debug!
   display(x_hi)
   display(x_lo)
   return x
