@@ -8,7 +8,7 @@ from .config import cfg
 from .consts import Resource
 from .errors import ErrorStrategy
 
-__version__ = "0.3.0a0"
+__version__ = "0.3.0"
 
 __all__ = [
     "DAG",
