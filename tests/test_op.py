@@ -2,6 +2,7 @@ from typing import Any
 
 import pytest
 from tawazi import dag, xn
+from tawazi.errors import TawaziUsageError
 
 
 # tests different cases of @op decoration for Python functions
@@ -67,8 +68,39 @@ def test_ops_signatures() -> None:
     pipe()
 
 
-def test_call_directly() -> None:
+def test_call_directly_with_warning() -> None:
+    from tawazi import cfg
+    from tawazi.consts import XNOutsideDAGCall
+
+    cfg.TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR = XNOutsideDAGCall.warning
+
     with pytest.warns(RuntimeWarning):
         assert 15 == f8(1, 2, 3, foo=4, bar=5)
     with pytest.warns(RuntimeWarning):
         assert 4 == f4(1)
+
+
+def test_call_directly_with_error() -> None:
+    from tawazi import cfg
+    from tawazi.consts import XNOutsideDAGCall
+
+    cfg.TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR = XNOutsideDAGCall.error
+
+    with pytest.raises(TawaziUsageError):
+        assert 15 == f8(1, 2, 3, foo=4, bar=5)
+    with pytest.raises(TawaziUsageError):
+        assert 4 == f4(1)
+
+
+def test_call_directly_with_ignore() -> None:
+    from tawazi import cfg
+    from tawazi.consts import XNOutsideDAGCall
+
+    cfg.TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR = XNOutsideDAGCall.ignore
+
+    with pytest.warns(None) as record:  # type: ignore[call-overload]
+        assert 15 == f8(1, 2, 3, foo=4, bar=5)
+    assert len(record) == 0
+    with pytest.warns(None) as record:  # type: ignore[call-overload]
+        assert 4 == f4(1)
+    assert len(record) == 0
