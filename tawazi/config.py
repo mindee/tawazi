@@ -2,7 +2,7 @@
 
 from pydantic import BaseSettings, Field, validator
 
-from tawazi.consts import XNOutsideDAGCall
+from tawazi.consts import Resource, XNOutsideDAGCall
 
 
 class Config(BaseSettings):
@@ -28,6 +28,9 @@ class Config(BaseSettings):
     # - "Ignore": do nothing
     TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR: XNOutsideDAGCall = XNOutsideDAGCall.error
 
+    # choose the default Resource to use to execute the ExecNodes
+    TAWAZI_DEFAULT_RESOURCE = Resource.thread
+
     # Logger settings
     LOGURU_LEVEL: str = Field("PROD", env="TAWAZI_LOGGER_LEVEL")
     LOGURU_BACKTRACE: bool = Field(False, env="TAWAZI_LOGGER_BT")
@@ -51,6 +54,13 @@ class Config(BaseSettings):
             raise ValueError(
                 f"TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR must be one of {accepted_values}"
             )
+        return v
+
+    @validator("TAWAZI_DEFAULT_RESOURCE")
+    def _validate_default_resource(cls, v: str) -> str:  # noqa: N805
+        accepted_values = Resource.__members__.values()
+        if v not in accepted_values:
+            raise ValueError(f"TAWAZI_DEFAULT_RESOURCE must be one of {accepted_values}")
         return v
 
 
