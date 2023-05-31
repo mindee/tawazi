@@ -1,4 +1,5 @@
 """Module containing constants used by Tawazi."""
+from enum import Enum, unique
 from typing import Any, Dict, List, Tuple, Type, TypeVar, Union
 
 from typing_extensions import ParamSpec
@@ -107,3 +108,12 @@ RVDAG = TypeVar("RVDAG", bound=RVTypes, covariant=True)
 RVXN = TypeVar("RVXN", covariant=True)
 
 # ImmutableType = Union[str, int, float, bool, Tuple[ImmutableType]]  # doesn't work because of cyclic typing
+
+
+@unique
+class XNOutsideDAGCall(str, Enum):
+    """The strategy to use when an ExecNode is called outside a DAG."""
+
+    warning: str = "warning"  # raise a warning a single time
+    error: str = "error"  # raise an error and stop DAG description
+    ignore: str = "ignore"  # do nothing

@@ -2,6 +2,8 @@
 
 from pydantic import BaseSettings, Field, validator
 
+from tawazi.consts import XNOutsideDAGCall
+
 
 class Config(BaseSettings):
     """Class to set configuration parameters for Tawazi."""
@@ -18,6 +20,14 @@ class Config(BaseSettings):
     # Weather to run the graphs in debug mode or not
     RUN_DEBUG_NODES: bool = False
 
+    # Behavior when an ExecNode is executed outside of a DAG
+    # Defaults to "Warning"
+    # Options are:
+    # - "Warning": print a warning
+    # - "Error": raise an error
+    # - "Ignore": do nothing
+    TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR: XNOutsideDAGCall = XNOutsideDAGCall.error
+
     # Logger settings
     LOGURU_LEVEL: str = Field("PROD", env="TAWAZI_LOGGER_LEVEL")
     LOGURU_BACKTRACE: bool = Field(False, env="TAWAZI_LOGGER_BT")
@@ -31,6 +41,16 @@ class Config(BaseSettings):
 
             logger.disable("tawazi")
 
+        return v
+
+    # validator for TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR
+    @validator("TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR")
+    def _validate_execnode_outside_dag_behavior(cls, v: str) -> str:  # noqa: N805
+        accepted_values = XNOutsideDAGCall.__members__.keys()
+        if v not in accepted_values:
+            raise ValueError(
+                f"TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR must be one of {accepted_values}"
+            )
         return v
 
 

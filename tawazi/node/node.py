@@ -27,8 +27,9 @@ from tawazi.consts import (
     P,
     Tag,
     TagOrTags,
+    XNOutsideDAGCall,
 )
-from tawazi.errors import TawaziBaseException
+from tawazi.errors import TawaziBaseException, TawaziUsageError
 from tawazi.profile import Profile
 
 from .helpers import _validate_tuple
@@ -438,9 +439,8 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             unpack_to=unpack_to,
         )
 
-    def __call__(
-        self, *args: P.args, **kwargs: P.kwargs
-    ) -> RVXN:  # in reality it returns "XNWrapper":
+    # in reality it returns "XNWrapper":
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVXN:
         """Record the dependencies in a global variable to be called later in DAG.
 
         Args:
@@ -458,12 +458,13 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         """
         # 0.1 LazyExecNodes calls outside outside DAG dependency calculation is not recommended
         if not exec_nodes_lock.locked():
-            warnings.warn(
-                RuntimeWarning(
-                    f"Invoking {self} outside of a `DAG`. Executing wrapped function instead of describing dependency."
-                ),
-                stacklevel=2,
-            )
+            msg = f"Invoking {self} outside of a `DAG`. Executing wrapped function instead of describing dependency."
+            if cfg.TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR == XNOutsideDAGCall.error:
+                raise TawaziUsageError(msg)
+            if cfg.TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR == XNOutsideDAGCall.warning:
+                warnings.warn(RuntimeWarning(msg), stacklevel=2)
+
+            # else cfg.TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR == XNOutsideDAGCall.ignore:
             return self.exec_function(*args, **kwargs)  # type: ignore[no-any-return]
 
         # # 0.2 if self is a debug ExecNode and Tawazi is configured to skip running debug Nodes
