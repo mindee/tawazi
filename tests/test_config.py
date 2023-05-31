@@ -71,3 +71,21 @@ def test_tawazi_execnode_outside_dag_behavior_wrong() -> None:
     cmd = "TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR=twinkle python -c 'from tawazi.config import cfg'"
     proc = run(cmd, shell=True)  # noqa: S602, S603
     assert proc.returncode == 1
+
+
+def test_tawazi_default_resource_thread() -> None:
+    cmd = "TAWAZI_DEFAULT_RESOURCE=thread python -c 'from tawazi.config import cfg; from tawazi.consts import Resource; assert cfg.TAWAZI_DEFAULT_RESOURCE == Resource.thread'"
+    proc = run(cmd, shell=True)  # noqa: S602, S603
+    assert proc.returncode == 0
+
+
+def test_tawazi_default_resource_main_thread() -> None:
+    cmd = "TAWAZI_DEFAULT_RESOURCE=main-thread python -c 'from tawazi.config import cfg; from tawazi.consts import Resource; assert cfg.TAWAZI_DEFAULT_RESOURCE == Resource.main_thread'"
+    proc = run(cmd, shell=True)  # noqa: S602, S603
+    assert proc.returncode == 0
+
+
+def test_tawazi_default_resource_wrong() -> None:
+    cmd = "TAWAZI_DEFAULT_RESOURCE=twinkle python -c 'from tawazi.config import cfg'"
+    proc = run(cmd, shell=True)  # noqa: S602, S603
+    assert proc.returncode == 1
