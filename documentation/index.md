@@ -674,16 +674,17 @@ assert sub_dag(2,3,4) == 9
 
 You can control the resource used to run a specific `ExecNode`. By default, all `ExecNode`s run in threads inside a ThreadPoolExecutor.
 This can be changed by setting the `resource` parameter of the `ExecNode`. Currently only two values are supported: 
-1. "thread": Run the `ExecNode` inside a thread
+
+1. "thread": Run the `ExecNode` inside a thread (default).
 2. "main-thread": Run the `ExecNode` inside the main thread without Pickling the data to pass it to the threads etc.
 
 <!--pytest-codeblocks:cont-->
 
 ```python
-from tawazi.consts import Resource
+from tawazi import Resource
 import threading
 
-@xn(resource=Resource.main)
+@xn(resource=Resource.main_thread)
 def run_in_main_thread(main_thread_id):
   assert main_thread_id == threading.get_ident()
   print(f"I am running in the main thread with thread id {threading.get_ident()}")
@@ -701,7 +702,7 @@ def dag_with_resource(main_thread_id):
 dag_with_resource(threading.get_ident())
 
 ```
-
+You can also set the default resource for all `ExecNode`s by setting the environment variable `TAWAZI_DEFAULT_RESOURCE` to either "thread" or "main-thread".
 
 ## Limitations
 1. All code inside a dag descriptor function must be either an @xn decorated functions calls and arguments passed arguments. Otherwise the behavior of the DAG might be unpredictable
