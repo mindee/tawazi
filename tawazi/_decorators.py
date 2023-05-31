@@ -37,7 +37,7 @@ def xn(
     tag: Optional[Any] = None,
     setup: bool = False,
     unpack_to: Optional[int] = None,
-    resource: Resource = Resource.thread,
+    resource: Resource = cfg.TAWAZI_DEFAULT_RESOURCE,
 ) -> LazyExecNode[P, RVXN]:
     ...
 
@@ -51,7 +51,7 @@ def xn(
     tag: Optional[Any] = None,
     setup: bool = False,
     unpack_to: Optional[int] = None,
-    resource: Resource = Resource.thread,
+    resource: Resource = cfg.TAWAZI_DEFAULT_RESOURCE,
 ) -> Callable[[Callable[P, RVXN]], LazyExecNode[P, RVXN]]:
     ...
 
@@ -65,7 +65,7 @@ def xn(
     tag: Optional[TagOrTags] = None,
     setup: bool = False,
     unpack_to: Optional[int] = None,
-    resource: Resource = Resource.thread,
+    resource: Resource = cfg.TAWAZI_DEFAULT_RESOURCE,
 ) -> Union[Callable[[Callable[P, RVXN]], LazyExecNode[P, RVXN]], LazyExecNode[P, RVXN]]:
     """Decorate a normal function to make it an ExecNode.
 

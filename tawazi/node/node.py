@@ -67,7 +67,7 @@ class ExecNode:
         tag: Optional[TagOrTags] = None,
         setup: bool = False,
         unpack_to: Optional[int] = None,
-        resource: Resource = Resource.thread,
+        resource: Resource = cfg.TAWAZI_DEFAULT_RESOURCE,
     ):
         """Constructor of ExecNode.
 
@@ -810,7 +810,7 @@ def _xn(func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]:
         tag=None,
         setup=False,
         unpack_to=None,
-        resource=Resource.thread,  # TODO: change resource to main-thread!
+        resource=cfg.TAWAZI_DEFAULT_RESOURCE,
     )
 
 
