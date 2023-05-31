@@ -49,7 +49,7 @@ class Config(BaseSettings):
     # validator for TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR
     @validator("TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR")
     def _validate_execnode_outside_dag_behavior(cls, v: str) -> str:  # noqa: N805
-        accepted_values = XNOutsideDAGCall.__members__.keys()
+        accepted_values = XNOutsideDAGCall.__members__.values()
         if v not in accepted_values:
             raise ValueError(
                 f"TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR must be one of {accepted_values}"
