@@ -1,6 +1,6 @@
 """Module for custom errors raised by Tawazi."""
 from enum import Enum, unique
-from typing import Any, Callable, Union
+from typing import Any, Callable, NoReturn, Union
 
 
 class TawaziBaseException(BaseException):
@@ -35,7 +35,7 @@ class TawaziUsageError(TawaziBaseException):
     pass
 
 
-def _raise_arg_exc(func_or_func_name: Union[str, Callable[[Any], Any]], arg_name: str) -> None:
+def _raise_arg_exc(func_or_func_name: Union[str, Callable[[Any], Any]], arg_name: str) -> NoReturn:
     if isinstance(func_or_func_name, str):
         raise TawaziArgumentException(func_or_func_name, arg_name)
 
