@@ -1,6 +1,6 @@
 """Module for helper functions."""
 import inspect
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, NoReturn, Tuple, Union
 
 import yaml
 
@@ -71,10 +71,13 @@ def get_args_and_default_args(func: Callable[..., Any]) -> Tuple[List[str], Dict
     return args, default_args
 
 
-def _make_raise_arg_error(func_name: str, arg_name: str) -> Callable[[], None]:
+def _make_raise_arg_error(func_name: str, arg_name: str) -> Callable[[], NoReturn]:
     # declare a local function that will raise an error in the scheduler if
     # the user doesn't pass in This ArgExecNode as argument to the Attached LazyExecNode
-    return lambda: _raise_arg_exc(func_name, arg_name)
+    def local_func() -> NoReturn:
+        _raise_arg_exc(func_name, arg_name)
+
+    return local_func
 
 
 def _lazy_xn_id(base_id: Identifier, count_usages: int) -> Identifier:
