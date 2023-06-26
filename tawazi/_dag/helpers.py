@@ -142,16 +142,16 @@ def _execute(
             done_, running = wait(running, return_when=FIRST_COMPLETED)
             done = done.union(done_)
 
-            # 1. among the finished futures:
-            #       1. checks for exceptions
-            #       2. and remove them from the graph
+        # 1. among the finished futures:
+        #       1. checks for exceptions
+        #       2. and remove them from the graph
         for id_, fut in futures.items():
             if fut.done() and id_ in graph:
                 logger.debug(f"Remove ExecNode {id_} from the graph")
                 handle_future_exception(behavior, graph, fut, id_)
                 graph.remove_node(id_)
 
-            # 2. list the root nodes that aren't being executed
+        # 2. list the root nodes that aren't being executed
         runnable_xns_ids = list(set(graph.root_nodes()) - set(futures.keys()))
 
         # 3. if no runnable node exist, go to step 6 (wait for a node to finish)
@@ -160,9 +160,9 @@ def _execute(
             logger.debug("No runnable Nodes available")
             continue
 
-            # 4. choose a node to run
-            # 4.1 get the most prioritized node to run
-            # 4.1.1 get all the nodes that have the highest priority
+        # 4. choose a node to run
+        # 4.1 get the most prioritized node to run
+        # 4.1.1 get all the nodes that have the highest priority
         runnable_xns = [xns_dict[node_id] for node_id in runnable_xns_ids]
         highest_priority_xns = get_highest_priority_nodes(runnable_xns)
 
@@ -187,13 +187,13 @@ def _execute(
             # go to step 6
             continue
 
-            # 5.1 dynamic graph pruning
+        # 5.1 dynamic graph pruning
         if not _xn_active_in_call(xn, xns_dict):
             logger.debug(f"Prune {xn.id} from the graph")
             graph.remove_recursively(xn.id)
             continue
 
-            # 5.2 submit the exec node to the executor
+        # 5.2 submit the exec node to the executor
         if xn.resource == Resource.thread:
             exec_future = th_executor.submit(xn._execute, node_dict=xns_dict)
             running.add(exec_future)
@@ -213,8 +213,8 @@ def _execute(
             logger.debug(f"Remove ExecNode {xn.id} from the graph")
             graph.remove_node(xn.id)
 
-            # 5.3 wait for the sequential node to finish
-            # This code is executed only if this node is being executed purely by itself
+        # 5.3 wait for the sequential node to finish
+        # This code is executed only if this node is being executed purely by itself
         if xn.resource == Resource.thread and xn.is_sequential:
             logger.debug(f"Wait for all Futures to finish because {xn.id} is sequential.")
             # ALL_COMPLETED is equivalent to FIRST_COMPLETED because there is only a single future running!
