@@ -63,7 +63,7 @@ def test_dag_execution() -> None:
     global safe_execution_val
     for i in range(10):
         safe_execution_val = ""
-        dagger.max_concurrency = 1
+        dagger.max_threads_concurrency = 1
         dagger()
         assert safe_execution_val == "ABC", f"during {i}th iteration"
 

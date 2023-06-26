@@ -42,7 +42,7 @@ def test_main_thread_resource_computation_time() -> None:
         sleep(T)
         return 2
 
-    @dag(max_concurrency=2)
+    @dag(max_threads_concurrency=2)
     def pipe() -> Tuple[int, int]:
         return xn1(), xn2()
 

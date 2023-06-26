@@ -21,7 +21,7 @@ def c(a: Any, b: Any) -> None:
     sleep(T)
 
 
-@dag(max_concurrency=2)
+@dag(max_threads_concurrency=2)
 def deps() -> None:
     a_ = a()
     b_ = b()

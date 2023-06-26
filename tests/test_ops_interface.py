@@ -1,7 +1,9 @@
 from logging import Logger
 from typing import Union
 
+import pytest
 from tawazi import dag, xn
+from tawazi.errors import TawaziUsageError
 
 logger = Logger(name="mylogger", level="ERROR")
 
@@ -94,3 +96,34 @@ def test_ops_interface() -> None:
     my_custom_dag()
     assert glb_third_argument == 1234
     assert glb_fourth_argument == 1111
+
+
+def test_dag_decorator() -> None:
+    @dag(max_threads_concurrency=2)
+    def my_dag() -> None:
+        pass
+
+    assert my_dag.max_threads_concurrency == 2
+
+
+def test_dag_decorator_warning() -> None:
+    with pytest.warns(
+        DeprecationWarning,
+        match="max_concurrency is deprecated. Will be removed in 0.5. Use max_threads_concurrency instead",
+    ):
+
+        @dag(max_concurrency=2)
+        def my_dag() -> None:
+            pass
+
+    assert my_dag.max_threads_concurrency == 2
+    with pytest.warns(DeprecationWarning, match="deprecated property."):
+        assert my_dag.max_concurrency == 2
+
+
+def test_dag_decorator_error() -> None:
+    with pytest.raises(TawaziUsageError, match="max_concurrency"):
+
+        @dag(max_concurrency=2, max_threads_concurrency=5)
+        def my_dag() -> None:
+            pass
