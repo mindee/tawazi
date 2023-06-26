@@ -54,6 +54,7 @@ class DAG(Generic[P, RVDAG]):
                 2. DAG.PERMISSIVE: continue execution of the DAG and ignore the error
         """
         self.max_threads_concurrency = max_threads_concurrency
+        self.max_processes_concurrency = 4  # TODO: make it a property
         self.behavior = behavior
         self.return_uxns = return_uxns
         self.input_uxns = input_uxns
@@ -466,6 +467,7 @@ class DAG(Generic[P, RVDAG]):
         return execute(
             node_dict=self.node_dict,
             max_threads_concurrency=self.max_threads_concurrency,
+            max_processes_concurrency=self.max_processes_concurrency,
             behavior=self.behavior,
             graph=graph,
             modified_node_dict=modified_node_dict,

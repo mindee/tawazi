@@ -1,8 +1,16 @@
-from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
+from concurrent.futures import (
+    ALL_COMPLETED,
+    FIRST_COMPLETED,
+    Future,
+    ProcessPoolExecutor,
+    ThreadPoolExecutor,
+    wait,
+)
 from copy import copy
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, TypeVar, cast
 
 from loguru import logger
+from typing_extensions import ParamSpec
 
 from tawazi._dag.digraph import DiGraphEx
 from tawazi.consts import Identifier, Resource
@@ -36,10 +44,62 @@ def copy_non_setup_xns(x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
     return x_nodes_copy
 
 
-def get_num_running_threads(_futures: Dict[Identifier, "Future[Any]"]) -> int:
+################
+# The scheduler!
+################
+
+_P = ParamSpec("_P")
+_T = TypeVar("_T")
+THREAD = "thread"
+PROCESS = "process"
+
+
+class FutureEx(Future):  # type: ignore[type-arg]
+    def __init__(self) -> None:
+        super().__init__()
+        self.executor_type = THREAD
+
+
+class ThreadPoolExecutorEx(ThreadPoolExecutor):
+    def submit(self, fn: Callable[_P, _T], *args: _P.args, **kwargs: _P.kwargs) -> FutureEx:
+        future = super().submit(fn, *args, **kwargs)
+        future = cast(FutureEx, future)
+        future.executor_type = THREAD
+        return future
+
+
+class ProcessPoolExecutorEx(ProcessPoolExecutor):
+    def submit(self, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> FutureEx:
+        future = super().submit(fn, *args, **kwargs)
+        future = cast(FutureEx, future)
+        future.executor_type = PROCESS
+        return future
+
+
+def wait_ex(
+    fs: Set[FutureEx], timeout: Optional[float] = None, return_when: str = ALL_COMPLETED
+) -> Tuple[Set[FutureEx], Set[FutureEx]]:
+    done, running = wait(fs=fs, timeout=timeout, return_when=return_when)
+
+    return cast(Set[FutureEx], done), cast(Set[FutureEx], running)
+
+
+def get_num_running_threads(_futures: Dict[Identifier, FutureEx]) -> int:
     # use not future.done() because there is no guarantee that Thread pool will directly execute
     # the submitted thread
-    return sum([not future.done() for future in _futures.values()])
+    threads_futures = filter(
+        lambda f: f.executor_type == THREAD and not f.done(), _futures.values()
+    )
+    return len(list(threads_futures))
+
+
+def get_num_running_processes(_futures: Dict[Identifier, FutureEx]) -> int:
+    # use not future.done() because there is no guarantee that Thread pool will directly execute
+    # the submitted thread
+    processes_futures = filter(
+        lambda f: f.executor_type == PROCESS and not f.done(), _futures.values()
+    )
+    return len(list(processes_futures))
 
 
 def get_highest_priority_nodes(nodes: List[ExecNode]) -> List[ExecNode]:
@@ -47,13 +107,11 @@ def get_highest_priority_nodes(nodes: List[ExecNode]) -> List[ExecNode]:
     return [node for node in nodes if node.priority == highest_priority]
 
 
-################
-# The scheduler!
-################
 def execute(
     *,
     node_dict: Dict[Identifier, ExecNode],
     max_threads_concurrency: int,
+    max_processes_concurrency: int,
     behavior: ErrorStrategy,
     graph: DiGraphEx,
     modified_node_dict: Optional[Dict[str, ExecNode]] = None,
@@ -66,6 +124,7 @@ def execute(
     Args:
         node_dict: dictionary identifying ExecNodes.
         max_threads_concurrency: maximum number of threads to be used for the execution.
+        max_processes_concurrency: maximum number of processes to be used for the execution.
         behavior: the behavior to be used in case of error.
         graph: the graph ids to be executed
         modified_node_dict: A dictionary of the ExecNodes that have been modified by setting the input parameters of the DAG.
@@ -87,28 +146,31 @@ def execute(
         graph.remove_node(id_)
 
     # 0.3 create variables related to futures
-    futures: Dict[Identifier, "Future[Any]"] = {}
-    done: Set["Future[Any]"] = set()
-    running: Set["Future[Any]"] = set()
+    futures: Dict[Identifier, FutureEx] = {}
+    done: Set[FutureEx] = set()
+    running: Set[FutureEx] = set()
 
     # 0.4 get the candidates root nodes that can be executed
     # runnable_nodes_ids will be empty if all root nodes are running
     runnable_xns_ids = graph.root_nodes()
 
-    with ThreadPoolExecutor(
-        max_workers=max_threads_concurrency, thread_name_prefix=call_id
-    ) as executor:
-        _execute(
-            max_threads_concurrency=max_threads_concurrency,
-            behavior=behavior,
-            graph=graph,
-            xns_dict=xns_dict,
-            futures=futures,
-            done=done,
-            running=running,
-            runnable_xns_ids=runnable_xns_ids,
-            th_executor=executor,
-        )
+    with ProcessPoolExecutorEx(max_workers=max_processes_concurrency) as pr_executor:
+        with ThreadPoolExecutorEx(
+            max_workers=max_threads_concurrency, thread_name_prefix=call_id
+        ) as th_executor:
+            _execute(
+                max_threads_concurrency=max_threads_concurrency,
+                max_processes_concurrency=max_processes_concurrency,
+                behavior=behavior,
+                graph=graph,
+                xns_dict=xns_dict,
+                futures=futures,
+                done=done,
+                running=running,
+                runnable_xns_ids=runnable_xns_ids,
+                th_executor=th_executor,
+                pr_executor=pr_executor,
+            )
 
     return xns_dict
 
@@ -116,40 +178,54 @@ def execute(
 def _execute(
     *,
     max_threads_concurrency: int,
+    max_processes_concurrency: int,
     behavior: ErrorStrategy,
     graph: DiGraphEx,
     xns_dict: Dict[Identifier, ExecNode],
-    futures: Dict[Identifier, "Future[Any]"],
-    done: Set["Future[Any]"],
-    running: Set["Future[Any]"],
+    futures: Dict[Identifier, FutureEx],
+    done: Set[FutureEx],
+    running: Set[FutureEx],
     runnable_xns_ids: List[Identifier],
-    th_executor: ThreadPoolExecutor,
+    th_executor: ThreadPoolExecutorEx,
+    pr_executor: ProcessPoolExecutorEx,
 ) -> None:
     while len(graph):
         # Attempt to run **A SINGLE** root node.
+
         # 6. block scheduler execution if no root node can be executed.
         #    this can occur in two cases:
-        #       1. if maximum concurrency is reached
-        #       2. if no runnable node exists (i.e. all root nodes are being executed)
-        #    in both cases: block until a node finishes
+        #       1. if maximum threads concurrency is reached
+        #       2. if maximum processes concurrency is reached
+        #       3. if no runnable node exists (i.e. all root nodes are being executed)
+        #    in all cases: block until a node finishes
         #       => a new root node will be available
+        num_running_processes = get_num_running_processes(futures)
         num_running_threads = get_num_running_threads(futures)
         num_runnable_nodes_ids = len(runnable_xns_ids)
-        if num_running_threads == max_threads_concurrency or num_runnable_nodes_ids == 0:
+
+        if (
+            num_running_threads == max_threads_concurrency
+            or num_running_processes == max_processes_concurrency
+            or num_runnable_nodes_ids == 0
+        ):
             # must wait and not submit any workers before a worker ends
             # (that might create a new more prioritized node) to be executed
             logger.debug(f"Waiting for ExecNodes {running} to finish. Finished running {done}")
-            done_, running = wait(running, return_when=FIRST_COMPLETED)
+            done_, running = wait_ex(running, return_when=FIRST_COMPLETED)
             done = done.union(done_)
 
         # 1. among the finished futures:
-        #       1. checks for exceptions
-        #       2. and remove them from the graph
+        #  1. checks for exceptions
+        #  2. and remove them from the graph
         for id_, fut in futures.items():
             if fut.done() and id_ in graph:
                 logger.debug(f"Remove ExecNode {id_} from the graph")
-                handle_future_exception(behavior, graph, fut, id_)
+                res = handle_future_exception(behavior, graph, fut, id_)
                 graph.remove_node(id_)
+
+                # Future launched in Process, xns_dict is not updated
+                if fut.executor_type == PROCESS:
+                    xns_dict[id_].result = res
 
         # 2. list the root nodes that aren't being executed
         runnable_xns_ids = list(set(graph.root_nodes()) - set(futures.keys()))
@@ -179,11 +255,12 @@ def _execute(
         # Note: This step might run a number of times in the while loop
         #       before the exec_node gets submitted
         num_running_threads = get_num_running_threads(futures)
-        if xn.is_sequential and num_running_threads != 0:
+        num_running_processes = get_num_running_processes(futures)
+        if xn.is_sequential and (num_running_threads != 0 or num_running_processes != 0):
             logger.debug(
                 f"{xn.id} must not run in parallel." f"Wait for the end of a node in {running}"
             )
-            done_, running = wait(running, return_when=FIRST_COMPLETED)
+            done_, running = wait_ex(running, return_when=FIRST_COMPLETED)
             # go to step 6
             continue
 
@@ -196,6 +273,10 @@ def _execute(
         # 5.2 submit the exec node to the executor
         if xn.resource == Resource.thread:
             exec_future = th_executor.submit(xn._execute, node_dict=xns_dict)
+            running.add(exec_future)
+            futures[xn.id] = exec_future
+        elif xn.resource == Resource.process:
+            exec_future = pr_executor.submit(xn._execute, node_dict=xns_dict)
             running.add(exec_future)
             futures[xn.id] = exec_future
         else:
@@ -215,15 +296,15 @@ def _execute(
 
         # 5.3 wait for the sequential node to finish
         # This code is executed only if this node is being executed purely by itself
-        if xn.resource == Resource.thread and xn.is_sequential:
+        if xn.resource != Resource.main_thread and xn.is_sequential:
             logger.debug(f"Wait for all Futures to finish because {xn.id} is sequential.")
             # ALL_COMPLETED is equivalent to FIRST_COMPLETED because there is only a single future running!
-            done_, running = wait(futures.values(), return_when=ALL_COMPLETED)
+            done_, running = wait_ex(set(futures.values()), return_when=ALL_COMPLETED)
 
 
 def handle_future_exception(
-    behavior: ErrorStrategy, graph: DiGraphEx, fut: "Future[Any]", id_: Identifier
-) -> None:
+    behavior: ErrorStrategy, graph: DiGraphEx, fut: FutureEx, id_: Identifier
+) -> Any:
     """Checks if futures have produced exceptions, and handles them according to the specified behavior.
 
     Args:
@@ -238,14 +319,14 @@ def handle_future_exception(
     if behavior == ErrorStrategy.strict:
         # will raise the first encountered exception if there's one
         # no simpler way to check for exception, and not supported by flake8
-        _res = fut.result()  # noqa: F841
+        return fut.result()  # noqa: F841
 
-    else:
-        try:
-            _res = fut.result()  # noqa: F841
+    try:
+        return fut.result()  # noqa: F841
 
-        except Exception as e:
-            handle_exception(behavior, graph, id_, e)
+    except Exception as e:
+        handle_exception(behavior, graph, id_, e)
+        return None
 
 
 def handle_exception(

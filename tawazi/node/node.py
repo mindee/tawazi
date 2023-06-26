@@ -8,6 +8,7 @@ from threading import Lock
 from types import MethodType
 from typing import Any, Callable, Dict, Generic, List, NoReturn, Optional, Tuple, Union
 
+import dill
 from loguru import logger
 
 from tawazi._helpers import _filter_noval, _lazy_xn_id, _make_raise_arg_error, ordinal
@@ -55,6 +56,8 @@ class ExecNode:
         Please use `@xn` decorator.
     """
 
+    DILLED_ATTRIBUTES = ["exec_function", "__wrapped__"]
+
     def __init__(
         self,
         id_: Identifier,
@@ -68,7 +71,7 @@ class ExecNode:
         setup: bool = False,
         unpack_to: Optional[int] = None,
         resource: Resource = cfg.TAWAZI_DEFAULT_RESOURCE,
-    ):
+    ) -> None:
         """Constructor of ExecNode.
 
         Args:
@@ -120,6 +123,19 @@ class ExecNode:
         # even though setting result to NoVal is not necessary... it clarifies debugging
 
         self.profile = Profile(cfg.TAWAZI_PROFILE_ALL_NODES)
+
+    def __getstate__(self) -> object:
+        """Make this ExecNode pickelable (for multiprocessing purpose) by using dill to pickle some attributes."""
+        state = self.__dict__.copy()
+        for k in ExecNode.DILLED_ATTRIBUTES:
+            state[k] = dill.dumps(state[k])  # noqa: S301
+        return state
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        """Make this ExecNode pickelable (for multiprocessing purpose) by using dill to pickle some attributes."""
+        for k in ExecNode.DILLED_ATTRIBUTES:
+            state[k] = dill.loads(state[k])  # noqa: S301
+        self.__dict__.update(state)
 
     @property
     def executed(self) -> bool:
