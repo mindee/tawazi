@@ -119,7 +119,7 @@ def c(a, b):
     print(f"Function 'c' received {a} from 'a' & {b} from 'b'", flush=True)
     return f"{a} + {b} = C"
 
-@dag(max_concurrency=2)
+@dag(max_threads_concurrency=2)
 def pipeline():
   res_a = a()
   res_b = b()
@@ -610,7 +610,7 @@ def c(a, arg_b):
     return f"{a} + {arg_b} = C"
 
 # optionally customize the DAG
-@dag(max_concurrency=2, behavior="strict")
+@dag(max_threads_concurrency=2, behavior="strict")
 def deps_describer():
   res_a = a()
   res_b = b()
