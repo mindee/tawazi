@@ -14,7 +14,7 @@ import yaml
 from loguru import logger
 from networkx.exception import NetworkXUnfeasible
 
-from tawazi._helpers import _make_raise_arg_error, _UniqueKeyLoader
+from tawazi._helpers import _make_raise_arg_error, _set_max_threads_concurrency, _UniqueKeyLoader
 from tawazi.config import cfg
 from tawazi.consts import RVDAG, Identifier, NoVal, P, RVTypes, Tag
 from tawazi.errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
@@ -38,7 +38,7 @@ class DAG(Generic[P, RVDAG]):
         exec_nodes: Dict[Identifier, ExecNode],
         input_uxns: List[UsageExecNode],
         return_uxns: ReturnUXNsType,
-        max_concurrency: int = 1,
+        max_threads_concurrency: int = 1,
         behavior: ErrorStrategy = ErrorStrategy.strict,
     ):
         """Constructor of the DAG. Should not be called directly. Instead use the `dag` decorator.
@@ -47,13 +47,13 @@ class DAG(Generic[P, RVDAG]):
             exec_nodes: all the ExecNodes
             input_uxns: all the input UsageExecNodes
             return_uxns: the return UsageExecNodes. These can be of various types: None, a single value, tuple, list, dict.
-            max_concurrency: the maximal number of threads running in parallel
+            max_threads_concurrency: the maximal number of threads running in parallel
             behavior: specify the behavior if an ExecNode raises an Error. Three option are currently supported:
                 1. DAG.STRICT: stop the execution of all the DAG
                 2. DAG.ALL_CHILDREN: do not execute all children ExecNodes, and continue execution of the DAG
                 2. DAG.PERMISSIVE: continue execution of the DAG and ignore the error
         """
-        self.max_concurrency = max_concurrency
+        self.max_threads_concurrency = max_threads_concurrency
         self.behavior = behavior
         self.return_uxns = return_uxns
         self.input_uxns = input_uxns
@@ -98,11 +98,31 @@ class DAG(Generic[P, RVDAG]):
 
     @property
     def max_concurrency(self) -> int:
-        """Maximal number of threads running in parallel. (will change!)."""
-        return self._max_concurrency
+        """Same as max_threads_concurrency. (DEPRECATED!)."""
+        warnings.warn(
+            "deprecated property. Will be removed in 0.5. Use max_threads_concurrency instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self._max_threads_concurrency
 
     @max_concurrency.setter
     def max_concurrency(self, value: int) -> None:
+        """Same as max_threads_concurrency. (DEPRECATED!)."""
+        warnings.warn(
+            "deprecated property. Will be removed in 0.5. Use max_threads_concurrency instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        self._max_threads_concurrency = value
+
+    @property
+    def max_threads_concurrency(self) -> int:
+        """Maximal number of threads running in parallel. (will change!)."""
+        return self._max_threads_concurrency
+
+    @max_threads_concurrency.setter
+    def max_threads_concurrency(self, value: int) -> None:
         """Set the maximal number of threads running in parallel.
 
         Args:
@@ -112,10 +132,10 @@ class DAG(Generic[P, RVDAG]):
             ValueError: if value is not a positive integer
         """
         if not isinstance(value, int):
-            raise ValueError("max_concurrency must be an int")
+            raise ValueError("max_threads_concurrency must be an int")
         if value < 1:
             raise ValueError("Invalid maximum number of threads! Must be a positive integer")
-        self._max_concurrency = value
+        self._max_threads_concurrency = value
 
     # getters
     def get_nodes_by_tag(self, tag: Tag) -> List[ExecNode]:
@@ -445,7 +465,7 @@ class DAG(Generic[P, RVDAG]):
     ) -> Dict[Identifier, Any]:
         return execute(
             node_dict=self.node_dict,
-            max_concurrency=self.max_concurrency,
+            max_threads_concurrency=self.max_threads_concurrency,
             behavior=self.behavior,
             graph=graph,
             modified_node_dict=modified_node_dict,
@@ -763,7 +783,7 @@ class DAG(Generic[P, RVDAG]):
 
         Args:
             config (Dict[str, Any]): the dictionary containing the config
-                example: {"nodes": {"a": {"priority": 3, "is_sequential": True}}, "max_concurrency": 3}
+                example: {"nodes": {"a": {"priority": 3, "is_sequential": True}}, "max_threads_concurrency": 3}
 
         Raises:
             ValueError: if two nodes are configured by the provided config (which is ambiguous)
@@ -797,8 +817,12 @@ class DAG(Generic[P, RVDAG]):
 
                     visited[node_id] = conf_node
 
-        if "max_concurrency" in config:
-            self.max_concurrency = config["max_concurrency"]
+        # TODO: remove in 0.5
+        max_concurrency = config.get("max_concurrency", 1)
+        max_threads_concurrency = config.get("max_threads_concurrency", 1)
+        self.max_threads_concurrency = _set_max_threads_concurrency(
+            max_concurrency, max_threads_concurrency
+        )
 
         if prio_flag:
             # if we changed the priority of some nodes we need to recompute the compound prio

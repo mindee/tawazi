@@ -53,7 +53,7 @@ def get_highest_priority_nodes(nodes: List[ExecNode]) -> List[ExecNode]:
 def execute(
     *,
     node_dict: Dict[Identifier, ExecNode],
-    max_concurrency: int,
+    max_threads_concurrency: int,
     behavior: ErrorStrategy,
     graph: DiGraphEx,
     modified_node_dict: Optional[Dict[str, ExecNode]] = None,
@@ -65,7 +65,7 @@ def execute(
 
     Args:
         node_dict: dictionary identifying ExecNodes.
-        max_concurrency: maximum number of threads to be used for the execution.
+        max_threads_concurrency: maximum number of threads to be used for the execution.
         behavior: the behavior to be used in case of error.
         graph: the graph ids to be executed
         modified_node_dict: A dictionary of the ExecNodes that have been modified by setting the input parameters of the DAG.
@@ -95,7 +95,9 @@ def execute(
     # runnable_nodes_ids will be empty if all root nodes are running
     runnable_xns_ids = graph.root_nodes()
 
-    with ThreadPoolExecutor(max_workers=max_concurrency, thread_name_prefix=call_id) as executor:
+    with ThreadPoolExecutor(
+        max_workers=max_threads_concurrency, thread_name_prefix=call_id
+    ) as executor:
         while len(graph):
             # Attempt to run **A SINGLE** root node.
 
@@ -107,7 +109,7 @@ def execute(
             #       => a new root node will be available
             num_running_threads = get_num_running_threads(futures)
             num_runnable_nodes_ids = len(runnable_xns_ids)
-            if num_running_threads == max_concurrency or num_runnable_nodes_ids == 0:
+            if num_running_threads == max_threads_concurrency or num_runnable_nodes_ids == 0:
                 # must wait and not submit any workers before a worker ends
                 # (that might create a new more prioritized node) to be executed
                 logger.debug(f"Waiting for ExecNodes {running} to finish. Finished running {done}")

@@ -1,11 +1,12 @@
 """Module for helper functions."""
 import inspect
+import warnings
 from typing import Any, Callable, Dict, List, Tuple, Union
 
 import yaml
 
 from tawazi.consts import USE_SEP_END, USE_SEP_START, Identifier, NoVal, NoValType
-from tawazi.errors import _raise_arg_exc
+from tawazi.errors import TawaziUsageError, _raise_arg_exc
 
 
 def ordinal(numb: int) -> str:
@@ -100,3 +101,21 @@ class _UniqueKeyLoader(yaml.SafeLoader):
                 raise KeyError(f"key {key} already in yaml file")
             mapping.append(key)
         return super().construct_mapping(node, deep)
+
+
+def _set_max_threads_concurrency(max_concurrency: int = 1, max_threads_concurrency: int = 1) -> int:
+    if max_concurrency != 1:
+        warnings.warn(
+            "max_concurrency is deprecated. Will be removed in 0.5. Use max_threads_concurrency instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+        if max_threads_concurrency != 1:
+            raise TawaziUsageError(
+                "max_concurrency and max_threads_concurrency can not be used together. Please use max_threads_concurrency only"
+            )
+
+        # max_threads_concurrency's value is overwritten by max_concurrency
+        return max_concurrency
+    return max_threads_concurrency
