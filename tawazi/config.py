@@ -31,6 +31,10 @@ class Config(BaseSettings):
     # choose the default Resource to use to execute the ExecNodes
     TAWAZI_DEFAULT_RESOURCE = Resource.thread
 
+    # choose wether to use DILL or pickle for serializing ExecNodes
+    #  This should be set to True if user wants to use Resource=Process!
+    TAWAZI_DILL_NODES = False
+
     # Logger settings
     LOGURU_LEVEL: str = Field("PROD", env="TAWAZI_LOGGER_LEVEL")
     LOGURU_BACKTRACE: bool = Field(False, env="TAWAZI_LOGGER_BT")

@@ -115,6 +115,7 @@ class Resource(str, Enum):
     Resource can be either:
     1. "thread": Launch the ExecNode in a thread (Default)
     2. "main-thread": Launch the ExecNode inside the main thread, directly inside the main scheduler.
+    3. "process": Launch the ExecNode in a process (Experimental)
 
     Notice that when "main-thread" is used, some of the scheduler functionalities stop working as previously expected:
     1. No new ExecNode will be launched during the execution of the corresponding ExecNode
@@ -124,7 +125,7 @@ class Resource(str, Enum):
     # supported behavior following a raised error
     thread: str = "thread"
     main_thread: str = "main-thread"
-    process: str = "process"  # Reserved for the future
+    process: str = "process"
     # sub_interpreter: str = "sub-interpreter"  # Reserved for the future
 
 

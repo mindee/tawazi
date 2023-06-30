@@ -131,6 +131,7 @@ def dag(
     *,
     max_concurrency: int = 1,
     max_threads_concurrency: int = 1,
+    max_processes_concurrency: int = 1,
     behavior: ErrorStrategy = ErrorStrategy.strict,
 ) -> DAG[P, RVDAG]:
     ...
@@ -141,6 +142,7 @@ def dag(
     *,
     max_concurrency: int = 1,
     max_threads_concurrency: int = 1,
+    max_processes_concurrency: int = 1,
     behavior: ErrorStrategy = ErrorStrategy.strict,
 ) -> Callable[[Callable[P, RVDAG]], DAG[P, RVDAG]]:
     ...
@@ -151,6 +153,7 @@ def dag(
     *,
     max_concurrency: int = 1,
     max_threads_concurrency: int = 1,
+    max_processes_concurrency: int = 1,
     behavior: ErrorStrategy = ErrorStrategy.strict,
 ) -> Union[Callable[[Callable[P, RVDAG]], DAG[P, RVDAG]], DAG[P, RVDAG]]:
     """Transform the declared `ExecNode`s into a DAG that can be executed by Tawazi's scheduler.
@@ -169,6 +172,7 @@ def dag(
             These constants are computed only once during the `DAG` declaration.
         max_concurrency: same as max_threads_concurrency. Deprecated. Will be removed in 0.5.
         max_threads_concurrency: the maximum number of concurrent threads to execute in parallel.
+        max_processes_concurrency: the maximum number of concurrent processes to execute in parallel. (Experimental)
         behavior: the behavior of the `DAG` when an error occurs during the execution of a function (`ExecNode`).
 
     Returns:
@@ -220,6 +224,7 @@ def dag(
                     input_uxns=uxn_args,
                     return_uxns=returned_usage_exec_nodes,
                     max_threads_concurrency=max_threads_concurrency,
+                    max_processes_concurrency=max_processes_concurrency,
                     behavior=behavior,
                 )
 

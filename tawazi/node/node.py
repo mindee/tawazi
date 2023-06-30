@@ -1,5 +1,6 @@
 """Module describing ExecNode Class and subclasses (The basic building Block of a DAG."""
 import functools
+import pickle
 import warnings
 from copy import copy, deepcopy
 from dataclasses import dataclass, field
@@ -41,6 +42,11 @@ exec_nodes: Dict[Identifier, "ExecNode"] = {}
 exec_nodes_lock = Lock()
 
 Alias = Union[Tag, Identifier, "ExecNode"]  # multiple ways of identifying an XN
+
+dill.settings["protocol"] = pickle.HIGHEST_PROTOCOL
+dill.settings["fmode"] = dill.HANDLE_FMODE
+dill.settings["byref"] = True
+dill.settings["recurse"] = False
 
 
 class ExecNode:
@@ -127,15 +133,25 @@ class ExecNode:
     def __getstate__(self) -> object:
         """Make this ExecNode pickelable (for multiprocessing purpose) by using dill to pickle some attributes."""
         state = self.__dict__.copy()
+        if not cfg.TAWAZI_DILL_NODES and self.resource != Resource.process:
+            return state
+
         for k in ExecNode.DILLED_ATTRIBUTES:
-            state[k] = dill.dumps(state[k])  # noqa: S301
+            if k in state:
+                state[k] = dill.dumps(state[k])  # noqa: S301
         return state
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
         """Make this ExecNode pickelable (for multiprocessing purpose) by using dill to pickle some attributes."""
-        for k in ExecNode.DILLED_ATTRIBUTES:
-            state[k] = dill.loads(state[k])  # noqa: S301
         self.__dict__.update(state)
+        if not cfg.TAWAZI_DILL_NODES and self.resource != Resource.process:
+            return
+
+        for k in ExecNode.DILLED_ATTRIBUTES:
+            if k in state:
+                # protocol=pickle.HIGHEST_PROTOCOL, fmode=dill.HANDLE_FMODE, byref=True, recurse=False
+                state[k] = dill.loads(state[k])  # noqa: S301
+                self.__dict__[k] = state[k]
 
     @property
     def executed(self) -> bool:
@@ -207,6 +223,16 @@ class ExecNode:
     def resource(self, value: Resource) -> None:
         if not isinstance(value, Resource):
             raise ValueError(f"resource must be of type {Resource}, provided {type(value)}")
+
+        if value == Resource.process and not cfg.TAWAZI_DILL_NODES:
+            warnings.warn(
+                "You are trying to run a Node in a process, but TAWAZI_DILL_NODES is set to False. "
+                "This means that the Node will be pickled using pickle instead of dill, "
+                "which might cause some issues. "
+                "You can set the env var TAWAZI_DILL_NODES to True to use dill instead of pickle.",
+                UserWarning,
+                stacklevel=2,
+            )
 
         self._resource = value
 

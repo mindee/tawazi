@@ -39,6 +39,7 @@ class DAG(Generic[P, RVDAG]):
         input_uxns: List[UsageExecNode],
         return_uxns: ReturnUXNsType,
         max_threads_concurrency: int = 1,
+        max_processes_concurrency: int = 1,
         behavior: ErrorStrategy = ErrorStrategy.strict,
     ):
         """Constructor of the DAG. Should not be called directly. Instead use the `dag` decorator.
@@ -48,13 +49,14 @@ class DAG(Generic[P, RVDAG]):
             input_uxns: all the input UsageExecNodes
             return_uxns: the return UsageExecNodes. These can be of various types: None, a single value, tuple, list, dict.
             max_threads_concurrency: the maximal number of threads running in parallel
+            max_processes_concurrency: the maximal number of processes running in parallel
             behavior: specify the behavior if an ExecNode raises an Error. Three option are currently supported:
                 1. DAG.STRICT: stop the execution of all the DAG
                 2. DAG.ALL_CHILDREN: do not execute all children ExecNodes, and continue execution of the DAG
                 2. DAG.PERMISSIVE: continue execution of the DAG and ignore the error
         """
         self.max_threads_concurrency = max_threads_concurrency
-        self.max_processes_concurrency = 4  # TODO: make it a property
+        self.max_processes_concurrency = max_processes_concurrency
         self.behavior = behavior
         self.return_uxns = return_uxns
         self.input_uxns = input_uxns
@@ -137,6 +139,27 @@ class DAG(Generic[P, RVDAG]):
         if value < 1:
             raise ValueError("Invalid maximum number of threads! Must be a positive integer")
         self._max_threads_concurrency = value
+
+    @property
+    def max_processes_concurrency(self) -> int:
+        """Maximal number of processes running in parallel."""
+        return self._max_processes_concurrency
+
+    @max_processes_concurrency.setter
+    def max_processes_concurrency(self, value: int) -> None:
+        """Set the maximal number of processes running in parallel.
+
+        Args:
+            value (int): maximum number of processes running in parallel
+
+        Raises:
+            ValueError: if value is not a positive integer
+        """
+        if not isinstance(value, int):
+            raise ValueError("max_processes_concurrency must be an int")
+        if value < 1:
+            raise ValueError("Invalid maximum number of processes! Must be a positive integer")
+        self._max_processes_concurrency = value
 
     # getters
     def get_nodes_by_tag(self, tag: Tag) -> List[ExecNode]:
