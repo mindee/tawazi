@@ -15,6 +15,7 @@ A couple of features will be released soon:
 * improve the graph dependency rendering on the console (using graphviz).
 * automatically generate release on new tag https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#configuring-automatically-generated-release-notes
 * use opnssf service to evaluate code best practices https://bestpractices.coreinfrastructure.org/fr/projects/1486
+* make it possible to set max_threads = 0  (same for processes). In that case, if a node that uses a resource that is not declared a ValueError should be raised. This is useful to make sure that no ExecNode will use a resource that should not be used (for example, a MachineLearning Engineer decides that processes should not be used... or even threads)
 
 ### Features to be discussed
 * support multiprocessing.
