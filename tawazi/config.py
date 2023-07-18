@@ -32,10 +32,10 @@ class Config(BaseSettings):
     TAWAZI_DEFAULT_RESOURCE = Resource.thread
 
     # Logger settings
-    LOGURU_LEVEL: str = Field("PROD", env="TAWAZI_LOGGER_LEVEL")
-    LOGURU_BACKTRACE: bool = Field(False, env="TAWAZI_LOGGER_BT")
+    LOGURU_LEVEL: str = Field(default="PROD", env="TAWAZI_LOGGER_LEVEL")
+    LOGURU_BACKTRACE: bool = Field(default=False, env="TAWAZI_LOGGER_BT")
     # Caution: to set to False if used in prod (exposes variable names)
-    LOGURU_DIAGNOSE: bool = Field(False, env="TAWAZI_LOGGER_DIAGNOSE")
+    LOGURU_DIAGNOSE: bool = Field(default=False, env="TAWAZI_LOGGER_DIAGNOSE")
 
     @validator("LOGURU_LEVEL")
     def _validate_loguru_level(cls, v: str) -> str:  # noqa: N805
@@ -64,4 +64,4 @@ class Config(BaseSettings):
         return v
 
 
-cfg = Config()  # type: ignore[call-arg]
+cfg = Config()
