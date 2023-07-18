@@ -26,7 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python_version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
+        python_version: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
     - uses: actions/checkout@v4
 
@@ -41,6 +41,7 @@ jobs:
         cache-dependency-path: pyproject.toml
 
     - name: Install dependencies
+      # Installs pydantic v2
       run: |
         set -o pipefail
         sudo apt install -y graphviz
@@ -58,4 +59,11 @@ jobs:
     - name: Run tests
       run: |
         set -o pipefail
-        pytest --doctest-modules tests/ | tee pytest-coverage.txt
+        pytest --doctest-modules tests/ tawazi | tee pytest-coverage.txt
+
+    # TODO: remove when pydantic v1 is dropped
+    - name: Tests with Pydantic v1
+      run: |
+        set -o pipefail
+        flit install -s --deps develop --extras pydantic1
+        pytest --doctest-modules tests/ tawazi
