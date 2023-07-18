@@ -1,6 +1,7 @@
 """configuration parameters for Tawazi."""
 
-from pydantic import BaseSettings, Field, validator
+from pydantic import Field, validator
+from pydantic_settings import BaseSettings
 
 from tawazi.consts import Resource, XNOutsideDAGCall
 
@@ -29,7 +30,7 @@ class Config(BaseSettings):
     TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR: XNOutsideDAGCall = XNOutsideDAGCall.error
 
     # choose the default Resource to use to execute the ExecNodes
-    TAWAZI_DEFAULT_RESOURCE = Resource.thread
+    TAWAZI_DEFAULT_RESOURCE: Resource = Resource.thread
 
     # Logger settings
     LOGURU_LEVEL: str = Field(default="PROD", env="TAWAZI_LOGGER_LEVEL")
