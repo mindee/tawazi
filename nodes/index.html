@@ -15,7 +15,7 @@
         <link rel="next" href="../dag/">
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.15">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
     
     
       
@@ -578,14 +578,13 @@ This page describes some internal functionalities of Tawazi, it is still subject
 <p>It basically consists of a function (exec_function) that takes args and kwargs and returns a value.</p>
 <p>When the ExecNode is executed in the DAG, the resulting value will be stored in the ExecNode.result instance attribute.</p>
 
-<details class="note">
+<details class="note" open>
   <summary>This class is not meant to be instantiated directly.</summary>
   <p>Please use <code>@xn</code> decorator.</p>
 </details>
-
-        <details class="quote">
-          <summary>Source code in <code>tawazi/node/node.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-45"> 45</a></span>
+            <details class="quote">
+              <summary>Source code in <code>tawazi/node/node.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-45"> 45</a></span>
 <span class="normal"><a href="#__codelineno-0-46"> 46</a></span>
 <span class="normal"><a href="#__codelineno-0-47"> 47</a></span>
 <span class="normal"><a href="#__codelineno-0-48"> 48</a></span>
@@ -1119,7 +1118,7 @@ This page describes some internal functionalities of Tawazi, it is still subject
 <a id="__codelineno-0-310" name="__codelineno-0-310"></a>
 <a id="__codelineno-0-311" name="__codelineno-0-311"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_unpack_to</span> <span class="o">=</span> <span class="n">value</span>
 </code></pre></div></td></tr></table></div>
-        </details>
+            </details>
 
   
 
@@ -1160,8 +1159,8 @@ This page describes some internal functionalities of Tawazi, it is still subject
 <code class="highlight language-python"><span class="n">tag</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TagOrTags</span><span class="p">]</span></code>
   
   <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-writable"><code>writable</code></small>
       <small class="doc doc-label doc-label-property"><code>property</code></small>
+      <small class="doc doc-label doc-label-writable"><code>writable</code></small>
   </span>
 
 <a href="#tawazi.node.node.ExecNode.tag" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -1182,8 +1181,8 @@ This page describes some internal functionalities of Tawazi, it is still subject
 <code class="highlight language-python"><span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span></code>
   
   <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-writable"><code>writable</code></small>
       <small class="doc doc-label doc-label-property"><code>property</code></small>
+      <small class="doc doc-label doc-label-writable"><code>writable</code></small>
   </span>
 
 <a href="#tawazi.node.node.ExecNode.debug" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -1204,8 +1203,8 @@ This page describes some internal functionalities of Tawazi, it is still subject
 <code class="highlight language-python"><span class="n">setup</span><span class="p">:</span> <span class="nb">bool</span></code>
   
   <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-writable"><code>writable</code></small>
       <small class="doc doc-label doc-label-property"><code>property</code></small>
+      <small class="doc doc-label doc-label-writable"><code>writable</code></small>
   </span>
 
 <a href="#tawazi.node.node.ExecNode.setup" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -1247,8 +1246,8 @@ This page describes some internal functionalities of Tawazi, it is still subject
 <code class="highlight language-python"><span class="n">priority</span><span class="p">:</span> <span class="nb">int</span></code>
   
   <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-writable"><code>writable</code></small>
       <small class="doc doc-label doc-label-property"><code>property</code></small>
+      <small class="doc doc-label doc-label-writable"><code>writable</code></small>
   </span>
 
 <a href="#tawazi.node.node.ExecNode.priority" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -1269,8 +1268,8 @@ This page describes some internal functionalities of Tawazi, it is still subject
 <code class="highlight language-python"><span class="n">is_sequential</span><span class="p">:</span> <span class="nb">bool</span></code>
   
   <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-writable"><code>writable</code></small>
       <small class="doc doc-label doc-label-property"><code>property</code></small>
+      <small class="doc doc-label doc-label-writable"><code>writable</code></small>
   </span>
 
 <a href="#tawazi.node.node.ExecNode.is_sequential" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -1350,10 +1349,10 @@ This page describes some internal functionalities of Tawazi, it is still subject
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.b4d07000.min.js"></script>
+      <script src="../assets/javascripts/bundle.220ee61c.min.js"></script>
       
     
   </body>

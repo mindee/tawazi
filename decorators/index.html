@@ -15,7 +15,7 @@
         <link rel="next" href="../nodes/">
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.15">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
     
     
       
@@ -497,6 +497,7 @@
 
 
 
+
 <div class="doc doc-object doc-function">
 
 
@@ -514,6 +515,8 @@
 This way we can record the dependencies in order to build the actual DAG.
 Please check the example in the README for a guide to the usage.</p>
 
+
+
   <p><strong>Parameters:</strong></p>
   <table>
     <thead>
@@ -530,7 +533,11 @@ Please check the example in the README for a guide to the usage.</p>
           <td>
                 <code>[Callable[P, RVXN]</code>
           </td>
-          <td><p>a Callable that will be executed in the <code>DAG</code></p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>a Callable that will be executed in the <code>DAG</code></p>
+            </div>
+          </td>
           <td>
                 <code>None</code>
           </td>
@@ -540,7 +547,11 @@ Please check the example in the README for a guide to the usage.</p>
           <td>
                 <code>int</code>
           </td>
-          <td><p>priority of the execution with respect to other <code>ExecNode</code>s</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>priority of the execution with respect to other <code>ExecNode</code>s</p>
+            </div>
+          </td>
           <td>
                 <code>0</code>
           </td>
@@ -550,10 +561,14 @@ Please check the example in the README for a guide to the usage.</p>
           <td>
                 <code>bool</code>
           </td>
-          <td><p>whether to allow the execution of this <code>ExecNode</code> with others or not.
-If <code>True</code>, all other <code>ExecNode</code> currently running will stop before this one starts executing.</p></td>
           <td>
-                <code>cfg.TAWAZI_IS_SEQUENTIAL</code>
+            <div class="doc-md-description">
+              <p>whether to allow the execution of this <code>ExecNode</code> with others or not.
+If <code>True</code>, all other <code>ExecNode</code> currently running will stop before this one starts executing.</p>
+            </div>
+          </td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="tawazi.config.cfg" href="../others/#tawazi.cfg">cfg</a>.<span title="tawazi.config.cfg.TAWAZI_IS_SEQUENTIAL">TAWAZI_IS_SEQUENTIAL</span></code>
           </td>
         </tr>
         <tr>
@@ -561,8 +576,12 @@ If <code>True</code>, all other <code>ExecNode</code> currently running will sto
           <td>
                 <code>bool</code>
           </td>
-          <td><p>if <code>True</code>, will execute only when Debug mode is active.
-a debug <code>ExecNode</code> will run its inputs exists regardless of subgraph choice.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>if <code>True</code>, will execute only when Debug mode is active.
+a debug <code>ExecNode</code> will run its inputs exists regardless of subgraph choice.</p>
+            </div>
+          </td>
           <td>
                 <code>False</code>
           </td>
@@ -572,9 +591,13 @@ a debug <code>ExecNode</code> will run its inputs exists regardless of subgraph 
           <td>
                 <code><span title="typing.Optional">Optional</span>[<span title="tawazi.consts.TagOrTags">TagOrTags</span>]</code>
           </td>
-          <td><p>a str or Tuple[str] to tag this ExecNode.
+          <td>
+            <div class="doc-md-description">
+              <p>a str or Tuple[str] to tag this ExecNode.
 If Tuple[str] is given, every value of the tuple is used as tag.
-Notice that multiple ExecNodes can have the same tag.</p></td>
+Notice that multiple ExecNodes can have the same tag.</p>
+            </div>
+          </td>
           <td>
                 <code>None</code>
           </td>
@@ -584,7 +607,9 @@ Notice that multiple ExecNodes can have the same tag.</p></td>
           <td>
                 <code>bool</code>
           </td>
-          <td><p>if True, will be executed only once during the lifetime of a <code>DAG</code> instance.
+          <td>
+            <div class="doc-md-description">
+              <p>if True, will be executed only once during the lifetime of a <code>DAG</code> instance.
 Setup <code>ExecNode</code>s are meant to be used to load heavy data only once inside the execution pipeline
 and then be used as if the results of their execution were cached.
 This can be useful if you want to load heavy ML models, heavy Data etc.
@@ -593,7 +618,9 @@ NOTE setup nodes are currently not threadsafe!
     because they are shared between all threads!
     If you execute the same pipeline in multiple threads during the setup phase, the behavior is undefined.
     This is why it is best to invoke the DAG.setup method before using the DAG in a multithreaded environment.
-    This problem will be resolved in the future</p></td>
+    This problem will be resolved in the future</p>
+            </div>
+          </td>
           <td>
                 <code>False</code>
           </td>
@@ -603,7 +630,11 @@ NOTE setup nodes are currently not threadsafe!
           <td>
                 <code><span title="typing.Optional">Optional</span>[int]</code>
           </td>
-          <td><p>if not None, this ExecNode's execution must return unpacked results corresponding to the given value</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>if not None, this ExecNode's execution must return unpacked results corresponding to the given value</p>
+            </div>
+          </td>
           <td>
                 <code>None</code>
           </td>
@@ -613,13 +644,19 @@ NOTE setup nodes are currently not threadsafe!
           <td>
                 <code>str</code>
           </td>
-          <td><p>the resource to use to execute this ExecNode. Defaults to "thread".</p></td>
           <td>
-                <code>cfg.TAWAZI_DEFAULT_RESOURCE</code>
+            <div class="doc-md-description">
+              <p>the resource to use to execute this ExecNode. Defaults to "thread".</p>
+            </div>
+          </td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="tawazi.config.cfg" href="../others/#tawazi.cfg">cfg</a>.<span title="tawazi.config.cfg.TAWAZI_DEFAULT_RESOURCE">TAWAZI_DEFAULT_RESOURCE</span></code>
           </td>
         </tr>
     </tbody>
   </table>
+
+
 
   <p><strong>Returns:</strong></p>
   <table>
@@ -634,10 +671,16 @@ NOTE setup nodes are currently not threadsafe!
 <td><code>LazyExecNode</code></td>          <td>
                 <code><span title="typing.Union">Union</span>[<span title="typing.Callable">Callable</span>[[<span title="typing.Callable">Callable</span>[<span title="tawazi.consts.P">P</span>, <span title="tawazi.consts.RVXN">RVXN</span>]], <span title="tawazi.node.LazyExecNode">LazyExecNode</span>[<span title="tawazi.consts.P">P</span>, <span title="tawazi.consts.RVXN">RVXN</span>]], <span title="tawazi.node.LazyExecNode">LazyExecNode</span>[<span title="tawazi.consts.P">P</span>, <span title="tawazi.consts.RVXN">RVXN</span>]]</code>
           </td>
-          <td><p>The decorated function wrapped in an <code>ExecNode</code>.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The decorated function wrapped in an <code>ExecNode</code>.</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
+
+
 
   <p><strong>Raises:</strong></p>
   <table>
@@ -652,14 +695,18 @@ NOTE setup nodes are currently not threadsafe!
           <td>
                 <code>TypeError</code>
           </td>
-          <td><p>If the decorated function passed is not a <code>Callable</code>.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>If the decorated function passed is not a <code>Callable</code>.</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
 
-      <details class="quote">
-        <summary>Source code in <code>tawazi/_decorators.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-59"> 59</a></span>
+          <details class="quote">
+            <summary>Source code in <code>tawazi/_decorators.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-59"> 59</a></span>
 <span class="normal"><a href="#__codelineno-0-60"> 60</a></span>
 <span class="normal"><a href="#__codelineno-0-61"> 61</a></span>
 <span class="normal"><a href="#__codelineno-0-62"> 62</a></span>
@@ -777,14 +824,15 @@ NOTE setup nodes are currently not threadsafe!
 <a id="__codelineno-0-114" name="__codelineno-0-114"></a>    <span class="k">if</span> <span class="n">func</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-0-115" name="__codelineno-0-115"></a>        <span class="k">return</span> <span class="n">intermediate_wrapper</span>
 <a id="__codelineno-0-116" name="__codelineno-0-116"></a>    <span class="c1"># case #2: no argument is provided to the decorator</span>
-<a id="__codelineno-0-117" name="__codelineno-0-117"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+<a id="__codelineno-0-117" name="__codelineno-0-117"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
 <a id="__codelineno-0-118" name="__codelineno-0-118"></a>        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">func</span><span class="si">}</span><span class="s2"> is not a callable. Did you use a non-keyword argument?&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-119" name="__codelineno-0-119"></a>    <span class="k">return</span> <span class="n">intermediate_wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
-      </details>
+          </details>
   </div>
 
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -801,11 +849,13 @@ NOTE setup nodes are currently not threadsafe!
       <p>Transform the declared <code>ExecNode</code>s into a DAG that can be executed by Tawazi's scheduler.</p>
 <p>The same DAG can be executed multiple times.</p>
 
-<details class="note">
+<details class="note" open>
   <summary>dag is thread safe because it uses an internal lock.</summary>
   <p>If you need to construct lots of DAGs in multiple threads,
 it is best to construct your dag once and then use it as much as you like.</p>
 </details>      <p>Please check the example in the README for a guide to the usage.</p>
+
+
 
   <p><strong>Parameters:</strong></p>
   <table>
@@ -823,11 +873,15 @@ it is best to construct your dag once and then use it as much as you like.</p>
           <td>
                 <code><span title="typing.Optional">Optional</span>[<span title="typing.Callable">Callable</span>[<span title="tawazi.consts.P">P</span>, <span title="tawazi.consts.RVDAG">RVDAG</span>]]</code>
           </td>
-          <td><p>a function that describes the execution of the DAG.
+          <td>
+            <div class="doc-md-description">
+              <p>a function that describes the execution of the DAG.
 This function should only contain calls to <code>ExecNode</code>s and data Exchange between them.
 (i.e. You can not use a normal Python function inside it unless decorated with <code>@xn</code>.)
 However, you can use some simple python code to generate constants.
-These constants are computed only once during the <code>DAG</code> declaration.</p></td>
+These constants are computed only once during the <code>DAG</code> declaration.</p>
+            </div>
+          </td>
           <td>
                 <code>None</code>
           </td>
@@ -837,7 +891,11 @@ These constants are computed only once during the <code>DAG</code> declaration.<
           <td>
                 <code>int</code>
           </td>
-          <td><p>the maximum number of concurrent threads to execute in parallel.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>the maximum number of concurrent threads to execute in parallel.</p>
+            </div>
+          </td>
           <td>
                 <code>1</code>
           </td>
@@ -847,13 +905,19 @@ These constants are computed only once during the <code>DAG</code> declaration.<
           <td>
                 <code><a class="autorefs autorefs-internal" title="tawazi.errors.ErrorStrategy" href="../others/#tawazi.ErrorStrategy">ErrorStrategy</a></code>
           </td>
-          <td><p>the behavior of the <code>DAG</code> when an error occurs during the execution of a function (<code>ExecNode</code>).</p></td>
           <td>
-                <code>ErrorStrategy.strict</code>
+            <div class="doc-md-description">
+              <p>the behavior of the <code>DAG</code> when an error occurs during the execution of a function (<code>ExecNode</code>).</p>
+            </div>
+          </td>
+          <td>
+                <code><a class="autorefs autorefs-internal" title="tawazi.errors.ErrorStrategy" href="../others/#tawazi.ErrorStrategy">ErrorStrategy</a>.<span title="tawazi.errors.ErrorStrategy.strict">strict</span></code>
           </td>
         </tr>
     </tbody>
   </table>
+
+
 
   <p><strong>Returns:</strong></p>
   <table>
@@ -868,10 +932,16 @@ These constants are computed only once during the <code>DAG</code> declaration.<
           <td>
                 <code><span title="typing.Union">Union</span>[<span title="typing.Callable">Callable</span>[[<span title="typing.Callable">Callable</span>[<span title="tawazi.consts.P">P</span>, <span title="tawazi.consts.RVDAG">RVDAG</span>]], <a class="autorefs autorefs-internal" title="tawazi._dag.DAG" href="../dag/#tawazi._dag.DAG">DAG</a>[<span title="tawazi.consts.P">P</span>, <span title="tawazi.consts.RVDAG">RVDAG</span>]], <a class="autorefs autorefs-internal" title="tawazi._dag.DAG" href="../dag/#tawazi._dag.DAG">DAG</a>[<span title="tawazi.consts.P">P</span>, <span title="tawazi.consts.RVDAG">RVDAG</span>]]</code>
           </td>
-          <td><p>a <code>DAG</code> instance that can be used just like a normal Python function. However it will be executed by Tawazi's scheduler.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>a <code>DAG</code> instance that can be used just like a normal Python function. However it will be executed by Tawazi's scheduler.</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
+
+
 
   <p><strong>Raises:</strong></p>
   <table>
@@ -886,14 +956,18 @@ These constants are computed only once during the <code>DAG</code> declaration.<
           <td>
                 <code>TypeError</code>
           </td>
-          <td><p>If the decorated object is not a Callable.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>If the decorated object is not a Callable.</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
 
-      <details class="quote">
-        <summary>Source code in <code>tawazi/_decorators.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-144">144</a></span>
+          <details class="quote">
+            <summary>Source code in <code>tawazi/_decorators.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-144">144</a></span>
 <span class="normal"><a href="#__codelineno-0-145">145</a></span>
 <span class="normal"><a href="#__codelineno-0-146">146</a></span>
 <span class="normal"><a href="#__codelineno-0-147">147</a></span>
@@ -1075,13 +1149,13 @@ These constants are computed only once during the <code>DAG</code> declaration.<
 <a id="__codelineno-0-230" name="__codelineno-0-230"></a>        <span class="c1"># return a decorator</span>
 <a id="__codelineno-0-231" name="__codelineno-0-231"></a>        <span class="k">return</span> <span class="n">intermediate_wrapper</span>
 <a id="__codelineno-0-232" name="__codelineno-0-232"></a>    <span class="c1"># case 2: arguments aren&#39;t provided to the decorator</span>
-<a id="__codelineno-0-233" name="__codelineno-0-233"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">callable</span><span class="p">(</span><span class="n">declare_dag_function</span><span class="p">):</span>
+<a id="__codelineno-0-233" name="__codelineno-0-233"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">declare_dag_function</span><span class="p">):</span>
 <a id="__codelineno-0-234" name="__codelineno-0-234"></a>        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
 <a id="__codelineno-0-235" name="__codelineno-0-235"></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">declare_dag_function</span><span class="si">}</span><span class="s2"> is not a callable. Did you use a non-keyword argument?&quot;</span>
 <a id="__codelineno-0-236" name="__codelineno-0-236"></a>        <span class="p">)</span>
 <a id="__codelineno-0-237" name="__codelineno-0-237"></a>    <span class="k">return</span> <span class="n">intermediate_wrapper</span><span class="p">(</span><span class="n">declare_dag_function</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
-      </details>
+          </details>
   </div>
 
 </div>
@@ -1130,10 +1204,10 @@ These constants are computed only once during the <code>DAG</code> declaration.<
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.b4d07000.min.js"></script>
+      <script src="../assets/javascripts/bundle.220ee61c.min.js"></script>
       
     
   </body>

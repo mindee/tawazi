@@ -15,7 +15,7 @@
         <link rel="next" href="../others/">
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.15">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
     
     
       
@@ -523,34 +523,17 @@
 
 <a id="tawazi._dag.DAGExecution"></a>
   <div class="doc doc-contents first">
-      <p class="doc doc-class-bases">
-        Bases: <code><span title="typing.Generic">Generic</span>[<span title="tawazi.consts.P">P</span>, <span title="tawazi.consts.RVDAG">RVDAG</span>]</code></p>
+          <p class="doc doc-class-bases">
+            Bases: <code><span title="typing.Generic">Generic</span>[<span title="tawazi.consts.P">P</span>, <span title="tawazi.consts.RVDAG">RVDAG</span>]</code></p>
 
   
       <p>A disposable callable instance of a DAG.</p>
 <p>It holds information about the last execution. Hence it is not threadsafe.
 It might be reusable, however it is not recommended to reuse an instance of DAGExecutor!.</p>
 
-
-        <details class="quote">
-          <summary>Source code in <code>tawazi/_dag/dag.py</code></summary>
-          <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-832"> 832</a></span>
-<span class="normal"><a href="#__codelineno-0-833"> 833</a></span>
-<span class="normal"><a href="#__codelineno-0-834"> 834</a></span>
-<span class="normal"><a href="#__codelineno-0-835"> 835</a></span>
-<span class="normal"><a href="#__codelineno-0-836"> 836</a></span>
-<span class="normal"><a href="#__codelineno-0-837"> 837</a></span>
-<span class="normal"><a href="#__codelineno-0-838"> 838</a></span>
-<span class="normal"><a href="#__codelineno-0-839"> 839</a></span>
-<span class="normal"><a href="#__codelineno-0-840"> 840</a></span>
-<span class="normal"><a href="#__codelineno-0-841"> 841</a></span>
-<span class="normal"><a href="#__codelineno-0-842"> 842</a></span>
-<span class="normal"><a href="#__codelineno-0-843"> 843</a></span>
-<span class="normal"><a href="#__codelineno-0-844"> 844</a></span>
-<span class="normal"><a href="#__codelineno-0-845"> 845</a></span>
-<span class="normal"><a href="#__codelineno-0-846"> 846</a></span>
-<span class="normal"><a href="#__codelineno-0-847"> 847</a></span>
-<span class="normal"><a href="#__codelineno-0-848"> 848</a></span>
+            <details class="quote">
+              <summary>Source code in <code>tawazi/_dag/dag.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-848"> 848</a></span>
 <span class="normal"><a href="#__codelineno-0-849"> 849</a></span>
 <span class="normal"><a href="#__codelineno-0-850"> 850</a></span>
 <span class="normal"><a href="#__codelineno-0-851"> 851</a></span>
@@ -771,250 +754,267 @@ It might be reusable, however it is not recommended to reuse an instance of DAGE
 <span class="normal"><a href="#__codelineno-0-1066">1066</a></span>
 <span class="normal"><a href="#__codelineno-0-1067">1067</a></span>
 <span class="normal"><a href="#__codelineno-0-1068">1068</a></span>
-<span class="normal"><a href="#__codelineno-0-1069">1069</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-832" name="__codelineno-0-832"></a><span class="k">class</span> <span class="nc">DAGExecution</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">P</span><span class="p">,</span> <span class="n">RVDAG</span><span class="p">]):</span>
-<a id="__codelineno-0-833" name="__codelineno-0-833"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;A disposable callable instance of a DAG.</span>
-<a id="__codelineno-0-834" name="__codelineno-0-834"></a>
-<a id="__codelineno-0-835" name="__codelineno-0-835"></a><span class="sd">    It holds information about the last execution. Hence it is not threadsafe.</span>
-<a id="__codelineno-0-836" name="__codelineno-0-836"></a><span class="sd">    It might be reusable, however it is not recommended to reuse an instance of DAGExecutor!.</span>
-<a id="__codelineno-0-837" name="__codelineno-0-837"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-838" name="__codelineno-0-838"></a>
-<a id="__codelineno-0-839" name="__codelineno-0-839"></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-<a id="__codelineno-0-840" name="__codelineno-0-840"></a>        <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-841" name="__codelineno-0-841"></a>        <span class="n">dag</span><span class="p">:</span> <span class="n">DAG</span><span class="p">[</span><span class="n">P</span><span class="p">,</span> <span class="n">RVDAG</span><span class="p">],</span>
-<a id="__codelineno-0-842" name="__codelineno-0-842"></a>        <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-843" name="__codelineno-0-843"></a>        <span class="n">target_nodes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Alias</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-844" name="__codelineno-0-844"></a>        <span class="n">exclude_nodes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Alias</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-845" name="__codelineno-0-845"></a>        <span class="n">cache_deps_of</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Alias</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-846" name="__codelineno-0-846"></a>        <span class="n">cache_in</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-847" name="__codelineno-0-847"></a>        <span class="n">from_cache</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-848" name="__codelineno-0-848"></a>        <span class="n">call_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-849" name="__codelineno-0-849"></a>    <span class="p">):</span>
-<a id="__codelineno-0-850" name="__codelineno-0-850"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Constructor.</span>
-<a id="__codelineno-0-851" name="__codelineno-0-851"></a>
-<a id="__codelineno-0-852" name="__codelineno-0-852"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-853" name="__codelineno-0-853"></a><span class="sd">            dag (DAG): The attached DAG.</span>
-<a id="__codelineno-0-854" name="__codelineno-0-854"></a><span class="sd">            target_nodes (Optional[List[Alias]]): The leave ExecNodes to execute.</span>
-<a id="__codelineno-0-855" name="__codelineno-0-855"></a><span class="sd">                If None will execute all ExecNodes.</span>
-<a id="__codelineno-0-856" name="__codelineno-0-856"></a><span class="sd">                Defaults to None.</span>
-<a id="__codelineno-0-857" name="__codelineno-0-857"></a><span class="sd">            exclude_nodes (Optional[List[Alias]]): The leave ExecNodes to exclude.</span>
-<a id="__codelineno-0-858" name="__codelineno-0-858"></a><span class="sd">                If None will exclude all ExecNodes.</span>
-<a id="__codelineno-0-859" name="__codelineno-0-859"></a><span class="sd">                Defaults to None.</span>
-<a id="__codelineno-0-860" name="__codelineno-0-860"></a><span class="sd">            cache_deps_of (Optional[List[Alias]]): cache all the dependencies of these nodes.</span>
-<a id="__codelineno-0-861" name="__codelineno-0-861"></a><span class="sd">                This option can not be used together with target_nodes nor exclude_nodes.</span>
-<a id="__codelineno-0-862" name="__codelineno-0-862"></a><span class="sd">            cache_in (str):</span>
-<a id="__codelineno-0-863" name="__codelineno-0-863"></a><span class="sd">                the path to the file where the execution should be cached.</span>
-<a id="__codelineno-0-864" name="__codelineno-0-864"></a><span class="sd">                The path should end in `.pkl`.</span>
-<a id="__codelineno-0-865" name="__codelineno-0-865"></a><span class="sd">                Will skip caching if `cache_in` is Falsy.</span>
-<a id="__codelineno-0-866" name="__codelineno-0-866"></a><span class="sd">                Will raise PickleError if any of the values passed around in the DAG is not pickleable.</span>
-<a id="__codelineno-0-867" name="__codelineno-0-867"></a><span class="sd">                Defaults to &quot;&quot;.</span>
-<a id="__codelineno-0-868" name="__codelineno-0-868"></a><span class="sd">            from_cache (str):</span>
-<a id="__codelineno-0-869" name="__codelineno-0-869"></a><span class="sd">                the path to the file where the execution should be loaded from.</span>
-<a id="__codelineno-0-870" name="__codelineno-0-870"></a><span class="sd">                The path should end in `.pkl`.</span>
-<a id="__codelineno-0-871" name="__codelineno-0-871"></a><span class="sd">                Will skip loading from cache if `from_cache` is Falsy.</span>
-<a id="__codelineno-0-872" name="__codelineno-0-872"></a><span class="sd">                Defaults to &quot;&quot;.</span>
-<a id="__codelineno-0-873" name="__codelineno-0-873"></a><span class="sd">            call_id (Optional[str]): identification of the current execution.</span>
-<a id="__codelineno-0-874" name="__codelineno-0-874"></a><span class="sd">                This will be inserted into thread_name_prefix while executing the threadPool.</span>
-<a id="__codelineno-0-875" name="__codelineno-0-875"></a><span class="sd">                It will be used in the future for identifying the execution inside Processes etc.</span>
-<a id="__codelineno-0-876" name="__codelineno-0-876"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-877" name="__codelineno-0-877"></a>        <span class="c1"># todo: Maybe we can support .dill to extend the possibilities of the exchanged values, but this won&#39;t solve the whole problem</span>
-<a id="__codelineno-0-878" name="__codelineno-0-878"></a>
-<a id="__codelineno-0-879" name="__codelineno-0-879"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">dag</span> <span class="o">=</span> <span class="n">dag</span>
-<a id="__codelineno-0-880" name="__codelineno-0-880"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">target_nodes</span> <span class="o">=</span> <span class="n">target_nodes</span>
-<a id="__codelineno-0-881" name="__codelineno-0-881"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">exclude_nodes</span> <span class="o">=</span> <span class="n">exclude_nodes</span>
-<a id="__codelineno-0-882" name="__codelineno-0-882"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cache_deps_of</span> <span class="o">=</span> <span class="n">cache_deps_of</span>
-<a id="__codelineno-0-883" name="__codelineno-0-883"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cache_in</span> <span class="o">=</span> <span class="n">cache_in</span>
-<a id="__codelineno-0-884" name="__codelineno-0-884"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">from_cache</span> <span class="o">=</span> <span class="n">from_cache</span>
-<a id="__codelineno-0-885" name="__codelineno-0-885"></a>        <span class="c1"># NOTE: from_cache is orthogonal to cache_in which means that if cache_in is set at the same time as from_cache.</span>
-<a id="__codelineno-0-886" name="__codelineno-0-886"></a>        <span class="c1">#  in this case the DAG will be loaded from_cache and the results will be saved again to the cache_in file.</span>
-<a id="__codelineno-0-887" name="__codelineno-0-887"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">call_id</span> <span class="o">=</span> <span class="n">call_id</span>
-<a id="__codelineno-0-888" name="__codelineno-0-888"></a>
-<a id="__codelineno-0-889" name="__codelineno-0-889"></a>        <span class="c1"># get the leaves ids to execute in case of a subgraph</span>
-<a id="__codelineno-0-890" name="__codelineno-0-890"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">target_nodes</span> <span class="o">=</span> <span class="n">target_nodes</span>
-<a id="__codelineno-0-891" name="__codelineno-0-891"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">exclude_nodes</span> <span class="o">=</span> <span class="n">exclude_nodes</span>
-<a id="__codelineno-0-892" name="__codelineno-0-892"></a>
-<a id="__codelineno-0-893" name="__codelineno-0-893"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Identifier</span><span class="p">,</span> <span class="n">ExecNode</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-0-894" name="__codelineno-0-894"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Identifier</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-0-895" name="__codelineno-0-895"></a>
-<a id="__codelineno-0-896" name="__codelineno-0-896"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_construct_dynamic_attributes</span><span class="p">()</span>
-<a id="__codelineno-0-897" name="__codelineno-0-897"></a>
-<a id="__codelineno-0-898" name="__codelineno-0-898"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">executed</span> <span class="o">=</span> <span class="kc">False</span>
-<a id="__codelineno-0-899" name="__codelineno-0-899"></a>
-<a id="__codelineno-0-900" name="__codelineno-0-900"></a>    <span class="k">def</span> <span class="nf">_construct_dynamic_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-901" name="__codelineno-0-901"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">graph</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_graph</span><span class="p">()</span>
-<a id="__codelineno-0-902" name="__codelineno-0-902"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">scheduled_nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">nodes</span>
-<a id="__codelineno-0-903" name="__codelineno-0-903"></a>
-<a id="__codelineno-0-904" name="__codelineno-0-904"></a>    <span class="k">def</span> <span class="nf">_make_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">:</span>
-<a id="__codelineno-0-905" name="__codelineno-0-905"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Make the graph of the execution.</span>
-<a id="__codelineno-0-906" name="__codelineno-0-906"></a>
-<a id="__codelineno-0-907" name="__codelineno-0-907"></a><span class="sd">        This method is called only once per instance.</span>
-<a id="__codelineno-0-908" name="__codelineno-0-908"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-909" name="__codelineno-0-909"></a>        <span class="c1"># logic parts</span>
-<a id="__codelineno-0-910" name="__codelineno-0-910"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_deps_of</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-911" name="__codelineno-0-911"></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">_make_subgraph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_deps_of</span><span class="p">)</span>
-<a id="__codelineno-0-912" name="__codelineno-0-912"></a>
-<a id="__codelineno-0-913" name="__codelineno-0-913"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">_make_subgraph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_nodes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclude_nodes</span><span class="p">)</span>
-<a id="__codelineno-0-914" name="__codelineno-0-914"></a>
-<a id="__codelineno-0-915" name="__codelineno-0-915"></a>    <span class="nd">@property</span>
-<a id="__codelineno-0-916" name="__codelineno-0-916"></a>    <span class="k">def</span> <span class="nf">cache_in</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<a id="__codelineno-0-917" name="__codelineno-0-917"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;The path to the file where the execution should be cached.</span>
-<a id="__codelineno-0-918" name="__codelineno-0-918"></a>
-<a id="__codelineno-0-919" name="__codelineno-0-919"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-920" name="__codelineno-0-920"></a><span class="sd">            str: The path to the file where the execution should be cached.</span>
-<a id="__codelineno-0-921" name="__codelineno-0-921"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-922" name="__codelineno-0-922"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache_in</span>
-<a id="__codelineno-0-923" name="__codelineno-0-923"></a>
-<a id="__codelineno-0-924" name="__codelineno-0-924"></a>    <span class="nd">@cache_in</span><span class="o">.</span><span class="n">setter</span>
-<a id="__codelineno-0-925" name="__codelineno-0-925"></a>    <span class="k">def</span> <span class="nf">cache_in</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_in</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-926" name="__codelineno-0-926"></a>        <span class="k">if</span> <span class="n">cache_in</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">cache_in</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.pkl&quot;</span><span class="p">):</span>
-<a id="__codelineno-0-927" name="__codelineno-0-927"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;cache_in should end with.pkl&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-928" name="__codelineno-0-928"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_cache_in</span> <span class="o">=</span> <span class="n">cache_in</span>
-<a id="__codelineno-0-929" name="__codelineno-0-929"></a>
-<a id="__codelineno-0-930" name="__codelineno-0-930"></a>    <span class="nd">@property</span>
-<a id="__codelineno-0-931" name="__codelineno-0-931"></a>    <span class="k">def</span> <span class="nf">from_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<a id="__codelineno-0-932" name="__codelineno-0-932"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the file path from which the cached execution should be loaded.</span>
-<a id="__codelineno-0-933" name="__codelineno-0-933"></a>
-<a id="__codelineno-0-934" name="__codelineno-0-934"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-935" name="__codelineno-0-935"></a><span class="sd">            str: the file path of the cached execution</span>
-<a id="__codelineno-0-936" name="__codelineno-0-936"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-937" name="__codelineno-0-937"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_from_cache</span>
-<a id="__codelineno-0-938" name="__codelineno-0-938"></a>
-<a id="__codelineno-0-939" name="__codelineno-0-939"></a>    <span class="nd">@from_cache</span><span class="o">.</span><span class="n">setter</span>
-<a id="__codelineno-0-940" name="__codelineno-0-940"></a>    <span class="k">def</span> <span class="nf">from_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_cache</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-941" name="__codelineno-0-941"></a>        <span class="k">if</span> <span class="n">from_cache</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">from_cache</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.pkl&quot;</span><span class="p">):</span>
-<a id="__codelineno-0-942" name="__codelineno-0-942"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;from_cache should end with.pkl&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-943" name="__codelineno-0-943"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_from_cache</span> <span class="o">=</span> <span class="n">from_cache</span>
-<a id="__codelineno-0-944" name="__codelineno-0-944"></a>
-<a id="__codelineno-0-945" name="__codelineno-0-945"></a>    <span class="nd">@property</span>
-<a id="__codelineno-0-946" name="__codelineno-0-946"></a>    <span class="k">def</span> <span class="nf">cache_deps_of</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Alias</span><span class="p">]]:</span>
-<a id="__codelineno-0-947" name="__codelineno-0-947"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Cache all the dependencies of these nodes.</span>
-<a id="__codelineno-0-948" name="__codelineno-0-948"></a>
-<a id="__codelineno-0-949" name="__codelineno-0-949"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-950" name="__codelineno-0-950"></a><span class="sd">            Optional[List[Alias]]: List of Aliases passed to cache_deps_of while instantiating DAGExecution</span>
-<a id="__codelineno-0-951" name="__codelineno-0-951"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-952" name="__codelineno-0-952"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache_deps_of</span>
-<a id="__codelineno-0-953" name="__codelineno-0-953"></a>
-<a id="__codelineno-0-954" name="__codelineno-0-954"></a>    <span class="nd">@cache_deps_of</span><span class="o">.</span><span class="n">setter</span>
-<a id="__codelineno-0-955" name="__codelineno-0-955"></a>    <span class="k">def</span> <span class="nf">cache_deps_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_deps_of</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Alias</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-956" name="__codelineno-0-956"></a>        <span class="k">if</span> <span class="p">(</span>
-<a id="__codelineno-0-957" name="__codelineno-0-957"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">target_nodes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclude_nodes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-<a id="__codelineno-0-958" name="__codelineno-0-958"></a>        <span class="p">)</span> <span class="ow">and</span> <span class="n">cache_deps_of</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-959" name="__codelineno-0-959"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-<a id="__codelineno-0-960" name="__codelineno-0-960"></a>                <span class="s2">&quot;cache_deps_of can not be used together with target_nodes or exclude_nodes&quot;</span>
-<a id="__codelineno-0-961" name="__codelineno-0-961"></a>            <span class="p">)</span>
-<a id="__codelineno-0-962" name="__codelineno-0-962"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_cache_deps_of</span> <span class="o">=</span> <span class="n">cache_deps_of</span>
-<a id="__codelineno-0-963" name="__codelineno-0-963"></a>
-<a id="__codelineno-0-964" name="__codelineno-0-964"></a>    <span class="c1"># we need to reimplement the public methods of DAG here in order to have a constant public interface</span>
-<a id="__codelineno-0-965" name="__codelineno-0-965"></a>    <span class="c1"># getters</span>
-<a id="__codelineno-0-966" name="__codelineno-0-966"></a>    <span class="k">def</span> <span class="nf">get_nodes_by_tag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tag</span><span class="p">:</span> <span class="n">Tag</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ExecNode</span><span class="p">]:</span>
-<a id="__codelineno-0-967" name="__codelineno-0-967"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all the nodes with the given tag.</span>
-<a id="__codelineno-0-968" name="__codelineno-0-968"></a>
-<a id="__codelineno-0-969" name="__codelineno-0-969"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-970" name="__codelineno-0-970"></a><span class="sd">            tag (Tag): tag of ExecNodes in question</span>
-<a id="__codelineno-0-971" name="__codelineno-0-971"></a>
-<a id="__codelineno-0-972" name="__codelineno-0-972"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-973" name="__codelineno-0-973"></a><span class="sd">            List[ExecNode]: corresponding ExecNodes</span>
-<a id="__codelineno-0-974" name="__codelineno-0-974"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-975" name="__codelineno-0-975"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">executed</span><span class="p">:</span>
-<a id="__codelineno-0-976" name="__codelineno-0-976"></a>            <span class="k">return</span> <span class="p">[</span><span class="n">ex_n</span> <span class="k">for</span> <span class="n">ex_n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">ex_n</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="n">tag</span><span class="p">]</span>
-<a id="__codelineno-0-977" name="__codelineno-0-977"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">get_nodes_by_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
-<a id="__codelineno-0-978" name="__codelineno-0-978"></a>
-<a id="__codelineno-0-979" name="__codelineno-0-979"></a>    <span class="k">def</span> <span class="nf">get_node_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">id_</span><span class="p">:</span> <span class="n">Identifier</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecNode</span><span class="p">:</span>
-<a id="__codelineno-0-980" name="__codelineno-0-980"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Get node with the given id.</span>
-<a id="__codelineno-0-981" name="__codelineno-0-981"></a>
-<a id="__codelineno-0-982" name="__codelineno-0-982"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-983" name="__codelineno-0-983"></a><span class="sd">            id_ (Identifier): id of the ExecNode</span>
+<span class="normal"><a href="#__codelineno-0-1069">1069</a></span>
+<span class="normal"><a href="#__codelineno-0-1070">1070</a></span>
+<span class="normal"><a href="#__codelineno-0-1071">1071</a></span>
+<span class="normal"><a href="#__codelineno-0-1072">1072</a></span>
+<span class="normal"><a href="#__codelineno-0-1073">1073</a></span>
+<span class="normal"><a href="#__codelineno-0-1074">1074</a></span>
+<span class="normal"><a href="#__codelineno-0-1075">1075</a></span>
+<span class="normal"><a href="#__codelineno-0-1076">1076</a></span>
+<span class="normal"><a href="#__codelineno-0-1077">1077</a></span>
+<span class="normal"><a href="#__codelineno-0-1078">1078</a></span>
+<span class="normal"><a href="#__codelineno-0-1079">1079</a></span>
+<span class="normal"><a href="#__codelineno-0-1080">1080</a></span>
+<span class="normal"><a href="#__codelineno-0-1081">1081</a></span>
+<span class="normal"><a href="#__codelineno-0-1082">1082</a></span>
+<span class="normal"><a href="#__codelineno-0-1083">1083</a></span>
+<span class="normal"><a href="#__codelineno-0-1084">1084</a></span>
+<span class="normal"><a href="#__codelineno-0-1085">1085</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-848" name="__codelineno-0-848"></a><span class="k">class</span> <span class="nc">DAGExecution</span><span class="p">(</span><span class="n">Generic</span><span class="p">[</span><span class="n">P</span><span class="p">,</span> <span class="n">RVDAG</span><span class="p">]):</span>
+<a id="__codelineno-0-849" name="__codelineno-0-849"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;A disposable callable instance of a DAG.</span>
+<a id="__codelineno-0-850" name="__codelineno-0-850"></a>
+<a id="__codelineno-0-851" name="__codelineno-0-851"></a><span class="sd">    It holds information about the last execution. Hence it is not threadsafe.</span>
+<a id="__codelineno-0-852" name="__codelineno-0-852"></a><span class="sd">    It might be reusable, however it is not recommended to reuse an instance of DAGExecutor!.</span>
+<a id="__codelineno-0-853" name="__codelineno-0-853"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-854" name="__codelineno-0-854"></a>
+<a id="__codelineno-0-855" name="__codelineno-0-855"></a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<a id="__codelineno-0-856" name="__codelineno-0-856"></a>        <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-857" name="__codelineno-0-857"></a>        <span class="n">dag</span><span class="p">:</span> <span class="n">DAG</span><span class="p">[</span><span class="n">P</span><span class="p">,</span> <span class="n">RVDAG</span><span class="p">],</span>
+<a id="__codelineno-0-858" name="__codelineno-0-858"></a>        <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-859" name="__codelineno-0-859"></a>        <span class="n">target_nodes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Alias</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-860" name="__codelineno-0-860"></a>        <span class="n">exclude_nodes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Alias</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-861" name="__codelineno-0-861"></a>        <span class="n">cache_deps_of</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Alias</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-862" name="__codelineno-0-862"></a>        <span class="n">cache_in</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-863" name="__codelineno-0-863"></a>        <span class="n">from_cache</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-864" name="__codelineno-0-864"></a>        <span class="n">call_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-865" name="__codelineno-0-865"></a>    <span class="p">):</span>
+<a id="__codelineno-0-866" name="__codelineno-0-866"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Constructor.</span>
+<a id="__codelineno-0-867" name="__codelineno-0-867"></a>
+<a id="__codelineno-0-868" name="__codelineno-0-868"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-869" name="__codelineno-0-869"></a><span class="sd">            dag (DAG): The attached DAG.</span>
+<a id="__codelineno-0-870" name="__codelineno-0-870"></a><span class="sd">            target_nodes (Optional[List[Alias]]): The leave ExecNodes to execute.</span>
+<a id="__codelineno-0-871" name="__codelineno-0-871"></a><span class="sd">                If None will execute all ExecNodes.</span>
+<a id="__codelineno-0-872" name="__codelineno-0-872"></a><span class="sd">                Defaults to None.</span>
+<a id="__codelineno-0-873" name="__codelineno-0-873"></a><span class="sd">            exclude_nodes (Optional[List[Alias]]): The leave ExecNodes to exclude.</span>
+<a id="__codelineno-0-874" name="__codelineno-0-874"></a><span class="sd">                If None will exclude all ExecNodes.</span>
+<a id="__codelineno-0-875" name="__codelineno-0-875"></a><span class="sd">                Defaults to None.</span>
+<a id="__codelineno-0-876" name="__codelineno-0-876"></a><span class="sd">            cache_deps_of (Optional[List[Alias]]): cache all the dependencies of these nodes.</span>
+<a id="__codelineno-0-877" name="__codelineno-0-877"></a><span class="sd">                This option can not be used together with target_nodes nor exclude_nodes.</span>
+<a id="__codelineno-0-878" name="__codelineno-0-878"></a><span class="sd">            cache_in (str):</span>
+<a id="__codelineno-0-879" name="__codelineno-0-879"></a><span class="sd">                the path to the file where the execution should be cached.</span>
+<a id="__codelineno-0-880" name="__codelineno-0-880"></a><span class="sd">                The path should end in `.pkl`.</span>
+<a id="__codelineno-0-881" name="__codelineno-0-881"></a><span class="sd">                Will skip caching if `cache_in` is Falsy.</span>
+<a id="__codelineno-0-882" name="__codelineno-0-882"></a><span class="sd">                Will raise PickleError if any of the values passed around in the DAG is not pickleable.</span>
+<a id="__codelineno-0-883" name="__codelineno-0-883"></a><span class="sd">                Defaults to &quot;&quot;.</span>
+<a id="__codelineno-0-884" name="__codelineno-0-884"></a><span class="sd">            from_cache (str):</span>
+<a id="__codelineno-0-885" name="__codelineno-0-885"></a><span class="sd">                the path to the file where the execution should be loaded from.</span>
+<a id="__codelineno-0-886" name="__codelineno-0-886"></a><span class="sd">                The path should end in `.pkl`.</span>
+<a id="__codelineno-0-887" name="__codelineno-0-887"></a><span class="sd">                Will skip loading from cache if `from_cache` is Falsy.</span>
+<a id="__codelineno-0-888" name="__codelineno-0-888"></a><span class="sd">                Defaults to &quot;&quot;.</span>
+<a id="__codelineno-0-889" name="__codelineno-0-889"></a><span class="sd">            call_id (Optional[str]): identification of the current execution.</span>
+<a id="__codelineno-0-890" name="__codelineno-0-890"></a><span class="sd">                This will be inserted into thread_name_prefix while executing the threadPool.</span>
+<a id="__codelineno-0-891" name="__codelineno-0-891"></a><span class="sd">                It will be used in the future for identifying the execution inside Processes etc.</span>
+<a id="__codelineno-0-892" name="__codelineno-0-892"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-893" name="__codelineno-0-893"></a>        <span class="c1"># todo: Maybe we can support .dill to extend the possibilities of the exchanged values, but this won&#39;t solve the whole problem</span>
+<a id="__codelineno-0-894" name="__codelineno-0-894"></a>
+<a id="__codelineno-0-895" name="__codelineno-0-895"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">dag</span> <span class="o">=</span> <span class="n">dag</span>
+<a id="__codelineno-0-896" name="__codelineno-0-896"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">target_nodes</span> <span class="o">=</span> <span class="n">target_nodes</span>
+<a id="__codelineno-0-897" name="__codelineno-0-897"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">exclude_nodes</span> <span class="o">=</span> <span class="n">exclude_nodes</span>
+<a id="__codelineno-0-898" name="__codelineno-0-898"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cache_deps_of</span> <span class="o">=</span> <span class="n">cache_deps_of</span>
+<a id="__codelineno-0-899" name="__codelineno-0-899"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">cache_in</span> <span class="o">=</span> <span class="n">cache_in</span>
+<a id="__codelineno-0-900" name="__codelineno-0-900"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">from_cache</span> <span class="o">=</span> <span class="n">from_cache</span>
+<a id="__codelineno-0-901" name="__codelineno-0-901"></a>        <span class="c1"># NOTE: from_cache is orthogonal to cache_in which means that if cache_in is set at the same time as from_cache.</span>
+<a id="__codelineno-0-902" name="__codelineno-0-902"></a>        <span class="c1">#  in this case the DAG will be loaded from_cache and the results will be saved again to the cache_in file.</span>
+<a id="__codelineno-0-903" name="__codelineno-0-903"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">call_id</span> <span class="o">=</span> <span class="n">call_id</span>
+<a id="__codelineno-0-904" name="__codelineno-0-904"></a>
+<a id="__codelineno-0-905" name="__codelineno-0-905"></a>        <span class="c1"># get the leaves ids to execute in case of a subgraph</span>
+<a id="__codelineno-0-906" name="__codelineno-0-906"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">target_nodes</span> <span class="o">=</span> <span class="n">target_nodes</span>
+<a id="__codelineno-0-907" name="__codelineno-0-907"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">exclude_nodes</span> <span class="o">=</span> <span class="n">exclude_nodes</span>
+<a id="__codelineno-0-908" name="__codelineno-0-908"></a>
+<a id="__codelineno-0-909" name="__codelineno-0-909"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Identifier</span><span class="p">,</span> <span class="n">ExecNode</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-910" name="__codelineno-0-910"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Identifier</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-911" name="__codelineno-0-911"></a>
+<a id="__codelineno-0-912" name="__codelineno-0-912"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_construct_dynamic_attributes</span><span class="p">()</span>
+<a id="__codelineno-0-913" name="__codelineno-0-913"></a>
+<a id="__codelineno-0-914" name="__codelineno-0-914"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">executed</span> <span class="o">=</span> <span class="kc">False</span>
+<a id="__codelineno-0-915" name="__codelineno-0-915"></a>
+<a id="__codelineno-0-916" name="__codelineno-0-916"></a>    <span class="k">def</span> <span class="nf">_construct_dynamic_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-917" name="__codelineno-0-917"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">graph</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_graph</span><span class="p">()</span>
+<a id="__codelineno-0-918" name="__codelineno-0-918"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">scheduled_nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">nodes</span>
+<a id="__codelineno-0-919" name="__codelineno-0-919"></a>
+<a id="__codelineno-0-920" name="__codelineno-0-920"></a>    <span class="k">def</span> <span class="nf">_make_graph</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nx</span><span class="o">.</span><span class="n">DiGraph</span><span class="p">:</span>
+<a id="__codelineno-0-921" name="__codelineno-0-921"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Make the graph of the execution.</span>
+<a id="__codelineno-0-922" name="__codelineno-0-922"></a>
+<a id="__codelineno-0-923" name="__codelineno-0-923"></a><span class="sd">        This method is called only once per instance.</span>
+<a id="__codelineno-0-924" name="__codelineno-0-924"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-925" name="__codelineno-0-925"></a>        <span class="c1"># logic parts</span>
+<a id="__codelineno-0-926" name="__codelineno-0-926"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_deps_of</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-927" name="__codelineno-0-927"></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">_make_subgraph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_deps_of</span><span class="p">)</span>
+<a id="__codelineno-0-928" name="__codelineno-0-928"></a>
+<a id="__codelineno-0-929" name="__codelineno-0-929"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">_make_subgraph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_nodes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclude_nodes</span><span class="p">)</span>
+<a id="__codelineno-0-930" name="__codelineno-0-930"></a>
+<a id="__codelineno-0-931" name="__codelineno-0-931"></a>    <span class="nd">@property</span>
+<a id="__codelineno-0-932" name="__codelineno-0-932"></a>    <span class="k">def</span> <span class="nf">cache_in</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-0-933" name="__codelineno-0-933"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;The path to the file where the execution should be cached.</span>
+<a id="__codelineno-0-934" name="__codelineno-0-934"></a>
+<a id="__codelineno-0-935" name="__codelineno-0-935"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-936" name="__codelineno-0-936"></a><span class="sd">            str: The path to the file where the execution should be cached.</span>
+<a id="__codelineno-0-937" name="__codelineno-0-937"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-938" name="__codelineno-0-938"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache_in</span>
+<a id="__codelineno-0-939" name="__codelineno-0-939"></a>
+<a id="__codelineno-0-940" name="__codelineno-0-940"></a>    <span class="nd">@cache_in</span><span class="o">.</span><span class="n">setter</span>
+<a id="__codelineno-0-941" name="__codelineno-0-941"></a>    <span class="k">def</span> <span class="nf">cache_in</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_in</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-942" name="__codelineno-0-942"></a>        <span class="k">if</span> <span class="n">cache_in</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">cache_in</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.pkl&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-943" name="__codelineno-0-943"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;cache_in should end with.pkl&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-944" name="__codelineno-0-944"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_cache_in</span> <span class="o">=</span> <span class="n">cache_in</span>
+<a id="__codelineno-0-945" name="__codelineno-0-945"></a>
+<a id="__codelineno-0-946" name="__codelineno-0-946"></a>    <span class="nd">@property</span>
+<a id="__codelineno-0-947" name="__codelineno-0-947"></a>    <span class="k">def</span> <span class="nf">from_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-0-948" name="__codelineno-0-948"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the file path from which the cached execution should be loaded.</span>
+<a id="__codelineno-0-949" name="__codelineno-0-949"></a>
+<a id="__codelineno-0-950" name="__codelineno-0-950"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-951" name="__codelineno-0-951"></a><span class="sd">            str: the file path of the cached execution</span>
+<a id="__codelineno-0-952" name="__codelineno-0-952"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-953" name="__codelineno-0-953"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_from_cache</span>
+<a id="__codelineno-0-954" name="__codelineno-0-954"></a>
+<a id="__codelineno-0-955" name="__codelineno-0-955"></a>    <span class="nd">@from_cache</span><span class="o">.</span><span class="n">setter</span>
+<a id="__codelineno-0-956" name="__codelineno-0-956"></a>    <span class="k">def</span> <span class="nf">from_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">from_cache</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-957" name="__codelineno-0-957"></a>        <span class="k">if</span> <span class="n">from_cache</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">from_cache</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.pkl&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-958" name="__codelineno-0-958"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;from_cache should end with.pkl&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-959" name="__codelineno-0-959"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_from_cache</span> <span class="o">=</span> <span class="n">from_cache</span>
+<a id="__codelineno-0-960" name="__codelineno-0-960"></a>
+<a id="__codelineno-0-961" name="__codelineno-0-961"></a>    <span class="nd">@property</span>
+<a id="__codelineno-0-962" name="__codelineno-0-962"></a>    <span class="k">def</span> <span class="nf">cache_deps_of</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Alias</span><span class="p">]]:</span>
+<a id="__codelineno-0-963" name="__codelineno-0-963"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Cache all the dependencies of these nodes.</span>
+<a id="__codelineno-0-964" name="__codelineno-0-964"></a>
+<a id="__codelineno-0-965" name="__codelineno-0-965"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-966" name="__codelineno-0-966"></a><span class="sd">            Optional[List[Alias]]: List of Aliases passed to cache_deps_of while instantiating DAGExecution</span>
+<a id="__codelineno-0-967" name="__codelineno-0-967"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-968" name="__codelineno-0-968"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache_deps_of</span>
+<a id="__codelineno-0-969" name="__codelineno-0-969"></a>
+<a id="__codelineno-0-970" name="__codelineno-0-970"></a>    <span class="nd">@cache_deps_of</span><span class="o">.</span><span class="n">setter</span>
+<a id="__codelineno-0-971" name="__codelineno-0-971"></a>    <span class="k">def</span> <span class="nf">cache_deps_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache_deps_of</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Alias</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-972" name="__codelineno-0-972"></a>        <span class="k">if</span> <span class="p">(</span>
+<a id="__codelineno-0-973" name="__codelineno-0-973"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">target_nodes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclude_nodes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+<a id="__codelineno-0-974" name="__codelineno-0-974"></a>        <span class="p">)</span> <span class="ow">and</span> <span class="n">cache_deps_of</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-975" name="__codelineno-0-975"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+<a id="__codelineno-0-976" name="__codelineno-0-976"></a>                <span class="s2">&quot;cache_deps_of can not be used together with target_nodes or exclude_nodes&quot;</span>
+<a id="__codelineno-0-977" name="__codelineno-0-977"></a>            <span class="p">)</span>
+<a id="__codelineno-0-978" name="__codelineno-0-978"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_cache_deps_of</span> <span class="o">=</span> <span class="n">cache_deps_of</span>
+<a id="__codelineno-0-979" name="__codelineno-0-979"></a>
+<a id="__codelineno-0-980" name="__codelineno-0-980"></a>    <span class="c1"># we need to reimplement the public methods of DAG here in order to have a constant public interface</span>
+<a id="__codelineno-0-981" name="__codelineno-0-981"></a>    <span class="c1"># getters</span>
+<a id="__codelineno-0-982" name="__codelineno-0-982"></a>    <span class="k">def</span> <span class="nf">get_nodes_by_tag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tag</span><span class="p">:</span> <span class="n">Tag</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ExecNode</span><span class="p">]:</span>
+<a id="__codelineno-0-983" name="__codelineno-0-983"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all the nodes with the given tag.</span>
 <a id="__codelineno-0-984" name="__codelineno-0-984"></a>
-<a id="__codelineno-0-985" name="__codelineno-0-985"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-986" name="__codelineno-0-986"></a><span class="sd">            ExecNode: Corresponding ExecNode</span>
-<a id="__codelineno-0-987" name="__codelineno-0-987"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-988" name="__codelineno-0-988"></a>        <span class="c1"># TODO: ? catch the keyError and</span>
-<a id="__codelineno-0-989" name="__codelineno-0-989"></a>        <span class="c1">#   help the user know the id of the ExecNode by pointing to documentation!?</span>
-<a id="__codelineno-0-990" name="__codelineno-0-990"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">executed</span><span class="p">:</span>
-<a id="__codelineno-0-991" name="__codelineno-0-991"></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="p">[</span><span class="n">id_</span><span class="p">]</span>
-<a id="__codelineno-0-992" name="__codelineno-0-992"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">get_node_by_id</span><span class="p">(</span><span class="n">id_</span><span class="p">)</span>
-<a id="__codelineno-0-993" name="__codelineno-0-993"></a>
-<a id="__codelineno-0-994" name="__codelineno-0-994"></a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-995" name="__codelineno-0-995"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Does the same thing as DAG.setup. However the `target_nodes` and `exclude_nodes` are taken from the DAGExecution&#39;s initization.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-996" name="__codelineno-0-996"></a>        <span class="c1"># TODO: handle the case where cache_deps_of is provided instead of target_nodes and exclude_nodes</span>
-<a id="__codelineno-0-997" name="__codelineno-0-997"></a>        <span class="c1">#  in which case the deps_of might have a setup node themselves which should not run.</span>
-<a id="__codelineno-0-998" name="__codelineno-0-998"></a>        <span class="c1">#  This is an edge case though that is not important to handle at the current moment.</span>
-<a id="__codelineno-0-999" name="__codelineno-0-999"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">target_nodes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_nodes</span><span class="p">,</span> <span class="n">exclude_nodes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">exclude_nodes</span><span class="p">)</span>
+<a id="__codelineno-0-985" name="__codelineno-0-985"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-986" name="__codelineno-0-986"></a><span class="sd">            tag (Tag): tag of ExecNodes in question</span>
+<a id="__codelineno-0-987" name="__codelineno-0-987"></a>
+<a id="__codelineno-0-988" name="__codelineno-0-988"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-989" name="__codelineno-0-989"></a><span class="sd">            List[ExecNode]: corresponding ExecNodes</span>
+<a id="__codelineno-0-990" name="__codelineno-0-990"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-991" name="__codelineno-0-991"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">executed</span><span class="p">:</span>
+<a id="__codelineno-0-992" name="__codelineno-0-992"></a>            <span class="k">return</span> <span class="p">[</span><span class="n">ex_n</span> <span class="k">for</span> <span class="n">ex_n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">ex_n</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="n">tag</span><span class="p">]</span>
+<a id="__codelineno-0-993" name="__codelineno-0-993"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">get_nodes_by_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+<a id="__codelineno-0-994" name="__codelineno-0-994"></a>
+<a id="__codelineno-0-995" name="__codelineno-0-995"></a>    <span class="k">def</span> <span class="nf">get_node_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">id_</span><span class="p">:</span> <span class="n">Identifier</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecNode</span><span class="p">:</span>
+<a id="__codelineno-0-996" name="__codelineno-0-996"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Get node with the given id.</span>
+<a id="__codelineno-0-997" name="__codelineno-0-997"></a>
+<a id="__codelineno-0-998" name="__codelineno-0-998"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-999" name="__codelineno-0-999"></a><span class="sd">            id_ (Identifier): id of the ExecNode</span>
 <a id="__codelineno-0-1000" name="__codelineno-0-1000"></a>
-<a id="__codelineno-0-1001" name="__codelineno-0-1001"></a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">P</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">P</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RVDAG</span><span class="p">:</span>
-<a id="__codelineno-0-1002" name="__codelineno-0-1002"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Call the DAG.</span>
-<a id="__codelineno-0-1003" name="__codelineno-0-1003"></a>
-<a id="__codelineno-0-1004" name="__codelineno-0-1004"></a><span class="sd">        Args:</span>
-<a id="__codelineno-0-1005" name="__codelineno-0-1005"></a><span class="sd">            *args: positional arguments to pass in to the DAG</span>
-<a id="__codelineno-0-1006" name="__codelineno-0-1006"></a><span class="sd">            **kwargs: keyword arguments to pass in to the DAG</span>
-<a id="__codelineno-0-1007" name="__codelineno-0-1007"></a>
-<a id="__codelineno-0-1008" name="__codelineno-0-1008"></a><span class="sd">        Raises:</span>
-<a id="__codelineno-0-1009" name="__codelineno-0-1009"></a><span class="sd">            TawaziUsageError: if the DAGExecution has already been executed.</span>
-<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a>
-<a id="__codelineno-0-1011" name="__codelineno-0-1011"></a><span class="sd">        Returns:</span>
-<a id="__codelineno-0-1012" name="__codelineno-0-1012"></a><span class="sd">            RVDAG: the return value of the DAG&#39;s Execution</span>
-<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a><span class="sd">        &quot;&quot;&quot;</span>
-<a id="__codelineno-0-1014" name="__codelineno-0-1014"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">executed</span><span class="p">:</span>
-<a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;DAGExecution object&#39;s reuse is not recommended.&quot;</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_construct_dynamic_attributes</span><span class="p">()</span>
-<a id="__codelineno-0-1017" name="__codelineno-0-1017"></a>
-<a id="__codelineno-0-1018" name="__codelineno-0-1018"></a>        <span class="c1"># NOTE: *args will be ignored if self.from_cache is set!</span>
-<a id="__codelineno-0-1019" name="__codelineno-0-1019"></a>        <span class="n">dag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span>
-<a id="__codelineno-0-1020" name="__codelineno-0-1020"></a>
-<a id="__codelineno-0-1021" name="__codelineno-0-1021"></a>        <span class="c1"># maybe call_id will be changed to Union[int, str].</span>
-<a id="__codelineno-0-1022" name="__codelineno-0-1022"></a>        <span class="c1"># Keep call_id as Optional[str] for now</span>
-<a id="__codelineno-0-1023" name="__codelineno-0-1023"></a>        <span class="n">call_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_id</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
-<a id="__codelineno-0-1024" name="__codelineno-0-1024"></a>
-<a id="__codelineno-0-1025" name="__codelineno-0-1025"></a>        <span class="c1"># 1. copy the ExecNodes</span>
-<a id="__codelineno-0-1026" name="__codelineno-0-1026"></a>        <span class="n">call_xn_dict</span> <span class="o">=</span> <span class="n">dag</span><span class="o">.</span><span class="n">_make_call_xn_dict</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
-<a id="__codelineno-0-1027" name="__codelineno-0-1027"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_cache</span><span class="p">:</span>
-<a id="__codelineno-0-1028" name="__codelineno-0-1028"></a>            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">from_cache</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-<a id="__codelineno-0-1029" name="__codelineno-0-1029"></a>                <span class="n">cached_results</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>  <span class="c1"># noqa: S301</span>
-<a id="__codelineno-0-1030" name="__codelineno-0-1030"></a>            <span class="c1"># set the result for the ExecNode that were previously executed</span>
-<a id="__codelineno-0-1031" name="__codelineno-0-1031"></a>            <span class="c1"># this will make them skip execution inside the scheduler</span>
-<a id="__codelineno-0-1032" name="__codelineno-0-1032"></a>            <span class="k">for</span> <span class="n">id_</span><span class="p">,</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">cached_results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-<a id="__codelineno-0-1033" name="__codelineno-0-1033"></a>                <span class="n">call_xn_dict</span><span class="p">[</span><span class="n">id_</span><span class="p">]</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="n">result</span>
-<a id="__codelineno-0-1034" name="__codelineno-0-1034"></a>
-<a id="__codelineno-0-1035" name="__codelineno-0-1035"></a>        <span class="c1"># 2. Execute the scheduler</span>
-<a id="__codelineno-0-1036" name="__codelineno-0-1036"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span> <span class="o">=</span> <span class="n">dag</span><span class="o">.</span><span class="n">_execute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">call_xn_dict</span><span class="p">,</span> <span class="n">call_id</span><span class="p">)</span>
-<a id="__codelineno-0-1037" name="__codelineno-0-1037"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">xn</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">xn</span><span class="o">.</span><span class="n">result</span> <span class="k">for</span> <span class="n">xn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()}</span>
-<a id="__codelineno-0-1038" name="__codelineno-0-1038"></a>
-<a id="__codelineno-0-1039" name="__codelineno-0-1039"></a>        <span class="c1"># 3. cache in the graph results</span>
-<a id="__codelineno-0-1040" name="__codelineno-0-1040"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_in</span><span class="p">:</span>
-<a id="__codelineno-0-1041" name="__codelineno-0-1041"></a>            <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_in</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-0-1042" name="__codelineno-0-1042"></a>            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_in</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-<a id="__codelineno-0-1043" name="__codelineno-0-1043"></a>                <span class="c1"># NOTE: we are currently only storing the results of the execution,</span>
-<a id="__codelineno-0-1044" name="__codelineno-0-1044"></a>                <span class="c1">#  this means that the configuration of the ExecNodes are lost!</span>
-<a id="__codelineno-0-1045" name="__codelineno-0-1045"></a>                <span class="c1">#  But this is ok since it should not change between executions!</span>
-<a id="__codelineno-0-1046" name="__codelineno-0-1046"></a>                <span class="c1">#  for example, a setup ExecNode should stay a setup ExecNode between caching in the results and reading back the cached results</span>
-<a id="__codelineno-0-1047" name="__codelineno-0-1047"></a>                <span class="c1">#  the same goes for the DAG itself, the behavior when an error is encountered &amp; its concurrency will be controlled via the constructor</span>
-<a id="__codelineno-0-1048" name="__codelineno-0-1048"></a>
-<a id="__codelineno-0-1049" name="__codelineno-0-1049"></a>                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_deps_of</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-1050" name="__codelineno-0-1050"></a>                    <span class="n">non_cacheable_ids</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="n">Identifier</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a>                    <span class="k">for</span> <span class="n">aliases</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_deps_of</span><span class="p">:</span>
-<a id="__codelineno-0-1052" name="__codelineno-0-1052"></a>                        <span class="n">ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">_alias_to_ids</span><span class="p">(</span><span class="n">aliases</span><span class="p">)</span>
-<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a>                        <span class="n">non_cacheable_ids</span> <span class="o">=</span> <span class="n">non_cacheable_ids</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
+<a id="__codelineno-0-1001" name="__codelineno-0-1001"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-1002" name="__codelineno-0-1002"></a><span class="sd">            ExecNode: Corresponding ExecNode</span>
+<a id="__codelineno-0-1003" name="__codelineno-0-1003"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-1004" name="__codelineno-0-1004"></a>        <span class="c1"># TODO: ? catch the keyError and</span>
+<a id="__codelineno-0-1005" name="__codelineno-0-1005"></a>        <span class="c1">#   help the user know the id of the ExecNode by pointing to documentation!?</span>
+<a id="__codelineno-0-1006" name="__codelineno-0-1006"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">executed</span><span class="p">:</span>
+<a id="__codelineno-0-1007" name="__codelineno-0-1007"></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="p">[</span><span class="n">id_</span><span class="p">]</span>
+<a id="__codelineno-0-1008" name="__codelineno-0-1008"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">get_node_by_id</span><span class="p">(</span><span class="n">id_</span><span class="p">)</span>
+<a id="__codelineno-0-1009" name="__codelineno-0-1009"></a>
+<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-1011" name="__codelineno-0-1011"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Does the same thing as DAG.setup. However the `target_nodes` and `exclude_nodes` are taken from the DAGExecution&#39;s initization.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-1012" name="__codelineno-0-1012"></a>        <span class="c1"># TODO: handle the case where cache_deps_of is provided instead of target_nodes and exclude_nodes</span>
+<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a>        <span class="c1">#  in which case the deps_of might have a setup node themselves which should not run.</span>
+<a id="__codelineno-0-1014" name="__codelineno-0-1014"></a>        <span class="c1">#  This is an edge case though that is not important to handle at the current moment.</span>
+<a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">target_nodes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_nodes</span><span class="p">,</span> <span class="n">exclude_nodes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">exclude_nodes</span><span class="p">)</span>
+<a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>
+<a id="__codelineno-0-1017" name="__codelineno-0-1017"></a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">P</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">P</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RVDAG</span><span class="p">:</span>
+<a id="__codelineno-0-1018" name="__codelineno-0-1018"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Call the DAG.</span>
+<a id="__codelineno-0-1019" name="__codelineno-0-1019"></a>
+<a id="__codelineno-0-1020" name="__codelineno-0-1020"></a><span class="sd">        Args:</span>
+<a id="__codelineno-0-1021" name="__codelineno-0-1021"></a><span class="sd">            *args: positional arguments to pass in to the DAG</span>
+<a id="__codelineno-0-1022" name="__codelineno-0-1022"></a><span class="sd">            **kwargs: keyword arguments to pass in to the DAG</span>
+<a id="__codelineno-0-1023" name="__codelineno-0-1023"></a>
+<a id="__codelineno-0-1024" name="__codelineno-0-1024"></a><span class="sd">        Raises:</span>
+<a id="__codelineno-0-1025" name="__codelineno-0-1025"></a><span class="sd">            TawaziUsageError: if the DAGExecution has already been executed.</span>
+<a id="__codelineno-0-1026" name="__codelineno-0-1026"></a>
+<a id="__codelineno-0-1027" name="__codelineno-0-1027"></a><span class="sd">        Returns:</span>
+<a id="__codelineno-0-1028" name="__codelineno-0-1028"></a><span class="sd">            RVDAG: the return value of the DAG&#39;s Execution</span>
+<a id="__codelineno-0-1029" name="__codelineno-0-1029"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-0-1030" name="__codelineno-0-1030"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">executed</span><span class="p">:</span>
+<a id="__codelineno-0-1031" name="__codelineno-0-1031"></a>            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;DAGExecution object&#39;s reuse is not recommended.&quot;</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-0-1032" name="__codelineno-0-1032"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">_construct_dynamic_attributes</span><span class="p">()</span>
+<a id="__codelineno-0-1033" name="__codelineno-0-1033"></a>
+<a id="__codelineno-0-1034" name="__codelineno-0-1034"></a>        <span class="c1"># NOTE: *args will be ignored if self.from_cache is set!</span>
+<a id="__codelineno-0-1035" name="__codelineno-0-1035"></a>        <span class="n">dag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span>
+<a id="__codelineno-0-1036" name="__codelineno-0-1036"></a>
+<a id="__codelineno-0-1037" name="__codelineno-0-1037"></a>        <span class="c1"># maybe call_id will be changed to Union[int, str].</span>
+<a id="__codelineno-0-1038" name="__codelineno-0-1038"></a>        <span class="c1"># Keep call_id as Optional[str] for now</span>
+<a id="__codelineno-0-1039" name="__codelineno-0-1039"></a>        <span class="n">call_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_id</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+<a id="__codelineno-0-1040" name="__codelineno-0-1040"></a>
+<a id="__codelineno-0-1041" name="__codelineno-0-1041"></a>        <span class="c1"># 1. copy the ExecNodes</span>
+<a id="__codelineno-0-1042" name="__codelineno-0-1042"></a>        <span class="n">call_xn_dict</span> <span class="o">=</span> <span class="n">dag</span><span class="o">.</span><span class="n">_make_call_xn_dict</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+<a id="__codelineno-0-1043" name="__codelineno-0-1043"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_cache</span><span class="p">:</span>
+<a id="__codelineno-0-1044" name="__codelineno-0-1044"></a>            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">from_cache</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-0-1045" name="__codelineno-0-1045"></a>                <span class="n">cached_results</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>  <span class="c1"># noqa: S301</span>
+<a id="__codelineno-0-1046" name="__codelineno-0-1046"></a>            <span class="c1"># set the result for the ExecNode that were previously executed</span>
+<a id="__codelineno-0-1047" name="__codelineno-0-1047"></a>            <span class="c1"># this will make them skip execution inside the scheduler</span>
+<a id="__codelineno-0-1048" name="__codelineno-0-1048"></a>            <span class="k">for</span> <span class="n">id_</span><span class="p">,</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">cached_results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-0-1049" name="__codelineno-0-1049"></a>                <span class="n">call_xn_dict</span><span class="p">[</span><span class="n">id_</span><span class="p">]</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="n">result</span>
+<a id="__codelineno-0-1050" name="__codelineno-0-1050"></a>
+<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a>        <span class="c1"># 2. Execute the scheduler</span>
+<a id="__codelineno-0-1052" name="__codelineno-0-1052"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span> <span class="o">=</span> <span class="n">dag</span><span class="o">.</span><span class="n">_execute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">call_xn_dict</span><span class="p">,</span> <span class="n">call_id</span><span class="p">)</span>
+<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">xn</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">xn</span><span class="o">.</span><span class="n">result</span> <span class="k">for</span> <span class="n">xn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()}</span>
 <a id="__codelineno-0-1054" name="__codelineno-0-1054"></a>
-<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a>                    <span class="n">to_cache_results</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-1056" name="__codelineno-0-1056"></a>                        <span class="n">id_</span><span class="p">:</span> <span class="n">res</span>
-<a id="__codelineno-0-1057" name="__codelineno-0-1057"></a>                        <span class="k">for</span> <span class="n">id_</span><span class="p">,</span> <span class="n">res</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-<a id="__codelineno-0-1058" name="__codelineno-0-1058"></a>                        <span class="k">if</span> <span class="n">id_</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">non_cacheable_ids</span>
-<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a>                    <span class="p">}</span>
-<a id="__codelineno-0-1060" name="__codelineno-0-1060"></a>                <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-1061" name="__codelineno-0-1061"></a>                    <span class="n">to_cache_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span>
-<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a>                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span>
-<a id="__codelineno-0-1063" name="__codelineno-0-1063"></a>                    <span class="n">to_cache_results</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">protocol</span><span class="o">=</span><span class="n">pickle</span><span class="o">.</span><span class="n">HIGHEST_PROTOCOL</span><span class="p">,</span> <span class="n">fix_imports</span><span class="o">=</span><span class="kc">False</span>
-<a id="__codelineno-0-1064" name="__codelineno-0-1064"></a>                <span class="p">)</span>
-<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a>
-<a id="__codelineno-0-1066" name="__codelineno-0-1066"></a>        <span class="c1"># TODO: make DAGExecution reusable but do not guarantee ThreadSafety!</span>
-<a id="__codelineno-0-1067" name="__codelineno-0-1067"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">executed</span> <span class="o">=</span> <span class="kc">True</span>
-<a id="__codelineno-0-1068" name="__codelineno-0-1068"></a>        <span class="c1"># 3. extract the returned value/values</span>
-<a id="__codelineno-0-1069" name="__codelineno-0-1069"></a>        <span class="k">return</span> <span class="n">dag</span><span class="o">.</span><span class="n">_get_return_values</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="p">)</span>  <span class="c1"># type: ignore[return-value]</span>
+<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a>        <span class="c1"># 3. cache in the graph results</span>
+<a id="__codelineno-0-1056" name="__codelineno-0-1056"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_in</span><span class="p">:</span>
+<a id="__codelineno-0-1057" name="__codelineno-0-1057"></a>            <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_in</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-1058" name="__codelineno-0-1058"></a>            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_in</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a>                <span class="c1"># NOTE: we are currently only storing the results of the execution,</span>
+<a id="__codelineno-0-1060" name="__codelineno-0-1060"></a>                <span class="c1">#  this means that the configuration of the ExecNodes are lost!</span>
+<a id="__codelineno-0-1061" name="__codelineno-0-1061"></a>                <span class="c1">#  But this is ok since it should not change between executions!</span>
+<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a>                <span class="c1">#  for example, a setup ExecNode should stay a setup ExecNode between caching in the results and reading back the cached results</span>
+<a id="__codelineno-0-1063" name="__codelineno-0-1063"></a>                <span class="c1">#  the same goes for the DAG itself, the behavior when an error is encountered &amp; its concurrency will be controlled via the constructor</span>
+<a id="__codelineno-0-1064" name="__codelineno-0-1064"></a>
+<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a>                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_deps_of</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-1066" name="__codelineno-0-1066"></a>                    <span class="n">non_cacheable_ids</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="n">Identifier</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+<a id="__codelineno-0-1067" name="__codelineno-0-1067"></a>                    <span class="k">for</span> <span class="n">aliases</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_deps_of</span><span class="p">:</span>
+<a id="__codelineno-0-1068" name="__codelineno-0-1068"></a>                        <span class="n">ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">_alias_to_ids</span><span class="p">(</span><span class="n">aliases</span><span class="p">)</span>
+<a id="__codelineno-0-1069" name="__codelineno-0-1069"></a>                        <span class="n">non_cacheable_ids</span> <span class="o">=</span> <span class="n">non_cacheable_ids</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
+<a id="__codelineno-0-1070" name="__codelineno-0-1070"></a>
+<a id="__codelineno-0-1071" name="__codelineno-0-1071"></a>                    <span class="n">to_cache_results</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-1072" name="__codelineno-0-1072"></a>                        <span class="n">id_</span><span class="p">:</span> <span class="n">res</span>
+<a id="__codelineno-0-1073" name="__codelineno-0-1073"></a>                        <span class="k">for</span> <span class="n">id_</span><span class="p">,</span> <span class="n">res</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+<a id="__codelineno-0-1074" name="__codelineno-0-1074"></a>                        <span class="k">if</span> <span class="n">id_</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">non_cacheable_ids</span>
+<a id="__codelineno-0-1075" name="__codelineno-0-1075"></a>                    <span class="p">}</span>
+<a id="__codelineno-0-1076" name="__codelineno-0-1076"></a>                <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-1077" name="__codelineno-0-1077"></a>                    <span class="n">to_cache_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span>
+<a id="__codelineno-0-1078" name="__codelineno-0-1078"></a>                <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span>
+<a id="__codelineno-0-1079" name="__codelineno-0-1079"></a>                    <span class="n">to_cache_results</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">protocol</span><span class="o">=</span><span class="n">pickle</span><span class="o">.</span><span class="n">HIGHEST_PROTOCOL</span><span class="p">,</span> <span class="n">fix_imports</span><span class="o">=</span><span class="kc">False</span>
+<a id="__codelineno-0-1080" name="__codelineno-0-1080"></a>                <span class="p">)</span>
+<a id="__codelineno-0-1081" name="__codelineno-0-1081"></a>
+<a id="__codelineno-0-1082" name="__codelineno-0-1082"></a>        <span class="c1"># TODO: make DAGExecution reusable but do not guarantee ThreadSafety!</span>
+<a id="__codelineno-0-1083" name="__codelineno-0-1083"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">executed</span> <span class="o">=</span> <span class="kc">True</span>
+<a id="__codelineno-0-1084" name="__codelineno-0-1084"></a>        <span class="c1"># 3. extract the returned value/values</span>
+<a id="__codelineno-0-1085" name="__codelineno-0-1085"></a>        <span class="k">return</span> <span class="n">dag</span><span class="o">.</span><span class="n">_get_return_values</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="p">)</span>  <span class="c1"># type: ignore[return-value]</span>
 </code></pre></div></td></tr></table></div>
-        </details>
+            </details>
 
   
 
   <div class="doc doc-children">
+
 
 
 
@@ -1038,6 +1038,8 @@ It might be reusable, however it is not recommended to reuse an instance of DAGE
   
       <p>Constructor.</p>
 
+
+
   <p><strong>Parameters:</strong></p>
   <table>
     <thead>
@@ -1054,7 +1056,11 @@ It might be reusable, however it is not recommended to reuse an instance of DAGE
           <td>
                 <code><a class="autorefs autorefs-internal" title="tawazi._dag.dag.DAG" href="../dag/#tawazi._dag.DAG">DAG</a></code>
           </td>
-          <td><p>The attached DAG.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>The attached DAG.</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
@@ -1064,9 +1070,13 @@ It might be reusable, however it is not recommended to reuse an instance of DAGE
           <td>
                 <code><span title="typing.Optional">Optional</span>[<span title="typing.List">List</span>[<span title="tawazi.node.Alias">Alias</span>]]</code>
           </td>
-          <td><p>The leave ExecNodes to execute.
+          <td>
+            <div class="doc-md-description">
+              <p>The leave ExecNodes to execute.
 If None will execute all ExecNodes.
-Defaults to None.</p></td>
+Defaults to None.</p>
+            </div>
+          </td>
           <td>
                 <code>None</code>
           </td>
@@ -1076,9 +1086,13 @@ Defaults to None.</p></td>
           <td>
                 <code><span title="typing.Optional">Optional</span>[<span title="typing.List">List</span>[<span title="tawazi.node.Alias">Alias</span>]]</code>
           </td>
-          <td><p>The leave ExecNodes to exclude.
+          <td>
+            <div class="doc-md-description">
+              <p>The leave ExecNodes to exclude.
 If None will exclude all ExecNodes.
-Defaults to None.</p></td>
+Defaults to None.</p>
+            </div>
+          </td>
           <td>
                 <code>None</code>
           </td>
@@ -1088,8 +1102,12 @@ Defaults to None.</p></td>
           <td>
                 <code><span title="typing.Optional">Optional</span>[<span title="typing.List">List</span>[<span title="tawazi.node.Alias">Alias</span>]]</code>
           </td>
-          <td><p>cache all the dependencies of these nodes.
-This option can not be used together with target_nodes nor exclude_nodes.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>cache all the dependencies of these nodes.
+This option can not be used together with target_nodes nor exclude_nodes.</p>
+            </div>
+          </td>
           <td>
                 <code>None</code>
           </td>
@@ -1099,11 +1117,15 @@ This option can not be used together with target_nodes nor exclude_nodes.</p></t
           <td>
                 <code>str</code>
           </td>
-          <td><p>the path to the file where the execution should be cached.
+          <td>
+            <div class="doc-md-description">
+              <p>the path to the file where the execution should be cached.
 The path should end in <code>.pkl</code>.
 Will skip caching if <code>cache_in</code> is Falsy.
 Will raise PickleError if any of the values passed around in the DAG is not pickleable.
-Defaults to "".</p></td>
+Defaults to "".</p>
+            </div>
+          </td>
           <td>
                 <code>&#39;&#39;</code>
           </td>
@@ -1113,10 +1135,14 @@ Defaults to "".</p></td>
           <td>
                 <code>str</code>
           </td>
-          <td><p>the path to the file where the execution should be loaded from.
+          <td>
+            <div class="doc-md-description">
+              <p>the path to the file where the execution should be loaded from.
 The path should end in <code>.pkl</code>.
 Will skip loading from cache if <code>from_cache</code> is Falsy.
-Defaults to "".</p></td>
+Defaults to "".</p>
+            </div>
+          </td>
           <td>
                 <code>&#39;&#39;</code>
           </td>
@@ -1126,9 +1152,13 @@ Defaults to "".</p></td>
           <td>
                 <code><span title="typing.Optional">Optional</span>[str]</code>
           </td>
-          <td><p>identification of the current execution.
+          <td>
+            <div class="doc-md-description">
+              <p>identification of the current execution.
 This will be inserted into thread_name_prefix while executing the threadPool.
-It will be used in the future for identifying the execution inside Processes etc.</p></td>
+It will be used in the future for identifying the execution inside Processes etc.</p>
+            </div>
+          </td>
           <td>
                 <code>None</code>
           </td>
@@ -1136,25 +1166,9 @@ It will be used in the future for identifying the execution inside Processes etc
     </tbody>
   </table>
 
-      <details class="quote">
-        <summary>Source code in <code>tawazi/_dag/dag.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-839">839</a></span>
-<span class="normal"><a href="#__codelineno-0-840">840</a></span>
-<span class="normal"><a href="#__codelineno-0-841">841</a></span>
-<span class="normal"><a href="#__codelineno-0-842">842</a></span>
-<span class="normal"><a href="#__codelineno-0-843">843</a></span>
-<span class="normal"><a href="#__codelineno-0-844">844</a></span>
-<span class="normal"><a href="#__codelineno-0-845">845</a></span>
-<span class="normal"><a href="#__codelineno-0-846">846</a></span>
-<span class="normal"><a href="#__codelineno-0-847">847</a></span>
-<span class="normal"><a href="#__codelineno-0-848">848</a></span>
-<span class="normal"><a href="#__codelineno-0-849">849</a></span>
-<span class="normal"><a href="#__codelineno-0-850">850</a></span>
-<span class="normal"><a href="#__codelineno-0-851">851</a></span>
-<span class="normal"><a href="#__codelineno-0-852">852</a></span>
-<span class="normal"><a href="#__codelineno-0-853">853</a></span>
-<span class="normal"><a href="#__codelineno-0-854">854</a></span>
-<span class="normal"><a href="#__codelineno-0-855">855</a></span>
+          <details class="quote">
+            <summary>Source code in <code>tawazi/_dag/dag.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-855">855</a></span>
 <span class="normal"><a href="#__codelineno-0-856">856</a></span>
 <span class="normal"><a href="#__codelineno-0-857">857</a></span>
 <span class="normal"><a href="#__codelineno-0-858">858</a></span>
@@ -1197,71 +1211,88 @@ It will be used in the future for identifying the execution inside Processes etc
 <span class="normal"><a href="#__codelineno-0-895">895</a></span>
 <span class="normal"><a href="#__codelineno-0-896">896</a></span>
 <span class="normal"><a href="#__codelineno-0-897">897</a></span>
-<span class="normal"><a href="#__codelineno-0-898">898</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-839" name="__codelineno-0-839"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-<a id="__codelineno-0-840" name="__codelineno-0-840"></a>    <span class="bp">self</span><span class="p">,</span>
-<a id="__codelineno-0-841" name="__codelineno-0-841"></a>    <span class="n">dag</span><span class="p">:</span> <span class="n">DAG</span><span class="p">[</span><span class="n">P</span><span class="p">,</span> <span class="n">RVDAG</span><span class="p">],</span>
-<a id="__codelineno-0-842" name="__codelineno-0-842"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-843" name="__codelineno-0-843"></a>    <span class="n">target_nodes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Alias</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-844" name="__codelineno-0-844"></a>    <span class="n">exclude_nodes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Alias</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-845" name="__codelineno-0-845"></a>    <span class="n">cache_deps_of</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Alias</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-846" name="__codelineno-0-846"></a>    <span class="n">cache_in</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-847" name="__codelineno-0-847"></a>    <span class="n">from_cache</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-<a id="__codelineno-0-848" name="__codelineno-0-848"></a>    <span class="n">call_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-849" name="__codelineno-0-849"></a><span class="p">):</span>
-<a id="__codelineno-0-850" name="__codelineno-0-850"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Constructor.</span>
-<a id="__codelineno-0-851" name="__codelineno-0-851"></a>
-<a id="__codelineno-0-852" name="__codelineno-0-852"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-853" name="__codelineno-0-853"></a><span class="sd">        dag (DAG): The attached DAG.</span>
-<a id="__codelineno-0-854" name="__codelineno-0-854"></a><span class="sd">        target_nodes (Optional[List[Alias]]): The leave ExecNodes to execute.</span>
-<a id="__codelineno-0-855" name="__codelineno-0-855"></a><span class="sd">            If None will execute all ExecNodes.</span>
-<a id="__codelineno-0-856" name="__codelineno-0-856"></a><span class="sd">            Defaults to None.</span>
-<a id="__codelineno-0-857" name="__codelineno-0-857"></a><span class="sd">        exclude_nodes (Optional[List[Alias]]): The leave ExecNodes to exclude.</span>
-<a id="__codelineno-0-858" name="__codelineno-0-858"></a><span class="sd">            If None will exclude all ExecNodes.</span>
-<a id="__codelineno-0-859" name="__codelineno-0-859"></a><span class="sd">            Defaults to None.</span>
-<a id="__codelineno-0-860" name="__codelineno-0-860"></a><span class="sd">        cache_deps_of (Optional[List[Alias]]): cache all the dependencies of these nodes.</span>
-<a id="__codelineno-0-861" name="__codelineno-0-861"></a><span class="sd">            This option can not be used together with target_nodes nor exclude_nodes.</span>
-<a id="__codelineno-0-862" name="__codelineno-0-862"></a><span class="sd">        cache_in (str):</span>
-<a id="__codelineno-0-863" name="__codelineno-0-863"></a><span class="sd">            the path to the file where the execution should be cached.</span>
-<a id="__codelineno-0-864" name="__codelineno-0-864"></a><span class="sd">            The path should end in `.pkl`.</span>
-<a id="__codelineno-0-865" name="__codelineno-0-865"></a><span class="sd">            Will skip caching if `cache_in` is Falsy.</span>
-<a id="__codelineno-0-866" name="__codelineno-0-866"></a><span class="sd">            Will raise PickleError if any of the values passed around in the DAG is not pickleable.</span>
-<a id="__codelineno-0-867" name="__codelineno-0-867"></a><span class="sd">            Defaults to &quot;&quot;.</span>
-<a id="__codelineno-0-868" name="__codelineno-0-868"></a><span class="sd">        from_cache (str):</span>
-<a id="__codelineno-0-869" name="__codelineno-0-869"></a><span class="sd">            the path to the file where the execution should be loaded from.</span>
-<a id="__codelineno-0-870" name="__codelineno-0-870"></a><span class="sd">            The path should end in `.pkl`.</span>
-<a id="__codelineno-0-871" name="__codelineno-0-871"></a><span class="sd">            Will skip loading from cache if `from_cache` is Falsy.</span>
-<a id="__codelineno-0-872" name="__codelineno-0-872"></a><span class="sd">            Defaults to &quot;&quot;.</span>
-<a id="__codelineno-0-873" name="__codelineno-0-873"></a><span class="sd">        call_id (Optional[str]): identification of the current execution.</span>
-<a id="__codelineno-0-874" name="__codelineno-0-874"></a><span class="sd">            This will be inserted into thread_name_prefix while executing the threadPool.</span>
-<a id="__codelineno-0-875" name="__codelineno-0-875"></a><span class="sd">            It will be used in the future for identifying the execution inside Processes etc.</span>
-<a id="__codelineno-0-876" name="__codelineno-0-876"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-877" name="__codelineno-0-877"></a>    <span class="c1"># todo: Maybe we can support .dill to extend the possibilities of the exchanged values, but this won&#39;t solve the whole problem</span>
-<a id="__codelineno-0-878" name="__codelineno-0-878"></a>
-<a id="__codelineno-0-879" name="__codelineno-0-879"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">dag</span> <span class="o">=</span> <span class="n">dag</span>
-<a id="__codelineno-0-880" name="__codelineno-0-880"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">target_nodes</span> <span class="o">=</span> <span class="n">target_nodes</span>
-<a id="__codelineno-0-881" name="__codelineno-0-881"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">exclude_nodes</span> <span class="o">=</span> <span class="n">exclude_nodes</span>
-<a id="__codelineno-0-882" name="__codelineno-0-882"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">cache_deps_of</span> <span class="o">=</span> <span class="n">cache_deps_of</span>
-<a id="__codelineno-0-883" name="__codelineno-0-883"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">cache_in</span> <span class="o">=</span> <span class="n">cache_in</span>
-<a id="__codelineno-0-884" name="__codelineno-0-884"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">from_cache</span> <span class="o">=</span> <span class="n">from_cache</span>
-<a id="__codelineno-0-885" name="__codelineno-0-885"></a>    <span class="c1"># NOTE: from_cache is orthogonal to cache_in which means that if cache_in is set at the same time as from_cache.</span>
-<a id="__codelineno-0-886" name="__codelineno-0-886"></a>    <span class="c1">#  in this case the DAG will be loaded from_cache and the results will be saved again to the cache_in file.</span>
-<a id="__codelineno-0-887" name="__codelineno-0-887"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">call_id</span> <span class="o">=</span> <span class="n">call_id</span>
-<a id="__codelineno-0-888" name="__codelineno-0-888"></a>
-<a id="__codelineno-0-889" name="__codelineno-0-889"></a>    <span class="c1"># get the leaves ids to execute in case of a subgraph</span>
-<a id="__codelineno-0-890" name="__codelineno-0-890"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">target_nodes</span> <span class="o">=</span> <span class="n">target_nodes</span>
-<a id="__codelineno-0-891" name="__codelineno-0-891"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">exclude_nodes</span> <span class="o">=</span> <span class="n">exclude_nodes</span>
-<a id="__codelineno-0-892" name="__codelineno-0-892"></a>
-<a id="__codelineno-0-893" name="__codelineno-0-893"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Identifier</span><span class="p">,</span> <span class="n">ExecNode</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-0-894" name="__codelineno-0-894"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Identifier</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-<a id="__codelineno-0-895" name="__codelineno-0-895"></a>
-<a id="__codelineno-0-896" name="__codelineno-0-896"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_construct_dynamic_attributes</span><span class="p">()</span>
-<a id="__codelineno-0-897" name="__codelineno-0-897"></a>
-<a id="__codelineno-0-898" name="__codelineno-0-898"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">executed</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="normal"><a href="#__codelineno-0-898">898</a></span>
+<span class="normal"><a href="#__codelineno-0-899">899</a></span>
+<span class="normal"><a href="#__codelineno-0-900">900</a></span>
+<span class="normal"><a href="#__codelineno-0-901">901</a></span>
+<span class="normal"><a href="#__codelineno-0-902">902</a></span>
+<span class="normal"><a href="#__codelineno-0-903">903</a></span>
+<span class="normal"><a href="#__codelineno-0-904">904</a></span>
+<span class="normal"><a href="#__codelineno-0-905">905</a></span>
+<span class="normal"><a href="#__codelineno-0-906">906</a></span>
+<span class="normal"><a href="#__codelineno-0-907">907</a></span>
+<span class="normal"><a href="#__codelineno-0-908">908</a></span>
+<span class="normal"><a href="#__codelineno-0-909">909</a></span>
+<span class="normal"><a href="#__codelineno-0-910">910</a></span>
+<span class="normal"><a href="#__codelineno-0-911">911</a></span>
+<span class="normal"><a href="#__codelineno-0-912">912</a></span>
+<span class="normal"><a href="#__codelineno-0-913">913</a></span>
+<span class="normal"><a href="#__codelineno-0-914">914</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-855" name="__codelineno-0-855"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<a id="__codelineno-0-856" name="__codelineno-0-856"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-0-857" name="__codelineno-0-857"></a>    <span class="n">dag</span><span class="p">:</span> <span class="n">DAG</span><span class="p">[</span><span class="n">P</span><span class="p">,</span> <span class="n">RVDAG</span><span class="p">],</span>
+<a id="__codelineno-0-858" name="__codelineno-0-858"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-859" name="__codelineno-0-859"></a>    <span class="n">target_nodes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Alias</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-860" name="__codelineno-0-860"></a>    <span class="n">exclude_nodes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Alias</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-861" name="__codelineno-0-861"></a>    <span class="n">cache_deps_of</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">Alias</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-862" name="__codelineno-0-862"></a>    <span class="n">cache_in</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-863" name="__codelineno-0-863"></a>    <span class="n">from_cache</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-864" name="__codelineno-0-864"></a>    <span class="n">call_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-865" name="__codelineno-0-865"></a><span class="p">):</span>
+<a id="__codelineno-0-866" name="__codelineno-0-866"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Constructor.</span>
+<a id="__codelineno-0-867" name="__codelineno-0-867"></a>
+<a id="__codelineno-0-868" name="__codelineno-0-868"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-869" name="__codelineno-0-869"></a><span class="sd">        dag (DAG): The attached DAG.</span>
+<a id="__codelineno-0-870" name="__codelineno-0-870"></a><span class="sd">        target_nodes (Optional[List[Alias]]): The leave ExecNodes to execute.</span>
+<a id="__codelineno-0-871" name="__codelineno-0-871"></a><span class="sd">            If None will execute all ExecNodes.</span>
+<a id="__codelineno-0-872" name="__codelineno-0-872"></a><span class="sd">            Defaults to None.</span>
+<a id="__codelineno-0-873" name="__codelineno-0-873"></a><span class="sd">        exclude_nodes (Optional[List[Alias]]): The leave ExecNodes to exclude.</span>
+<a id="__codelineno-0-874" name="__codelineno-0-874"></a><span class="sd">            If None will exclude all ExecNodes.</span>
+<a id="__codelineno-0-875" name="__codelineno-0-875"></a><span class="sd">            Defaults to None.</span>
+<a id="__codelineno-0-876" name="__codelineno-0-876"></a><span class="sd">        cache_deps_of (Optional[List[Alias]]): cache all the dependencies of these nodes.</span>
+<a id="__codelineno-0-877" name="__codelineno-0-877"></a><span class="sd">            This option can not be used together with target_nodes nor exclude_nodes.</span>
+<a id="__codelineno-0-878" name="__codelineno-0-878"></a><span class="sd">        cache_in (str):</span>
+<a id="__codelineno-0-879" name="__codelineno-0-879"></a><span class="sd">            the path to the file where the execution should be cached.</span>
+<a id="__codelineno-0-880" name="__codelineno-0-880"></a><span class="sd">            The path should end in `.pkl`.</span>
+<a id="__codelineno-0-881" name="__codelineno-0-881"></a><span class="sd">            Will skip caching if `cache_in` is Falsy.</span>
+<a id="__codelineno-0-882" name="__codelineno-0-882"></a><span class="sd">            Will raise PickleError if any of the values passed around in the DAG is not pickleable.</span>
+<a id="__codelineno-0-883" name="__codelineno-0-883"></a><span class="sd">            Defaults to &quot;&quot;.</span>
+<a id="__codelineno-0-884" name="__codelineno-0-884"></a><span class="sd">        from_cache (str):</span>
+<a id="__codelineno-0-885" name="__codelineno-0-885"></a><span class="sd">            the path to the file where the execution should be loaded from.</span>
+<a id="__codelineno-0-886" name="__codelineno-0-886"></a><span class="sd">            The path should end in `.pkl`.</span>
+<a id="__codelineno-0-887" name="__codelineno-0-887"></a><span class="sd">            Will skip loading from cache if `from_cache` is Falsy.</span>
+<a id="__codelineno-0-888" name="__codelineno-0-888"></a><span class="sd">            Defaults to &quot;&quot;.</span>
+<a id="__codelineno-0-889" name="__codelineno-0-889"></a><span class="sd">        call_id (Optional[str]): identification of the current execution.</span>
+<a id="__codelineno-0-890" name="__codelineno-0-890"></a><span class="sd">            This will be inserted into thread_name_prefix while executing the threadPool.</span>
+<a id="__codelineno-0-891" name="__codelineno-0-891"></a><span class="sd">            It will be used in the future for identifying the execution inside Processes etc.</span>
+<a id="__codelineno-0-892" name="__codelineno-0-892"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-893" name="__codelineno-0-893"></a>    <span class="c1"># todo: Maybe we can support .dill to extend the possibilities of the exchanged values, but this won&#39;t solve the whole problem</span>
+<a id="__codelineno-0-894" name="__codelineno-0-894"></a>
+<a id="__codelineno-0-895" name="__codelineno-0-895"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">dag</span> <span class="o">=</span> <span class="n">dag</span>
+<a id="__codelineno-0-896" name="__codelineno-0-896"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">target_nodes</span> <span class="o">=</span> <span class="n">target_nodes</span>
+<a id="__codelineno-0-897" name="__codelineno-0-897"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">exclude_nodes</span> <span class="o">=</span> <span class="n">exclude_nodes</span>
+<a id="__codelineno-0-898" name="__codelineno-0-898"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">cache_deps_of</span> <span class="o">=</span> <span class="n">cache_deps_of</span>
+<a id="__codelineno-0-899" name="__codelineno-0-899"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">cache_in</span> <span class="o">=</span> <span class="n">cache_in</span>
+<a id="__codelineno-0-900" name="__codelineno-0-900"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">from_cache</span> <span class="o">=</span> <span class="n">from_cache</span>
+<a id="__codelineno-0-901" name="__codelineno-0-901"></a>    <span class="c1"># NOTE: from_cache is orthogonal to cache_in which means that if cache_in is set at the same time as from_cache.</span>
+<a id="__codelineno-0-902" name="__codelineno-0-902"></a>    <span class="c1">#  in this case the DAG will be loaded from_cache and the results will be saved again to the cache_in file.</span>
+<a id="__codelineno-0-903" name="__codelineno-0-903"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">call_id</span> <span class="o">=</span> <span class="n">call_id</span>
+<a id="__codelineno-0-904" name="__codelineno-0-904"></a>
+<a id="__codelineno-0-905" name="__codelineno-0-905"></a>    <span class="c1"># get the leaves ids to execute in case of a subgraph</span>
+<a id="__codelineno-0-906" name="__codelineno-0-906"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">target_nodes</span> <span class="o">=</span> <span class="n">target_nodes</span>
+<a id="__codelineno-0-907" name="__codelineno-0-907"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">exclude_nodes</span> <span class="o">=</span> <span class="n">exclude_nodes</span>
+<a id="__codelineno-0-908" name="__codelineno-0-908"></a>
+<a id="__codelineno-0-909" name="__codelineno-0-909"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Identifier</span><span class="p">,</span> <span class="n">ExecNode</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-910" name="__codelineno-0-910"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Identifier</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-0-911" name="__codelineno-0-911"></a>
+<a id="__codelineno-0-912" name="__codelineno-0-912"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_construct_dynamic_attributes</span><span class="p">()</span>
+<a id="__codelineno-0-913" name="__codelineno-0-913"></a>
+<a id="__codelineno-0-914" name="__codelineno-0-914"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">executed</span> <span class="o">=</span> <span class="kc">False</span>
 </code></pre></div></td></tr></table></div>
-      </details>
+          </details>
   </div>
 
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -1276,6 +1307,8 @@ It will be used in the future for identifying the execution inside Processes etc
   <div class="doc doc-contents ">
   
       <p>Call the DAG.</p>
+
+
 
   <p><strong>Parameters:</strong></p>
   <table>
@@ -1293,7 +1326,11 @@ It will be used in the future for identifying the execution inside Processes etc
           <td>
                 <code><span title="tawazi.consts.P">P</span>.<span title="tawazi.consts.P.args">args</span></code>
           </td>
-          <td><p>positional arguments to pass in to the DAG</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>positional arguments to pass in to the DAG</p>
+            </div>
+          </td>
           <td>
                 <code>()</code>
           </td>
@@ -1303,13 +1340,19 @@ It will be used in the future for identifying the execution inside Processes etc
           <td>
                 <code><span title="tawazi.consts.P">P</span>.<span title="tawazi.consts.P.kwargs">kwargs</span></code>
           </td>
-          <td><p>keyword arguments to pass in to the DAG</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>keyword arguments to pass in to the DAG</p>
+            </div>
+          </td>
           <td>
                 <code>{}</code>
           </td>
         </tr>
     </tbody>
   </table>
+
+
 
   <p><strong>Raises:</strong></p>
   <table>
@@ -1324,10 +1367,16 @@ It will be used in the future for identifying the execution inside Processes etc
           <td>
                 <code><span title="tawazi.errors.TawaziUsageError">TawaziUsageError</span></code>
           </td>
-          <td><p>if the DAGExecution has already been executed.</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>if the DAGExecution has already been executed.</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
+
+
 
   <p><strong>Returns:</strong></p>
   <table>
@@ -1342,30 +1391,18 @@ It will be used in the future for identifying the execution inside Processes etc
 <td><code>RVDAG</code></td>          <td>
                 <code><span title="tawazi.consts.RVDAG">RVDAG</span></code>
           </td>
-          <td><p>the return value of the DAG's Execution</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>the return value of the DAG's Execution</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
 
-      <details class="quote">
-        <summary>Source code in <code>tawazi/_dag/dag.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1001">1001</a></span>
-<span class="normal"><a href="#__codelineno-0-1002">1002</a></span>
-<span class="normal"><a href="#__codelineno-0-1003">1003</a></span>
-<span class="normal"><a href="#__codelineno-0-1004">1004</a></span>
-<span class="normal"><a href="#__codelineno-0-1005">1005</a></span>
-<span class="normal"><a href="#__codelineno-0-1006">1006</a></span>
-<span class="normal"><a href="#__codelineno-0-1007">1007</a></span>
-<span class="normal"><a href="#__codelineno-0-1008">1008</a></span>
-<span class="normal"><a href="#__codelineno-0-1009">1009</a></span>
-<span class="normal"><a href="#__codelineno-0-1010">1010</a></span>
-<span class="normal"><a href="#__codelineno-0-1011">1011</a></span>
-<span class="normal"><a href="#__codelineno-0-1012">1012</a></span>
-<span class="normal"><a href="#__codelineno-0-1013">1013</a></span>
-<span class="normal"><a href="#__codelineno-0-1014">1014</a></span>
-<span class="normal"><a href="#__codelineno-0-1015">1015</a></span>
-<span class="normal"><a href="#__codelineno-0-1016">1016</a></span>
-<span class="normal"><a href="#__codelineno-0-1017">1017</a></span>
+          <details class="quote">
+            <summary>Source code in <code>tawazi/_dag/dag.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1017">1017</a></span>
 <span class="normal"><a href="#__codelineno-0-1018">1018</a></span>
 <span class="normal"><a href="#__codelineno-0-1019">1019</a></span>
 <span class="normal"><a href="#__codelineno-0-1020">1020</a></span>
@@ -1417,80 +1454,97 @@ It will be used in the future for identifying the execution inside Processes etc
 <span class="normal"><a href="#__codelineno-0-1066">1066</a></span>
 <span class="normal"><a href="#__codelineno-0-1067">1067</a></span>
 <span class="normal"><a href="#__codelineno-0-1068">1068</a></span>
-<span class="normal"><a href="#__codelineno-0-1069">1069</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1001" name="__codelineno-0-1001"></a><span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">P</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">P</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RVDAG</span><span class="p">:</span>
-<a id="__codelineno-0-1002" name="__codelineno-0-1002"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Call the DAG.</span>
-<a id="__codelineno-0-1003" name="__codelineno-0-1003"></a>
-<a id="__codelineno-0-1004" name="__codelineno-0-1004"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-1005" name="__codelineno-0-1005"></a><span class="sd">        *args: positional arguments to pass in to the DAG</span>
-<a id="__codelineno-0-1006" name="__codelineno-0-1006"></a><span class="sd">        **kwargs: keyword arguments to pass in to the DAG</span>
-<a id="__codelineno-0-1007" name="__codelineno-0-1007"></a>
-<a id="__codelineno-0-1008" name="__codelineno-0-1008"></a><span class="sd">    Raises:</span>
-<a id="__codelineno-0-1009" name="__codelineno-0-1009"></a><span class="sd">        TawaziUsageError: if the DAGExecution has already been executed.</span>
-<a id="__codelineno-0-1010" name="__codelineno-0-1010"></a>
-<a id="__codelineno-0-1011" name="__codelineno-0-1011"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-1012" name="__codelineno-0-1012"></a><span class="sd">        RVDAG: the return value of the DAG&#39;s Execution</span>
-<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-1014" name="__codelineno-0-1014"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">executed</span><span class="p">:</span>
-<a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;DAGExecution object&#39;s reuse is not recommended.&quot;</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_construct_dynamic_attributes</span><span class="p">()</span>
-<a id="__codelineno-0-1017" name="__codelineno-0-1017"></a>
-<a id="__codelineno-0-1018" name="__codelineno-0-1018"></a>    <span class="c1"># NOTE: *args will be ignored if self.from_cache is set!</span>
-<a id="__codelineno-0-1019" name="__codelineno-0-1019"></a>    <span class="n">dag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span>
-<a id="__codelineno-0-1020" name="__codelineno-0-1020"></a>
-<a id="__codelineno-0-1021" name="__codelineno-0-1021"></a>    <span class="c1"># maybe call_id will be changed to Union[int, str].</span>
-<a id="__codelineno-0-1022" name="__codelineno-0-1022"></a>    <span class="c1"># Keep call_id as Optional[str] for now</span>
-<a id="__codelineno-0-1023" name="__codelineno-0-1023"></a>    <span class="n">call_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_id</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
-<a id="__codelineno-0-1024" name="__codelineno-0-1024"></a>
-<a id="__codelineno-0-1025" name="__codelineno-0-1025"></a>    <span class="c1"># 1. copy the ExecNodes</span>
-<a id="__codelineno-0-1026" name="__codelineno-0-1026"></a>    <span class="n">call_xn_dict</span> <span class="o">=</span> <span class="n">dag</span><span class="o">.</span><span class="n">_make_call_xn_dict</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
-<a id="__codelineno-0-1027" name="__codelineno-0-1027"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_cache</span><span class="p">:</span>
-<a id="__codelineno-0-1028" name="__codelineno-0-1028"></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">from_cache</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-<a id="__codelineno-0-1029" name="__codelineno-0-1029"></a>            <span class="n">cached_results</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>  <span class="c1"># noqa: S301</span>
-<a id="__codelineno-0-1030" name="__codelineno-0-1030"></a>        <span class="c1"># set the result for the ExecNode that were previously executed</span>
-<a id="__codelineno-0-1031" name="__codelineno-0-1031"></a>        <span class="c1"># this will make them skip execution inside the scheduler</span>
-<a id="__codelineno-0-1032" name="__codelineno-0-1032"></a>        <span class="k">for</span> <span class="n">id_</span><span class="p">,</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">cached_results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-<a id="__codelineno-0-1033" name="__codelineno-0-1033"></a>            <span class="n">call_xn_dict</span><span class="p">[</span><span class="n">id_</span><span class="p">]</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="n">result</span>
-<a id="__codelineno-0-1034" name="__codelineno-0-1034"></a>
-<a id="__codelineno-0-1035" name="__codelineno-0-1035"></a>    <span class="c1"># 2. Execute the scheduler</span>
-<a id="__codelineno-0-1036" name="__codelineno-0-1036"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span> <span class="o">=</span> <span class="n">dag</span><span class="o">.</span><span class="n">_execute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">call_xn_dict</span><span class="p">,</span> <span class="n">call_id</span><span class="p">)</span>
-<a id="__codelineno-0-1037" name="__codelineno-0-1037"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">xn</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">xn</span><span class="o">.</span><span class="n">result</span> <span class="k">for</span> <span class="n">xn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()}</span>
-<a id="__codelineno-0-1038" name="__codelineno-0-1038"></a>
-<a id="__codelineno-0-1039" name="__codelineno-0-1039"></a>    <span class="c1"># 3. cache in the graph results</span>
-<a id="__codelineno-0-1040" name="__codelineno-0-1040"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_in</span><span class="p">:</span>
-<a id="__codelineno-0-1041" name="__codelineno-0-1041"></a>        <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_in</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-0-1042" name="__codelineno-0-1042"></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_in</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-<a id="__codelineno-0-1043" name="__codelineno-0-1043"></a>            <span class="c1"># NOTE: we are currently only storing the results of the execution,</span>
-<a id="__codelineno-0-1044" name="__codelineno-0-1044"></a>            <span class="c1">#  this means that the configuration of the ExecNodes are lost!</span>
-<a id="__codelineno-0-1045" name="__codelineno-0-1045"></a>            <span class="c1">#  But this is ok since it should not change between executions!</span>
-<a id="__codelineno-0-1046" name="__codelineno-0-1046"></a>            <span class="c1">#  for example, a setup ExecNode should stay a setup ExecNode between caching in the results and reading back the cached results</span>
-<a id="__codelineno-0-1047" name="__codelineno-0-1047"></a>            <span class="c1">#  the same goes for the DAG itself, the behavior when an error is encountered &amp; its concurrency will be controlled via the constructor</span>
-<a id="__codelineno-0-1048" name="__codelineno-0-1048"></a>
-<a id="__codelineno-0-1049" name="__codelineno-0-1049"></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_deps_of</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-1050" name="__codelineno-0-1050"></a>                <span class="n">non_cacheable_ids</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="n">Identifier</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a>                <span class="k">for</span> <span class="n">aliases</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_deps_of</span><span class="p">:</span>
-<a id="__codelineno-0-1052" name="__codelineno-0-1052"></a>                    <span class="n">ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">_alias_to_ids</span><span class="p">(</span><span class="n">aliases</span><span class="p">)</span>
-<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a>                    <span class="n">non_cacheable_ids</span> <span class="o">=</span> <span class="n">non_cacheable_ids</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-1069">1069</a></span>
+<span class="normal"><a href="#__codelineno-0-1070">1070</a></span>
+<span class="normal"><a href="#__codelineno-0-1071">1071</a></span>
+<span class="normal"><a href="#__codelineno-0-1072">1072</a></span>
+<span class="normal"><a href="#__codelineno-0-1073">1073</a></span>
+<span class="normal"><a href="#__codelineno-0-1074">1074</a></span>
+<span class="normal"><a href="#__codelineno-0-1075">1075</a></span>
+<span class="normal"><a href="#__codelineno-0-1076">1076</a></span>
+<span class="normal"><a href="#__codelineno-0-1077">1077</a></span>
+<span class="normal"><a href="#__codelineno-0-1078">1078</a></span>
+<span class="normal"><a href="#__codelineno-0-1079">1079</a></span>
+<span class="normal"><a href="#__codelineno-0-1080">1080</a></span>
+<span class="normal"><a href="#__codelineno-0-1081">1081</a></span>
+<span class="normal"><a href="#__codelineno-0-1082">1082</a></span>
+<span class="normal"><a href="#__codelineno-0-1083">1083</a></span>
+<span class="normal"><a href="#__codelineno-0-1084">1084</a></span>
+<span class="normal"><a href="#__codelineno-0-1085">1085</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1017" name="__codelineno-0-1017"></a><span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">P</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">P</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RVDAG</span><span class="p">:</span>
+<a id="__codelineno-0-1018" name="__codelineno-0-1018"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Call the DAG.</span>
+<a id="__codelineno-0-1019" name="__codelineno-0-1019"></a>
+<a id="__codelineno-0-1020" name="__codelineno-0-1020"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-1021" name="__codelineno-0-1021"></a><span class="sd">        *args: positional arguments to pass in to the DAG</span>
+<a id="__codelineno-0-1022" name="__codelineno-0-1022"></a><span class="sd">        **kwargs: keyword arguments to pass in to the DAG</span>
+<a id="__codelineno-0-1023" name="__codelineno-0-1023"></a>
+<a id="__codelineno-0-1024" name="__codelineno-0-1024"></a><span class="sd">    Raises:</span>
+<a id="__codelineno-0-1025" name="__codelineno-0-1025"></a><span class="sd">        TawaziUsageError: if the DAGExecution has already been executed.</span>
+<a id="__codelineno-0-1026" name="__codelineno-0-1026"></a>
+<a id="__codelineno-0-1027" name="__codelineno-0-1027"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-1028" name="__codelineno-0-1028"></a><span class="sd">        RVDAG: the return value of the DAG&#39;s Execution</span>
+<a id="__codelineno-0-1029" name="__codelineno-0-1029"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-1030" name="__codelineno-0-1030"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">executed</span><span class="p">:</span>
+<a id="__codelineno-0-1031" name="__codelineno-0-1031"></a>        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;DAGExecution object&#39;s reuse is not recommended.&quot;</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-0-1032" name="__codelineno-0-1032"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_construct_dynamic_attributes</span><span class="p">()</span>
+<a id="__codelineno-0-1033" name="__codelineno-0-1033"></a>
+<a id="__codelineno-0-1034" name="__codelineno-0-1034"></a>    <span class="c1"># NOTE: *args will be ignored if self.from_cache is set!</span>
+<a id="__codelineno-0-1035" name="__codelineno-0-1035"></a>    <span class="n">dag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span>
+<a id="__codelineno-0-1036" name="__codelineno-0-1036"></a>
+<a id="__codelineno-0-1037" name="__codelineno-0-1037"></a>    <span class="c1"># maybe call_id will be changed to Union[int, str].</span>
+<a id="__codelineno-0-1038" name="__codelineno-0-1038"></a>    <span class="c1"># Keep call_id as Optional[str] for now</span>
+<a id="__codelineno-0-1039" name="__codelineno-0-1039"></a>    <span class="n">call_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_id</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">call_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+<a id="__codelineno-0-1040" name="__codelineno-0-1040"></a>
+<a id="__codelineno-0-1041" name="__codelineno-0-1041"></a>    <span class="c1"># 1. copy the ExecNodes</span>
+<a id="__codelineno-0-1042" name="__codelineno-0-1042"></a>    <span class="n">call_xn_dict</span> <span class="o">=</span> <span class="n">dag</span><span class="o">.</span><span class="n">_make_call_xn_dict</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+<a id="__codelineno-0-1043" name="__codelineno-0-1043"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_cache</span><span class="p">:</span>
+<a id="__codelineno-0-1044" name="__codelineno-0-1044"></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">from_cache</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-0-1045" name="__codelineno-0-1045"></a>            <span class="n">cached_results</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>  <span class="c1"># noqa: S301</span>
+<a id="__codelineno-0-1046" name="__codelineno-0-1046"></a>        <span class="c1"># set the result for the ExecNode that were previously executed</span>
+<a id="__codelineno-0-1047" name="__codelineno-0-1047"></a>        <span class="c1"># this will make them skip execution inside the scheduler</span>
+<a id="__codelineno-0-1048" name="__codelineno-0-1048"></a>        <span class="k">for</span> <span class="n">id_</span><span class="p">,</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">cached_results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-0-1049" name="__codelineno-0-1049"></a>            <span class="n">call_xn_dict</span><span class="p">[</span><span class="n">id_</span><span class="p">]</span><span class="o">.</span><span class="n">result</span> <span class="o">=</span> <span class="n">result</span>
+<a id="__codelineno-0-1050" name="__codelineno-0-1050"></a>
+<a id="__codelineno-0-1051" name="__codelineno-0-1051"></a>    <span class="c1"># 2. Execute the scheduler</span>
+<a id="__codelineno-0-1052" name="__codelineno-0-1052"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span> <span class="o">=</span> <span class="n">dag</span><span class="o">.</span><span class="n">_execute</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">call_xn_dict</span><span class="p">,</span> <span class="n">call_id</span><span class="p">)</span>
+<a id="__codelineno-0-1053" name="__codelineno-0-1053"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="p">{</span><span class="n">xn</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">xn</span><span class="o">.</span><span class="n">result</span> <span class="k">for</span> <span class="n">xn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()}</span>
 <a id="__codelineno-0-1054" name="__codelineno-0-1054"></a>
-<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a>                <span class="n">to_cache_results</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-0-1056" name="__codelineno-0-1056"></a>                    <span class="n">id_</span><span class="p">:</span> <span class="n">res</span>
-<a id="__codelineno-0-1057" name="__codelineno-0-1057"></a>                    <span class="k">for</span> <span class="n">id_</span><span class="p">,</span> <span class="n">res</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-<a id="__codelineno-0-1058" name="__codelineno-0-1058"></a>                    <span class="k">if</span> <span class="n">id_</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">non_cacheable_ids</span>
-<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a>                <span class="p">}</span>
-<a id="__codelineno-0-1060" name="__codelineno-0-1060"></a>            <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-0-1061" name="__codelineno-0-1061"></a>                <span class="n">to_cache_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span>
-<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a>            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span>
-<a id="__codelineno-0-1063" name="__codelineno-0-1063"></a>                <span class="n">to_cache_results</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">protocol</span><span class="o">=</span><span class="n">pickle</span><span class="o">.</span><span class="n">HIGHEST_PROTOCOL</span><span class="p">,</span> <span class="n">fix_imports</span><span class="o">=</span><span class="kc">False</span>
-<a id="__codelineno-0-1064" name="__codelineno-0-1064"></a>            <span class="p">)</span>
-<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a>
-<a id="__codelineno-0-1066" name="__codelineno-0-1066"></a>    <span class="c1"># TODO: make DAGExecution reusable but do not guarantee ThreadSafety!</span>
-<a id="__codelineno-0-1067" name="__codelineno-0-1067"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">executed</span> <span class="o">=</span> <span class="kc">True</span>
-<a id="__codelineno-0-1068" name="__codelineno-0-1068"></a>    <span class="c1"># 3. extract the returned value/values</span>
-<a id="__codelineno-0-1069" name="__codelineno-0-1069"></a>    <span class="k">return</span> <span class="n">dag</span><span class="o">.</span><span class="n">_get_return_values</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="p">)</span>  <span class="c1"># type: ignore[return-value]</span>
+<a id="__codelineno-0-1055" name="__codelineno-0-1055"></a>    <span class="c1"># 3. cache in the graph results</span>
+<a id="__codelineno-0-1056" name="__codelineno-0-1056"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_in</span><span class="p">:</span>
+<a id="__codelineno-0-1057" name="__codelineno-0-1057"></a>        <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_in</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-0-1058" name="__codelineno-0-1058"></a>        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cache_in</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-0-1059" name="__codelineno-0-1059"></a>            <span class="c1"># NOTE: we are currently only storing the results of the execution,</span>
+<a id="__codelineno-0-1060" name="__codelineno-0-1060"></a>            <span class="c1">#  this means that the configuration of the ExecNodes are lost!</span>
+<a id="__codelineno-0-1061" name="__codelineno-0-1061"></a>            <span class="c1">#  But this is ok since it should not change between executions!</span>
+<a id="__codelineno-0-1062" name="__codelineno-0-1062"></a>            <span class="c1">#  for example, a setup ExecNode should stay a setup ExecNode between caching in the results and reading back the cached results</span>
+<a id="__codelineno-0-1063" name="__codelineno-0-1063"></a>            <span class="c1">#  the same goes for the DAG itself, the behavior when an error is encountered &amp; its concurrency will be controlled via the constructor</span>
+<a id="__codelineno-0-1064" name="__codelineno-0-1064"></a>
+<a id="__codelineno-0-1065" name="__codelineno-0-1065"></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_deps_of</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-1066" name="__codelineno-0-1066"></a>                <span class="n">non_cacheable_ids</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="n">Identifier</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+<a id="__codelineno-0-1067" name="__codelineno-0-1067"></a>                <span class="k">for</span> <span class="n">aliases</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache_deps_of</span><span class="p">:</span>
+<a id="__codelineno-0-1068" name="__codelineno-0-1068"></a>                    <span class="n">ids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">_alias_to_ids</span><span class="p">(</span><span class="n">aliases</span><span class="p">)</span>
+<a id="__codelineno-0-1069" name="__codelineno-0-1069"></a>                    <span class="n">non_cacheable_ids</span> <span class="o">=</span> <span class="n">non_cacheable_ids</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
+<a id="__codelineno-0-1070" name="__codelineno-0-1070"></a>
+<a id="__codelineno-0-1071" name="__codelineno-0-1071"></a>                <span class="n">to_cache_results</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-0-1072" name="__codelineno-0-1072"></a>                    <span class="n">id_</span><span class="p">:</span> <span class="n">res</span>
+<a id="__codelineno-0-1073" name="__codelineno-0-1073"></a>                    <span class="k">for</span> <span class="n">id_</span><span class="p">,</span> <span class="n">res</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+<a id="__codelineno-0-1074" name="__codelineno-0-1074"></a>                    <span class="k">if</span> <span class="n">id_</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">non_cacheable_ids</span>
+<a id="__codelineno-0-1075" name="__codelineno-0-1075"></a>                <span class="p">}</span>
+<a id="__codelineno-0-1076" name="__codelineno-0-1076"></a>            <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-0-1077" name="__codelineno-0-1077"></a>                <span class="n">to_cache_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span>
+<a id="__codelineno-0-1078" name="__codelineno-0-1078"></a>            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span>
+<a id="__codelineno-0-1079" name="__codelineno-0-1079"></a>                <span class="n">to_cache_results</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">protocol</span><span class="o">=</span><span class="n">pickle</span><span class="o">.</span><span class="n">HIGHEST_PROTOCOL</span><span class="p">,</span> <span class="n">fix_imports</span><span class="o">=</span><span class="kc">False</span>
+<a id="__codelineno-0-1080" name="__codelineno-0-1080"></a>            <span class="p">)</span>
+<a id="__codelineno-0-1081" name="__codelineno-0-1081"></a>
+<a id="__codelineno-0-1082" name="__codelineno-0-1082"></a>    <span class="c1"># TODO: make DAGExecution reusable but do not guarantee ThreadSafety!</span>
+<a id="__codelineno-0-1083" name="__codelineno-0-1083"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">executed</span> <span class="o">=</span> <span class="kc">True</span>
+<a id="__codelineno-0-1084" name="__codelineno-0-1084"></a>    <span class="c1"># 3. extract the returned value/values</span>
+<a id="__codelineno-0-1085" name="__codelineno-0-1085"></a>    <span class="k">return</span> <span class="n">dag</span><span class="o">.</span><span class="n">_get_return_values</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="p">)</span>  <span class="c1"># type: ignore[return-value]</span>
 </code></pre></div></td></tr></table></div>
-      </details>
+          </details>
   </div>
 
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -1506,24 +1560,25 @@ It will be used in the future for identifying the execution inside Processes etc
   
       <p>Does the same thing as DAG.setup. However the <code>target_nodes</code> and <code>exclude_nodes</code> are taken from the DAGExecution's initization.</p>
 
-      <details class="quote">
-        <summary>Source code in <code>tawazi/_dag/dag.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-994">994</a></span>
-<span class="normal"><a href="#__codelineno-0-995">995</a></span>
-<span class="normal"><a href="#__codelineno-0-996">996</a></span>
-<span class="normal"><a href="#__codelineno-0-997">997</a></span>
-<span class="normal"><a href="#__codelineno-0-998">998</a></span>
-<span class="normal"><a href="#__codelineno-0-999">999</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-994" name="__codelineno-0-994"></a><span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-0-995" name="__codelineno-0-995"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Does the same thing as DAG.setup. However the `target_nodes` and `exclude_nodes` are taken from the DAGExecution&#39;s initization.&quot;&quot;&quot;</span>
-<a id="__codelineno-0-996" name="__codelineno-0-996"></a>    <span class="c1"># TODO: handle the case where cache_deps_of is provided instead of target_nodes and exclude_nodes</span>
-<a id="__codelineno-0-997" name="__codelineno-0-997"></a>    <span class="c1">#  in which case the deps_of might have a setup node themselves which should not run.</span>
-<a id="__codelineno-0-998" name="__codelineno-0-998"></a>    <span class="c1">#  This is an edge case though that is not important to handle at the current moment.</span>
-<a id="__codelineno-0-999" name="__codelineno-0-999"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">target_nodes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_nodes</span><span class="p">,</span> <span class="n">exclude_nodes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">exclude_nodes</span><span class="p">)</span>
+          <details class="quote">
+            <summary>Source code in <code>tawazi/_dag/dag.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1010">1010</a></span>
+<span class="normal"><a href="#__codelineno-0-1011">1011</a></span>
+<span class="normal"><a href="#__codelineno-0-1012">1012</a></span>
+<span class="normal"><a href="#__codelineno-0-1013">1013</a></span>
+<span class="normal"><a href="#__codelineno-0-1014">1014</a></span>
+<span class="normal"><a href="#__codelineno-0-1015">1015</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-1010" name="__codelineno-0-1010"></a><span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-0-1011" name="__codelineno-0-1011"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Does the same thing as DAG.setup. However the `target_nodes` and `exclude_nodes` are taken from the DAGExecution&#39;s initization.&quot;&quot;&quot;</span>
+<a id="__codelineno-0-1012" name="__codelineno-0-1012"></a>    <span class="c1"># TODO: handle the case where cache_deps_of is provided instead of target_nodes and exclude_nodes</span>
+<a id="__codelineno-0-1013" name="__codelineno-0-1013"></a>    <span class="c1">#  in which case the deps_of might have a setup node themselves which should not run.</span>
+<a id="__codelineno-0-1014" name="__codelineno-0-1014"></a>    <span class="c1">#  This is an edge case though that is not important to handle at the current moment.</span>
+<a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">target_nodes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_nodes</span><span class="p">,</span> <span class="n">exclude_nodes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">exclude_nodes</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
-      </details>
+          </details>
   </div>
 
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -1538,6 +1593,8 @@ It will be used in the future for identifying the execution inside Processes etc
   <div class="doc doc-contents ">
   
       <p>Get node with the given id.</p>
+
+
 
   <p><strong>Parameters:</strong></p>
   <table>
@@ -1555,13 +1612,19 @@ It will be used in the future for identifying the execution inside Processes etc
           <td>
                 <code><span title="tawazi.consts.Identifier">Identifier</span></code>
           </td>
-          <td><p>id of the ExecNode</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>id of the ExecNode</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
         </tr>
     </tbody>
   </table>
+
+
 
   <p><strong>Returns:</strong></p>
   <table>
@@ -1576,45 +1639,50 @@ It will be used in the future for identifying the execution inside Processes etc
 <td><code>ExecNode</code></td>          <td>
                 <code><a class="autorefs autorefs-internal" title="tawazi.node.ExecNode" href="../nodes/#tawazi.node.ExecNode">ExecNode</a></code>
           </td>
-          <td><p>Corresponding ExecNode</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>Corresponding ExecNode</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
 
-      <details class="quote">
-        <summary>Source code in <code>tawazi/_dag/dag.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-979">979</a></span>
-<span class="normal"><a href="#__codelineno-0-980">980</a></span>
-<span class="normal"><a href="#__codelineno-0-981">981</a></span>
-<span class="normal"><a href="#__codelineno-0-982">982</a></span>
-<span class="normal"><a href="#__codelineno-0-983">983</a></span>
-<span class="normal"><a href="#__codelineno-0-984">984</a></span>
-<span class="normal"><a href="#__codelineno-0-985">985</a></span>
-<span class="normal"><a href="#__codelineno-0-986">986</a></span>
-<span class="normal"><a href="#__codelineno-0-987">987</a></span>
-<span class="normal"><a href="#__codelineno-0-988">988</a></span>
-<span class="normal"><a href="#__codelineno-0-989">989</a></span>
-<span class="normal"><a href="#__codelineno-0-990">990</a></span>
-<span class="normal"><a href="#__codelineno-0-991">991</a></span>
-<span class="normal"><a href="#__codelineno-0-992">992</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-979" name="__codelineno-0-979"></a><span class="k">def</span> <span class="nf">get_node_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">id_</span><span class="p">:</span> <span class="n">Identifier</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecNode</span><span class="p">:</span>
-<a id="__codelineno-0-980" name="__codelineno-0-980"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get node with the given id.</span>
-<a id="__codelineno-0-981" name="__codelineno-0-981"></a>
-<a id="__codelineno-0-982" name="__codelineno-0-982"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-983" name="__codelineno-0-983"></a><span class="sd">        id_ (Identifier): id of the ExecNode</span>
-<a id="__codelineno-0-984" name="__codelineno-0-984"></a>
-<a id="__codelineno-0-985" name="__codelineno-0-985"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-986" name="__codelineno-0-986"></a><span class="sd">        ExecNode: Corresponding ExecNode</span>
-<a id="__codelineno-0-987" name="__codelineno-0-987"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-988" name="__codelineno-0-988"></a>    <span class="c1"># TODO: ? catch the keyError and</span>
-<a id="__codelineno-0-989" name="__codelineno-0-989"></a>    <span class="c1">#   help the user know the id of the ExecNode by pointing to documentation!?</span>
-<a id="__codelineno-0-990" name="__codelineno-0-990"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">executed</span><span class="p">:</span>
-<a id="__codelineno-0-991" name="__codelineno-0-991"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="p">[</span><span class="n">id_</span><span class="p">]</span>
-<a id="__codelineno-0-992" name="__codelineno-0-992"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">get_node_by_id</span><span class="p">(</span><span class="n">id_</span><span class="p">)</span>
+          <details class="quote">
+            <summary>Source code in <code>tawazi/_dag/dag.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-995"> 995</a></span>
+<span class="normal"><a href="#__codelineno-0-996"> 996</a></span>
+<span class="normal"><a href="#__codelineno-0-997"> 997</a></span>
+<span class="normal"><a href="#__codelineno-0-998"> 998</a></span>
+<span class="normal"><a href="#__codelineno-0-999"> 999</a></span>
+<span class="normal"><a href="#__codelineno-0-1000">1000</a></span>
+<span class="normal"><a href="#__codelineno-0-1001">1001</a></span>
+<span class="normal"><a href="#__codelineno-0-1002">1002</a></span>
+<span class="normal"><a href="#__codelineno-0-1003">1003</a></span>
+<span class="normal"><a href="#__codelineno-0-1004">1004</a></span>
+<span class="normal"><a href="#__codelineno-0-1005">1005</a></span>
+<span class="normal"><a href="#__codelineno-0-1006">1006</a></span>
+<span class="normal"><a href="#__codelineno-0-1007">1007</a></span>
+<span class="normal"><a href="#__codelineno-0-1008">1008</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-995" name="__codelineno-0-995"></a><span class="k">def</span> <span class="nf">get_node_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">id_</span><span class="p">:</span> <span class="n">Identifier</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecNode</span><span class="p">:</span>
+<a id="__codelineno-0-996" name="__codelineno-0-996"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get node with the given id.</span>
+<a id="__codelineno-0-997" name="__codelineno-0-997"></a>
+<a id="__codelineno-0-998" name="__codelineno-0-998"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-999" name="__codelineno-0-999"></a><span class="sd">        id_ (Identifier): id of the ExecNode</span>
+<a id="__codelineno-0-1000" name="__codelineno-0-1000"></a>
+<a id="__codelineno-0-1001" name="__codelineno-0-1001"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-1002" name="__codelineno-0-1002"></a><span class="sd">        ExecNode: Corresponding ExecNode</span>
+<a id="__codelineno-0-1003" name="__codelineno-0-1003"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-1004" name="__codelineno-0-1004"></a>    <span class="c1"># TODO: ? catch the keyError and</span>
+<a id="__codelineno-0-1005" name="__codelineno-0-1005"></a>    <span class="c1">#   help the user know the id of the ExecNode by pointing to documentation!?</span>
+<a id="__codelineno-0-1006" name="__codelineno-0-1006"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">executed</span><span class="p">:</span>
+<a id="__codelineno-0-1007" name="__codelineno-0-1007"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="p">[</span><span class="n">id_</span><span class="p">]</span>
+<a id="__codelineno-0-1008" name="__codelineno-0-1008"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">get_node_by_id</span><span class="p">(</span><span class="n">id_</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
-      </details>
+          </details>
   </div>
 
 </div>
+
 
 <div class="doc doc-object doc-function">
 
@@ -1629,6 +1697,8 @@ It will be used in the future for identifying the execution inside Processes etc
   <div class="doc doc-contents ">
   
       <p>Get all the nodes with the given tag.</p>
+
+
 
   <p><strong>Parameters:</strong></p>
   <table>
@@ -1646,13 +1716,19 @@ It will be used in the future for identifying the execution inside Processes etc
           <td>
                 <code><span title="tawazi.consts.Tag">Tag</span></code>
           </td>
-          <td><p>tag of ExecNodes in question</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>tag of ExecNodes in question</p>
+            </div>
+          </td>
           <td>
               <em>required</em>
           </td>
         </tr>
     </tbody>
   </table>
+
+
 
   <p><strong>Returns:</strong></p>
   <table>
@@ -1667,38 +1743,42 @@ It will be used in the future for identifying the execution inside Processes etc
           <td>
                 <code><span title="typing.List">List</span>[<a class="autorefs autorefs-internal" title="tawazi.node.ExecNode" href="../nodes/#tawazi.node.ExecNode">ExecNode</a>]</code>
           </td>
-          <td><p>List[ExecNode]: corresponding ExecNodes</p></td>
+          <td>
+            <div class="doc-md-description">
+              <p>List[ExecNode]: corresponding ExecNodes</p>
+            </div>
+          </td>
         </tr>
     </tbody>
   </table>
 
-      <details class="quote">
-        <summary>Source code in <code>tawazi/_dag/dag.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-966">966</a></span>
-<span class="normal"><a href="#__codelineno-0-967">967</a></span>
-<span class="normal"><a href="#__codelineno-0-968">968</a></span>
-<span class="normal"><a href="#__codelineno-0-969">969</a></span>
-<span class="normal"><a href="#__codelineno-0-970">970</a></span>
-<span class="normal"><a href="#__codelineno-0-971">971</a></span>
-<span class="normal"><a href="#__codelineno-0-972">972</a></span>
-<span class="normal"><a href="#__codelineno-0-973">973</a></span>
-<span class="normal"><a href="#__codelineno-0-974">974</a></span>
-<span class="normal"><a href="#__codelineno-0-975">975</a></span>
-<span class="normal"><a href="#__codelineno-0-976">976</a></span>
-<span class="normal"><a href="#__codelineno-0-977">977</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-966" name="__codelineno-0-966"></a><span class="k">def</span> <span class="nf">get_nodes_by_tag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tag</span><span class="p">:</span> <span class="n">Tag</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ExecNode</span><span class="p">]:</span>
-<a id="__codelineno-0-967" name="__codelineno-0-967"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all the nodes with the given tag.</span>
-<a id="__codelineno-0-968" name="__codelineno-0-968"></a>
-<a id="__codelineno-0-969" name="__codelineno-0-969"></a><span class="sd">    Args:</span>
-<a id="__codelineno-0-970" name="__codelineno-0-970"></a><span class="sd">        tag (Tag): tag of ExecNodes in question</span>
-<a id="__codelineno-0-971" name="__codelineno-0-971"></a>
-<a id="__codelineno-0-972" name="__codelineno-0-972"></a><span class="sd">    Returns:</span>
-<a id="__codelineno-0-973" name="__codelineno-0-973"></a><span class="sd">        List[ExecNode]: corresponding ExecNodes</span>
-<a id="__codelineno-0-974" name="__codelineno-0-974"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-0-975" name="__codelineno-0-975"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">executed</span><span class="p">:</span>
-<a id="__codelineno-0-976" name="__codelineno-0-976"></a>        <span class="k">return</span> <span class="p">[</span><span class="n">ex_n</span> <span class="k">for</span> <span class="n">ex_n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">ex_n</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="n">tag</span><span class="p">]</span>
-<a id="__codelineno-0-977" name="__codelineno-0-977"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">get_nodes_by_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+          <details class="quote">
+            <summary>Source code in <code>tawazi/_dag/dag.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-982">982</a></span>
+<span class="normal"><a href="#__codelineno-0-983">983</a></span>
+<span class="normal"><a href="#__codelineno-0-984">984</a></span>
+<span class="normal"><a href="#__codelineno-0-985">985</a></span>
+<span class="normal"><a href="#__codelineno-0-986">986</a></span>
+<span class="normal"><a href="#__codelineno-0-987">987</a></span>
+<span class="normal"><a href="#__codelineno-0-988">988</a></span>
+<span class="normal"><a href="#__codelineno-0-989">989</a></span>
+<span class="normal"><a href="#__codelineno-0-990">990</a></span>
+<span class="normal"><a href="#__codelineno-0-991">991</a></span>
+<span class="normal"><a href="#__codelineno-0-992">992</a></span>
+<span class="normal"><a href="#__codelineno-0-993">993</a></span></pre></div></td><td class="code"><div><pre><span></span><code><a id="__codelineno-0-982" name="__codelineno-0-982"></a><span class="k">def</span> <span class="nf">get_nodes_by_tag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tag</span><span class="p">:</span> <span class="n">Tag</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ExecNode</span><span class="p">]:</span>
+<a id="__codelineno-0-983" name="__codelineno-0-983"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all the nodes with the given tag.</span>
+<a id="__codelineno-0-984" name="__codelineno-0-984"></a>
+<a id="__codelineno-0-985" name="__codelineno-0-985"></a><span class="sd">    Args:</span>
+<a id="__codelineno-0-986" name="__codelineno-0-986"></a><span class="sd">        tag (Tag): tag of ExecNodes in question</span>
+<a id="__codelineno-0-987" name="__codelineno-0-987"></a>
+<a id="__codelineno-0-988" name="__codelineno-0-988"></a><span class="sd">    Returns:</span>
+<a id="__codelineno-0-989" name="__codelineno-0-989"></a><span class="sd">        List[ExecNode]: corresponding ExecNodes</span>
+<a id="__codelineno-0-990" name="__codelineno-0-990"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-0-991" name="__codelineno-0-991"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">executed</span><span class="p">:</span>
+<a id="__codelineno-0-992" name="__codelineno-0-992"></a>        <span class="k">return</span> <span class="p">[</span><span class="n">ex_n</span> <span class="k">for</span> <span class="n">ex_n</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">xn_dict</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">ex_n</span><span class="o">.</span><span class="n">tag</span> <span class="o">==</span> <span class="n">tag</span><span class="p">]</span>
+<a id="__codelineno-0-993" name="__codelineno-0-993"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dag</span><span class="o">.</span><span class="n">get_nodes_by_tag</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
 </code></pre></div></td></tr></table></div>
-      </details>
+          </details>
   </div>
 
 </div>
@@ -1747,10 +1827,10 @@ It will be used in the future for identifying the execution inside Processes etc
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.b4d07000.min.js"></script>
+      <script src="../assets/javascripts/bundle.220ee61c.min.js"></script>
       
     
   </body>
