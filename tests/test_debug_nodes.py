@@ -177,6 +177,33 @@ def test_reachable_debuggable_node_in_subgraph() -> None:
     assert inc_shared_var == 1
 
 
+def test_debug_node_depends_on_variable_and_constant() -> None:
+    import tawazi
+
+    tawazi.config.cfg.RUN_DEBUG_NODES = True
+
+    @xn(debug=True)
+    def example1(arg: Any) -> None:
+        pass
+
+    @xn(debug=False)
+    def example2(arg: Any, arg2: Any) -> None:
+        pass
+
+    @xn(debug=True)
+    def example3(arg: Any, arg2: Any) -> None:
+        pass
+
+    @dag
+    def pipeline(docs: Any) -> List[Any]:
+        example1(docs)
+        example2(0, 0)
+        example3(docs, 0)
+        return []
+
+    pipeline.setup()
+
+
 # should this be True ???
 # def test_return_debug_node_value_should_raise_error():
 # pass
