@@ -503,6 +503,26 @@ class DAG(Generic[P, RVDAG]):
         return list(chain(*(self._alias_to_ids(alias) for alias in target_nodes)))
 
     def _extend_leaves_ids_debug_xns(self, leaves_ids: List[Identifier]) -> List[Identifier]:
+        """Extend the leaves_ids to contain all runnable debug node ids.
+
+        For example:
+        A
+        |
+        B
+        | \
+        D E
+
+        if D is not a debug ExecNode and E is a debug ExecNode.
+        If the subgraph whose leaf ExecNode D is executed,
+        E should also be included in the execution because it can be executed (debug node whose inputs are provided)
+        Hence we should extend the subgraph containing only D to also contain E
+
+        Args:
+            leaves_ids (List[Identifier]): the leaves ids of the subgraph
+
+        Returns:
+            List[Identifier]: the leaves ids of the new extended subgraph that contains more debug ExecNodes
+        """
         new_debug_xn_discovered = True
         while new_debug_xn_discovered:
             new_debug_xn_discovered = False
@@ -511,10 +531,10 @@ class DAG(Generic[P, RVDAG]):
                     is_successor_debug = self.node_dict[successor_id].debug
                     if successor_id not in leaves_ids and is_successor_debug:
                         # a new debug XN has been discovered!
-                        new_debug_xn_discovered = True
                         preds_of_succs_ids = [xn_id for xn_id in self.bckrd_deps[successor_id]]
 
                         if set(preds_of_succs_ids).issubset(set(leaves_ids)):
+                            new_debug_xn_discovered = True
                             # this new XN can run by only running the current leaves_ids
                             leaves_ids.append(successor_id)
         return leaves_ids
