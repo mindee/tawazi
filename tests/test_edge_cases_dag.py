@@ -38,7 +38,7 @@ def test_dag_with_weird_nodes() -> None:
     def my_dag() -> Tuple[Any, ...]:
         var_a = xn(partial(func, a="x"))(b="y")
         var_b = xn(partial(func, b="y"))(a="x")
-        var_c = xn(lambda x: x)("e")  # type: ignore[no-any-return]
+        var_c = xn(lambda x: x)("e")
         var_d = toto(var_a, var_b)
 
         return var_a, var_b, var_c, var_d
