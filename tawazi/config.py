@@ -1,7 +1,19 @@
 """configuration parameters for Tawazi."""
 
-from pydantic import Field, validator
-from pydantic.env_settings import BaseSettings
+import pydantic
+from packaging.version import Version
+
+if Version(str(pydantic.VERSION)) < Version("2"):
+    # pydantic v1
+    from pydantic import Field
+    from pydantic import validator as field_validator
+    from pydantic.env_settings import BaseSettings
+else:
+    # pydantic v2
+    from pydantic.v1 import Field  # type: ignore[assignment]
+    from pydantic.v1 import validator as field_validator  # type: ignore[assignment]
+    from pydantic.v1.env_settings import BaseSettings
+
 
 from tawazi.consts import Resource, XNOutsideDAGCall
 
@@ -38,7 +50,7 @@ class Config(BaseSettings):
     # Caution: to set to False if used in prod (exposes variable names)
     LOGURU_DIAGNOSE: bool = Field(default=False, env="TAWAZI_LOGGER_DIAGNOSE")  # type: ignore[call-arg]
 
-    @validator("LOGURU_LEVEL")
+    @field_validator("LOGURU_LEVEL")
     def _validate_loguru_level(cls, v: str) -> str:  # noqa: N805
         if v == "PROD":
             from loguru import logger

@@ -17,7 +17,7 @@ readme = "README.md"
 requires-python=">=3.7,<4"
 dependencies = [
     "networkx>=2,<4",
-    "pydantic~=1.0",
+    "pydantic",
     "loguru",
     "PyYaml>=6",
     "typing_extensions>=4.4.0"
@@ -44,6 +44,8 @@ doc = [
     "mkdocs-material==9.2.6",
     "mkdocstrings-python"
 ]
+
+pydantic1 = ["pydantic>=1.0.0,<2"]
 
 [tool.pytest.ini_options]
 addopts = "--pdbcls=IPython.terminal.debugger:TerminalPdb --cov-report=term-missing:skip-covered  --cov-report=lcov:cov.info --junit-xml=pytest-junit.xml --cov=tawazi"
