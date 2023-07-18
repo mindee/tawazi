@@ -559,11 +559,7 @@ class DAG(Generic[P, RVDAG]):
         """
         # 1. select all setup ExecNodes
         #  do not copy the setup nodes because we want them to be modified per DAG instance!
-        all_setup_nodes = {
-            id_: xn
-            for id_, xn in self.node_dict.items()
-            if xn.setup or (isinstance(xn, ArgExecNode) and xn.executed)
-        }
+        all_setup_nodes = {id_: xn for id_, xn in self.node_dict.items() if xn.setup}
 
         # 2. if target_nodes is not provided run all setup ExecNodes
         if target_nodes is None:
@@ -585,7 +581,7 @@ class DAG(Generic[P, RVDAG]):
                 graph.remove_node(id_)
         # TODO: handle debug XNs!
 
-        self._execute(graph, all_setup_nodes)
+        self._execute(graph)
 
     def executor(self, **kwargs: Any) -> "DAGExecution[P, RVDAG]":
         """Generates a DAGExecution for the DAG.
