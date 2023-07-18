@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.1 (2023-07-18)
+
+### Bug Fixes
+* If a debug ExecNode depends on a variable data, the DAG.setup method hanged forever
+* If a debug ExecNodes are provided the DAG.setup method sometimes fails
+* Tawazi is compatible with pydantic v1 only
+
 ## v0.3.0 (2023-05-31)
 
 ### Improvement
