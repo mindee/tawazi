@@ -280,7 +280,7 @@ class DAG(Generic[P, RVDAG]):
         for i in in_ids:
             # if pred is ancestor of an input, raise error
             if i in in_ids_ancestors:
-                _raise_input_successor_of_input(i, set_xn_ids)
+                _raise_input_successor_of_input(i, set(in_ids))
 
             # if i doesn't produce any of the wanted outputs, raise a warning!
             descendants: Set[Identifier] = nx.descendants(self.graph_ids, i)
