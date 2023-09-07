@@ -110,7 +110,9 @@ def execute(
             if num_running_threads == max_concurrency or num_runnable_nodes_ids == 0:
                 # must wait and not submit any workers before a worker ends
                 # (that might create a new more prioritized node) to be executed
-                logger.debug(f"Waiting for ExecNodes {running} to finish. Finished running {done}")
+                logger.debug(
+                    "Waiting for ExecNodes %s to finish. Finished running %", running, done
+                )
                 done_, running = wait(running, return_when=FIRST_COMPLETED)
                 done = done.union(done_)
 
@@ -119,7 +121,7 @@ def execute(
             #       2. and remove them from the graph
             for id_, fut in futures.items():
                 if fut.done() and id_ in graph:
-                    logger.debug(f"Remove ExecNode {id_} from the graph")
+                    logger.debug("Remove ExecNode % from the graph", id_)
                     handle_future_exception(behavior, graph, fut, id_)
                     graph.remove_node(id_)
 
@@ -143,7 +145,7 @@ def execute(
             highest_priority_xns.sort(key=lambda node: node.compound_priority)
             xn = highest_priority_xns[-1]
 
-            logger.info(f"{xn.id} will run!")
+            logger.info("%s will run!", xn.id)
 
             # 4.2 if the current node must be run sequentially, wait for a running node to finish.
             # in that case we must prune the graph to re-check whether a new root node
@@ -161,7 +163,7 @@ def execute(
 
             # 5.1 dynamic graph pruning
             if not _xn_active_in_call(xn, xns_dict):
-                logger.debug(f"Prune {xn.id} from the graph")
+                logger.debug("Prune %s from the graph", xn.id)
                 graph.remove_recursively(xn.id)
                 continue
 
@@ -173,7 +175,7 @@ def execute(
             else:
                 # a single execution will be launched and will end.
                 # it doesn't count as an additional thread that is running.
-                logger.debug(f"Executing {xn.id} in main thread")
+                logger.debug("Executing %s in main thread", xn.id)
                 try:
                     xn._execute(node_dict=xns_dict)
                 except Exception as e:
@@ -182,13 +184,13 @@ def execute(
                     # else:
                     handle_exception(behavior, graph, xn.id, e)
 
-                logger.debug(f"Remove ExecNode {xn.id} from the graph")
+                logger.debug("Remove ExecNode % from the graph", xn.id)
                 graph.remove_node(xn.id)
 
             # 5.3 wait for the sequential node to finish
             # This code is executed only if this node is being executed purely by itself
             if xn.resource == Resource.thread and xn.is_sequential:
-                logger.debug(f"Wait for all Futures to finish because {xn.id} is sequential.")
+                logger.debug("Wait for all Futures to finish because %s is sequential.", xn.id)
                 # ALL_COMPLETED is equivalent to FIRST_COMPLETED because there is only a single future running!
                 done_, running = wait(futures.values(), return_when=ALL_COMPLETED)
 
@@ -225,7 +227,7 @@ def handle_future_exception(
 def handle_exception(
     behavior: ErrorStrategy, graph: DiGraphEx, id_: Identifier, e: Exception
 ) -> None:
-    logger.exception(f"The feature {id_} encountered the following error:")
+    logger.exception("The feature %s encountered the following error:", id_)
 
     if behavior == ErrorStrategy.permissive:
         logger.warning("Ignoring exception as the behavior is set to permissive")
