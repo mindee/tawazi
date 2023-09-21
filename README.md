@@ -131,5 +131,15 @@ Only the latest version's documentation is hosted.
 
 If you want to check the documentation of a previous version please checkout the corresponding release, install the required packages and run: `mkdocs serve`
 
+
+## Developer mode
+```sh
+pip install --upgrade pip
+pip install flit wheel
+
+cd tawazi
+flit install -s
+```
+
 ## Future developments
 __This library is still in development. Breaking changes are expected.__
