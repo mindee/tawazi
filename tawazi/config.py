@@ -1,6 +1,7 @@
 """configuration parameters for Tawazi."""
 
-from pydantic import BaseSettings, Field, validator
+from pydantic import Field, validator
+from pydantic.env_settings import BaseSettings
 
 from tawazi.consts import Resource, XNOutsideDAGCall
 

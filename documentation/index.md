@@ -147,8 +147,8 @@ execution_time = time() - t0
 assert execution_time < 1.5  # a() and b() are executed in parallel
 print(f"Graph execution took {execution_time:.2f} seconds")
 print(f"res = {res}")
->> Graph execution took 1.00 seconds
->> 'A + B = C'
+## Graph execution took 1.00 seconds
+## 'A + B = C'
 ```
 **As you can see, the execution time of pipeline takes less than 2 seconds, which means that some part of the code ran in parallel to the other**
 
@@ -388,12 +388,10 @@ def pipe():
 debug_has_run = False
 pipe()
 assert debug_has_run == False
-
->> export RUN_DEBUG_NODES=True
-debug_has_run = False
-pipe()
-assert debug_has_run == True
-
+## export RUN_DEBUG_NODES=True
+## debug_has_run = False
+## pipe()
+## assert debug_has_run == True
 ```
 
 ## **Advanced Usage**
@@ -760,4 +758,5 @@ def f_with_kwargs(x: int, **kwargs):
   return x
 
 f_with_kwargs(2, twz_tag="toes")  # works
+
 ```
