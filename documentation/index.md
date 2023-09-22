@@ -7,12 +7,12 @@ In [Tawazi](https://pypi.org/project/tawazi/), there 3 Classes that will be mani
 `ExecNode` can take arguments and return values to be used as arguments in another object of type `ExecNode`.
 
 
-2. `DAG`: a wrapper around a function that defines a dag dependency.
+1. `DAG`: a wrapper around a function that defines a dag dependency.
 This function should only contain calls to objects of type `ExecNode`.<p></p>
 **Hint:** Calling normal Python functions inside a `DAG` is not allowed!
 
 
-3. `DAGExecution`: an instance related to `DAG` for advanced usage.
+1. `DAGExecution`: an instance related to `DAG` for advanced usage.
 It can execute a `DAG` and keeps information about the last execution.
 It allows checking all `ExecNode`s results, running subgraphs, caching `DAG` executions and more (c.f. section below for usage documentation).
 
@@ -20,7 +20,7 @@ It allows checking all `ExecNode`s results, running subgraphs, caching `DAG` exe
 Decorators are provided to create the previous classes:
 
 1. `@xn`: creates `ExecNode` from a function.
-2. `@dag`: creates `DAG` from a function.
+1. `@dag`: creates `DAG` from a function.
 
 ### **Basic usage**
 ```python
@@ -65,8 +65,8 @@ By default, calling `ExecNode` outside of a `DAG` describing function will raise
 However, the user can control this behavior by setting the environment variable `TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR` to:
 
 1. `"error"`: raise an error if an `ExecNode` is called outside of `DAG` description (default)
-2. `"warning"`: raise a warning if an `ExecNode` is called outside of `DAG` description, but execute the wrapped function anyway
-3. `"ignore"`: execute the wrapped function anyway.
+1. `"warning"`: raise a warning if an `ExecNode` is called outside of `DAG` description, but execute the wrapped function anyway
+1. `"ignore"`: execute the wrapped function anyway.
 
 This way, `ExecNode` can still be called outside of a `DAG`. It will raise a warning.
 <!--pytest-codeblocks:cont-->
@@ -150,11 +150,11 @@ print(f"res = {res}")
 ## Graph execution took 1.00 seconds
 ## 'A + B = C'
 ```
-**As you can see, the execution time of pipeline takes less than 2 seconds, which means that some part of the code ran in parallel to the other**
+As you can see, the execution time of pipeline takes **less than 2 seconds**, which means that some part of the code ran in parallel to the other
 
-### **Mastering `DAG` usage**
+### **Passing arguments into a `DAG`**
 
-`DAG` is similar to a normal function, you can pass in arguments to the pipeline and get returned results back like normal functions:
+A `DAG` object is callable, hence it is similar to a normal function. You can pass in arguments to the pipeline and get returned results back:
 
 <!--pytest-codeblocks:cont-->
 
@@ -235,7 +235,7 @@ def pipeline():
 
 assert pipeline() == (1, 2, 3, 4, 4, 5, 6, 7)
 ```
-2. Or via indexing (`Dict` or `List` etc.):
+1. Or via indexing (`Dict` or `List` etc.):
 <!--pytest-codeblocks:cont-->
 
 ```python
@@ -337,7 +337,7 @@ def setup_node_1():
   return "large data 1"
 
 @xn(setup=True)
-def setop_node_2():
+def setup_node_2():
   return "large data 2"
 
 @xn
@@ -351,7 +351,7 @@ def pprint_xn(val):
 @dag
 def pipeline():
   data1 = setup_node_1()
-  data2 = setop_node_2()
+  data2 = setup_node_2()
   print_xn(data1)
   pprint_xn(data2)
   return data1, data2
@@ -364,7 +364,7 @@ assert ("large data 1", None) == exec_()
 
 ### **Debug `ExecNode`**
 
-You can make Debug an `ExecNode` that will only run if `RUN_DEBUG_NODES` env variable is set. These can be visualization `ExecNode` 
+You can make Debug an `ExecNode` that will only run if `RUN_DEBUG_NODES` env variable is set. This can be visualization `ExecNode` 
 for example or some complicated assertions that helps you debug problems when needed that are hostile to the production environment (they consume too much computation time):
 <!--pytest-codeblocks:cont-->
 
@@ -388,7 +388,9 @@ def pipe():
 debug_has_run = False
 pipe()
 assert debug_has_run == False
-## export RUN_DEBUG_NODES=True
+
+## You can enable running Debug nodes 
+## export RUN_DEBUG_NODES=True  # in the shell
 ## debug_has_run = False
 ## pipe()
 ## assert debug_has_run == True
@@ -397,7 +399,7 @@ assert debug_has_run == False
 ## **Advanced Usage**
 
 ### Tag
-A _tag_ is a user defined identifier for an `ExecNode`. Every `ExecNode` is allowed to have None, one or multiple tags.
+A _tag_ is a user defined identifier for an `ExecNode`. Every `ExecNode` is allowed to have zero, one or multiple tags.
 
 You can tag an `ExecNode` with an `str`. For multiple tags simply use a tuple (`Tuple[str]`).
 <!--pytest-codeblocks:cont-->
@@ -425,8 +427,8 @@ assert xn_a == xn_b
 You can do whatever you want with this ExecNode:
 
 1. like looking in its arguments
-2. setting its priority
-3. changing it to become a debug `ExecNode`
+1. setting its priority
+1. changing it to become a debug `ExecNode`
 
 > **WARNING**: This is an advanced usage. Your methods might break more often with Tawazi releases because `ExecNode` is an internal Object. Please use with care
 
@@ -604,15 +606,15 @@ assert pipe(0) == (None, None, None)
 
 1. You can control which node is preferred to run 1st when multiple `ExecNode`s are available for execution.
 This can be achieved through modifications of `priority` attribute of the `ExecNode`.
-2. You can even make an `ExecNode` run alone (i.e. without allowing other ExecNodes to execute in parallel to it). This can be helpful if you write code that is not thread-safe or use a library that is not thread-safe in a certain `ExecNode`.
+1. You can even make an `ExecNode` run alone (i.e. without allowing other ExecNodes to execute in parallel to it). This can be helpful if you write code that is not thread-safe or use a library that is not thread-safe in a certain `ExecNode`.
 This is achieved by setting the `is_sequential` parameter to `True` for the `ExecNode` in question. The default value is set via the environment variable `TAWAZI_IS_SEQUENTIAL` (c.f. `tawazi.config`). 
-3. You can control the behavior of the `DAG` in case an `ExecNode` fails:
+1. You can control the behavior of the `DAG` in case an `ExecNode` fails:
 
-      a. `"strict"`: stop execution of the DAG
+      1. `"strict"`: stop execution of the DAG
 
-      b. `"all-children"`:  stop the execution of the all successors
+      1. `"all-children"`:  stop the execution of the all successors
 
-      c. `"permissive"`: continue the execution of the whole DAG
+      1. `"permissive"`: continue the execution of the whole DAG
 <!--pytest-codeblocks:cont-->
 
 ```python
@@ -708,7 +710,7 @@ You can control the resource used to run a specific `ExecNode`. By default, all 
 This can be changed by setting the `resource` parameter of the `ExecNode`. Currently only two values are supported: 
 
 1. "thread": Run the `ExecNode` inside a thread (default).
-2. "main-thread": Run the `ExecNode` inside the main thread without Pickling the data to pass it to the threads etc.
+1. "main-thread": Run the `ExecNode` inside the main thread without Pickling the data to pass it to the threads etc.
 
 <!--pytest-codeblocks:cont-->
 
@@ -738,8 +740,8 @@ You can also set the default resource for all `ExecNode`s by setting the environ
 
 ## **Limitations**
 1. All code inside a dag descriptor function must be either an @xn decorated functions calls and arguments passed arguments. Otherwise the behavior of the DAG might be unpredictable
-2. Because the main function serves only for the purpose of describing the dependencies, the code that it executes should only describe dependencies. Hence when debugging your code, it will be impossible to view the data movement inside this function. However, you can debug code inside of a node.
-3. MyPy typing is supported. However, for certain cases it is not currently possible to support typing: (`twz_tag`, `twz_active`, `twz_unpack_to` etc.). This is because of pep612's limitation for [concatenating-keyword-parameters](https://peps.python.org/pep-0612/#concatenating-keyword-parameters). As a workaround, you can currently add `**kwargs` to your original function declaring that it can accept keyworded arguments. However none of the inline tawazi specific parameters (`twz_*`) parameters will be passed to your function:
+1. Because the main function serves only for the purpose of describing the dependencies, the code that it executes should only describe dependencies. Hence when debugging your code, it will be impossible to view the data movement inside this function. However, you can debug code inside of a node.
+1. MyPy typing is supported. However, for certain cases it is not currently possible to support typing: (`twz_tag`, `twz_active`, `twz_unpack_to` etc.). This is because of pep612's limitation for [concatenating-keyword-parameters](https://peps.python.org/pep-0612/#concatenating-keyword-parameters). As a workaround, you can currently add `**kwargs` to your original function declaring that it can accept keyworded arguments. However none of the inline tawazi specific parameters (`twz_*`) parameters will be passed to your function:
 <!--pytest-codeblocks:cont-->
 
 ```python
