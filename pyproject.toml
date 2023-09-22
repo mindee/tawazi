@@ -28,14 +28,15 @@ dev = [
     "matplotlib>=3.5.3",
     "pytest>=7.1.2",
     "pytest-cov>=4.0.0",
-    "pytest-codeblocks"
+    "pytest-codeblocks",
+    "pre-commit"
 ]
 
 doc = [
     "mkdocs>=1.4.0",
     "mike==1.1.2",
     "mkdocs-exclude==1.0.2",
-    "mkdocs-material==9.2.8",
+    "mkdocs-material==9.2.6",
     "mkdocstrings-python"
 ]
 
