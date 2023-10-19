@@ -20,6 +20,7 @@ from tawazi.consts import (
     RESERVED_KWARGS,
     RETURN_NAME_SEP,
     RVXN,
+    USE_SEP_END,
     USE_SEP_START,
     Identifier,
     NoVal,
@@ -40,6 +41,32 @@ exec_nodes: Dict[Identifier, "ExecNode"] = {}
 exec_nodes_lock = Lock()
 
 Alias = Union[Tag, Identifier, "ExecNode"]  # multiple ways of identifying an XN
+
+
+def count_occurences(id_: str, exec_nodes: Dict[str, "ExecNode"]) -> int:
+    """Count the number of occurences of an id in exec_nodes.
+
+    Avoids counting the ids of the arguments passed to previously called ExecNodes.
+
+    Args:
+        id_ (str): the id to count
+        exec_nodes (Dict[str, ExecNode]): the dictionary of ExecNodes
+
+    Returns:
+        int: the number of occurences of id_ in exec_nodes
+    """
+    # example: id_ = "a"
+    # ExecNode a is called five times, hence we should have ids a, a<<1>>, a<<2>>, a<<3>>, a<<4>>
+    # ExecNode a is called with many arguments:
+    # we want to avoid counting "a>>>nth argument" and a<<1>>>>nth argument"
+
+    # only choose the ids that are exactly exactly the same as the original id
+    len(id_)
+    candidate_ids = (xn_id for xn_id in exec_nodes if xn_id.split(USE_SEP_START)[0] == id_)
+
+    # count the number of ids that are exactly the same as the original id
+    #  or that end with USE_SEP_END (which means they come from a reuse of the same ExecNode)
+    return sum(xn_id == id_ or xn_id.endswith(USE_SEP_END) for xn_id in candidate_ids)
 
 
 class ExecNode:
@@ -492,7 +519,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         # 1.1 Make a deep copy of self because every Call to an ExecNode corresponds to a new instance
         self_copy = copy(self)
         # 1.2 Assign the id
-        count_usages = sum(xn_id.split(USE_SEP_START)[0] == self.id for xn_id in exec_nodes)
+        count_usages = count_occurences(self.id, exec_nodes)
         # if ExecNode is used multiple times, <<usage_count>> is appended to its ID
         self_copy._id = _lazy_xn_id(self.id, count_usages)
 
