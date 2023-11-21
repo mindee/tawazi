@@ -1,6 +1,7 @@
 """Module containing the definition of a Directed Graph Extension of networkx.DiGraph."""
 from copy import deepcopy
-from typing import Iterable, List, Optional, Set, Tuple
+from itertools import chain
+from typing import Iterable, List, Optional, Sequence, Set, Tuple
 
 import networkx as nx
 from loguru import logger
@@ -12,6 +13,7 @@ from tawazi.consts import Identifier
 class DiGraphEx(nx.DiGraph):
     """Extends the DiGraph with some methods."""
 
+    @property
     def root_nodes(self) -> List[Identifier]:
         """Safely gets the root nodes.
 
@@ -29,6 +31,28 @@ class DiGraphEx(nx.DiGraph):
         """
         return [node for node, degree in self.out_degree if degree == 0]
 
+    def single_node_successors(self, node_id: Identifier) -> List[Identifier]:
+        """Get all the successors of a node with a depth first search.
+
+        Args:
+            node_id: the node acting as the root of the search
+
+        Returns:
+            list of the node's successors
+        """
+        return list(nx.dfs_tree(self, node_id).nodes())
+
+    def multiple_nodes_successors(self, nodes_ids: Sequence[Identifier]) -> Set[Identifier]:
+        """Get the successors of all nodes in the iterable.
+
+        Args:
+            nodes_ids: nodes of which we want successors
+
+        Returns:
+            a set of all the sucessors
+        """
+        return set(list(chain(*[self.single_node_successors(node) for node in nodes_ids])))
+
     def remove_recursively(self, root_node: Identifier, remove_root_node: bool = True) -> None:
         """Recursively removes all the nodes that depend on the provided.
 
@@ -36,17 +60,7 @@ class DiGraphEx(nx.DiGraph):
             root_node (Identifier): the root node
             remove_root_node (bool, optional): whether to remove the root node or not. Defaults to True.
         """
-        nodes_to_remove: Set[Identifier] = set()
-
-        def dfs(n: Identifier, graph: DiGraphEx, visited: Set[Identifier]) -> None:
-            if n in visited:
-                return
-
-            visited.add(n)
-            for child in graph[n].keys():
-                dfs(child, graph, visited)
-
-        dfs(root_node, self, nodes_to_remove)
+        nodes_to_remove = self.single_node_successors(root_node)
 
         # skip removing the root node if requested
         if not remove_root_node:

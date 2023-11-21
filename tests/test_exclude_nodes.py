@@ -4,7 +4,6 @@ from typing import Tuple
 import pytest
 from tawazi import dag, xn
 from tawazi.config import cfg
-from tawazi.errors import TawaziUsageError
 
 test_exclude_nodes = ""
 
@@ -155,5 +154,5 @@ def test_with_debug_nodes() -> None:
 
 
 def test_impossible_situation() -> None:
-    with pytest.raises(TawaziUsageError):
+    with pytest.raises(ValueError):
         _ = pipe.executor(target_nodes=[g], exclude_nodes=[d])
