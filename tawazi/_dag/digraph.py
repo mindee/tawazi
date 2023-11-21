@@ -1,5 +1,4 @@
 """Module containing the definition of a Directed Graph Extension of networkx.DiGraph."""
-from copy import deepcopy
 from itertools import chain
 from typing import Iterable, List, Optional, Sequence, Set, Tuple
 
@@ -170,25 +169,3 @@ class DiGraphEx(nx.DiGraph):
         for node in nodes:
             ancestors.update(nx.ancestors(self, node))
         return ancestors
-
-
-def subgraph(graph: DiGraphEx, leaves_ids: Optional[List[Identifier]]) -> DiGraphEx:
-    """Deep copy the same graph if leaves_ids is None, otherwise returns a new graph by applying `graph.subgraph_leaves`.
-
-    Args:
-        graph (DiGraphEx): graph describing the DAG
-        leaves_ids (List[Identifier]): The leaves that must be executed
-
-    Returns:
-        DiGraphEx: The subgraph of the provided graph
-    """
-    # TODO: avoid mutable state, hence avoid doing deep copies ?
-    # 0. deep copy the graph ids because it will be pruned during calculation
-    graph = deepcopy(graph)
-
-    # TODO: make the creation of subgraph possible directly from initialization
-    # 1. create the subgraph
-    if leaves_ids is not None:
-        graph.subgraph_leaves(leaves_ids)
-
-    return graph
