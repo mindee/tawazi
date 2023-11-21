@@ -490,18 +490,6 @@ class DAG(Generic[P, RVDAG]):
             f"str or tuple identifying the node but provided {alias}"
         )
 
-    # NOTE: this function is named wrongly!
-    def _get_target_ids(self, target_nodes: Sequence[Alias]) -> List[Identifier]:
-        """Get the ids of ExecNodes corresponding to target_nodes.
-
-        Args:
-            target_nodes (Optional[List[Alias]]): list of a ExecNode Aliases that the user might provide to run a subgraph
-
-        Returns:
-            List[Identifier]: Leaf ExecNodes' Identities
-        """
-        return list(chain(*(self._alias_to_ids(alias) for alias in target_nodes)))
-
     def _extend_leaves_ids_debug_xns(self, leaves_ids: List[Identifier]) -> List[Identifier]:
         """Extend the leaves_ids to contain all runnable debug node ids.
 
@@ -539,10 +527,22 @@ class DAG(Generic[P, RVDAG]):
                             leaves_ids.append(successor_id)
         return leaves_ids
 
+    def _sanitize_nodes_alias(self, nodes: Sequence[Alias]) -> List[Identifier]:
+        """Ensure correct Identifiers from aliases.
+
+        Args:
+            nodes: iterable of node aliases
+
+        Returns:
+            list of correct Identifiers
+        """
+        return list(chain(*(self._alias_to_ids(alias) for alias in nodes)))
+
     def setup(
         self,
         target_nodes: Optional[Sequence[Alias]] = None,
         exclude_nodes: Optional[Sequence[Alias]] = None,
+        root_nodes: Optional[Sequence[Alias]] = None,
     ) -> None:
         """Run the setup ExecNodes for the DAG.
 
@@ -553,32 +553,36 @@ class DAG(Generic[P, RVDAG]):
 
         Args:
             target_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to use in the DAG.
-                This might include setup or non setup ExecNodes. If None is provided, will run all setup ExecNodes. Defaults to None.
+                This might include setup or non setup ExecNodes. If None is provided, will run all setup ExecNodes.
+                Defaults to None.
             exclude_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to exclude from the DAG.
-                The user is responsible for ensuring that the overlapping between the target_nodes and exclude_nodes is logical.
+                The user is responsible for ensuring that the overlapping between the target_nodes
+                and exclude_nodes is logical.
+            root_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to select as ancestor nodes.
+                The user is responsible for ensuring that the overlapping between the target_nodes, the exclude_nodes
+                and the root nodes is logical.
         """
         # 1. select all setup ExecNodes
         #  do not copy the setup nodes because we want them to be modified per DAG instance!
         all_setup_nodes = {id_: xn for id_, xn in self.node_dict.items() if xn.setup}
 
         # 2. if target_nodes is not provided run all setup ExecNodes
-        if target_nodes is None:
-            target_ids = list(all_setup_nodes.keys())
-            graph = self._make_subgraph(target_ids, exclude_nodes)
+        target_ids = (
+            list(all_setup_nodes.keys())
+            if target_nodes is None
+            else self._sanitize_nodes_alias(target_nodes)
+        )
 
-        else:
-            # 2.1 the leaves_ids that the user wants to execute
-            #  however they might contain non setup nodes... so we should extract all the nodes ids
-            #  that must be run in order to run the target_nodes ExecNodes
-            #  afterwards we can remove the non setup nodes
-            target_ids = self._get_target_ids(target_nodes)
+        # 2.1 the leaves_ids that the user wants to execute
+        #  however they might contain non setup nodes... so we should extract all the nodes ids
+        #  that must be run in order to run the target_nodes ExecNodes
+        graph = self._make_subgraph(
+            target_nodes=target_ids, exclude_nodes=exclude_nodes, root_nodes=root_nodes
+        )
 
-            # 2.2 filter non setup ExecNodes
-            graph = self._make_subgraph(target_ids, exclude_nodes)
-            ids_to_remove = [id_ for id_ in graph if id_ not in all_setup_nodes]
+        # 2.2 filter non setup ExecNodes
+        graph.remove_nodes_from([node_id for node_id in graph if node_id not in all_setup_nodes])
 
-            for id_ in ids_to_remove:
-                graph.remove_node(id_)
         # TODO: handle debug XNs!
 
         self._execute(graph)
@@ -598,36 +602,47 @@ class DAG(Generic[P, RVDAG]):
         self,
         target_nodes: Optional[Sequence[Alias]] = None,
         exclude_nodes: Optional[Sequence[Alias]] = None,
-    ) -> nx.DiGraph:
+        root_nodes: Optional[Sequence[Alias]] = None,
+    ) -> DiGraphEx:
+        """Builds the DigraphEx, with potential graph pruning.
+
+        Args:
+            target_nodes: nodes that we want to run and their dependencies
+            exclude_nodes: nodes that should be excluded from the graph
+            root_nodes: base ancestor nodes from which to start graph resolution
+
+        Returns:
+            Base Graph that will be used for the computations
+        """
         graph = deepcopy(self.graph_ids)
 
-        if target_nodes is not None:
-            target_ids = self._get_target_ids(target_nodes)
-            graph.subgraph_leaves(target_ids)
+        # first try to heavily prune removing roots
+        if root_nodes is not None:
+            root_ids = self._sanitize_nodes_alias(root_nodes)
 
+            if not set(root_ids).issubset(set(graph.root_nodes)):
+                raise ValueError(
+                    f"nodes {set(graph.root_nodes).difference(set(root_ids))} aren't root nodes."
+                )
+
+            # extract subgraph with only provided roots
+            # NOTE: copy is because edges/nodes are shared with original graph
+            graph = graph.subgraph(graph.multiple_nodes_successors(root_ids)).copy()
+
+        # then exclude nodes
         if exclude_nodes is not None:
-            exclude_ids = list(chain(*(self._alias_to_ids(alias) for alias in exclude_nodes)))
+            exclude_ids = self._sanitize_nodes_alias(exclude_nodes)
+            graph.remove_nodes_from(graph.multiple_nodes_successors(exclude_ids))
 
-            for id_ in exclude_ids:
-                # maybe previously removed by :
-                # 1. not being inside the subgraph
-                # 2. being a successor of an excluded node
-                if id_ in graph:
-                    graph.remove_recursively(id_)
-
-        if target_nodes and exclude_nodes:
-            for id_ in target_ids:
-                if id_ not in graph:
-                    raise TawaziUsageError(
-                        f"target_nodes include {id_} which is removed by exclude_nodes: {exclude_ids}, "
-                        f"please verify that they don't overlap in a non logical way!"
-                    )
+        # lastly select additional nodes
+        if target_nodes is not None:
+            target_ids = self._sanitize_nodes_alias(target_nodes)
+            graph.subgraph_leaves(target_ids)
 
         # handle debug nodes
         if cfg.RUN_DEBUG_NODES:
-            leaves_ids = graph.leaf_nodes
             # after extending leaves_ids, we should do a recheck because this might recreate another debug-able XN...
-            target_ids = self._extend_leaves_ids_debug_xns(leaves_ids)
+            target_ids = self._extend_leaves_ids_debug_xns(graph.leaf_nodes)
 
             # extend the graph with the debug XNs
             # This is not efficient but it is ok since we are debugging the code anyways
@@ -635,11 +650,9 @@ class DAG(Generic[P, RVDAG]):
             debug_graph.subgraph_leaves(list(graph.nodes) + target_ids)
             graph = debug_graph
 
-        # 3. clean all debug XNs if they shouldn't run!
+        # 3. Remove debug execnodes
         else:
-            to_remove = [id_ for id_ in graph if self.node_dict[id_].debug]
-            for id_ in to_remove:
-                graph.remove_node(id_)
+            graph.remove_nodes_from([node_id for node_id in graph if self.node_dict[node_id].debug])
 
         return graph
 
@@ -748,6 +761,7 @@ class DAG(Generic[P, RVDAG]):
         *args: Any,
         target_nodes: Optional[List[Alias]] = None,
         exclude_nodes: Optional[List[Alias]] = None,
+        root_nodes: Optional[List[Alias]] = None,
     ) -> Any:
         """Execute the ExecNodes in topological order without priority in for loop manner for debugging purposes (Experimental).
 
@@ -755,13 +769,14 @@ class DAG(Generic[P, RVDAG]):
             *args (Any): Positional arguments passed to the DAG
             target_nodes (Optional[List[Alias]]): the ExecNodes that should be considered to construct the subgraph
             exclude_nodes (Optional[List[Alias]]): the ExecNodes that shouldn't run
+            root_nodes (Optional[List[Alias]]): the root ExecNodes from which extract subgraph
 
         Returns:
             Any: the result of the execution of the DAG.
              If an ExecNode returns a value in the DAG but is not executed, it will return None.
         """
         # 1. make the graph_ids to be executed!
-        graph = self._make_subgraph(target_nodes, exclude_nodes)
+        graph = self._make_subgraph(target_nodes, exclude_nodes, root_nodes)
 
         # 2. make call_xn_dict that will be modified
         call_xn_dict = self._make_call_xn_dict(*args)
@@ -858,6 +873,7 @@ class DAGExecution(Generic[P, RVDAG]):
         *,
         target_nodes: Optional[Sequence[Alias]] = None,
         exclude_nodes: Optional[Sequence[Alias]] = None,
+        root_nodes: Optional[Sequence[Alias]] = None,
         cache_deps_of: Optional[Sequence[Alias]] = None,
         cache_in: str = "",
         from_cache: str = "",
@@ -871,7 +887,10 @@ class DAGExecution(Generic[P, RVDAG]):
                 If None will execute all ExecNodes.
                 Defaults to None.
             exclude_nodes (Optional[List[Alias]]): The leave ExecNodes to exclude.
-                If None will exclude all ExecNodes.
+                If None will exclude no ExecNode.
+                Defaults to None.
+            root_nodes (Optional[List[Alias]]): The base ExecNodes that will server as ancestor for the graph.
+                If None will run all ExecNodes.
                 Defaults to None.
             cache_deps_of (Optional[List[Alias]]): cache all the dependencies of these nodes.
                 This option can not be used together with target_nodes nor exclude_nodes.
@@ -905,6 +924,7 @@ class DAGExecution(Generic[P, RVDAG]):
         # get the leaves ids to execute in case of a subgraph
         self.target_nodes = target_nodes
         self.exclude_nodes = exclude_nodes
+        self.root_nodes = root_nodes
 
         self.xn_dict: Dict[Identifier, ExecNode] = {}
         self.results: Dict[Identifier, Any] = {}
@@ -917,16 +937,22 @@ class DAGExecution(Generic[P, RVDAG]):
         self.graph = self._make_graph()
         self.scheduled_nodes = self.graph.nodes
 
-    def _make_graph(self) -> nx.DiGraph:
+    def _make_graph(self) -> DiGraphEx:
         """Make the graph of the execution.
 
         This method is called only once per instance.
-        """
-        # logic parts
-        if self.cache_deps_of is not None:
-            return self.dag._make_subgraph(self.cache_deps_of)
 
-        return self.dag._make_subgraph(self.target_nodes, self.exclude_nodes)
+        Returns:
+            the execution graph
+        """
+        if self.cache_deps_of is not None:
+            return self.dag._make_subgraph(target_nodes=self.cache_deps_of)
+
+        return self.dag._make_subgraph(
+            target_nodes=self.target_nodes,
+            exclude_nodes=self.exclude_nodes,
+            root_nodes=self.root_nodes,
+        )
 
     @property
     def cache_in(self) -> str:

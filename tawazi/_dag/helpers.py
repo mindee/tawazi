@@ -93,7 +93,7 @@ def execute(
 
     # 0.4 get the candidates root nodes that can be executed
     # runnable_nodes_ids will be empty if all root nodes are running
-    runnable_xns_ids = graph.root_nodes()
+    runnable_xns_ids = graph.root_nodes
 
     with ThreadPoolExecutor(max_workers=max_concurrency, thread_name_prefix=call_id) as executor:
         while len(graph):
@@ -126,7 +126,7 @@ def execute(
                     graph.remove_node(id_)
 
             # 2. list the root nodes that aren't being executed
-            runnable_xns_ids = list(set(graph.root_nodes()) - set(futures.keys()))
+            runnable_xns_ids = list(set(graph.root_nodes) - set(futures.keys()))
 
             # 3. if no runnable node exist, go to step 6 (wait for a node to finish)
             #   (This **might** create a new root node)
