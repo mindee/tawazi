@@ -639,18 +639,14 @@ class DAG(Generic[P, RVDAG]):
             target_ids = self._sanitize_nodes_alias(target_nodes)
             graph.subgraph_leaves(target_ids)
 
-        # handle debug nodes
         if cfg.RUN_DEBUG_NODES:
-            # after extending leaves_ids, we should do a recheck because this might recreate another debug-able XN...
-            target_ids = self._extend_leaves_ids_debug_xns(graph.leaf_nodes)
+            # find original debug nodes
+            debug_ids = self._extend_leaves_ids_debug_xns(graph.leaf_nodes)
 
             # extend the graph with the debug XNs
-            # This is not efficient but it is ok since we are debugging the code anyways
-            debug_graph = deepcopy(self.graph_ids)
-            debug_graph.subgraph_leaves(list(graph.nodes) + target_ids)
-            graph = debug_graph
+            graph = self.graph_ids.subgraph(list(graph.nodes()) + debug_ids).copy()
 
-        # 3. Remove debug execnodes
+        # 3. Remove debug nodes
         else:
             graph.remove_nodes_from([node_id for node_id in graph if self.node_dict[node_id].debug])
 
