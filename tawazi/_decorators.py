@@ -91,9 +91,10 @@ def xn(
             NOTE setup nodes are currently not threadsafe!
                 because they are shared between all threads!
                 If you execute the same pipeline in multiple threads during the setup phase, the behavior is undefined.
-                This is why it is best to invoke the DAG.setup method before using the DAG in a multithreaded environment.
+                It is best to invoke the DAG.setup method before using the DAG in a multithreaded environment.
                 This problem will be resolved in the future
-        unpack_to (Optional[int]): if not None, this ExecNode's execution must return unpacked results corresponding to the given value
+        unpack_to (Optional[int]): if not None, this ExecNode's execution must return unpacked results corresponding
+                                   to the given value
         resource (str): the resource to use to execute this ExecNode. Defaults to "thread".
 
     Returns:
@@ -165,7 +166,7 @@ def dag(
         behavior: the behavior of the `DAG` when an error occurs during the execution of a function (`ExecNode`).
 
     Returns:
-        a `DAG` instance that can be used just like a normal Python function. However it will be executed by Tawazi's scheduler.
+        a `DAG` instance that can be used just like a normal Python function. It will be executed by Tawazi's scheduler.
 
     Raises:
         TypeError: If the decorated object is not a Callable.
@@ -194,9 +195,9 @@ def dag(
                     ]
                 )
                 # 2.3 Arguments are also ExecNodes that get executed inside the scheduler
-                node.exec_nodes.update({xn.id: xn for xn in args})
+                node.exec_nodes.update({exec_node.id: exec_node for exec_node in args})
                 # 2.4 make UsageExecNodes for input arguments
-                uxn_args = [UsageExecNode(xn.id) for xn in args]
+                uxn_args = [UsageExecNode(exec_node.id) for exec_node in args]
 
                 # 3. Execute the dependency describer function
                 # NOTE: Only ordered parameters are supported at the moment!

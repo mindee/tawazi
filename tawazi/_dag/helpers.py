@@ -169,7 +169,7 @@ def execute(
 
             # 5.2 submit the exec node to the executor
             if xn.resource == Resource.thread:
-                exec_future = executor.submit(xn._execute, node_dict=xns_dict)
+                exec_future = executor.submit(xn.execute, node_dict=xns_dict)
                 running.add(exec_future)
                 futures[xn.id] = exec_future
             else:
@@ -177,7 +177,7 @@ def execute(
                 # it doesn't count as an additional thread that is running.
                 logger.debug("Executing %s in main thread", xn.id)
                 try:
-                    xn._execute(node_dict=xns_dict)
+                    xn.execute(node_dict=xns_dict)
                 except Exception as e:
                     if behavior == ErrorStrategy.strict:
                         raise e from e
