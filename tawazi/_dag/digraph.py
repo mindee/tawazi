@@ -143,7 +143,7 @@ class DiGraphEx(nx.DiGraph):
         """
         return list(nx.topological_sort(self))
 
-    def _find_cycle(self) -> Optional[List[Tuple[Identifier, Identifier]]]:
+    def find_cycle(self) -> Optional[List[Tuple[Identifier, Identifier]]]:
         """Finds the cycles in the DAG. A DAG shouldn't have any dependency cycle.
 
         Returns:

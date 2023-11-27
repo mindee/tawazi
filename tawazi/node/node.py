@@ -73,11 +73,8 @@ class ExecNode:
     """This class is the base executable node of the Directed Acyclic Execution Graph.
 
     An ExecNode is an Object that can be executed inside a DAG scheduler.
-
     It basically consists of a function (exec_function) that takes args and kwargs and returns a value.
-
-    When the ExecNode is executed in the DAG, the resulting value will be stored in the ExecNode.result instance attribute.
-
+    When the ExecNode is executed in the DAG, the resulting value will be stored in the `result` instance attribute.
     Note: This class is not meant to be instantiated directly.
         Please use `@xn` decorator.
     """
@@ -111,7 +108,8 @@ class ExecNode:
             debug (bool): Make this ExecNode a debug Node. Defaults to False.
             tag (TagOrTags): Attach a Tag or Tags to this ExecNode. Defaults to None.
             setup (bool): Make this ExecNode a setup Node. Defaults to False.
-            unpack_to (Optional[int]): if not None, this ExecNode's execution must return unpacked results corresponding to the given value
+            unpack_to (Optional[int]): if not None, this ExecNode's execution must return unpacked results corresponding
+            to the given value
             resource (str): the resource to use to execute this ExecNode. Defaults to "thread".
 
         Raises:
@@ -269,7 +267,7 @@ class ExecNode:
     def active(self, value: Any) -> None:
         self._active = value
 
-    def _execute(self, node_dict: Dict[Identifier, "ExecNode"]) -> Optional[Any]:
+    def execute(self, node_dict: Dict[Identifier, "ExecNode"]) -> Optional[Any]:
         """Execute the ExecNode inside of a DAG.
 
         Args:
@@ -349,7 +347,8 @@ class ReturnExecNode(ExecNode):
             name_or_order (Union[str, int]): key of the dict or order in the return.
                 For example Python's builtin sorted function takes 3 arguments (iterable, key, reverse).
                     1. If called like this: sorted([1,2,3]) then [1,2,3] will be of type ArgExecNode with an order=0
-                    2. If called like this: sorted(iterable=[4,5,6]) then [4,5,6] will be of type ArgExecNode with a name="iterable"
+                    2. If called like this: sorted(iterable=[4,5,6]) then [4,5,6]
+                       will be an ArgExecNode with a name="iterable"
             value (Any): The preassigned value to the corresponding Return value.
 
         Raises:
@@ -394,11 +393,12 @@ class ArgExecNode(ExecNode):
         """Constructor of ArgExecNode.
 
         Args:
-            xn_or_func_or_id (Union[ExecNode, Callable[..., Any], Identifier]): The ExecNode or function that this Argument is rattached to
+            xn_or_func_or_id (Union[ExecNode, Callable[..., Any], Identifier]): the corresponding execnode
             name_or_order (Union[str, int]): Argument name or order in the calling function.
                 For example Python's builtin sorted function takes 3 arguments (iterable, key, reverse).
                     1. If called like this: sorted([1,2,3]) then [1,2,3] will be of type ArgExecNode with an order=0
-                    2. If called like this: sorted(iterable=[4,5,6]) then [4,5,6] will be of type ArgExecNode with a name="iterable"
+                    2. If called like this: sorted(iterable=[4,5,6]) then [4,5,6] will be of
+                       type ArgExecNode with a name="iterable"
             value (Any): The preassigned value to the corresponding Argument.
 
         Raises:
@@ -530,7 +530,8 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
 
         # 2.1 *args can contain either:
         #  1. ExecNodes corresponding to the dependencies that come from predecessors
-        #  2. or non ExecNode values which are constants passed directly to the LazyExecNode.__call__ (eg. strings, int, etc.)
+        #  2. or non ExecNode values which are constants passed directly to the
+        #  LazyExecNode.__call__ (eg. strings, int, etc.)
         for i, arg in enumerate(args):
             if not isinstance(arg, UsageExecNode):
                 # arg here is definitely not a return value of a LazyExecNode!
@@ -655,13 +656,13 @@ class UsageExecNode:
             Any: value inside the container
         """
         xn = xn_dict[self.id]
-        # ignore typing error because it is the responsibility of the user to insure the result contained in the XN is indexable!
+        # ignore typing error because it is the responsibility of the user to ensure the result of the XN is indexable!
         # Will raise the appropriate exception automatically
         #  The user might have specified a subgraph to run => xn contain NoVal
         #  or the user tried to access a non-indexable object
         # NOTE: maybe handle the 3 types of exceptions that might occur properly to help the user through debugging
         # if isinstance(xn.result, NoValType):
-        #     raise TawaziTypeError(f"{xn} didn't run, hence its resulting value is not indexable. Check your DAG's configuration")
+        #     raise TawaziTypeError(f"{xn} didn't run, hence its result is not indexable. Check your DAG's config")
 
         return _filter_noval(reduce(lambda obj, key: obj.__getitem__(key), self.key, xn.result))
 
