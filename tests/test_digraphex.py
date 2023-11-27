@@ -46,11 +46,11 @@ def test_graph_remove_recursively_without_root(graph: DiGraphEx) -> None:
 
 
 def test_no_cycle(graph: DiGraphEx) -> None:
-    assert not graph._find_cycle()
+    assert not graph.find_cycle()
 
 
 def test_cycle(graph_cycle: DiGraphEx) -> None:
-    assert graph_cycle._find_cycle() is not None
+    assert graph_cycle.find_cycle() is not None
 
 
 def test_subgraph_leaves(graph: DiGraphEx) -> None:

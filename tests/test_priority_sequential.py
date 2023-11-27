@@ -55,7 +55,7 @@ def test_priority() -> None:
         node_dict = {xn.id: xn for xn in list_execnodes}
 
         g: DAG[Any, Any] = DAG(node_dict, [], [], 1, behavior=ErrorStrategy.strict)
-        g._execute(g._make_subgraph())
+        g.execute(g.make_subgraph())
         assert priority_sequential_comp_str == "abcd", f"during {_i}th iteration"
 
 
@@ -74,7 +74,7 @@ def test_sequentiality() -> None:
         node_dict = {xn.id: xn for xn in list_execnodes}
 
         g: DAG[Any, Any] = DAG(node_dict, [], [], 2, behavior=ErrorStrategy.strict)
-        g._execute(g._make_subgraph())
+        g.execute(g.make_subgraph())
         sequential_comp_str = priority_sequential_comp_str
         ind_a = sequential_comp_str.index("a")
         ind_b = sequential_comp_str.index("b")

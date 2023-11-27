@@ -69,7 +69,7 @@ failing_node_dict = {xn.id: xn for xn in failing_execnodes}
 
 def test_dag_build() -> None:
     g: DAG[Any, Any] = DAG(node_dict, [], [], 2, behavior=ErrorStrategy.strict)
-    g._execute(g._make_subgraph())  # must never fail!
+    g.execute(g.make_subgraph())  # must never fail!
 
 
 def test_draw() -> None:
@@ -81,7 +81,7 @@ def test_draw() -> None:
 def test_bad_behaviour() -> None:
     try:
         g: DAG[Any, Any] = DAG(failing_node_dict, [], [], 2, behavior="Such Bad Behavior")  # type: ignore[arg-type]
-        g._execute(g._make_subgraph())
+        g.execute(g.make_subgraph())
     except NotImplementedError:
         pass
 
