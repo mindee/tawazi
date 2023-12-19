@@ -665,7 +665,6 @@ class DAG(Generic[P, RVDAG]):
         """Execute the DAG scheduler via a similar interface to the function that describes the dependencies.
 
         Note: Currently kwargs are not supported.
-            They will supported soon!
 
         Args:
             *args (P.args): arguments to be passed to the call of the DAG
@@ -914,9 +913,6 @@ class DAGExecution(Generic[P, RVDAG]):
                 This will be inserted into thread_name_prefix while executing the threadPool.
                 It will be used in the future for identifying the execution inside Processes etc.
         """
-        # TODO: Maybe we can support .dill to extend the possibilities of the exchanged values,
-        #  but this won't solve the whole problem
-
         self.dag = dag
         self.target_nodes = target_nodes
         self.exclude_nodes = exclude_nodes
