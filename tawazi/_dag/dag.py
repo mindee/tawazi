@@ -426,12 +426,11 @@ class DAG(Generic[P, RVDAG]):
             # assign the new leaf nodes
             leaf_ids = graph_ids.leaf_nodes
 
-    def draw(self, k: float = 0.8, display: bool = True, t: int = 3) -> None:
+    def draw(self, k: float = 0.8, t: Union[float, int] = 3) -> None:
         """Draws the Networkx directed graph.
 
         Args:
             k (float): parameter for the layout of the graph, the higher, the further the nodes apart. Defaults to 0.8.
-            display (bool): display the layout created. Defaults to True.
             t (int): time to display in seconds. Defaults to 3.
         """
         import matplotlib.pyplot as plt
@@ -440,11 +439,10 @@ class DAG(Generic[P, RVDAG]):
 
         pos = nx.spring_layout(self.graph_ids, seed=42069, k=k, iterations=20)
         nx.draw(self.graph_ids, pos, with_labels=True)
-        if display:
-            plt.ion()
-            plt.show()
-            time.sleep(t)
-            plt.close()
+        plt.ion()
+        plt.show()
+        time.sleep(t)
+        plt.close()
 
     def execute(
         self,
