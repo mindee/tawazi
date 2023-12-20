@@ -52,13 +52,11 @@ def dependency_describer() -> None:
 
 
 def test_compound_priority() -> None:
-    dag = dependency_describer
-
-    assert dag.node_dict_by_name["a"].compound_priority == 4
-    assert dag.node_dict_by_name["b"].compound_priority == 2
-    assert dag.node_dict_by_name["c"].compound_priority == 1
-    assert dag.node_dict_by_name["d"].compound_priority == 1
-    assert dag.node_dict_by_name["e"].compound_priority == 1
+    assert dependency_describer.node_dict_by_name["a"].compound_priority == 4
+    assert dependency_describer.node_dict_by_name["b"].compound_priority == 2
+    assert dependency_describer.node_dict_by_name["c"].compound_priority == 1
+    assert dependency_describer.node_dict_by_name["d"].compound_priority == 1
+    assert dependency_describer.node_dict_by_name["e"].compound_priority == 1
 
 
 def test_compound_priority_execution() -> None:
