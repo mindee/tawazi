@@ -579,15 +579,14 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
                 raise TawaziBaseException(f"setup node {self_copy} depends on non setup node {dep}")
 
         # exec_nodes contain a single copy of self!
-        # but multiple XNWrapper instances hang arround in the dag.
+        # but multiple XNWrapper instances hang around in the dag.
         # However, they might relate to the same ExecNode
         exec_nodes[self_copy.id] = self_copy
 
         if self_copy.unpack_to is not None:
-            uxn_tuple = tuple(
+            return tuple(
                 UsageExecNode(self_copy.id, key=[i]) for i in range(self_copy.unpack_to)
-            )
-            return uxn_tuple  # type: ignore[return-value]
+            )  # type: ignore[return-value]
         return UsageExecNode(self_copy.id)  # type: ignore[return-value]
 
     def __get__(self, instance: "LazyExecNode[P, RVXN]", owner_cls: Optional[Any] = None) -> Any:
