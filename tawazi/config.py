@@ -30,7 +30,7 @@ class Config(BaseSettings):
     TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR: XNOutsideDAGCall = XNOutsideDAGCall.error
 
     # choose the default Resource to use to execute the ExecNodes
-    TAWAZI_DEFAULT_RESOURCE = Resource.thread
+    TAWAZI_DEFAULT_RESOURCE: Resource = Resource.thread
 
     # Logger settings
     LOGURU_LEVEL: str = Field(default="PROD", env="TAWAZI_LOGGER_LEVEL")
@@ -45,23 +45,6 @@ class Config(BaseSettings):
 
             logger.disable("tawazi")
 
-        return v
-
-    # validator for TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR
-    @validator("TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR")
-    def _validate_execnode_outside_dag_behavior(cls, v: str) -> str:  # noqa: N805
-        accepted_values = XNOutsideDAGCall.__members__.values()
-        if v not in accepted_values:
-            raise ValueError(
-                f"TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR must be one of {accepted_values}"
-            )
-        return v
-
-    @validator("TAWAZI_DEFAULT_RESOURCE")
-    def _validate_default_resource(cls, v: str) -> str:  # noqa: N805
-        accepted_values = Resource.__members__.values()
-        if v not in accepted_values:
-            raise ValueError(f"TAWAZI_DEFAULT_RESOURCE must be one of {accepted_values}")
         return v
 
 
