@@ -41,7 +41,7 @@ class DAG(Generic[P, RVDAG]):
         max_concurrency: int = 1,
         behavior: ErrorStrategy = ErrorStrategy.strict,
     ):
-        """Constructor of the DAG. Should not be called directly. Instead use the `dag` decorator.
+        """Constructor of the DAG. Should not be called directly. Instead, use the `dag` decorator.
 
         Args:
             exec_nodes: all the ExecNodes
@@ -60,11 +60,29 @@ class DAG(Generic[P, RVDAG]):
 
         # ExecNodes can be shared between Graphs, their call signatures might also be different
         # NOTE: maybe this should be transformed into a property because there is a deepcopy for node_dict...
-        #  this means that there are different ExecNodes that are hanging arround in the same instance of the DAG
+        #  this means that there are different ExecNodes that are hanging around in the same instance of the DAG
         self.node_dict = exec_nodes
-        # Compute all the tags in the DAG to reduce overhead during computation
+        self.graph_ids = self._build_graph()
+
+        # make a valid execution sequence to run sequentially if needed
+        self.exec_node_sequence = [
+            self.node_dict[xn_id] for xn_id in self.graph_ids.topologically_sorted
+        ]
+
+        # fill mapping attributes
         self.tagged_nodes = defaultdict(list)
-        for xn in self.node_dict.values():
+        self.bckrd_deps = {}
+        self.frwrd_deps = {}
+        self.node_dict_by_name = {}
+
+        # fill mappings between nodes and dependencies
+        for xn_id, xn in exec_nodes.items():
+            # fill backward and forward dependencies and node mapping
+            self.bckrd_deps[xn_id] = list(self.graph_ids.predecessors(xn.id))
+            self.frwrd_deps[xn_id] = list(self.graph_ids.successors(xn.id))
+            self.node_dict_by_name[xn.__name__] = xn
+
+            # Compute all the tags in the DAG to reduce overhead during computation
             if xn.tag:
                 if isinstance(xn.tag, Tag):
                     self.tagged_nodes[xn.tag].append(xn)
@@ -73,27 +91,8 @@ class DAG(Generic[P, RVDAG]):
                     for t in xn.tag:
                         self.tagged_nodes[t].append(xn)
 
-        # Might be useful in the future
-        self.node_dict_by_name: Dict[str, ExecNode] = {
-            exec_node.__name__: exec_node for exec_node in self.node_dict.values()
-        }
-
-        self.graph_ids = self._build_graph()
-
-        self.bckrd_deps = {
-            id_: list(self.graph_ids.predecessors(xn.id)) for id_, xn in self.node_dict.items()
-        }
-        self.frwrd_deps = {
-            id_: list(self.graph_ids.successors(xn.id)) for id_, xn in self.node_dict.items()
-        }
-
         # calculate the sum of priorities of all recursive children
         self._assign_compound_priority()
-
-        # make a valid execution sequence to run sequentially if needed
-        topological_order = self.graph_ids.topologically_sorted
-        self.exec_node_sequence = [self.node_dict[xn_id] for xn_id in topological_order]
-
         self._validate()
 
     @property
@@ -368,15 +367,12 @@ class DAG(Generic[P, RVDAG]):
             NetworkXUnfeasible: if the graph has cycles
         """
         graph_ids = DiGraphEx()
-        # 1. Make the graph
-        # 1.1 add nodes
-        for id_ in self.node_dict.keys():
-            graph_ids.add_node(id_)
 
-        # 1.2 add edges
-        for xn in self.node_dict.values():
-            edges = [(dep.id, xn.id) for dep in xn.dependencies]
-            graph_ids.add_edges_from(edges)
+        # 1. Make the graph
+        for node_id, node in self.node_dict.items():
+            # add node and edges
+            graph_ids.add_node(node_id)
+            graph_ids.add_edges_from([(dep.id, node_id) for dep in node.dependencies])
 
         # 2. Validate the DAG: check for circular dependencies
         cycle = graph_ids.find_cycle()
