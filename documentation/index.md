@@ -533,6 +533,7 @@ pipe_exec()
 Additionally, you can build a subgraph with the paths you want to include by declaring the root nodes where those paths 
 begin, with the `root_nodes` argument:
 
+<!--pytest-codeblocks:cont-->
 ```python
 pipe_exec = pipeline.executor(root_nodes=["b"])  # will select all nodes depending on "b"
 pipe_exec()
