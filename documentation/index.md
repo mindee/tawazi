@@ -530,7 +530,14 @@ pipe_exec()
 
     Because `DAGExecution` instances are mutable, they are non thread-safe. This is unlike `DAG` which is ThreadSafe
 
+Additionally, you can build a subgraph with the paths you want to include by declaring the root nodes where those paths 
+begin, with the `root_nodes` argument:
 
+```python
+pipe_exec = pipeline.executor(root_nodes=["b"])  # will select all nodes depending on "b"
+pipe_exec()
+```
+This can of course be combined with `target_nodes`, allowing to select only specific parts of the graph.
 
 ### **Basic Operations between nodes**
 `UsageExecNode` implements almost all basic operations (addition, substraction, ...).
