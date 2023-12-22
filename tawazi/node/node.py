@@ -613,7 +613,7 @@ KeyType = Union[str, int, Tuple[Any, ...], None, NoValType]
 
 
 # TODO: transform this logic into the ExecNode itself ?
-@dataclass
+@dataclass(frozen=True)
 class UsageExecNode:
     """The usage of the ExecNode / LazyExecNode inside the function describing the DAG.
 
@@ -623,7 +623,9 @@ class UsageExecNode:
     id: Identifier
     key: List[KeyType] = field(default_factory=list)
 
-    # TODO: make type of key immutable or something hashable
+    # TODO: make type of key immutable or something hashable, that way
+    #  we can directly build a nx DAG with nodes instead of node ids
+    #  removing almost all of the duplicate graph building logic
     # used in the dag dependency description
     def __getitem__(self, key: KeyType) -> "UsageExecNode":
         """Record the used key in a new UsageExecNode.

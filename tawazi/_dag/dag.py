@@ -3,7 +3,6 @@ import json
 import pickle
 import time
 import warnings
-from collections import defaultdict
 from copy import copy, deepcopy
 from itertools import chain
 from pathlib import Path
@@ -64,13 +63,7 @@ class DAG(Generic[P, RVDAG]):
         self.node_dict = exec_nodes
         self.graph_ids = self._build_graph()
 
-        # make a valid execution sequence to run sequentially if needed
-        self.exec_node_sequence = [
-            self.node_dict[xn_id] for xn_id in self.graph_ids.topologically_sorted
-        ]
-
         # fill mapping attributes
-        self.tagged_nodes = defaultdict(list)
         self.bckrd_deps = {}
         self.frwrd_deps = {}
         self.node_dict_by_name = {}
@@ -85,11 +78,9 @@ class DAG(Generic[P, RVDAG]):
             # Compute all the tags in the DAG to reduce overhead during computation
             if xn.tag:
                 if isinstance(xn.tag, Tag):
-                    self.tagged_nodes[xn.tag].append(xn)
-                # isinstance(xn.tag, tuple):
+                    self.graph_ids.nodes[xn.id]["tag"] = [xn.tag]
                 else:
-                    for t in xn.tag:
-                        self.tagged_nodes[t].append(xn)
+                    self.graph_ids.nodes[xn.id]["tag"] = [t for t in xn.tag]
 
         # calculate the sum of priorities of all recursive children
         self._assign_compound_priority()
@@ -132,7 +123,7 @@ class DAG(Generic[P, RVDAG]):
             List[ExecNode]: corresponding ExecNodes
         """
         if isinstance(tag, Tag):
-            return self.tagged_nodes[tag]
+            return [self.node_dict[xn_id] for xn_id in self.graph_ids.get_tagged_nodes(tag)]
         raise TypeError(f"tag {tag} must be of Tag type. Got {type(tag)}")
 
     def get_node_by_id(self, id_: Identifier) -> ExecNode:
@@ -476,7 +467,7 @@ class DAG(Generic[P, RVDAG]):
         if isinstance(alias, (Identifier, tuple)):
             # if leaves_identification is not ExecNode, it can be either
             #  1. a Tag (Highest priority in case an id with the same value exists)
-            nodes = self.tagged_nodes.get(alias)
+            nodes = [self.node_dict[xn_id] for xn_id in self.graph_ids.get_tagged_nodes(alias)]
             if nodes:
                 return [node.id for node in nodes]
             #  2. or a node id!
@@ -486,7 +477,7 @@ class DAG(Generic[P, RVDAG]):
             raise ValueError(
                 f"node or tag {alias} not found in DAG.\n"
                 f" Available nodes are {self.node_dict}.\n"
-                f" Available tags are {list(self.tagged_nodes.keys())}"
+                f" Available tags are {list(self.graph_ids.tags)}"
             )
         raise TawaziTypeError(
             "target_nodes must be of type ExecNode, "

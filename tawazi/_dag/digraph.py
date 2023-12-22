@@ -6,7 +6,7 @@ import networkx as nx
 from loguru import logger
 from networkx import NetworkXNoCycle, find_cycle
 
-from tawazi.consts import Identifier
+from tawazi.consts import Identifier, Tag
 
 
 class DiGraphEx(nx.DiGraph):
@@ -29,6 +29,26 @@ class DiGraphEx(nx.DiGraph):
             List of leaf nodes
         """
         return [node for node, degree in self.out_degree if degree == 0]
+
+    @property
+    def tags(self) -> Set[str]:
+        """Get all the tags available for the graph.
+
+        Returns:
+            A set of tags
+        """
+        return set(chain([tags for _, tags in self.nodes(data="tag")]))
+
+    def get_tagged_nodes(self, tag: Tag) -> List[str]:
+        """Get nodes with a certain tag.
+
+        Args:
+            tag: the tag identifier
+
+        Returns:
+            a list of nodes
+        """
+        return [xn for xn, tags in self.nodes(data="tag") if tags is not None and tag in tags]
 
     def single_node_successors(self, node_id: Identifier) -> List[Identifier]:
         """Get all the successors of a node with a depth first search.
