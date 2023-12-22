@@ -68,6 +68,7 @@ class DAG(Generic[P, RVDAG]):
         )
 
         self.node_dict_by_name = {}
+        input_ids = [uxn.id for uxn in self.input_uxns]
         for xn in exec_nodes.values():
             self.node_dict_by_name[xn.__name__] = xn
 
@@ -78,9 +79,14 @@ class DAG(Generic[P, RVDAG]):
                 else:
                     self.graph_ids.nodes[xn.id]["tag"] = [t for t in xn.tag]
 
+            # validate setup ExecNodes
+            if xn.setup and any(dep.id in input_ids for dep in xn.dependencies):
+                raise TawaziUsageError(
+                    f"The ExecNode {xn} takes as parameters one of the DAG's input parameter"
+                )
+
         # calculate the sum of priorities of all recursive children
         self._assign_compound_priority()
-        self._validate()
 
     @property
     def max_concurrency(self) -> int:
@@ -347,16 +353,6 @@ class DAG(Generic[P, RVDAG]):
         # 6. return the composed DAG
         # ignore[arg-type] because the type of the kwargs is not known
         return DAG(xn_dict, in_uxns, out_uxns, **kwargs)  # type: ignore[arg-type]
-
-    def _validate(self) -> None:
-        input_ids = [uxn.id for uxn in self.input_uxns]
-        # validate setup ExecNodes
-        for xn in self.node_dict.values():
-            if xn.setup and any(dep.id in input_ids for dep in xn.dependencies):
-                raise TawaziUsageError(
-                    f"The ExecNode {xn} takes as parameters one of the DAG's input parameter"
-                )
-        # future validations...
 
     def _assign_compound_priority(self) -> None:
         """Assigns a compound priority to all nodes in the graph.
