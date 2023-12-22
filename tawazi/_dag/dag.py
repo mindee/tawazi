@@ -11,7 +11,6 @@ from typing import Any, Dict, Generic, List, NoReturn, Optional, Sequence, Set, 
 import networkx as nx
 import yaml
 from loguru import logger
-from networkx.exception import NetworkXUnfeasible
 
 from tawazi._helpers import _make_raise_arg_error, _UniqueKeyLoader
 from tawazi.config import cfg
@@ -61,7 +60,12 @@ class DAG(Generic[P, RVDAG]):
         # NOTE: maybe this should be transformed into a property because there is a deepcopy for node_dict...
         #  this means that there are different ExecNodes that are hanging around in the same instance of the DAG
         self.node_dict = exec_nodes
-        self.graph_ids = self._build_graph()
+        self.graph_ids = DiGraphEx.from_exec_nodes_mapping(
+            exec_nodes_mapping={
+                node.id: [(dep.id, node.id) for dep in node.dependencies]
+                for node in exec_nodes.values()
+            }
+        )
 
         # fill mapping attributes
         self.bckrd_deps = {}
@@ -126,7 +130,7 @@ class DAG(Generic[P, RVDAG]):
             return [self.node_dict[xn_id] for xn_id in self.graph_ids.get_tagged_nodes(tag)]
         raise TypeError(f"tag {tag} must be of Tag type. Got {type(tag)}")
 
-    def get_node_by_id(self, id_: Identifier) -> ExecNode:
+    def get_node_by_id(self, node_id: Identifier) -> ExecNode:
         """Get the ExecNode with the given id.
 
         Note: the returned ExecNode is not modified by any execution!
@@ -135,14 +139,15 @@ class DAG(Generic[P, RVDAG]):
              `DAGExecution.get_node_by_id(<id>).result`, which will contain the results.
 
         Args:
-            id_ (Identifier): id of the ExecNode
+            node_id (Identifier): id of the ExecNode
 
         Returns:
             ExecNode: corresponding ExecNode
         """
-        # TODO: ? catch the keyError and
-        #   help the user know the id of the ExecNode by pointing to documentation!?
-        return self.node_dict[id_]
+        try:
+            return self.node_dict[node_id]
+        except KeyError as e:
+            raise ValueError(f"node {node_id} doesn't exist in the DAG.") from e
 
     def _get_single_xn_by_alias(self, alias: Alias) -> ExecNode:
         """Get the ExecNode corresponding to the given Alias.
@@ -350,28 +355,6 @@ class DAG(Generic[P, RVDAG]):
         # 6. return the composed DAG
         # ignore[arg-type] because the type of the kwargs is not known
         return DAG(xn_dict, in_uxns, out_uxns, **kwargs)  # type: ignore[arg-type]
-
-    def _build_graph(self) -> DiGraphEx:
-        """Builds the graph and the sequence order for the computation.
-
-        Raises:
-            NetworkXUnfeasible: if the graph has cycles
-        """
-        graph_ids = DiGraphEx()
-
-        # 1. Make the graph
-        for node_id, node in self.node_dict.items():
-            # add node and edges
-            graph_ids.add_node(node_id)
-            graph_ids.add_edges_from([(dep.id, node_id) for dep in node.dependencies])
-
-        # 2. Validate the DAG: check for circular dependencies
-        cycle = graph_ids.find_cycle()
-        if cycle:
-            raise NetworkXUnfeasible(
-                f"the product contains at least a circular dependency: {cycle}"
-            )
-        return graph_ids
 
     def _validate(self) -> None:
         input_ids = [uxn.id for uxn in self.input_uxns]

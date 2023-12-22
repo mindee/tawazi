@@ -1,16 +1,41 @@
 """Module containing the definition of a Directed Graph Extension of networkx.DiGraph."""
 from itertools import chain
-from typing import Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 import networkx as nx
 from loguru import logger
-from networkx import NetworkXNoCycle, find_cycle
+from networkx import NetworkXNoCycle, NetworkXUnfeasible, find_cycle
 
 from tawazi.consts import Identifier, Tag
 
 
 class DiGraphEx(nx.DiGraph):
     """Extends the DiGraph with some methods."""
+
+    @classmethod
+    def from_exec_nodes_mapping(
+        cls, exec_nodes_mapping: Dict[Identifier, List[Tuple[Identifier, Identifier]]]
+    ) -> "DiGraphEx":
+        """Build a DigraphEx from a mapping between nodes and edges.
+
+        Args:
+            exec_nodes_mapping: the mapping between nodes and their edges
+
+        Returns:
+            the DigraphEx object
+        """
+        graph = DiGraphEx()
+
+        for node_id, dependencies in exec_nodes_mapping.items():
+            # add node and edges
+            graph.add_node(node_id)
+            graph.add_edges_from(dependencies)
+
+        # check for circular dependencies
+        cycle = graph.find_cycle()
+        if cycle:
+            raise NetworkXUnfeasible(f"the DAG contains at least a circular dependency: {cycle}")
+        return graph
 
     @property
     def root_nodes(self) -> List[Identifier]:
