@@ -67,16 +67,8 @@ class DAG(Generic[P, RVDAG]):
             }
         )
 
-        # fill mapping attributes
-        self.bckrd_deps = {}
-        self.frwrd_deps = {}
         self.node_dict_by_name = {}
-
-        # fill mappings between nodes and dependencies
-        for xn_id, xn in exec_nodes.items():
-            # fill backward and forward dependencies and node mapping
-            self.bckrd_deps[xn_id] = list(self.graph_ids.predecessors(xn.id))
-            self.frwrd_deps[xn_id] = list(self.graph_ids.successors(xn.id))
+        for xn in exec_nodes.values():
             self.node_dict_by_name[xn.__name__] = xn
 
             # Compute all the tags in the DAG to reduce overhead during computation
@@ -385,7 +377,7 @@ class DAG(Generic[P, RVDAG]):
             for leaf_id in leaf_ids:
                 leaf_node = self.node_dict[leaf_id]
 
-                for parent_id in self.bckrd_deps[leaf_id]:
+                for parent_id in self.graph_ids.predecessors(leaf_id):
                     # increment the compound_priority of the parent node by the leaf priority
                     parent_node = self.node_dict[parent_id]
                     parent_node.compound_priority += leaf_node.compound_priority
@@ -492,13 +484,11 @@ class DAG(Generic[P, RVDAG]):
         while new_debug_xn_discovered:
             new_debug_xn_discovered = False
             for id_ in leaves_ids:
-                for successor_id in self.frwrd_deps[id_]:
+                for successor_id in self.graph_ids.successors(id_):
                     is_successor_debug = self.node_dict[successor_id].debug
                     if successor_id not in leaves_ids and is_successor_debug:
                         # a new debug XN has been discovered!
-                        preds_of_succs_ids = [xn_id for xn_id in self.bckrd_deps[successor_id]]
-
-                        if set(preds_of_succs_ids).issubset(set(leaves_ids)):
+                        if set(self.graph_ids.predecessors(successor_id)).issubset(set(leaves_ids)):
                             new_debug_xn_discovered = True
                             # this new XN can run by only running the current leaves_ids
                             leaves_ids.append(successor_id)
