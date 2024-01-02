@@ -930,6 +930,29 @@ class DAGExecution(Generic[P, RVDAG]):
         #  This is an edge case though that is not important to handle at the current moment.
         self.dag.setup(target_nodes=self.target_nodes, exclude_nodes=self.exclude_nodes)
 
+    def _cache_results(self) -> None:
+        """Cache execution results.
+
+        We are currently only storing the results of the execution,
+        so the configuration of the ExecNodes is lost
+        But this it should not change between executions.
+        """
+        Path(self.cache_in).parent.mkdir(parents=True, exist_ok=True)
+
+        with open(self.cache_in, "wb") as f:
+            if self.cache_deps_of is not None:
+                non_cacheable_ids: Set[Identifier] = set()
+                for aliases in self.cache_deps_of:
+                    ids = self.dag.alias_to_ids(aliases)
+                    non_cacheable_ids = non_cacheable_ids.union(ids)
+
+                to_cache_results = {
+                    id_: res for id_, res in self.results.items() if id_ not in non_cacheable_ids
+                }
+            else:
+                to_cache_results = self.results
+            pickle.dump(to_cache_results, f, protocol=pickle.HIGHEST_PROTOCOL, fix_imports=False)
+
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
         """Call the DAG.
 
@@ -966,32 +989,7 @@ class DAGExecution(Generic[P, RVDAG]):
 
         # 3. cache in the graph results
         if self.cache_in:
-            Path(self.cache_in).parent.mkdir(parents=True, exist_ok=True)
-            with open(self.cache_in, "wb") as f:
-                # NOTE: we are currently only storing the results of the execution,
-                #  this means that the configuration of the ExecNodes are lost!
-                #  But this is ok since it should not change between executions!
-                #  for example, a setup ExecNode should stay a setup ExecNode between caching in the results and reading
-                #  back the cached results
-                #  the same goes for the DAG itself, the behavior when an error is encountered & its concurrency will be
-                #  controlled via the constructor
-
-                if self.cache_deps_of is not None:
-                    non_cacheable_ids: Set[Identifier] = set()
-                    for aliases in self.cache_deps_of:
-                        ids = self.dag.alias_to_ids(aliases)
-                        non_cacheable_ids = non_cacheable_ids.union(ids)
-
-                    to_cache_results = {
-                        id_: res
-                        for id_, res in self.results.items()
-                        if id_ not in non_cacheable_ids
-                    }
-                else:
-                    to_cache_results = self.results
-                pickle.dump(
-                    to_cache_results, f, protocol=pickle.HIGHEST_PROTOCOL, fix_imports=False
-                )
+            self._cache_results()
 
         self.executed = True
         # 3. extract the returned value/values
