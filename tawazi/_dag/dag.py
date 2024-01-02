@@ -4,6 +4,7 @@ import pickle
 import time
 import warnings
 from copy import copy, deepcopy
+from dataclasses import dataclass, field
 from itertools import chain
 from pathlib import Path
 from typing import Any, Dict, Generic, List, NoReturn, Optional, Sequence, Set, Union
@@ -11,6 +12,7 @@ from typing import Any, Dict, Generic, List, NoReturn, Optional, Sequence, Set, 
 import networkx as nx
 import yaml
 from loguru import logger
+from networkx.classes.reportviews import NodeView
 
 from tawazi._helpers import _make_raise_arg_error, _UniqueKeyLoader
 from tawazi.config import cfg
@@ -818,28 +820,13 @@ class DAG(Generic[P, RVDAG]):
 
 # TODO: check if the arguments are the same, then run the DAG using the from_cache.
 #  If the arguments are not the same, then rerun the DAG!
+@dataclass
 class DAGExecution(Generic[P, RVDAG]):
     """A disposable callable instance of a DAG.
 
-    It holds information about the last execution. Hence it is not threadsafe.
-    It might be reusable, however it is not recommended to reuse an instance of DAGExecutor!.
-    """
+    It holds information about the last execution and is not threadsafe.
 
-    def __init__(
-        self,
-        dag: DAG[P, RVDAG],
-        *,
-        target_nodes: Optional[Sequence[Alias]] = None,
-        exclude_nodes: Optional[Sequence[Alias]] = None,
-        root_nodes: Optional[Sequence[Alias]] = None,
-        cache_deps_of: Optional[Sequence[Alias]] = None,
-        cache_in: str = "",
-        from_cache: str = "",
-        call_id: Optional[str] = None,
-    ):
-        """Constructor.
-
-        Args:
+    Args:
             dag (DAG): The attached DAG.
             target_nodes (Optional[List[Alias]]): The leave ExecNodes to execute.
                 If None will execute all ExecNodes.
@@ -866,98 +853,45 @@ class DAGExecution(Generic[P, RVDAG]):
             call_id (Optional[str]): identification of the current execution.
                 This will be inserted into thread_name_prefix while executing the threadPool.
                 It will be used in the future for identifying the execution inside Processes etc.
-        """
-        self.dag = dag
-        self.target_nodes = target_nodes
-        self.exclude_nodes = exclude_nodes
-        self.cache_deps_of = cache_deps_of
-        self.cache_in = cache_in
-        self.from_cache = from_cache
-        # NOTE: from_cache is orthogonal to cache_in which means that if cache_in is set at the same time as from_cache.
-        #  in this case the DAG will be loaded from_cache and the results will be saved again to the cache_in file.
-        self.call_id = call_id
 
-        # get the leaves ids to execute in case of a subgraph
-        self.target_nodes = target_nodes
-        self.exclude_nodes = exclude_nodes
-        self.root_nodes = root_nodes
+    """
 
-        self.xn_dict: Dict[Identifier, ExecNode] = {}
-        self.results: Dict[Identifier, Any] = {}
+    dag: DAG[P, RVDAG]
+    target_nodes: Optional[Sequence[Alias]] = None
+    exclude_nodes: Optional[Sequence[Alias]] = None
+    root_nodes: Optional[Sequence[Alias]] = None
 
-        self._construct_dynamic_attributes()
+    # NOTE: from_cache is orthogonal to cache_in which means that if cache_in is set at the same time as from_cache.
+    #  in this case the DAG will be loaded from_cache and the results will be saved again to the cache_in file.
+    cache_deps_of: Optional[Sequence[Alias]] = None
+    cache_in: str = ""
+    from_cache: str = ""
 
-        self.executed = False
+    call_id: Optional[str] = None
+    xn_dict: Dict[Identifier, ExecNode] = field(init=False)
+    results: Dict[Identifier, Any] = field(init=False)
+    graph: DiGraphEx = field(init=False)
+    scheduled_nodes: NodeView = field(init=False)
+    executed: bool = False
 
-    def _construct_dynamic_attributes(self) -> None:
-        self.graph = self._make_graph()
-        self.scheduled_nodes = self.graph.nodes
-
-    def _make_graph(self) -> DiGraphEx:
-        """Make the graph of the execution.
-
-        This method is called only once per instance.
-
-        Returns:
-            the execution graph
-        """
+    def __post_init__(self) -> None:
+        """Dynamic construction of attributes."""
+        # build the graph from cache if it exists
         if self.cache_deps_of is not None:
-            return self.dag.make_subgraph(target_nodes=self.cache_deps_of)
+            if self.target_nodes is not None or self.exclude_nodes is not None:
+                raise ValueError(
+                    "cache_deps_of can't be used together with target_nodes or exclude_nodes"
+                )
 
-        return self.dag.make_subgraph(
-            target_nodes=self.target_nodes,
-            exclude_nodes=self.exclude_nodes,
-            root_nodes=self.root_nodes,
-        )
-
-    @property
-    def cache_in(self) -> str:
-        """The path to the file where the execution should be cached.
-
-        Returns:
-            str: The path to the file where the execution should be cached.
-        """
-        return self._cache_in
-
-    @cache_in.setter
-    def cache_in(self, cache_in: str) -> None:
-        if cache_in and not cache_in.endswith(".pkl"):
-            raise ValueError("cache_in should end with.pkl")
-        self._cache_in = cache_in
-
-    @property
-    def from_cache(self) -> str:
-        """Get the file path from which the cached execution should be loaded.
-
-        Returns:
-            str: the file path of the cached execution
-        """
-        return self._from_cache
-
-    @from_cache.setter
-    def from_cache(self, from_cache: str) -> None:
-        if from_cache and not from_cache.endswith(".pkl"):
-            raise ValueError("from_cache should end with.pkl")
-        self._from_cache = from_cache
-
-    @property
-    def cache_deps_of(self) -> Optional[Sequence[Alias]]:
-        """Cache all the dependencies of these nodes.
-
-        Returns:
-            Optional[List[Alias]]: List of Aliases passed to cache_deps_of while instantiating DAGExecution
-        """
-        return self._cache_deps_of
-
-    @cache_deps_of.setter
-    def cache_deps_of(self, cache_deps_of: Optional[Sequence[Alias]]) -> None:
-        if (
-            self.target_nodes is not None or self.exclude_nodes is not None
-        ) and cache_deps_of is not None:
-            raise ValueError(
-                "cache_deps_of can not be used together with target_nodes or exclude_nodes"
+            self.graph = self.dag.make_subgraph(target_nodes=self.cache_deps_of)
+        else:
+            self.graph = self.dag.make_subgraph(
+                target_nodes=self.target_nodes,
+                exclude_nodes=self.exclude_nodes,
+                root_nodes=self.root_nodes,
             )
-        self._cache_deps_of = cache_deps_of
+
+        self.scheduled_nodes = self.graph.nodes
 
     # we need to reimplement the public methods of DAG here in order to have a constant public interface
     # getters
@@ -1010,18 +944,14 @@ class DAGExecution(Generic[P, RVDAG]):
             RVDAG: the return value of the DAG's Execution
         """
         if self.executed:
-            warnings.warn("DAGExecution object's reuse is not recommended.", stacklevel=2)
-            self._construct_dynamic_attributes()
-
-        # NOTE: *args will be ignored if self.from_cache is set!
-        dag = self.dag
+            raise TawaziUsageError("DAGExecution object has already been executed.")
 
         # maybe call_id will be changed to Union[int, str].
         # Keep call_id as Optional[str] for now
         call_id = self.call_id if self.call_id is not None else ""
 
         # 1. copy the ExecNodes
-        call_xn_dict = dag.make_call_xn_dict(*args)
+        call_xn_dict = self.dag.make_call_xn_dict(*args)
         if self.from_cache:
             with open(self.from_cache, "rb") as f:
                 cached_results = pickle.load(f)  # noqa: S301
@@ -1031,7 +961,7 @@ class DAGExecution(Generic[P, RVDAG]):
                 call_xn_dict[id_].result = result
 
         # 2. Execute the scheduler
-        self.xn_dict = dag.execute(self.graph, call_xn_dict, call_id)
+        self.xn_dict = self.dag.execute(self.graph, call_xn_dict, call_id)
         self.results = {xn.id: xn.result for xn in self.xn_dict.values()}
 
         # 3. cache in the graph results
@@ -1063,9 +993,8 @@ class DAGExecution(Generic[P, RVDAG]):
                     to_cache_results, f, protocol=pickle.HIGHEST_PROTOCOL, fix_imports=False
                 )
 
-        # TODO: make DAGExecution reusable but do not guarantee ThreadSafety!
         self.executed = True
         # 3. extract the returned value/values
-        return dag.get_return_values(self.xn_dict)  # type: ignore[return-value]
+        return self.dag.get_return_values(self.xn_dict)  # type: ignore[return-value]
 
     # TODO: add execution order (the order in which the nodes were executed)
