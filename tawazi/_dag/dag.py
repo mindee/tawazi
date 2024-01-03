@@ -470,26 +470,24 @@ class DAG(Generic[P, RVDAG]):
                 The user is responsible for ensuring that the overlapping between the target_nodes, the exclude_nodes
                 and the root nodes is logical.
         """
-        # 1. select all setup ExecNodes
-        #  do not copy the setup nodes because we want them to be modified per DAG instance!
-        all_setup_nodes = {id_: xn for id_, xn in self.node_dict.items() if xn.setup}
-
-        # 2. if target_nodes is not provided run all setup ExecNodes
+        # 1. if target_nodes is not provided run all setup ExecNodes
         target_ids = (
-            list(all_setup_nodes.keys())
+            self.graph_ids.setup_nodes
             if target_nodes is None
             else self._sanitize_nodes_alias(target_nodes)
         )
 
-        # 2.1 the leaves_ids that the user wants to execute
+        # 2. the leaves_ids that the user wants to execute
         #  however they might contain non setup nodes... so we should extract all the nodes ids
         #  that must be run in order to run the target_nodes ExecNodes
         graph = self.make_subgraph(
             target_nodes=target_ids, exclude_nodes=exclude_nodes, root_nodes=root_nodes
         )
 
-        # 2.2 filter non setup ExecNodes
-        graph.remove_nodes_from([node_id for node_id in graph if node_id not in all_setup_nodes])
+        # 3. remove setup nodes
+        graph.remove_nodes_from(
+            [node_id for node_id in graph if node_id not in self.graph_ids.setup_nodes]
+        )
 
         # TODO: handle debug XNs!
 
