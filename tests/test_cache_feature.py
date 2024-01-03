@@ -218,7 +218,6 @@ def cache_path(request: Any) -> str:
     return cache_path
 
 
-@pytest.mark.suffix(1)
 def test_cache_in_deps1(cache_path: str, res: Tuple[Any, ...]) -> None:
     # case 1 node
     cache_deps_of = [generate_large_zeros_array]
@@ -230,7 +229,6 @@ def test_cache_in_deps1(cache_path: str, res: Tuple[Any, ...]) -> None:
     validate(cache_path, cache_deps_of)
 
 
-@pytest.mark.suffix(2)
 def test_cache_in_deps2(cache_path: str, res: Tuple[Any, ...]) -> None:
     # case 2 nodes
     cache_deps_of: List[ExecNode] = [generate_large_zeros_array, incr_large_array]
@@ -243,7 +241,6 @@ def test_cache_in_deps2(cache_path: str, res: Tuple[Any, ...]) -> None:
     validate(cache_path, cache_deps_of)
 
 
-@pytest.mark.suffix(3)
 def test_cache_in_deps3(cache_path: str, res: Tuple[Any, ...]) -> None:
     # case 3 nodes
     cache_deps_of: List[ExecNode] = [generate_large_zeros_array, incr_large_array, pass_large_array]
@@ -257,7 +254,6 @@ def test_cache_in_deps3(cache_path: str, res: Tuple[Any, ...]) -> None:
     validate(cache_path, cache_deps_of)
 
 
-@pytest.mark.suffix(4)
 def test_cache_in_deps4(cache_path: str, res: Tuple[Any, ...]) -> None:
     # case 4 nodes
     cache_deps_of: List[ExecNode] = [
