@@ -714,41 +714,6 @@ class DAG(Generic[P, RVDAG]):
 
         raise TawaziTypeError("Return type for the DAG can only be a single value, Tuple or List")
 
-    # NOTE: this function should be used in case there was a bizarre behavior noticed during
-    #   the execution of the DAG via DAG.execute(...)
-    def _safe_execute(
-        self,
-        *args: Any,
-        target_nodes: Optional[List[Alias]] = None,
-        exclude_nodes: Optional[List[Alias]] = None,
-        root_nodes: Optional[List[Alias]] = None,
-    ) -> Any:
-        """Execute the ExecNodes in topological order without priority in for loop manner for debugging (Experimental).
-
-        Args:
-            *args (Any): Positional arguments passed to the DAG
-            target_nodes (Optional[List[Alias]]): the ExecNodes that should be considered to construct the subgraph
-            exclude_nodes (Optional[List[Alias]]): the ExecNodes that shouldn't run
-            root_nodes (Optional[List[Alias]]): the root ExecNodes from which extract subgraph
-
-        Returns:
-            Any: the result of the execution of the DAG.
-             If an ExecNode returns a value in the DAG but is not executed, it will return None.
-        """
-        # 1. make the graph_ids to be executed!
-        graph = self.make_subgraph(target_nodes, exclude_nodes, root_nodes)
-
-        # 2. make call_xn_dict that will be modified
-        call_xn_dict = self.make_call_xn_dict(*args)
-
-        # 3. deep copy the node_dict to store the results in each node
-        for xn_id in graph.topologically_sorted:
-            # only execute ExecNodes that are part of the subgraph
-            call_xn_dict[xn_id].execute(call_xn_dict)
-
-        # 4. make returned values
-        return self.get_return_values(call_xn_dict)
-
     def config_from_dict(self, config: Dict[str, Any]) -> None:
         """Allows reconfiguring the parameters of the nodes from a dictionary.
 
