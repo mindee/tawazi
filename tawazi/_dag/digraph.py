@@ -7,34 +7,55 @@ from loguru import logger
 from networkx import NetworkXNoCycle, NetworkXUnfeasible, find_cycle
 
 from tawazi.consts import Identifier, Tag
+from tawazi.errors import TawaziUsageError
+from tawazi.node import ExecNode, UsageExecNode
 
 
 class DiGraphEx(nx.DiGraph):
     """Extends the DiGraph with some methods."""
 
     @classmethod
-    def from_exec_nodes_mapping(
-        cls, exec_nodes_mapping: Dict[Identifier, List[Tuple[Identifier, Identifier]]]
+    def from_exec_nodes(
+        cls, exec_nodes: Dict[Identifier, ExecNode], input_nodes: List[UsageExecNode]
     ) -> "DiGraphEx":
-        """Build a DigraphEx from a mapping between nodes and edges.
+        """Build a DigraphEx from exec nodes.
 
         Args:
-            exec_nodes_mapping: the mapping between nodes and their edges
+            input_nodes: nodes that are the inputs of the graph
+            exec_nodes: the graph nodes
 
         Returns:
             the DigraphEx object
         """
         graph = DiGraphEx()
 
-        for node_id, dependencies in exec_nodes_mapping.items():
+        input_ids = [uxn.id for uxn in input_nodes]
+        for node in exec_nodes.values():
             # add node and edges
-            graph.add_node(node_id)
-            graph.add_edges_from(dependencies)
+            graph.add_node(node.id)
+            graph.add_edges_from([(dep.id, node.id) for dep in node.dependencies])
+
+            # add tag, setup and debug
+            if node.tag:
+                if isinstance(node.tag, Tag):
+                    graph.nodes[node.id]["tag"] = [node.tag]
+                else:
+                    graph.nodes[node.id]["tag"] = [t for t in node.tag]
+
+            graph.nodes[node.id]["debug"] = node.debug
+            graph.nodes[node.id]["setup"] = node.setup
+
+            # validate setup ExecNodes
+            if node.setup and any(dep.id in input_ids for dep in node.dependencies):
+                raise TawaziUsageError(
+                    f"The ExecNode {node} takes as parameters one of the DAG's input parameter"
+                )
 
         # check for circular dependencies
         cycle = graph.find_cycle()
         if cycle:
             raise NetworkXUnfeasible(f"the DAG contains at least a circular dependency: {cycle}")
+
         return graph
 
     @property

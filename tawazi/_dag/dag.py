@@ -62,32 +62,10 @@ class DAG(Generic[P, RVDAG]):
         # NOTE: maybe this should be transformed into a property because there is a deepcopy for node_dict...
         #  this means that there are different ExecNodes that are hanging around in the same instance of the DAG
         self.node_dict = exec_nodes
-        self.graph_ids = DiGraphEx.from_exec_nodes_mapping(
-            exec_nodes_mapping={
-                node.id: [(dep.id, node.id) for dep in node.dependencies]
-                for node in exec_nodes.values()
-            }
-        )
+        self.node_dict_by_name = {xn.__name__: xn for xn in exec_nodes.values()}
+        self.graph_ids = DiGraphEx.from_exec_nodes(exec_nodes=exec_nodes, input_nodes=input_uxns)
 
-        self.node_dict_by_name = {}
-        input_ids = [uxn.id for uxn in self.input_uxns]
-        for xn in exec_nodes.values():
-            self.node_dict_by_name[xn.__name__] = xn
-
-            # Compute all the tags in the DAG to reduce overhead during computation
-            if xn.tag:
-                if isinstance(xn.tag, Tag):
-                    self.graph_ids.nodes[xn.id]["tag"] = [xn.tag]
-                else:
-                    self.graph_ids.nodes[xn.id]["tag"] = [t for t in xn.tag]
-
-            # validate setup ExecNodes
-            if xn.setup and any(dep.id in input_ids for dep in xn.dependencies):
-                raise TawaziUsageError(
-                    f"The ExecNode {xn} takes as parameters one of the DAG's input parameter"
-                )
-
-        # calculate the sum of priorities of all recursive children
+        # compute the sum of priorities of all recursive children
         self._assign_compound_priority()
 
     @property
@@ -841,6 +819,9 @@ class DAGExecution(Generic[P, RVDAG]):
 
     def __post_init__(self) -> None:
         """Dynamic construction of attributes."""
+        self.xn_dict = {}
+        self.results = {}
+
         # build the graph from cache if it exists
         if self.cache_deps_of is not None:
             if self.target_nodes is not None or self.exclude_nodes is not None:
