@@ -489,8 +489,6 @@ class DAG(Generic[P, RVDAG]):
             [node_id for node_id in graph if node_id not in self.graph_ids.setup_nodes]
         )
 
-        # TODO: handle debug XNs!
-
         self.execute(graph)
 
     def executor(self, **kwargs: Any) -> "DAGExecution[P, RVDAG]":
