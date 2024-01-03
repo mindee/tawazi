@@ -77,6 +77,24 @@ class DiGraphEx(nx.DiGraph):
         return [node for node, degree in self.out_degree if degree == 0]
 
     @property
+    def debug_nodes(self) -> List[Identifier]:
+        """Get the debug nodes.
+
+        Returns:
+            the debug nodes
+        """
+        return [node for node, debug in self.nodes(data="debug") if debug]
+
+    @property
+    def setup_nodes(self) -> List[Identifier]:
+        """Get the setup nodes.
+
+        Returns:
+            the setup nodes
+        """
+        return [node for node, setup in self.nodes(data="setup") if setup]
+
+    @property
     def tags(self) -> Set[str]:
         """Get all the tags available for the graph.
 
@@ -133,6 +151,40 @@ class DiGraphEx(nx.DiGraph):
 
         for node in nodes_to_remove:
             self.remove_node(node)
+
+    def get_runnable_debug_nodes(self, leaves_ids: List[Identifier]) -> List[Identifier]:
+        """Get debug nodes that are runnable with provided nodes as direct roots.
+
+        For example:
+        A
+        |
+        B
+        | \
+        D E
+
+        if D is not a debug ExecNode and E is a debug ExecNode.
+        If the subgraph whose leaf ExecNode D is executed,
+        E should also be included in the execution because it can be executed (debug node whose inputs are provided)
+        Hence we should extend the subgraph containing only D to also contain E
+
+        Args:
+            leaves_ids: the leaves ids of the subgraph
+
+        Returns:
+            the leaves ids of the new extended subgraph that contains more debug ExecNodes
+        """
+        new_debug_xn_discovered = True
+        while new_debug_xn_discovered:
+            new_debug_xn_discovered = False
+            for id_ in leaves_ids:
+                for successor_id in self.successors(id_):
+                    if successor_id not in leaves_ids and successor_id in self.debug_nodes:
+                        # a new debug XN has been discovered!
+                        if set(self.predecessors(successor_id)).issubset(set(leaves_ids)):
+                            new_debug_xn_discovered = True
+                            # this new XN can run by only running the current leaves_ids
+                            leaves_ids.append(successor_id)
+        return leaves_ids
 
     def subgraph_leaves(self, nodes: List[Identifier]) -> Set[Identifier]:
         """Modifies the graph to become a subgraph.

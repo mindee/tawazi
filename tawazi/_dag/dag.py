@@ -435,41 +435,6 @@ class DAG(Generic[P, RVDAG]):
             f"str or tuple identifying the node but provided {alias}"
         )
 
-    def _extend_leaves_ids_debug_xns(self, leaves_ids: List[Identifier]) -> List[Identifier]:
-        """Extend the leaves_ids to contain all runnable debug node ids.
-
-        For example:
-        A
-        |
-        B
-        | \
-        D E
-
-        if D is not a debug ExecNode and E is a debug ExecNode.
-        If the subgraph whose leaf ExecNode D is executed,
-        E should also be included in the execution because it can be executed (debug node whose inputs are provided)
-        Hence we should extend the subgraph containing only D to also contain E
-
-        Args:
-            leaves_ids (List[Identifier]): the leaves ids of the subgraph
-
-        Returns:
-            List[Identifier]: the leaves ids of the new extended subgraph that contains more debug ExecNodes
-        """
-        new_debug_xn_discovered = True
-        while new_debug_xn_discovered:
-            new_debug_xn_discovered = False
-            for id_ in leaves_ids:
-                for successor_id in self.graph_ids.successors(id_):
-                    is_successor_debug = self.node_dict[successor_id].debug
-                    if successor_id not in leaves_ids and is_successor_debug:
-                        # a new debug XN has been discovered!
-                        if set(self.graph_ids.predecessors(successor_id)).issubset(set(leaves_ids)):
-                            new_debug_xn_discovered = True
-                            # this new XN can run by only running the current leaves_ids
-                            leaves_ids.append(successor_id)
-        return leaves_ids
-
     def _sanitize_nodes_alias(self, nodes: Sequence[Alias]) -> List[Identifier]:
         """Ensure correct Identifiers from aliases.
 
@@ -584,7 +549,7 @@ class DAG(Generic[P, RVDAG]):
 
         if cfg.RUN_DEBUG_NODES:
             # find original debug nodes
-            debug_ids = self._extend_leaves_ids_debug_xns(graph.leaf_nodes)
+            debug_ids = self.graph_ids.get_runnable_debug_nodes(graph.leaf_nodes)
 
             # extend the graph with the debug XNs
             graph = self.graph_ids.subgraph(list(graph.nodes()) + debug_ids).copy()
