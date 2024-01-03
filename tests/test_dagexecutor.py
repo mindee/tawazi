@@ -1,9 +1,12 @@
 import threading
+from logging import Logger
 from typing import Any, Tuple
 
 import pytest
 from tawazi import dag, xn
 from tawazi.errors import TawaziUsageError
+
+logger = Logger(name="mylogger", level="ERROR")
 
 
 @xn
@@ -97,7 +100,7 @@ def test_executed_with_setup_nodes() -> None:
 
     @xn(debug=True)
     def my_debug_node(in1: Any, in2: Any, in3: Any) -> None:
-        print(in1, in2, in3)  # noqa: T201
+        logger.debug(in1, in2, in3)  # noqa: T201
 
     @dag
     def pipe(in1: int, in2: int) -> Tuple[int, int, int, int]:

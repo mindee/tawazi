@@ -1,8 +1,12 @@
+from logging import Logger
 from typing import Any, List, TypeVar
 
 import pytest
 from tawazi import dag, xn
 from tawazi.errors import TawaziBaseException
+
+logger = Logger(name="mylogger", level="ERROR")
+
 
 my_len_has_ran = False
 is_positive_len_has_ran = False
@@ -30,9 +34,9 @@ def is_positive_len(len_img: int) -> None:
     global is_positive_len_has_ran
     # this node depends of the my_len!
     if len_img > 0:
-        print("positive")  # noqa: T201
+        logger.debug("positive")  # noqa: T201
     else:
-        print("negative")  # noqa: T201
+        logger.debug("negative")  # noqa: T201
 
     is_positive_len_has_ran = True
 
