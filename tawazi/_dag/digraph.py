@@ -212,7 +212,7 @@ class DiGraphEx(nx.DiGraph):
             nodes: the list of nodes to be executed
 
         Returns:
-            the nodes that are provided but can never become leaf nodes:
+            the induced subgraph over the original graph with the provided nodes:
 
         Raises:
             ValueError: if the provided nodes are not in the graph
@@ -225,7 +225,7 @@ class DiGraphEx(nx.DiGraph):
             )
 
         # compute all the ancestor nodes that will be included in the graph
-        all_ancestors = set().union(*chain(nx.ancestors(G=self, source=node) for node in nodes))
+        all_ancestors = self.ancestors_of_iter(nodes)
         induced_subgraph: DiGraphEx = nx.induced_subgraph(self, all_ancestors | set(nodes))
         return induced_subgraph
 
@@ -260,7 +260,4 @@ class DiGraphEx(nx.DiGraph):
         Returns:
             Set[Identifier]: The ancestors of the provided nodes
         """
-        ancestors = set()
-        for node in nodes:
-            ancestors.update(nx.ancestors(self, node))
-        return ancestors
+        return set().union(*chain(nx.ancestors(G=self, source=node) for node in nodes))
