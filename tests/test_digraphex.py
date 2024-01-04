@@ -45,14 +45,6 @@ def test_graph_remove_recursively_without_root(graph: DiGraphEx) -> None:
     assert set(h.nodes) == {1, 4, 5, 6, 7}
 
 
-def test_no_cycle(graph: DiGraphEx) -> None:
-    assert not graph.find_cycle()
-
-
-def test_cycle(graph_cycle: DiGraphEx) -> None:
-    assert graph_cycle.find_cycle() is not None
-
-
 def test_minimal_induced_subgraph(graph: DiGraphEx) -> None:
     h = DiGraphEx(graph)
     h = h.minimal_induced_subgraph([4, 5, 6, 7]).copy()  # type: ignore[list-item]

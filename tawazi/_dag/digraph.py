@@ -1,6 +1,6 @@
 """Module containing the definition of a Directed Graph Extension of networkx.DiGraph."""
 from itertools import chain
-from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, List, Sequence, Set
 
 import networkx as nx
 from networkx import NetworkXNoCycle, NetworkXUnfeasible, find_cycle
@@ -51,9 +51,11 @@ class DiGraphEx(nx.DiGraph):
                 )
 
         # check for circular dependencies
-        cycle = graph.find_cycle()
-        if cycle:
+        try:
+            cycle = find_cycle(graph)
             raise NetworkXUnfeasible(f"the DAG contains at least a circular dependency: {cycle}")
+        except NetworkXNoCycle:
+            pass
 
         return graph
 
@@ -237,19 +239,6 @@ class DiGraphEx(nx.DiGraph):
             List of nodes of the graph listed in topological order
         """
         return list(nx.topological_sort(self))
-
-    def find_cycle(self) -> Optional[List[Tuple[Identifier, Identifier]]]:
-        """Finds the cycles in the DAG. A DAG shouldn't have any dependency cycle.
-
-        Returns:
-            A list of the edges responsible for the cycles in case there are some (in forward and backward),
-                otherwise nothing. (e.g. [('taxes', 'amount_reconciliation'),('amount_reconciliation', 'taxes')])
-        """
-        try:
-            cycle: List[Tuple[Identifier, Identifier]] = find_cycle(self)
-            return cycle
-        except NetworkXNoCycle:
-            return None
 
     def ancestors_of_iter(self, nodes: Iterable[Identifier]) -> Set[Identifier]:
         """Returns the ancestors of the provided nodes.
