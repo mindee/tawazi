@@ -338,30 +338,27 @@ class DAG(Generic[P, RVDAG]):
 
         The compound priority is the sum of the priorities of all children recursively.
         """
-        # 1. deepcopy graph_ids because it will be modified (pruned)
-        graph_ids = deepcopy(self.graph_ids)
-        leaf_ids = graph_ids.leaf_nodes
+        # 1. start from bottom up
+        leaf_ids = set(self.graph_ids.leaf_nodes)
 
         # 2. assign the compound priority for all the remaining nodes in the graph:
         # Priority assignment happens by epochs:
         # 2.1. during every epoch, we assign the compound priority for the parents of the current leaf nodes
         # 2.2. at the end of every epoch, we trim the graph from its leaf nodes;
         #       hence the previous parents become the new leaf nodes
-        while len(graph_ids) > 0:
-            # Epoch level
+        while leaf_ids:
+            next_leaf_ids = set()
             for leaf_id in leaf_ids:
                 leaf_node = self.node_dict[leaf_id]
 
+                # for parent nodes, this loop won't execute
                 for parent_id in self.graph_ids.predecessors(leaf_id):
                     # increment the compound_priority of the parent node by the leaf priority
                     parent_node = self.node_dict[parent_id]
                     parent_node.compound_priority += leaf_node.compound_priority
 
-                # trim the graph from its leaf nodes
-                graph_ids.remove_node(leaf_id)
-
-            # assign the new leaf nodes
-            leaf_ids = graph_ids.leaf_nodes
+                    next_leaf_ids.add(parent_id)
+            leaf_ids = next_leaf_ids
 
     def draw(self, k: float = 0.8, t: Union[float, int] = 3) -> None:
         """Draws the Networkx directed graph.

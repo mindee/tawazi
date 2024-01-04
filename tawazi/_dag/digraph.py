@@ -104,6 +104,15 @@ class DiGraphEx(nx.DiGraph):
         """
         return set(chain([tags for _, tags in self.nodes(data="tag")]))
 
+    @property
+    def topologically_sorted(self) -> List[Identifier]:
+        """Makes the simple topological sort of the graph nodes.
+
+        Returns:
+            List of nodes of the graph listed in topological order
+        """
+        return list(nx.topological_sort(self))
+
     def get_tagged_nodes(self, tag: Tag) -> List[str]:
         """Get nodes with a certain tag.
 
@@ -230,15 +239,6 @@ class DiGraphEx(nx.DiGraph):
         all_ancestors = self.ancestors_of_iter(nodes)
         induced_subgraph: DiGraphEx = nx.induced_subgraph(self, all_ancestors | set(nodes))
         return induced_subgraph
-
-    @property
-    def topologically_sorted(self) -> List[Identifier]:
-        """Makes the simple topological sort of the graph nodes.
-
-        Returns:
-            List of nodes of the graph listed in topological order
-        """
-        return list(nx.topological_sort(self))
 
     def ancestors_of_iter(self, nodes: Iterable[Identifier]) -> Set[Identifier]:
         """Returns the ancestors of the provided nodes.
