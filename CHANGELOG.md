@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.3.2 (2024-01-04)
+
+## Bug Fixes
+* :bug: wrong error message
+* :bug: fix counting nodes during dag description
+* :bug: failing to run DAG inside a Process
+
+### Improvements
+* :zap: faster logging
+* :recycle: better mypy on raise_arg_error
+* :white_check_mark: test execnode with typed tuple
+* :white_check_mark: test passing DAG inside a Process
+
 ## v0.3.1 (2023-07-18)
 
 ### Bug Fixes
