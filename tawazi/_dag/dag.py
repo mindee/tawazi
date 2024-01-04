@@ -62,7 +62,6 @@ class DAG(Generic[P, RVDAG]):
         # NOTE: maybe this should be transformed into a property because there is a deepcopy for node_dict...
         #  this means that there are different ExecNodes that are hanging around in the same instance of the DAG
         self.node_dict = exec_nodes
-        self.node_dict_by_name = {xn.__name__: xn for xn in exec_nodes.values()}
         self.graph_ids = DiGraphEx.from_exec_nodes(exec_nodes=exec_nodes, input_nodes=input_uxns)
 
         # compute the sum of priorities of all recursive children
