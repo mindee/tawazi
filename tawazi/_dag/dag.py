@@ -541,7 +541,7 @@ class DAG(Generic[P, RVDAG]):
         # lastly select additional nodes
         if target_nodes is not None:
             target_ids = self._sanitize_nodes_alias(target_nodes)
-            graph.subgraph_leaves(target_ids)
+            graph = graph.minimal_induced_subgraph(target_ids).copy()
 
         if cfg.RUN_DEBUG_NODES:
             # find original debug nodes

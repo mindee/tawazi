@@ -3,7 +3,6 @@ from itertools import chain
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 import networkx as nx
-from loguru import logger
 from networkx import NetworkXNoCycle, NetworkXUnfeasible, find_cycle
 
 from tawazi.consts import Identifier, Tag
@@ -186,12 +185,11 @@ class DiGraphEx(nx.DiGraph):
                             leaves_ids.append(successor_id)
         return leaves_ids
 
-    def subgraph_leaves(self, nodes: List[Identifier]) -> Set[Identifier]:
-        """Modifies the graph to become a subgraph.
+    def minimal_induced_subgraph(self, nodes: List[Identifier]) -> "DiGraphEx":
+        """Get the minimal induced subgraph containing the provided nodes.
 
         The generated subgraph contains the provided nodes as leaf nodes.
         For example:
-        TODO: use the future print to test this function!
         graph =
         "
         A
@@ -215,18 +213,10 @@ class DiGraphEx(nx.DiGraph):
 
         Returns:
             the nodes that are provided but can never become leaf nodes:
-                NOTE Impossible cases are handled using a best effort approach;
-                For example, if a node and its children are provided,
-                all those nodes will be left in the subgraph. However,
-                a warning will be issued
 
         Raises:
             ValueError: if the provided nodes are not in the graph
         """
-        # works by pruning the graph until all leaf nodes
-        # are contained inside the provided "nodes"
-        # in the arguments of this method
-
         if any([node not in self.nodes for node in nodes]):
             raise ValueError(
                 f"The provided nodes are not in the graph. "
@@ -234,23 +224,10 @@ class DiGraphEx(nx.DiGraph):
                 f"The graph only contains: {self.nodes}."
             )
 
-        nodes_to_remove = set(self.leaf_nodes).difference(set(nodes))
-
-        while nodes_to_remove:
-            node_to_remove = nodes_to_remove.pop()
-            self.remove_node(node_to_remove)
-
-            nodes_to_remove = set(self.leaf_nodes).difference(set(nodes))
-
-        unremovable_nodes = set(nodes).difference(set(self.leaf_nodes))
-
-        if len(unremovable_nodes) > 0:
-            logger.debug(
-                f"The provided nodes contain more nodes than necessary, "
-                f"please remove {unremovable_nodes} nodes"
-            )
-
-        return unremovable_nodes
+        # compute all the ancestor nodes that will be included in the graph
+        all_ancestors = set().union(*chain(nx.ancestors(G=self, source=node) for node in nodes))
+        induced_subgraph: DiGraphEx = nx.induced_subgraph(self, all_ancestors | set(nodes))
+        return induced_subgraph
 
     @property
     def topologically_sorted(self) -> List[Identifier]:

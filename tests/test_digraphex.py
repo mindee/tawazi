@@ -53,14 +53,14 @@ def test_cycle(graph_cycle: DiGraphEx) -> None:
     assert graph_cycle.find_cycle() is not None
 
 
-def test_subgraph_leaves(graph: DiGraphEx) -> None:
+def test_minimal_induced_subgraph(graph: DiGraphEx) -> None:
     h = DiGraphEx(graph)
-    h.subgraph_leaves([4, 5, 6, 7])  # type: ignore[list-item]
+    h = h.minimal_induced_subgraph([4, 5, 6, 7]).copy()  # type: ignore[list-item]
     assert set(h.nodes) == {4, 5, 6, 7}
     assert list(h.edges) == [(4, 5), (4, 7), (5, 6)]
 
     with pytest.raises(ValueError):
-        h.subgraph_leaves(["zaza", "zozo"])
+        h.minimal_induced_subgraph(["zaza", "zozo"])
 
 
 def test_topological_sort(graph: DiGraphEx) -> None:
