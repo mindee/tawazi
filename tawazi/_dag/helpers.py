@@ -1,6 +1,6 @@
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Optional, Set
 
 from loguru import logger
 
@@ -37,14 +37,17 @@ def copy_non_setup_xns(x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
 
 
 def get_num_running_threads(_futures: Dict[Identifier, "Future[Any]"]) -> int:
+    """Get the number of running threads from a list of futures.
+
+    Args:
+        _futures: the list of futures.
+
+    Returns:
+        the number of still running threads
+    """
     # use not future.done() because there is no guarantee that Thread pool will directly execute
     # the submitted thread
     return sum([not future.done() for future in _futures.values()])
-
-
-def get_highest_priority_nodes(nodes: List[ExecNode]) -> List[ExecNode]:
-    highest_priority = max(node.priority for node in nodes)
-    return [node for node in nodes if node.priority == highest_priority]
 
 
 ################
@@ -136,14 +139,15 @@ def execute(
 
             # 4. choose a node to run
             # 4.1 get the most prioritized node to run
-            # 4.1.1 get all the nodes that have the highest priority
-            runnable_xns = [xns_dict[node_id] for node_id in runnable_xns_ids]
-            highest_priority_xns = get_highest_priority_nodes(runnable_xns)
-
-            # 4.1.2 get the node with the highest compound priority
-            # (randomly selected if multiple are suggested)
-            highest_priority_xns.sort(key=lambda node: node.compound_priority)
-            xn = highest_priority_xns[-1]
+            highest_priority_node, _ = max(
+                [
+                    (node, priority)
+                    for node, priority in graph.nodes(data="compound_priority")
+                    if node in runnable_xns_ids
+                ],
+                key=lambda x: x[1],
+            )
+            xn = xns_dict[highest_priority_node]
 
             logger.info("%s will run!", xn.id)
 

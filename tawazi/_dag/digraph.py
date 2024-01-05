@@ -43,6 +43,7 @@ class DiGraphEx(nx.DiGraph):
 
             graph.nodes[node.id]["debug"] = node.debug
             graph.nodes[node.id]["setup"] = node.setup
+            graph.nodes[node.id]["compound_priority"] = node.priority
 
             # validate setup ExecNodes
             if node.setup and any(dep.id in input_ids for dep in node.dependencies):
@@ -250,3 +251,28 @@ class DiGraphEx(nx.DiGraph):
             Set[Identifier]: The ancestors of the provided nodes
         """
         return set().union(*chain(nx.ancestors(G=self, source=node) for node in nodes))
+
+    def assign_compound_priority(self) -> None:
+        """Assigns a compound priority to all nodes in the graph.
+
+        The compound priority is the sum of the priorities of all children recursively.
+        """
+        # 1. start from bottom up
+        leaf_ids = set(self.leaf_nodes)
+
+        # 2. assign the compound priority for all the remaining nodes in the graph:
+        # Priority assignment happens by epochs:
+        # 2.1. during every epoch, we assign the compound priority for the parents of the current leaf nodes
+
+        while leaf_ids:
+            next_leaf_ids = set()
+            for leaf_id in leaf_ids:
+                compound_priority = self.nodes(data="compound_priority")[leaf_id]
+
+                # for parent nodes, this loop won't execute
+                for parent_id in self.predecessors(leaf_id):
+                    # increment the compound_priority of the parent node by the leaf priority
+                    self.nodes[parent_id]["compound_priority"] += compound_priority
+
+                    next_leaf_ids.add(parent_id)
+            leaf_ids = next_leaf_ids
