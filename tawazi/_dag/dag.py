@@ -741,7 +741,11 @@ class DAGExecution(Generic[P, RVDAG]):
 
         # build the graph from cache if it exists
         if self.cache_deps_of is not None:
-            if self.target_nodes is not None or self.exclude_nodes is not None:
+            if (
+                self.target_nodes is not None
+                or self.exclude_nodes is not None
+                or self.root_nodes is not None
+            ):
                 raise ValueError(
                     "cache_deps_of can't be used together with target_nodes or exclude_nodes"
                 )
