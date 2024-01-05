@@ -15,7 +15,7 @@ def a(input_img: List[int], cst: int) -> int:
 
 @xn
 def lazy_print(*args: Any) -> None:
-    logger.debug(*args)  # noqa: T201
+    logger.debug(*args)
 
 
 @dag

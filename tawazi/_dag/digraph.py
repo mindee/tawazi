@@ -15,7 +15,7 @@ class DiGraphEx(nx.DiGraph):
 
     @classmethod
     def from_exec_nodes(
-        cls, exec_nodes: Dict[Identifier, ExecNode], input_nodes: List[UsageExecNode]
+        cls, input_nodes: List[UsageExecNode], exec_nodes: Dict[Identifier, ExecNode]
     ) -> "DiGraphEx":
         """Build a DigraphEx from exec nodes.
 
@@ -148,7 +148,7 @@ class DiGraphEx(nx.DiGraph):
         Returns:
             a set of all the sucessors
         """
-        return set(list(chain(*[self.single_node_successors(node) for node in nodes_ids])))
+        return set(list(chain(*[self.single_node_successors(node_id) for node_id in nodes_ids])))
 
     def remove_recursively(self, root_node: Identifier, remove_root_node: bool = True) -> None:
         """Recursively removes all the nodes that depend on the provided.
@@ -166,7 +166,7 @@ class DiGraphEx(nx.DiGraph):
         for node in nodes_to_remove:
             self.remove_node(node)
 
-    def get_runnable_debug_nodes(self, leaves_ids: List[Identifier]) -> List[Identifier]:
+    def include_debug_nodes(self, leaves_ids: List[Identifier]) -> List[Identifier]:
         """Get debug nodes that are runnable with provided nodes as direct roots.
 
         For example:

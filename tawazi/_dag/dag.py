@@ -62,7 +62,7 @@ class DAG(Generic[P, RVDAG]):
         # NOTE: maybe this should be transformed into a property because there is a deepcopy for node_dict...
         #  this means that there are different ExecNodes that are hanging around in the same instance of the DAG
         self.node_dict = exec_nodes
-        self.graph_ids = DiGraphEx.from_exec_nodes(exec_nodes=exec_nodes, input_nodes=input_uxns)
+        self.graph_ids = DiGraphEx.from_exec_nodes(input_nodes=input_uxns, exec_nodes=exec_nodes)
 
     @property
     def max_concurrency(self) -> int:
@@ -501,7 +501,7 @@ class DAG(Generic[P, RVDAG]):
 
         if cfg.RUN_DEBUG_NODES:
             # find original debug nodes
-            debug_ids = self.graph_ids.get_runnable_debug_nodes(graph.leaf_nodes)
+            debug_ids = self.graph_ids.include_debug_nodes(graph.leaf_nodes)
 
             # extend the graph with the debug XNs
             graph = self.graph_ids.subgraph(list(graph.nodes()) + debug_ids).copy()

@@ -14,9 +14,9 @@ logger = Logger(name="mylogger", level="ERROR")
 def my_little_logger(func: Callable[P, RV]) -> Callable[P, RV]:
     @wraps(func)
     def log(*args: P.args, **kwargs: P.kwargs) -> RV:
-        logger.debug("this should print before execution")  # noqa: T201
+        logger.debug("this should print before execution")
         res = func(*args, **kwargs)
-        logger.debug("this should print after execution")  # noqa: T201
+        logger.debug("this should print after execution")
         return res
 
     return log

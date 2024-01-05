@@ -34,9 +34,9 @@ def is_positive_len(len_img: int) -> None:
     global is_positive_len_has_ran
     # this node depends of the my_len!
     if len_img > 0:
-        logger.debug("positive")  # noqa: T201
+        logger.debug("positive")
     else:
-        logger.debug("negative")  # noqa: T201
+        logger.debug("negative")
 
     is_positive_len_has_ran = True
 
