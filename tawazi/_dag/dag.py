@@ -21,7 +21,7 @@ from tawazi.errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
 from tawazi.node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode
 
 from .digraph import DiGraphEx
-from .helpers import copy_non_setup_xns, execute, get_return_values
+from .helpers import execute, get_return_values, make_call_xn_dict
 
 
 class DAG(Generic[P, RVDAG]):
@@ -508,7 +508,7 @@ class DAG(Generic[P, RVDAG]):
 
         # 3. Remove debug nodes
         else:
-            graph.remove_nodes_from([node_id for node_id in graph if self.node_dict[node_id].debug])
+            graph.remove_nodes_from([node_id for node_id in graph.debug_nodes])
 
         return graph
 
@@ -533,7 +533,7 @@ class DAG(Generic[P, RVDAG]):
         graph = self.make_subgraph()
 
         # 2. copy the ExecNodes
-        call_xn_dict = self.make_call_xn_dict(*args)
+        call_xn_dict = make_call_xn_dict(self.node_dict, self.input_uxns, *args)
 
         # 3. Execute the scheduler
         all_nodes_dict = execute(
@@ -546,46 +546,6 @@ class DAG(Generic[P, RVDAG]):
 
         # 4. extract the returned value/values
         return get_return_values(self.return_uxns, all_nodes_dict)  # type: ignore[return-value]
-
-    def make_call_xn_dict(self, *args: Any) -> Dict[Identifier, ExecNode]:
-        """Generate the calling ExecNode dict.
-
-        This is a dict containing ExecNodes that will be executed (hence modified) by the DAG scheduler.
-        This takes into consideration:
-         1. deep copying the ExecNodes
-         2. filling the arguments of the call
-         3. skipping the copy for setup ExecNodes
-
-        Args:
-            *args (Any): arguments to be passed to the call of the DAG
-
-        Returns:
-            Dict[Identifier, ExecNode]: The modified ExecNode dict which will be executed by the DAG scheduler.
-
-        Raises:
-            TypeError: If called with an invalid number of arguments
-        """
-        # 1. deepcopy the node_dict because it will be modified by the DAG's execution
-        call_xn_dict = copy_non_setup_xns(self.node_dict)
-
-        # 2. parse the input arguments of the pipeline
-        # 2.1 default valued arguments can be skipped and not provided!
-        # note: if not enough arguments are provided then the code will fail
-        # inside the DAG's execution through the raise_err lambda
-        if args:
-            # 2.2 can't provide more than enough arguments
-            if len(args) > len(self.input_uxns):
-                raise TypeError(
-                    f"The DAG takes a maximum of {len(self.input_uxns)} arguments. {len(args)} arguments provided"
-                )
-
-            # 2.3 modify ExecNodes corresponding to input ArgExecNodes
-            for ind_arg, arg in enumerate(args):
-                node_id = self.input_uxns[ind_arg].id
-
-                call_xn_dict[node_id].result = arg
-
-        return call_xn_dict
 
     def config_from_dict(self, config: Dict[str, Any]) -> None:
         """Allows reconfiguring the parameters of the nodes from a dictionary.
@@ -813,7 +773,7 @@ class DAGExecution(Generic[P, RVDAG]):
         call_id = self.call_id if self.call_id is not None else ""
 
         # 1. copy the ExecNodes
-        call_xn_dict = self.dag.make_call_xn_dict(*args)
+        call_xn_dict = make_call_xn_dict(self.dag.node_dict, self.dag.input_uxns, *args)
         if self.from_cache:
             with open(self.from_cache, "rb") as f:
                 cached_results = pickle.load(f)  # noqa: S301

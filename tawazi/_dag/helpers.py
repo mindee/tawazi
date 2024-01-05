@@ -252,6 +252,51 @@ def get_return_values(return_uxns: ReturnUXNsType, xn_dict: Dict[Identifier, Exe
     raise TawaziTypeError("Return type for the DAG can only be a single value, Tuple or List")
 
 
+def make_call_xn_dict(
+    node_dict: Dict[Identifier, ExecNode], input_uxns: List[UsageExecNode], *args: Any
+) -> Dict[Identifier, ExecNode]:
+    """Generate the calling ExecNode dict.
+
+    This is a dict containing ExecNodes that will be executed (hence modified) by the DAG scheduler.
+    This takes into consideration:
+     1. deep copying the ExecNodes
+     2. filling the arguments of the call
+     3. skipping the copy for setup ExecNodes
+
+    Args:
+        input_uxns: the input execnodes
+        node_dict: the mapping between the node ids and the execnodes
+        *args (Any): arguments to be passed to the call of the DAG
+
+    Returns:
+        Dict[Identifier, ExecNode]: The modified ExecNode dict which will be executed by the DAG scheduler.
+
+    Raises:
+        TypeError: If called with an invalid number of arguments
+    """
+    # 1. deepcopy the node_dict because it will be modified by the DAG's execution
+    call_xn_dict = copy_non_setup_xns(node_dict)
+
+    # 2. parse the input arguments of the pipeline
+    # 2.1 default valued arguments can be skipped and not provided!
+    # note: if not enough arguments are provided then the code will fail
+    # inside the DAG's execution through the raise_err lambda
+    if args:
+        # 2.2 can't provide more than enough arguments
+        if len(args) > len(input_uxns):
+            raise TypeError(
+                f"The DAG takes a maximum of {len(input_uxns)} arguments. {len(args)} arguments provided"
+            )
+
+        # 2.3 modify ExecNodes corresponding to input ArgExecNodes
+        for ind_arg, arg in enumerate(args):
+            node_id = input_uxns[ind_arg].id
+
+            call_xn_dict[node_id].result = arg
+
+    return call_xn_dict
+
+
 def handle_future_exception(
     behavior: ErrorStrategy, graph: DiGraphEx, fut: "Future[Any]", id_: Identifier
 ) -> None:
