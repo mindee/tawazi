@@ -5,9 +5,10 @@ from typing import Any, Dict, List, Optional, Set
 from loguru import logger
 
 from tawazi._dag.digraph import DiGraphEx
-from tawazi.consts import Identifier, Resource
-from tawazi.errors import ErrorStrategy
-from tawazi.node.node import ExecNode
+from tawazi.consts import Identifier, Resource, RVTypes
+from tawazi.errors import ErrorStrategy, TawaziTypeError
+from tawazi.node import ReturnUXNsType
+from tawazi.node.node import ExecNode, UsageExecNode
 
 
 def _xn_active_in_call(xn: ExecNode, xns_dict: Dict[Identifier, ExecNode]) -> bool:
@@ -220,6 +221,35 @@ def execute(
                 done_, running = wait(futures.values(), return_when=ALL_COMPLETED)
 
     return xns_dict
+
+
+def get_return_values(return_uxns: ReturnUXNsType, xn_dict: Dict[Identifier, ExecNode]) -> RVTypes:
+    """Extract the return value/values from the output of the DAG's scheduler!
+
+    Args:
+        return_uxns: the return execnodes
+        xn_dict (Dict[Identifier, ExecNode]): Modified ExecNodes returned by the DAG's scheduler
+
+    Raises:
+        TawaziTypeError: if the type of the return value is not compatible with RVTypes
+
+    Returns:
+        RVTypes: the actual values extracted from xn_dict
+    """
+    if return_uxns is None:
+        return None
+    if isinstance(return_uxns, UsageExecNode):
+        return return_uxns.result(xn_dict)
+    if isinstance(return_uxns, (tuple, list)):
+        gen = (ren_uxn.result(xn_dict) for ren_uxn in return_uxns)
+        if isinstance(return_uxns, tuple):
+            return tuple(gen)
+        if isinstance(return_uxns, list):
+            return list(gen)
+    if isinstance(return_uxns, dict):
+        return {key: ren_uxn.result(xn_dict) for key, ren_uxn in return_uxns.items()}
+
+    raise TawaziTypeError("Return type for the DAG can only be a single value, Tuple or List")
 
 
 def handle_future_exception(

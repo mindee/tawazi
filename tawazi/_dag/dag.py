@@ -16,12 +16,12 @@ from networkx.classes.reportviews import NodeView
 
 from tawazi._helpers import _make_raise_arg_error, _UniqueKeyLoader
 from tawazi.config import cfg
-from tawazi.consts import RVDAG, Identifier, NoVal, P, RVTypes, Tag
+from tawazi.consts import RVDAG, Identifier, NoVal, P, Tag
 from tawazi.errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
 from tawazi.node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode
 
 from .digraph import DiGraphEx
-from .helpers import copy_non_setup_xns, execute
+from .helpers import copy_non_setup_xns, execute, get_return_values
 
 
 class DAG(Generic[P, RVDAG]):
@@ -545,7 +545,7 @@ class DAG(Generic[P, RVDAG]):
         )
 
         # 4. extract the returned value/values
-        return self.get_return_values(all_nodes_dict)  # type: ignore[return-value]
+        return get_return_values(self.return_uxns, all_nodes_dict)  # type: ignore[return-value]
 
     def make_call_xn_dict(self, *args: Any) -> Dict[Identifier, ExecNode]:
         """Generate the calling ExecNode dict.
@@ -586,34 +586,6 @@ class DAG(Generic[P, RVDAG]):
                 call_xn_dict[node_id].result = arg
 
         return call_xn_dict
-
-    def get_return_values(self, xn_dict: Dict[Identifier, ExecNode]) -> RVTypes:
-        """Extract the return value/values from the output of the DAG's scheduler!
-
-        Args:
-            xn_dict (Dict[Identifier, ExecNode]): Modified ExecNodes returned by the DAG's scheduler
-
-        Raises:
-            TawaziTypeError: if the type of the return value is not compatible with RVTypes
-
-        Returns:
-            RVTypes: the actual values extracted from xn_dict
-        """
-        return_uxns = self.return_uxns
-        if return_uxns is None:
-            return None
-        if isinstance(return_uxns, UsageExecNode):
-            return return_uxns.result(xn_dict)
-        if isinstance(return_uxns, (tuple, list)):
-            gen = (ren_uxn.result(xn_dict) for ren_uxn in return_uxns)
-            if isinstance(return_uxns, tuple):
-                return tuple(gen)
-            if isinstance(return_uxns, list):
-                return list(gen)
-        if isinstance(return_uxns, dict):
-            return {key: ren_uxn.result(xn_dict) for key, ren_uxn in return_uxns.items()}
-
-        raise TawaziTypeError("Return type for the DAG can only be a single value, Tuple or List")
 
     def config_from_dict(self, config: Dict[str, Any]) -> None:
         """Allows reconfiguring the parameters of the nodes from a dictionary.
@@ -867,6 +839,6 @@ class DAGExecution(Generic[P, RVDAG]):
 
         self.executed = True
         # 3. extract the returned value/values
-        return self.dag.get_return_values(self.xn_dict)  # type: ignore[return-value]
+        return get_return_values(self.dag.return_uxns, self.xn_dict)  # type: ignore[return-value]
 
     # TODO: add execution order (the order in which the nodes were executed)
