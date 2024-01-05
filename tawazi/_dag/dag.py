@@ -348,21 +348,6 @@ class DAG(Generic[P, RVDAG]):
         time.sleep(t)
         plt.close()
 
-    def execute(
-        self,
-        graph: DiGraphEx,
-        modified_node_dict: Optional[Dict[str, ExecNode]] = None,
-        call_id: str = "",
-    ) -> Dict[Identifier, Any]:
-        return execute(
-            node_dict=self.node_dict,
-            max_concurrency=self.max_concurrency,
-            behavior=self.behavior,
-            graph=graph,
-            modified_node_dict=modified_node_dict,
-            call_id=call_id,
-        )
-
     def alias_to_ids(self, alias: Alias) -> List[Identifier]:
         """Extract an ExecNode ID from an Alias (Tag, ExecNode ID or ExecNode).
 
@@ -455,7 +440,12 @@ class DAG(Generic[P, RVDAG]):
             [node_id for node_id in graph if node_id not in self.graph_ids.setup_nodes]
         )
 
-        self.execute(graph)
+        _ = execute(
+            node_dict=self.node_dict,
+            max_concurrency=self.max_concurrency,
+            behavior=self.behavior,
+            graph=graph,
+        )
 
     def executor(self, **kwargs: Any) -> "DAGExecution[P, RVDAG]":
         """Generates a DAGExecution for the DAG.
@@ -546,7 +536,13 @@ class DAG(Generic[P, RVDAG]):
         call_xn_dict = self.make_call_xn_dict(*args)
 
         # 3. Execute the scheduler
-        all_nodes_dict = self.execute(graph, call_xn_dict)
+        all_nodes_dict = execute(
+            node_dict=self.node_dict,
+            max_concurrency=self.max_concurrency,
+            behavior=self.behavior,
+            graph=graph,
+            modified_node_dict=call_xn_dict,
+        )
 
         # 4. extract the returned value/values
         return self.get_return_values(all_nodes_dict)  # type: ignore[return-value]
@@ -857,7 +853,14 @@ class DAGExecution(Generic[P, RVDAG]):
                 call_xn_dict[id_].result = result
 
         # 2. Execute the scheduler
-        self.xn_dict = self.dag.execute(self.graph, call_xn_dict, call_id)
+        self.xn_dict = execute(
+            node_dict=self.dag.node_dict,
+            max_concurrency=self.dag.max_concurrency,
+            behavior=self.dag.behavior,
+            graph=self.graph,
+            modified_node_dict=call_xn_dict,
+            call_id=call_id,
+        )
         self.results = {xn.id: xn.result for xn in self.xn_dict.values()}
 
         # 3. cache in the graph results
