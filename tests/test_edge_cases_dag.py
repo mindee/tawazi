@@ -2,7 +2,18 @@ from functools import partial
 from typing import Any, Tuple
 
 import pytest
-from tawazi import dag, xn
+from tawazi import DAG, dag, xn
+from tawazi._dag.digraph import DiGraphEx
+from tawazi._dag.helpers import execute
+
+
+def shortcut_execute(dag: DAG[Any, Any], graph: DiGraphEx) -> Any:
+    return execute(
+        node_dict=dag.node_dict,
+        max_concurrency=dag.max_concurrency,
+        behavior=dag.behavior,
+        graph=graph,
+    )
 
 
 def func(a: str, b: str) -> str:
@@ -23,7 +34,7 @@ def test_same_constant_name_in_two_exec_nodes() -> None:
         var_a = a(1234)
         b(var_a, "poulpe")
 
-    exec_nodes = my_dag.execute(my_dag.make_subgraph())
+    exec_nodes = shortcut_execute(my_dag, my_dag.make_subgraph())
     assert len(exec_nodes) == 4
     assert exec_nodes[a.id].result == 1234
     assert exec_nodes[b.id].result == "1234poulpe"
