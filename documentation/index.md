@@ -9,7 +9,7 @@ In [Tawazi](https://pypi.org/project/tawazi/), there 3 Classes that will be mani
 
 1. `DAG`: a wrapper around a function that defines a dag dependency.
 This function should only contain calls to objects of type `ExecNode`.<p></p>
-**Hint:** Calling normal Python functions inside a `DAG` is not allowed!
+**Hint:** Calling normal Python functions inside a `DAG` is not supported.
 
 
 1. `DAGExecution`: an instance related to `DAG` for advanced usage.
@@ -68,7 +68,7 @@ However, the user can control this behavior by setting the environment variable 
 1. `"warning"`: raise a warning if an `ExecNode` is called outside of `DAG` description, but execute the wrapped function anyway
 1. `"ignore"`: execute the wrapped function anyway.
 
-This way, `ExecNode` can still be called outside of a `DAG`. It will raise a warning.
+This way, `ExecNode` can still be called outside a `DAG`. It will raise a warning.
 <!--pytest-codeblocks:cont-->
 
 ```python
@@ -150,7 +150,7 @@ print(f"res = {res}")
 ## Graph execution took 1.00 seconds
 ## 'A + B = C'
 ```
-As you can see, the execution time of pipeline takes **less than 2 seconds**, which means that some part of the code ran in parallel to the other
+As you can see, the execution time of pipeline takes **less than 2 seconds**, which means that the code ran in parallel.
 
 ### **Passing arguments into a `DAG`**
 
