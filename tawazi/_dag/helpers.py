@@ -1,6 +1,6 @@
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 from loguru import logger
 
@@ -57,6 +57,31 @@ def get_num_running_threads(_futures: Dict[Identifier, "Future[Any]"]) -> int:
     # use not future.done() because there is no guarantee that Thread pool will directly execute
     # the submitted thread
     return sum([not future.done() for future in _futures.values()])
+
+
+def get_highest_priority_node(
+    graph: DiGraphEx, runnable_xns_ids: List[str], xns_dict: Dict[Identifier, ExecNode]
+) -> ExecNode:
+    """Get the node with the highest priority.
+
+    Args:
+        graph: the graph with nodes ids.
+        runnable_xns_ids: the nodes whitelisted for running
+        xns_dict: the mapping between nodes ids and execnodes
+
+    Returns:
+        the node with the highest priority
+    """
+    highest_priority_node, _ = max(
+        [
+            (node, priority)
+            for node, priority in graph.nodes(data="compound_priority")
+            if node in runnable_xns_ids
+        ],
+        key=lambda x: x[1],
+    )
+
+    return xns_dict[highest_priority_node]
 
 
 ################
@@ -143,17 +168,8 @@ def execute(
                 logger.debug("No runnable Nodes available")
                 continue
 
-            # 4. choose a node to run
-            # 4.1 get the most prioritized node to run
-            highest_priority_node, _ = max(
-                [
-                    (node, priority)
-                    for node, priority in graph.nodes(data="compound_priority")
-                    if node in runnable_xns_ids
-                ],
-                key=lambda x: x[1],
-            )
-            xn = xns_dict[highest_priority_node]
+            # 4.1 choose the most prioritized node to run
+            xn = get_highest_priority_node(graph, runnable_xns_ids, xns_dict)
 
             logger.info("%s will run!", xn.id)
 
