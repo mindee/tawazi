@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+* :recycle: big overhaul to the dag interface
+* :recycle: rely on networkx for most of the graph-related computations
+* :sparkles: root nodes implementation (see documentation for further explanation)
+* :memo: improve documentation and remove most of the outdated comments
+* :recycle: remove a lot of unnecessary code
+
 ## v0.3.2 (2024-01-04)
 
 ## Bug Fixes
