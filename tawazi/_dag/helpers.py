@@ -11,6 +11,15 @@ from tawazi.node.node import ExecNode
 
 
 def _xn_active_in_call(xn: ExecNode, xns_dict: Dict[Identifier, ExecNode]) -> bool:
+    """Check if a node is active.
+
+    Args:
+        xn: the execnode
+        xns_dict: the execnode mapping
+
+    Returns:
+        is the node active
+    """
     if isinstance(xn.active, bool):
         return xn.active
     return bool(xns_dict[xn.active.id].result)
@@ -85,9 +94,7 @@ def execute(
     xns_dict = copy_non_setup_xns(node_dict) if modified_node_dict is None else modified_node_dict
 
     # 0.2 prune the graph from the ArgExecNodes so that they don't get executed in the ThreadPool
-    precomputed_xns_ids = [id_ for id_ in graph if xns_dict[id_].executed]
-    for id_ in precomputed_xns_ids:
-        graph.remove_node(id_)
+    graph.remove_nodes_from([id_ for id_ in graph if xns_dict[id_].executed])
 
     # 0.3 create variables related to futures
     futures: Dict[Identifier, "Future[Any]"] = {}
@@ -109,8 +116,7 @@ def execute(
             #    in both cases: block until a node finishes
             #       => a new root node will be available
             num_running_threads = get_num_running_threads(futures)
-            num_runnable_nodes_ids = len(runnable_xns_ids)
-            if num_running_threads == max_concurrency or num_runnable_nodes_ids == 0:
+            if num_running_threads == max_concurrency or len(runnable_xns_ids) == 0:
                 # must wait and not submit any workers before a worker ends
                 # (that might create a new more prioritized node) to be executed
                 logger.debug(
@@ -185,7 +191,6 @@ def execute(
                 except Exception as e:
                     if behavior == ErrorStrategy.strict:
                         raise e from e
-                    # else:
                     handle_exception(behavior, graph, xn.id, e)
 
                 logger.debug("Remove ExecNode % from the graph", xn.id)
@@ -231,6 +236,14 @@ def handle_future_exception(
 def handle_exception(
     behavior: ErrorStrategy, graph: DiGraphEx, id_: Identifier, e: Exception
 ) -> None:
+    """Handle any kind of exception in the scheduler according to a given strategy.
+
+    Args:
+        behavior: the error strategy
+        graph: the graph
+        id_: the node id
+        e: the exception
+    """
     logger.exception("The feature %s encountered the following error:", id_)
 
     if behavior == ErrorStrategy.permissive:
