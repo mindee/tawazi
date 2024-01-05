@@ -58,6 +58,9 @@ class DiGraphEx(nx.DiGraph):
         except NetworkXNoCycle:
             pass
 
+        # compute the sum of priorities of all recursive children
+        graph.assign_compound_priority()
+
         return graph
 
     @property

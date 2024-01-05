@@ -64,9 +64,6 @@ class DAG(Generic[P, RVDAG]):
         self.node_dict = exec_nodes
         self.graph_ids = DiGraphEx.from_exec_nodes(exec_nodes=exec_nodes, input_nodes=input_uxns)
 
-        # compute the sum of priorities of all recursive children
-        self.graph_ids.assign_compound_priority()
-
     @property
     def max_concurrency(self) -> int:
         """Maximal number of threads running in parallel. (will change!)."""
