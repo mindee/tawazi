@@ -693,32 +693,26 @@ class DAGExecution(Generic[P, RVDAG]):
     It holds information about the last execution and is not threadsafe.
 
     Args:
-            dag (DAG): The attached DAG.
-            target_nodes (Optional[List[Alias]]): The leave ExecNodes to execute.
-                If None will execute all ExecNodes.
-                Defaults to None.
-            exclude_nodes (Optional[List[Alias]]): The leave ExecNodes to exclude.
-                If None will exclude no ExecNode.
-                Defaults to None.
-            root_nodes (Optional[List[Alias]]): The base ExecNodes that will server as ancestor for the graph.
-                If None will run all ExecNodes.
-                Defaults to None.
-            cache_deps_of (Optional[List[Alias]]): cache all the dependencies of these nodes.
-                This option can not be used together with target_nodes nor exclude_nodes.
-            cache_in (str):
-                the path to the file where the execution should be cached.
-                The path should end in `.pkl`.
-                Will skip caching if `cache_in` is Falsy.
-                Will raise PickleError if any of the values passed around in the DAG is not pickleable.
-                Defaults to "".
-            from_cache (str):
-                the path to the file where the execution should be loaded from.
-                The path should end in `.pkl`.
-                Will skip loading from cache if `from_cache` is Falsy.
-                Defaults to "".
-            call_id (Optional[str]): identification of the current execution.
-                This will be inserted into thread_name_prefix while executing the threadPool.
-                It will be used in the future for identifying the execution inside Processes etc.
+        dag (DAG): The attached DAG.
+        target_nodes (Optional[List[Alias]]): The leave ExecNodes to execute.
+            If None will execute all ExecNodes.
+        exclude_nodes (Optional[List[Alias]]): The leave ExecNodes to exclude.
+            If None will exclude no ExecNode.
+        root_nodes (Optional[List[Alias]]): The base ExecNodes that will server as ancestor for the graph.
+            If None will run all ExecNodes.
+        cache_deps_of (Optional[List[Alias]]): cache all the dependencies of these nodes.
+            This option can not be used together with target_nodes nor exclude_nodes.
+        cache_in (str):
+            the path to the file where the execution should be cached.
+            The path should end in `.pkl`.
+            Will skip caching if `cache_in` is Falsy.
+        from_cache (str):
+            the path to the file where the execution should be loaded from.
+            The path should end in `.pkl`.
+            Will skip loading from cache if `from_cache` is Falsy.
+        call_id (Optional[str]): identification of the current execution.
+            This will be inserted into thread_name_prefix while executing the threadPool.
+            It will be used in the future for identifying the execution inside Processes etc.
 
     """
 
