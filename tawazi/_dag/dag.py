@@ -65,7 +65,7 @@ class DAG(Generic[P, RVDAG]):
         self.graph_ids = DiGraphEx.from_exec_nodes(exec_nodes=exec_nodes, input_nodes=input_uxns)
 
         # compute the sum of priorities of all recursive children
-        self._assign_compound_priority()
+        self.graph_ids.assign_compound_priority()
 
     @property
     def max_concurrency(self) -> int:
@@ -332,33 +332,6 @@ class DAG(Generic[P, RVDAG]):
         # 6. return the composed DAG
         # ignore[arg-type] because the type of the kwargs is not known
         return DAG(xn_dict, in_uxns, out_uxns, **kwargs)  # type: ignore[arg-type]
-
-    def _assign_compound_priority(self) -> None:
-        """Assigns a compound priority to all nodes in the graph.
-
-        The compound priority is the sum of the priorities of all children recursively.
-        """
-        # 1. start from bottom up
-        leaf_ids = set(self.graph_ids.leaf_nodes)
-
-        # 2. assign the compound priority for all the remaining nodes in the graph:
-        # Priority assignment happens by epochs:
-        # 2.1. during every epoch, we assign the compound priority for the parents of the current leaf nodes
-        # 2.2. at the end of every epoch, we trim the graph from its leaf nodes;
-        #       hence the previous parents become the new leaf nodes
-        while leaf_ids:
-            next_leaf_ids = set()
-            for leaf_id in leaf_ids:
-                leaf_node = self.node_dict[leaf_id]
-
-                # for parent nodes, this loop won't execute
-                for parent_id in self.graph_ids.predecessors(leaf_id):
-                    # increment the compound_priority of the parent node by the leaf priority
-                    parent_node = self.node_dict[parent_id]
-                    parent_node.compound_priority += leaf_node.compound_priority
-
-                    next_leaf_ids.add(parent_id)
-            leaf_ids = next_leaf_ids
 
     def draw(self, k: float = 0.8, t: Union[float, int] = 3) -> None:
         """Draws the Networkx directed graph.
@@ -693,7 +666,7 @@ class DAG(Generic[P, RVDAG]):
 
         if prio_flag:
             # if we changed the priority of some nodes we need to recompute the compound prio
-            self._assign_compound_priority()
+            self.graph_ids.assign_compound_priority()
 
     def config_from_yaml(self, config_path: str) -> None:
         """Allows reconfiguring the parameters of the nodes from a YAML file.

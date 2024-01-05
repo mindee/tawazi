@@ -130,9 +130,6 @@ class ExecNode:
         self.args: List[UsageExecNode] = args or []
         self.kwargs: Dict[Identifier, UsageExecNode] = kwargs or {}
 
-        # 2. compound_priority equals priority at the start but will be modified during the build process
-        self.compound_priority = priority
-
         # 3. Assign the name
         # This can be used in the future but is not particularly useful at the moment
         self.__name__ = self.exec_function.__name__ if not isinstance(id_, str) else id_

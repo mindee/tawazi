@@ -52,12 +52,12 @@ def dependency_describer() -> None:
 
 
 def test_compound_priority() -> None:
-    node_dict_by_name = {xn.__name__: xn for xn in dependency_describer.node_dict.values()}
-    assert node_dict_by_name["a"].compound_priority == 4
-    assert node_dict_by_name["b"].compound_priority == 2
-    assert node_dict_by_name["c"].compound_priority == 1
-    assert node_dict_by_name["d"].compound_priority == 1
-    assert node_dict_by_name["e"].compound_priority == 1
+    prio_view = dependency_describer.graph_ids.nodes(data="compound_priority")
+    assert prio_view["a"] == 4
+    assert prio_view["b"] == 2
+    assert prio_view["c"] == 1
+    assert prio_view["d"] == 1
+    assert prio_view["e"] == 1
 
 
 def test_compound_priority_execution() -> None:
