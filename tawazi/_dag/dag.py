@@ -722,7 +722,7 @@ class DAGExecution(Generic[P, RVDAG]):
     from_cache: str = ""
 
     call_id: Optional[str] = None
-    xn_dict: Dict[Identifier, ExecNode] = field(init=False)
+    node_dict: Dict[Identifier, ExecNode] = field(init=False)
     results: Dict[Identifier, Any] = field(init=False)
     graph: DiGraphEx = field(init=False)
     scheduled_nodes: NodeView = field(init=False)
@@ -730,7 +730,6 @@ class DAGExecution(Generic[P, RVDAG]):
 
     def __post_init__(self) -> None:
         """Dynamic construction of attributes."""
-        self.xn_dict = {}
         self.results = {}
 
         # build the graph from cache if it exists
@@ -752,6 +751,10 @@ class DAGExecution(Generic[P, RVDAG]):
                 root_nodes=self.root_nodes,
             )
 
+        # initialize node dict
+        self.node_dict = {
+            xn_id: xn for xn_id, xn in self.dag.node_dict.items() if xn_id in self.graph.nodes
+        }
         self.scheduled_nodes = self.graph.nodes
 
     # we need to reimplement the public methods of DAG here in order to have a constant public interface
@@ -766,7 +769,7 @@ class DAGExecution(Generic[P, RVDAG]):
             List[ExecNode]: corresponding ExecNodes
         """
         if self.executed:
-            return [ex_n for ex_n in self.xn_dict.values() if ex_n.tag == tag]
+            return [ex_n for ex_n in self.node_dict.values() if ex_n.tag == tag]
         return self.dag.get_nodes_by_tag(tag)
 
     def get_node_by_id(self, id_: Identifier) -> ExecNode:
@@ -781,7 +784,7 @@ class DAGExecution(Generic[P, RVDAG]):
         # TODO: ? catch the keyError and
         #   help the user know the id of the ExecNode by pointing to documentation!?
         if self.executed:
-            return self.xn_dict[id_]
+            return self.node_dict[id_]
         return self.dag.get_node_by_id(id_)
 
     def setup(self) -> None:
@@ -845,7 +848,7 @@ class DAGExecution(Generic[P, RVDAG]):
                 call_xn_dict[id_].result = result
 
         # 2. Execute the scheduler
-        self.xn_dict = execute(
+        self.node_dict = execute(
             node_dict=self.dag.node_dict,
             max_concurrency=self.dag.max_concurrency,
             behavior=self.dag.behavior,
@@ -853,7 +856,7 @@ class DAGExecution(Generic[P, RVDAG]):
             modified_node_dict=call_xn_dict,
             call_id=call_id,
         )
-        self.results = {xn.id: xn.result for xn in self.xn_dict.values()}
+        self.results = {xn.id: xn.result for xn in self.node_dict.values()}
 
         # 3. cache in the graph results
         if self.cache_in:
@@ -861,6 +864,6 @@ class DAGExecution(Generic[P, RVDAG]):
 
         self.executed = True
         # 3. extract the returned value/values
-        return self.dag.get_return_values(self.xn_dict)  # type: ignore[return-value]
+        return self.dag.get_return_values(self.node_dict)  # type: ignore[return-value]
 
     # TODO: add execution order (the order in which the nodes were executed)
