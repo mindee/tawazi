@@ -92,6 +92,10 @@ class NoValType:
         """
         return self
 
+    def __hash__(self) -> int:
+        """Implement hash method in order to make object immutable like."""
+        return id(self)
+
 
 NoVal = NoValType()
 
