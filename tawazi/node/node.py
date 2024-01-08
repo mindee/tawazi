@@ -40,11 +40,12 @@ from .helpers import _validate_tuple
 exec_nodes: Dict[Identifier, "ExecNode"] = {}
 exec_nodes_lock = Lock()
 
-Alias = Union[Tag, Identifier, "ExecNode"]  # multiple ways of identifying an XN
+# multiple ways of identifying an XN
+Alias = Union[Tag, Identifier, "ExecNode"]
 
 
-def count_occurences(id_: str, exec_nodes: Dict[str, "ExecNode"]) -> int:
-    """Count the number of occurences of an id in exec_nodes.
+def count_occurrences(id_: str, exec_nodes: Dict[str, "ExecNode"]) -> int:
+    """Count the number of occurrences of an id in exec_nodes.
 
     Avoids counting the ids of the arguments passed to previously called ExecNodes.
 
@@ -53,7 +54,7 @@ def count_occurences(id_: str, exec_nodes: Dict[str, "ExecNode"]) -> int:
         exec_nodes (Dict[str, ExecNode]): the dictionary of ExecNodes
 
     Returns:
-        int: the number of occurences of id_ in exec_nodes
+        int: the number of occurrences of id_ in exec_nodes
     """
     # example: id_ = "a"
     # ExecNode a is called five times, hence we should have ids a, a<<1>>, a<<2>>, a<<3>>, a<<4>>
@@ -61,7 +62,6 @@ def count_occurences(id_: str, exec_nodes: Dict[str, "ExecNode"]) -> int:
     # we want to avoid counting "a>>>nth argument" and a<<1>>>>nth argument"
 
     # only choose the ids that are exactly exactly the same as the original id
-    len(id_)
     candidate_ids = (xn_id for xn_id in exec_nodes if xn_id.split(USE_SEP_START)[0] == id_)
 
     # count the number of ids that are exactly the same as the original id
@@ -403,7 +403,6 @@ class ArgExecNode(ExecNode):
         """
         # raises TawaziArgumentException: if this argument is not provided during the Attached ExecNode usage
 
-        # TODO: use pydantic!
         if isinstance(xn_or_func_or_id, ExecNode):
             base_id = xn_or_func_or_id.id
         elif callable(xn_or_func_or_id):
@@ -516,7 +515,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         # 1.1 Make a deep copy of self because every Call to an ExecNode corresponds to a new instance
         self_copy = copy(self)
         # 1.2 Assign the id
-        count_usages = count_occurences(self.id, exec_nodes)
+        count_usages = count_occurrences(self.id, exec_nodes)
         # if ExecNode is used multiple times, <<usage_count>> is appended to its ID
         self_copy._id = _lazy_xn_id(self.id, count_usages)
 
