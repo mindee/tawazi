@@ -48,6 +48,10 @@ def count_occurrences(id_: str, exec_nodes: Dict[str, "ExecNode"]) -> int:
     """Count the number of occurrences of an id in exec_nodes.
 
     Avoids counting the ids of the arguments passed to previously called ExecNodes.
+    example: id_ = "a"
+    ExecNode a is called five times, hence we should have ids a, a<<1>>, a<<2>>, a<<3>>, a<<4>>
+    ExecNode a is called with many arguments:
+    we want to avoid counting "a>>>nth argument" and a<<1>>>>nth argument"
 
     Args:
         id_ (str): the id to count
@@ -56,11 +60,6 @@ def count_occurrences(id_: str, exec_nodes: Dict[str, "ExecNode"]) -> int:
     Returns:
         int: the number of occurrences of id_ in exec_nodes
     """
-    # example: id_ = "a"
-    # ExecNode a is called five times, hence we should have ids a, a<<1>>, a<<2>>, a<<3>>, a<<4>>
-    # ExecNode a is called with many arguments:
-    # we want to avoid counting "a>>>nth argument" and a<<1>>>>nth argument"
-
     # only choose the ids that are exactly exactly the same as the original id
     candidate_ids = (xn_id for xn_id in exec_nodes if xn_id.split(USE_SEP_START)[0] == id_)
 
