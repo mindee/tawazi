@@ -422,21 +422,17 @@ class DAG(Generic[P, RVDAG]):
                 and the root nodes is logical.
         """
         # 1. if target_nodes is not provided run all setup ExecNodes
-        target_nodes = (
-            self.graph_ids.setup_nodes
-            if target_nodes is None
-            else self.get_multiple_nodes_aliases(target_nodes)
-        )
+        if target_nodes is not None:
+            target_nodes = self.get_multiple_nodes_aliases(target_nodes)
+        else:
+            target_nodes = self.graph_ids.setup_nodes
 
         # 2. the leaves_ids that the user wants to execute
-        exclude_nodes = (
-            self.get_multiple_nodes_aliases(exclude_nodes)
-            if exclude_nodes is not None
-            else exclude_nodes
-        )
-        root_nodes = (
-            self.get_multiple_nodes_aliases(root_nodes) if root_nodes is not None else root_nodes
-        )
+        if exclude_nodes is not None:
+            exclude_nodes = self.get_multiple_nodes_aliases(exclude_nodes)
+
+        if root_nodes is not None:
+            root_nodes = self.get_multiple_nodes_aliases(root_nodes)
 
         graph = self.graph_ids.make_subgraph(
             target_nodes=target_nodes, exclude_nodes=exclude_nodes, root_nodes=root_nodes
@@ -487,8 +483,8 @@ class DAG(Generic[P, RVDAG]):
 
         # add debug nodes
         if cfg.RUN_DEBUG_NODES:
-            debug_ids = self.graph_ids.include_debug_nodes(graph.leaf_nodes)
-            graph = self.graph_ids.subgraph(list(graph.nodes) + debug_ids).copy()
+            debug_nodes = self.graph_ids.include_debug_nodes(graph.leaf_nodes)
+            graph = self.graph_ids.subgraph(list(graph.nodes) + debug_nodes).copy()
 
         # 3. Remove debug nodes
         else:
@@ -652,24 +648,19 @@ class DAGExecution(Generic[P, RVDAG]):
             self.graph = self.dag.graph_ids.make_subgraph(target_nodes=cache_deps_of)
         else:
             # clean user input
-            target_nodes = (
-                self.dag.get_multiple_nodes_aliases(self.target_nodes)
-                if self.target_nodes is not None
-                else self.target_nodes
-            )
-            exclude_nodes = (
-                self.dag.get_multiple_nodes_aliases(self.exclude_nodes)
-                if self.exclude_nodes is not None
-                else self.exclude_nodes
-            )
-            root_nodes = (
-                self.dag.get_multiple_nodes_aliases(self.root_nodes)
-                if self.root_nodes is not None
-                else self.root_nodes
-            )
+            if self.target_nodes is not None:
+                self.target_nodes = self.dag.get_multiple_nodes_aliases(self.target_nodes)
+
+            if self.exclude_nodes is not None:
+                self.exclude_nodes = self.dag.get_multiple_nodes_aliases(self.exclude_nodes)
+
+            if self.root_nodes is not None:
+                self.root_nodes = self.dag.get_multiple_nodes_aliases(self.root_nodes)
 
             self.graph = self.dag.graph_ids.make_subgraph(
-                target_nodes=target_nodes, exclude_nodes=exclude_nodes, root_nodes=root_nodes
+                target_nodes=self.target_nodes,
+                exclude_nodes=self.exclude_nodes,
+                root_nodes=self.root_nodes,
             )
 
         if cfg.RUN_DEBUG_NODES:
