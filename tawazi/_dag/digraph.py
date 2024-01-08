@@ -1,6 +1,7 @@
 """Module containing the definition of a Directed Graph Extension of networkx.DiGraph."""
+from copy import deepcopy
 from itertools import chain
-from typing import Dict, Iterable, List, Sequence, Set
+from typing import Dict, Iterable, List, Optional, Sequence, Set
 
 import networkx as nx
 from networkx import NetworkXNoCycle, NetworkXUnfeasible, find_cycle
@@ -60,6 +61,45 @@ class DiGraphEx(nx.DiGraph):
 
         # compute the sum of priorities of all recursive children
         graph.assign_compound_priority()
+
+        return graph
+
+    def make_subgraph(
+        self,
+        target_nodes: Optional[List[str]] = None,
+        exclude_nodes: Optional[List[str]] = None,
+        root_nodes: Optional[List[str]] = None,
+    ) -> "DiGraphEx":
+        """Builds the DigraphEx, with potential graph pruning.
+
+        Args:
+            target_nodes: nodes that we want to run and their dependencies
+            exclude_nodes: nodes that should be excluded from the graph
+            root_nodes: base ancestor nodes from which to start graph resolution
+
+        Returns:
+            Base Graph that will be used for the computations
+        """
+        graph = deepcopy(self)
+
+        # first try to heavily prune removing roots
+        if root_nodes is not None:
+            if not set(root_nodes).issubset(set(graph.root_nodes)):
+                raise ValueError(
+                    f"nodes {set(graph.root_nodes).difference(set(root_nodes))} aren't root nodes."
+                )
+
+            # extract subgraph with only provided roots
+            # NOTE: copy is because edges/nodes are shared with original graph
+            graph = graph.subgraph(graph.multiple_nodes_successors(root_nodes)).copy()
+
+        # then exclude nodes
+        if exclude_nodes is not None:
+            graph.remove_nodes_from(graph.multiple_nodes_successors(exclude_nodes))
+
+        # lastly select additional nodes
+        if target_nodes is not None:
+            graph = graph.minimal_induced_subgraph(target_nodes).copy()
 
         return graph
 

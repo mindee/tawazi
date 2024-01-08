@@ -142,8 +142,6 @@ def test_with_debug_nodes() -> None:
 
     cfg.RUN_DEBUG_NODES = True
     assert ("aef", "bc", "bd", "bcbdg") == pipe()
-    # TODO: write clear documentation about priority of choosing exclude_nodes vs debug_nodes
-    #  (debug_nodes are more prioritized!)
     exec_ = pipe.executor(exclude_nodes=[g])
     assert ("aef", "bc", "bd", "bcbdg") == exec_()
     exec_ = pipe.executor(exclude_nodes=[b])
