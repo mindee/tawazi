@@ -31,7 +31,7 @@ def test_doc_operation() -> None:
 
 
 def test_name_op() -> None:
-    assert abcd.__name__ == "abcd"
+    assert abcd.__name__ == "abcd"  # type: ignore[attr-defined]
 
 
 # TODO: add assertion for type checking after doing some research!
