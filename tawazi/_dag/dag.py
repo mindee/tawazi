@@ -7,7 +7,7 @@ from copy import copy, deepcopy
 from dataclasses import dataclass, field
 from itertools import chain
 from pathlib import Path
-from typing import Any, Dict, Generic, List, NoReturn, Optional, Sequence, Set, Union
+from typing import Any, Dict, Generic, List, Optional, Sequence, Set, Union
 
 import networkx as nx
 import yaml
@@ -219,18 +219,6 @@ class DAG(Generic[P, RVDAG]):
                 return [self._get_single_xn_by_alias(alias_or_aliases).id]
             return [self._get_single_xn_by_alias(a_id).id for a_id in alias_or_aliases]
 
-        def _raise_input_successor_of_input(pred: Identifier, succ: Set[Identifier]) -> NoReturn:
-            raise ValueError(
-                f"Input ExecNodes {succ} depend on Input ExecNode {pred}."
-                f"this is ambiguous. Remove either one of them."
-            )
-
-        def _raise_missing_input(input_: Identifier) -> NoReturn:
-            raise ValueError(
-                f"ExecNode {input_} are not declared as inputs. "
-                f"Either declare them as inputs or modify the requests outputs."
-            )
-
         def _alias_or_aliases_to_uxns(
             alias_or_aliases: Union[Alias, Sequence[Alias]]
         ) -> ReturnUXNsType:
@@ -258,7 +246,10 @@ class DAG(Generic[P, RVDAG]):
         for i in in_ids:
             # if pred is ancestor of an input, raise error
             if i in in_ids_ancestors:
-                _raise_input_successor_of_input(i, set(in_ids))
+                raise ValueError(
+                    f"Input ExecNodes {i} depend on Input ExecNode {set(in_ids)}."
+                    f"this is ambiguous. Remove either one of them."
+                )
 
             # if i doesn't produce any of the wanted outputs, raise a warning!
             descendants: Set[Identifier] = nx.descendants(self.graph_ids, i)
@@ -295,7 +286,10 @@ class DAG(Generic[P, RVDAG]):
                     # it is not provided as an input to the composed DAG
                     # hence the user forgot to supply it! (raise error)
                     if pred in dag_inputs_ids:
-                        _raise_missing_input(pred)
+                        ValueError(
+                            f"ExecNode {pred} are not declared as inputs. "
+                            f"Either declare them as inputs or modify the requests outputs."
+                        )
 
                     # necessary intermediate dependency.
                     # collect it in the set
