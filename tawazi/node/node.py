@@ -154,7 +154,7 @@ class ExecNode:
                 raise ValueError(
                     f"unpack_to must be a positive int or None, provided {type(self.unpack_to)}"
                 )
-            # yes... empty tuples exist in Python
+            # empty tuple case
             if self.unpack_to < 0:
                 raise ValueError(
                     f"unpack_to must be a positive int or None, provided {self.unpack_to}"
