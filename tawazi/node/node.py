@@ -114,12 +114,6 @@ class ExecNode:
     args: List["UsageExecNode"] = field(default_factory=list)  # args or []
     kwargs: Dict[Identifier, "UsageExecNode"] = field(default_factory=dict)  # kwargs or {}
 
-    # TODO: remove me!!
-    # 3. Assign the name
-    # This can be used in the future but is not particularly useful at the moment
-    __name__: str = field(
-        init=False
-    )  # self.exec_function.__name__ if not isinstance(id_, str) else id_
     # TODO: fix _active behavior!
     _active: Union[bool, "UsageExecNode"] = field(init=False, default=True)
 
