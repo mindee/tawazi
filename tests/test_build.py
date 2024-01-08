@@ -48,21 +48,31 @@ def fail(g: Any) -> int:
 
 
 # ExecNodes can be identified using the actual function or an identification string
-en_a = ExecNode(a.__name__, a, is_sequential=True)
-en_b = ExecNode(b.__name__, b, [UsageExecNode(en_a.id)], priority=2, is_sequential=False)
-en_c = ExecNode(c.__name__, c, [UsageExecNode(en_a.id)], priority=1, is_sequential=False)
-en_d = ExecNode(
-    d.__name__, d, [UsageExecNode(en_b.id), UsageExecNode(en_c.id)], priority=1, is_sequential=False
+en_a = ExecNode(id_=a.__name__, exec_function=a, is_sequential=True)
+en_b = ExecNode(
+    id_=b.__name__, exec_function=b, args=[UsageExecNode(en_a.id)], priority=2, is_sequential=False
 )
-en_e = ExecNode(e.__name__, e, [UsageExecNode(en_b.id)], is_sequential=False)
-en_f = ExecNode(f.__name__, f, [UsageExecNode(en_e.id)], is_sequential=False)
-en_g = ExecNode(g.__name__, g, [UsageExecNode(en_e.id)], is_sequential=False)
+en_c = ExecNode(
+    id_=c.__name__, exec_function=c, args=[UsageExecNode(en_a.id)], priority=1, is_sequential=False
+)
+en_d = ExecNode(
+    id_=d.__name__,
+    exec_function=d,
+    args=[UsageExecNode(en_b.id), UsageExecNode(en_c.id)],
+    priority=1,
+    is_sequential=False,
+)
+en_e = ExecNode(id_=e.__name__, exec_function=e, args=[UsageExecNode(en_b.id)], is_sequential=False)
+en_f = ExecNode(id_=f.__name__, exec_function=f, args=[UsageExecNode(en_e.id)], is_sequential=False)
+en_g = ExecNode(id_=g.__name__, exec_function=g, args=[UsageExecNode(en_e.id)], is_sequential=False)
 
 list_execnodes = [en_a, en_b, en_c, en_d, en_e, en_f, en_g]
 node_dict = {xn.id: xn for xn in list_execnodes}
 
 failing_execnodes = list_execnodes + [
-    ExecNode(fail.__name__, fail, [UsageExecNode(en_g.id)], is_sequential=False)
+    ExecNode(
+        id_=fail.__name__, exec_function=fail, args=[UsageExecNode(en_g.id)], is_sequential=False
+    )
 ]
 failing_node_dict = {xn.id: xn for xn in failing_execnodes}
 
