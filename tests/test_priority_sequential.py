@@ -1,8 +1,7 @@
 from time import sleep
 from typing import Any
 
-import pytest
-from tawazi import DAG, ErrorStrategy, xn
+from tawazi import DAG, ErrorStrategy
 from tawazi.node import ExecNode, UsageExecNode
 
 T = 0.01
@@ -128,11 +127,3 @@ def test_sequentiality() -> None:
         assert ind_d > ind_b, f"during {_i}th iteration"
         assert ind_b > ind_a, f"during {_i}th iteration"
         assert ind_c > ind_a, f"during {_i}th iteration"
-
-
-def test_is_sequential_wrong_type() -> None:
-    with pytest.raises(TypeError):
-
-        @xn(is_sequential="bkjfdslkajfsld")  # type: ignore[call-overload]
-        def twinkle() -> None:
-            ...

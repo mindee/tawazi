@@ -143,17 +143,6 @@ class ExecNode:
         if not isinstance(self.resource, Resource):
             raise ValueError(f"resource must be of type {Resource}, provided {type(self.resource)}")
 
-        if not isinstance(self.is_sequential, bool):
-            raise TypeError(
-                f"is_sequential should be of type bool, but {self.is_sequential} provided"
-            )
-
-        if not isinstance(self.debug, bool):
-            raise TypeError(f"debug must be of type bool, but {self.debug} provided")
-
-        if not isinstance(self.setup, bool):
-            raise TypeError(f"setup must be of type bool, but {self.setup} provided")
-
         # other validations
         if self.debug and self.setup:
             raise ValueError(
