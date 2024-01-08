@@ -386,7 +386,7 @@ class DAG(Generic[P, RVDAG]):
             f"str or tuple identifying the node but provided {alias}"
         )
 
-    def _sanitize_nodes_alias(self, nodes: Sequence[Alias]) -> List[Identifier]:
+    def get_multiple_nodes_aliases(self, nodes: Sequence[Alias]) -> List[Identifier]:
         """Ensure correct Identifiers from aliases.
 
         Args:
@@ -422,17 +422,24 @@ class DAG(Generic[P, RVDAG]):
                 and the root nodes is logical.
         """
         # 1. if target_nodes is not provided run all setup ExecNodes
-        target_ids = (
+        target_nodes = (
             self.graph_ids.setup_nodes
             if target_nodes is None
-            else self._sanitize_nodes_alias(target_nodes)
+            else self.get_multiple_nodes_aliases(target_nodes)
         )
 
         # 2. the leaves_ids that the user wants to execute
-        #  however they might contain non setup nodes... so we should extract all the nodes ids
-        #  that must be run in order to run the target_nodes ExecNodes
-        graph = self.make_subgraph(
-            target_nodes=target_ids, exclude_nodes=exclude_nodes, root_nodes=root_nodes
+        exclude_nodes = (
+            self.get_multiple_nodes_aliases(exclude_nodes)
+            if exclude_nodes is not None
+            else exclude_nodes
+        )
+        root_nodes = (
+            self.get_multiple_nodes_aliases(root_nodes) if root_nodes is not None else root_nodes
+        )
+
+        graph = self.graph_ids.make_subgraph(
+            target_nodes=target_nodes, exclude_nodes=exclude_nodes, root_nodes=root_nodes
         )
 
         # 3. remove setup nodes
@@ -458,60 +465,6 @@ class DAG(Generic[P, RVDAG]):
         """
         return DAGExecution(self, **kwargs)
 
-    def make_subgraph(
-        self,
-        target_nodes: Optional[Sequence[Alias]] = None,
-        exclude_nodes: Optional[Sequence[Alias]] = None,
-        root_nodes: Optional[Sequence[Alias]] = None,
-    ) -> DiGraphEx:
-        """Builds the DigraphEx, with potential graph pruning.
-
-        Args:
-            target_nodes: nodes that we want to run and their dependencies
-            exclude_nodes: nodes that should be excluded from the graph
-            root_nodes: base ancestor nodes from which to start graph resolution
-
-        Returns:
-            Base Graph that will be used for the computations
-        """
-        graph = deepcopy(self.graph_ids)
-
-        # first try to heavily prune removing roots
-        if root_nodes is not None:
-            root_ids = self._sanitize_nodes_alias(root_nodes)
-
-            if not set(root_ids).issubset(set(graph.root_nodes)):
-                raise ValueError(
-                    f"nodes {set(graph.root_nodes).difference(set(root_ids))} aren't root nodes."
-                )
-
-            # extract subgraph with only provided roots
-            # NOTE: copy is because edges/nodes are shared with original graph
-            graph = graph.subgraph(graph.multiple_nodes_successors(root_ids)).copy()
-
-        # then exclude nodes
-        if exclude_nodes is not None:
-            exclude_ids = self._sanitize_nodes_alias(exclude_nodes)
-            graph.remove_nodes_from(graph.multiple_nodes_successors(exclude_ids))
-
-        # lastly select additional nodes
-        if target_nodes is not None:
-            target_ids = self._sanitize_nodes_alias(target_nodes)
-            graph = graph.minimal_induced_subgraph(target_ids).copy()
-
-        if cfg.RUN_DEBUG_NODES:
-            # find original debug nodes
-            debug_ids = self.graph_ids.include_debug_nodes(graph.leaf_nodes)
-
-            # extend the graph with the debug XNs
-            graph = self.graph_ids.subgraph(list(graph.nodes()) + debug_ids).copy()
-
-        # 3. Remove debug nodes
-        else:
-            graph.remove_nodes_from([node_id for node_id in graph.debug_nodes])
-
-        return graph
-
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
         """Execute the DAG scheduler via a similar interface to the function that describes the dependencies.
 
@@ -529,13 +482,22 @@ class DAG(Generic[P, RVDAG]):
         """
         if kwargs:
             raise TawaziUsageError(f"currently DAG does not support keyword arguments: {kwargs}")
-        # 1. generate the subgraph to be executed
-        graph = self.make_subgraph()
 
-        # 2. copy the ExecNodes
+        graph = deepcopy(self.graph_ids)
+
+        # add debug nodes
+        if cfg.RUN_DEBUG_NODES:
+            debug_ids = self.graph_ids.include_debug_nodes(graph.leaf_nodes)
+            graph = self.graph_ids.subgraph(list(graph.nodes) + debug_ids).copy()
+
+        # 3. Remove debug nodes
+        else:
+            graph.remove_nodes_from([node_id for node_id in graph.debug_nodes])
+
+        # copy the ExecNodes
         call_xn_dict = make_call_xn_dict(self.node_dict, self.input_uxns, *args)
 
-        # 3. Execute the scheduler
+        # Execute the scheduler
         all_nodes_dict = execute(
             node_dict=self.node_dict,
             max_concurrency=self.max_concurrency,
@@ -544,7 +506,7 @@ class DAG(Generic[P, RVDAG]):
             modified_node_dict=call_xn_dict,
         )
 
-        # 4. extract the returned value/values
+        # extract the returned value/values
         return get_return_values(self.return_uxns, all_nodes_dict)  # type: ignore[return-value]
 
     def config_from_dict(self, config: Dict[str, Any]) -> None:
@@ -682,13 +644,41 @@ class DAGExecution(Generic[P, RVDAG]):
                     "cache_deps_of can't be used together with target_nodes or exclude_nodes"
                 )
 
-            self.graph = self.dag.make_subgraph(target_nodes=self.cache_deps_of)
-        else:
-            self.graph = self.dag.make_subgraph(
-                target_nodes=self.target_nodes,
-                exclude_nodes=self.exclude_nodes,
-                root_nodes=self.root_nodes,
+            cache_deps_of = (
+                self.dag.get_multiple_nodes_aliases(self.cache_deps_of)
+                if self.cache_deps_of is not None
+                else self.cache_deps_of
             )
+            self.graph = self.dag.graph_ids.make_subgraph(target_nodes=cache_deps_of)
+        else:
+            # clean user input
+            target_nodes = (
+                self.dag.get_multiple_nodes_aliases(self.target_nodes)
+                if self.target_nodes is not None
+                else self.target_nodes
+            )
+            exclude_nodes = (
+                self.dag.get_multiple_nodes_aliases(self.exclude_nodes)
+                if self.exclude_nodes is not None
+                else self.exclude_nodes
+            )
+            root_nodes = (
+                self.dag.get_multiple_nodes_aliases(self.root_nodes)
+                if self.root_nodes is not None
+                else self.root_nodes
+            )
+
+            self.graph = self.dag.graph_ids.make_subgraph(
+                target_nodes=target_nodes, exclude_nodes=exclude_nodes, root_nodes=root_nodes
+            )
+
+        if cfg.RUN_DEBUG_NODES:
+            debug_ids = self.dag.graph_ids.include_debug_nodes(self.graph.leaf_nodes)
+            self.graph = self.dag.graph_ids.subgraph(list(self.graph.nodes) + debug_ids).copy()
+
+        # 3. Remove debug nodes
+        else:
+            self.graph.remove_nodes_from([node_id for node_id in self.graph.debug_nodes])
 
         self.scheduled_nodes = self.graph.nodes
 
