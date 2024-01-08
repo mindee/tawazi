@@ -47,10 +47,28 @@ def test_priority() -> None:
     global priority_sequential_comp_str
     for _i in range(100):
         priority_sequential_comp_str = ""
-        en_a = ExecNode(a.__name__, a, priority=1, is_sequential=False)
-        en_b = ExecNode(b.__name__, b, [UsageExecNode(en_a.id)], priority=2, is_sequential=False)
-        en_c = ExecNode(c.__name__, c, [UsageExecNode(en_b.id)], priority=2, is_sequential=False)
-        en_d = ExecNode(d.__name__, d, [UsageExecNode(en_a.id)], priority=1, is_sequential=False)
+        en_a = ExecNode(id_=a.__name__, exec_function=a, priority=1, is_sequential=False)
+        en_b = ExecNode(
+            id_=b.__name__,
+            exec_function=b,
+            args=[UsageExecNode(en_a.id)],
+            priority=2,
+            is_sequential=False,
+        )
+        en_c = ExecNode(
+            id_=c.__name__,
+            exec_function=c,
+            args=[UsageExecNode(en_b.id)],
+            priority=2,
+            is_sequential=False,
+        )
+        en_d = ExecNode(
+            id_=d.__name__,
+            exec_function=d,
+            args=[UsageExecNode(en_a.id)],
+            priority=1,
+            is_sequential=False,
+        )
         list_execnodes = [en_a, en_b, en_c, en_d]
         node_dict = {xn.id: xn for xn in list_execnodes}
 
@@ -65,11 +83,35 @@ def test_sequentiality() -> None:
     for _i in range(100):
         # Sequentiality test
         priority_sequential_comp_str = ""
-        en_a = ExecNode(a.__name__, a, is_sequential=False)
-        en_b = ExecNode(b.__name__, b, [UsageExecNode(en_a.id)], priority=2, is_sequential=False)
-        en_c = ExecNode(c.__name__, c, [UsageExecNode(en_a.id)], priority=2, is_sequential=False)
-        en_d = ExecNode(d.__name__, d, [UsageExecNode(en_b.id)], priority=2, is_sequential=False)
-        en_e = ExecNode(e.__name__, e, [UsageExecNode(en_a.id)], priority=1, is_sequential=True)
+        en_a = ExecNode(id_=a.__name__, exec_function=a, is_sequential=False)
+        en_b = ExecNode(
+            id_=b.__name__,
+            exec_function=b,
+            args=[UsageExecNode(en_a.id)],
+            priority=2,
+            is_sequential=False,
+        )
+        en_c = ExecNode(
+            id_=c.__name__,
+            exec_function=c,
+            args=[UsageExecNode(en_a.id)],
+            priority=2,
+            is_sequential=False,
+        )
+        en_d = ExecNode(
+            id_=d.__name__,
+            exec_function=d,
+            args=[UsageExecNode(en_b.id)],
+            priority=2,
+            is_sequential=False,
+        )
+        en_e = ExecNode(
+            id_=e.__name__,
+            exec_function=e,
+            args=[UsageExecNode(en_a.id)],
+            priority=1,
+            is_sequential=True,
+        )
         list_execnodes = [en_a, en_b, en_c, en_d, en_e]
         node_dict = {xn.id: xn for xn in list_execnodes}
 
