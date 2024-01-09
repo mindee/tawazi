@@ -1,5 +1,7 @@
 """Helpers for node subpackage."""
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Union
+
+from tawazi._helpers import ordinal
 
 
 def _validate_tuple(func: Callable[..., Any], unpack_to: int) -> Optional[bool]:
@@ -29,3 +31,14 @@ def _validate_tuple(func: Callable[..., Any], unpack_to: int) -> Optional[bool]:
     raise ValueError(
         f"unpack_to must be equal to the number of elements in the type of return ({r_type}) of the function {func}, provided {unpack_to}"
     )
+
+
+def make_suffix(name_or_order: Union[int, str]) -> str:
+    """Create the suffix of the id of ExecNode.
+
+    Args:
+        name_or_order (int | str): The name of the argument or its order of usage in the invocation of the function
+    """
+    if isinstance(name_or_order, int):
+        return f"{ordinal(name_or_order)} argument"
+    return name_or_order
