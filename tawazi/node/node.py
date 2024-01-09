@@ -111,11 +111,11 @@ class ExecNode:
     unpack_to: Optional[int] = None
     resource: Resource = cfg.TAWAZI_DEFAULT_RESOURCE
 
-    args: List["UsageExecNode"] = field(default_factory=list)  # args or []
-    kwargs: Dict[Identifier, "UsageExecNode"] = field(default_factory=dict)  # kwargs or {}
+    args: List[UsageExecNode] = field(default_factory=list)  # args or []
+    kwargs: Dict[Identifier, UsageExecNode] = field(default_factory=dict)  # kwargs or {}
 
     # TODO: fix _active behavior!
-    _active: Union[bool, "UsageExecNode"] = field(init=False, default=True)
+    _active: Union[bool, UsageExecNode] = field(init=False, default=True)
 
     # 4. Assign a default NoVal to the result of the execution of this ExecNode,
     #  when this ExecNode will be executed, self.result will be overridden
@@ -185,7 +185,7 @@ class ExecNode:
         return f"{self.__class__.__name__} {self.id} ~ | <{hex(id(self))}>"
 
     @property
-    def active(self) -> Union["UsageExecNode", bool]:
+    def active(self) -> Union[UsageExecNode, bool]:
         """Whether this ExecNode is active or not."""
         # the value is set during the DAG description
         if isinstance(self._active, UsageExecNode):
@@ -204,7 +204,7 @@ class ExecNode:
 
     # TODO: make cached_property ?
     @property
-    def dependencies(self) -> List["UsageExecNode"]:
+    def dependencies(self) -> List[UsageExecNode]:
         """The List of ExecNode dependencies of This ExecNode.
 
         Returns:
@@ -335,7 +335,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
     The original function is kept to be called during the scheduling phase when calling the DAG.
     """
 
-    # in reality it returns "UsageExecNode":
+    # in reality it returns UsageExecNode:
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVXN:
         """Record the dependencies in a global variable to be called later in DAG.
 
@@ -379,7 +379,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
 
         return self_copy._usage_exec_node()  # type: ignore[return-value]
 
-    def _make_args(self, *args: P.args, **kwargs: P.kwargs) -> List["UsageExecNode"]:
+    def _make_args(self, *args: P.args, **kwargs: P.kwargs) -> List[UsageExecNode]:
         xn_args = []
 
         # 2.1 *args can contain either:
@@ -397,7 +397,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             xn_args.append(arg)
         return xn_args
 
-    def _make_kwargs(self, *args: P.args, **kwargs: P.kwargs) -> Dict[Identifier, "UsageExecNode"]:
+    def _make_kwargs(self, *args: P.args, **kwargs: P.kwargs) -> Dict[Identifier, UsageExecNode]:
         xn_kwargs = {}
 
         # 2.2 support **kwargs
@@ -439,7 +439,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             if self.setup and not accepted_case:
                 raise TawaziBaseException(f"setup node {self} depends on non setup node {dep}")
 
-    def _usage_exec_node(self) -> Union[Tuple["UsageExecNode", ...], "UsageExecNode"]:
+    def _usage_exec_node(self) -> Union[Tuple[UsageExecNode, ...], UsageExecNode]:
         """Makes the corresponding UsageExecNode(s).
 
         Note:
