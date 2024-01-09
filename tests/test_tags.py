@@ -18,6 +18,7 @@ def pipe() -> int:
 
 def test_tag() -> None:
     assert pipe() == 1236
+    assert pipe.graph_ids.tags == {"takes argument a", "op", "b"}
     assert pipe.get_nodes_by_tag("b") == [pipe.get_node_by_id("a"), pipe.get_node_by_id("b")]
     assert pipe.get_nodes_by_tag("op") == [pipe.get_node_by_id("b")]
     assert pipe.get_nodes_by_tag("takes argument a") == [pipe.get_node_by_id("b")]
