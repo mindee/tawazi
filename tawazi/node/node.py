@@ -5,6 +5,7 @@ from copy import copy, deepcopy
 from dataclasses import dataclass, field
 from functools import partial, reduce
 from threading import Lock
+from types import MethodType
 from typing import Any, Callable, Dict, Generic, List, NoReturn, Optional, Tuple, Union
 
 from loguru import logger
@@ -448,6 +449,24 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         if self.unpack_to is None:
             return UsageExecNode(self.id)
         return tuple(UsageExecNode(self.id, key=[i]) for i in range(self.unpack_to))
+
+    def __get__(self, instance: "LazyExecNode[P, RVXN]", owner_cls: Optional[Any] = None) -> Any:
+        """Simulate func_descr_get() in Objects/funcobject.c.
+
+        Args:
+            instance (LazyExecNode): the instance that this attribute should be attached to
+            owner_cls: Discriminate between attaching the attribute to the instance of the class and the class itself
+
+        Returns:
+            Either self or a MethodType object
+        """
+        # if LazyExecNode is not an attribute of a class, then return self
+        if instance is None:
+            # this is the case when we call the method on the class instead of an instance of the class
+            # In this case, we must return a "function" hence an instance of this class
+            # https://stackoverflow.com/questions/3798835/understanding-get-and-set-and-python-descriptors
+            return self
+        return MethodType(self, instance)  # func=self  # obj=instance
 
 
 def _xn(func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]:
