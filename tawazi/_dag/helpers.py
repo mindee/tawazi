@@ -7,8 +7,7 @@ from loguru import logger
 from tawazi._dag.digraph import DiGraphEx
 from tawazi.consts import Identifier, Resource, RVTypes
 from tawazi.errors import ErrorStrategy, TawaziTypeError
-from tawazi.node import ReturnUXNsType
-from tawazi.node.node import ExecNode, UsageExecNode
+from tawazi.node import ExecNode, ReturnUXNsType, UsageExecNode
 
 
 def _xn_active_in_call(xn: ExecNode, xns_dict: Dict[Identifier, ExecNode]) -> bool:
