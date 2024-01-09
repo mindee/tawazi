@@ -318,10 +318,6 @@ class ArgExecNode(ExecNode):
         self.result = value
 
 
-# NOTE: how can we make a LazyExecNode more configurable ?
-#  This might not be as important as it seems actually because
-#  one can simply create Partial Functions and wrap them in an ExecNode
-# TODO: create a twz_deps reserved variable to support Nothing dependency
 class LazyExecNode(ExecNode, Generic[P, RVXN]):
     """A lazy function simulator.
 
