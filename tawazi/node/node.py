@@ -10,7 +10,7 @@ from typing import Any, Callable, Dict, Generic, List, NoReturn, Optional, Tuple
 
 from loguru import logger
 
-from tawazi._helpers import _filter_noval, _lazy_xn_id, _make_raise_arg_error, ordinal
+from tawazi._helpers import _filter_noval, _lazy_xn_id, _make_raise_arg_error
 from tawazi.config import cfg
 from tawazi.consts import (
     ARG_NAME_ACTIVATE,
@@ -34,7 +34,7 @@ from tawazi.consts import (
 from tawazi.errors import TawaziBaseException, TawaziUsageError
 from tawazi.profile import Profile
 
-from .helpers import _validate_tuple
+from .helpers import _validate_tuple, make_suffix
 
 # a temporary variable used to pass in exec_nodes to the DAG during building
 exec_nodes: Dict[Identifier, "ExecNode"] = {}
@@ -263,13 +263,8 @@ class ReturnExecNode(ExecNode):
         Raises:
             TypeError: if type parameter is passed (Internal)
         """
-        suffix = (
-            f"{ordinal(name_or_order)} argument"
-            if isinstance(name_or_order, int)
-            else name_or_order
-        )
+        suffix = make_suffix(name_or_order)
         super().__init__(id_=f"{func}{RETURN_NAME_SEP}{suffix}", is_sequential=False)
-
         self.result = value
 
 
@@ -312,24 +307,15 @@ class ArgExecNode(ExecNode):
         else:
             raise TypeError("ArgExecNode can only be attached to a LazyExecNode or a Callable")
 
-        if isinstance(name_or_order, str):
-            suffix = name_or_order
-        elif isinstance(name_or_order, int):
-            suffix = f"{ordinal(name_or_order)} argument"
-        else:
-            raise TypeError(
-                f"ArgExecNode needs the argument name (str) or order of call (int), "
-                f"but {name_or_order} of type {type(name_or_order)} is provided"
-            )
-
-        id_ = f"{base_id}{ARG_NAME_SEP}{suffix}"
+        suffix = make_suffix(name_or_order)
 
         raise_err = _make_raise_arg_error(base_id, suffix)
 
-        super().__init__(id_=id_, exec_function=raise_err, is_sequential=False)
+        super().__init__(
+            id_=f"{base_id}{ARG_NAME_SEP}{suffix}", exec_function=raise_err, is_sequential=False
+        )
 
-        if value is not NoVal:
-            self.result = value
+        self.result = value
 
 
 # NOTE: how can we make a LazyExecNode more configurable ?
