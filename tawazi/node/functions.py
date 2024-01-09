@@ -1,9 +1,10 @@
-"""Helpers for node subpackage."""
+"""Helpers for node subpackage that use both ExecNode and UsageExecNode."""
 
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
 from . import node
-from .node import ReturnExecNode, UsageExecNode
+from .node import ReturnExecNode
+from .uxn import UsageExecNode
 
 ReturnUXNsType = Union[
     None, UsageExecNode, Tuple[UsageExecNode, ...], List[UsageExecNode], Dict[str, UsageExecNode]
