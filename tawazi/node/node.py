@@ -466,32 +466,32 @@ def _xn(func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]:
 # boolean operators definitions
 # "rich comparison" methods definitions
 @_xn
-def _uxn_lt(a: Any, b: Any) -> bool:
+def _lt(a: Any, b: Any) -> bool:
     return a < b  # type: ignore[no-any-return]
 
 
 @_xn
-def _uxn_le(a: Any, b: Any) -> bool:
+def _le(a: Any, b: Any) -> bool:
     return a <= b  # type: ignore[no-any-return]
 
 
 @_xn
-def _uxn_eq(a: Any, b: Any) -> bool:
+def _eq(a: Any, b: Any) -> bool:
     return a == b  # type: ignore[no-any-return]
 
 
 @_xn
-def _uxn_ne(a: Any, b: Any) -> bool:
+def _ne(a: Any, b: Any) -> bool:
     return a != b  # type: ignore[no-any-return]
 
 
 @_xn
-def _uxn_gt(a: Any, b: Any) -> bool:
+def _gt(a: Any, b: Any) -> bool:
     return a > b  # type: ignore[no-any-return]
 
 
 @_xn
-def _uxn_ge(a: Any, b: Any) -> bool:
+def _ge(a: Any, b: Any) -> bool:
     return a >= b  # type: ignore[no-any-return]
 
 
@@ -505,93 +505,93 @@ def _uxn_ge(a: Any, b: Any) -> bool:
 
 
 @_xn
-def _uxn_add(a: Any, b: Any) -> Any:
+def _add(a: Any, b: Any) -> Any:
     return a + b
 
 
 @_xn
-def _uxn_sub(a: Any, b: Any) -> Any:
+def _sub(a: Any, b: Any) -> Any:
     return a - b
 
 
 @_xn
-def _uxn_mul(a: Any, b: Any) -> Any:
+def _mul(a: Any, b: Any) -> Any:
     return a * b
 
 
 @_xn
-def _uxn_matmul(a: Any, b: Any) -> Any:
+def _matmul(a: Any, b: Any) -> Any:
     return a @ b
 
 
 @_xn
-def _uxn_truediv(a: Any, b: Any) -> Any:
+def _truediv(a: Any, b: Any) -> Any:
     return a / b
 
 
 @_xn
-def _uxn_floordiv(a: Any, b: Any) -> Any:
+def _floordiv(a: Any, b: Any) -> Any:
     return a // b
 
 
 @_xn
-def _uxn_mod(a: Any, b: Any) -> Any:
+def _mod(a: Any, b: Any) -> Any:
     return a % b
 
 
 @_xn
-def _uxn_divmod(a: Any, b: Any) -> Any:
+def _divmod(a: Any, b: Any) -> Any:
     return divmod(a, b)
 
 
 @_xn
-def _uxn_pow(a: Any, b: Any) -> Any:
+def _pow(a: Any, b: Any) -> Any:
     return pow(a, b)
 
 
 @_xn
-def _uxn_lshift(a: Any, b: Any) -> Any:
+def _lshift(a: Any, b: Any) -> Any:
     return a << b
 
 
 @_xn
-def _uxn_rshift(a: Any, b: Any) -> Any:
+def _rshift(a: Any, b: Any) -> Any:
     return a >> b
 
 
 @_xn
-def _uxn_and(a: Any, b: Any) -> Any:
+def _and(a: Any, b: Any) -> Any:
     return a & b
 
 
 @_xn
-def _uxn_xor(a: Any, b: Any) -> Any:
+def _xor(a: Any, b: Any) -> Any:
     return a ^ b
 
 
 @_xn
-def _uxn_or(a: Any, b: Any) -> Any:
+def _or(a: Any, b: Any) -> Any:
     return a | b
 
 
 # unary operations
 @_xn
-def _uxn_neg(a: Any) -> Any:
+def _neg(a: Any) -> Any:
     return -a
 
 
 @_xn
-def _uxn_pos(a: Any) -> Any:
+def _pos(a: Any) -> Any:
     return +a
 
 
 @_xn
-def _uxn_abs(a: Any) -> Any:
+def _abs(a: Any) -> Any:
     return abs(a)
 
 
 @_xn
-def _uxn_invert(a: Any) -> Any:
+def _invert(a: Any) -> Any:
     return ~a
 
 
@@ -640,9 +640,9 @@ class UsageExecNode:
             UsageExecNode: the new UsageExecNode where the key is recorded
         """
         # deepcopy self because UsageExecNode can be reused with different indexing
-        new_uxn = deepcopy(self)
-        new_uxn.key.append(key)
-        return new_uxn
+        new = deepcopy(self)
+        new.key.append(key)
+        return new
 
     @property
     def is_indexable(self) -> bool:
@@ -691,45 +691,45 @@ def reflected(operator: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
 
 
 # binary operations
-setattr(UsageExecNode, "__lt__", _uxn_lt)  # noqa: B010
-setattr(UsageExecNode, "__le__", _uxn_le)  # noqa: B010
-setattr(UsageExecNode, "__eq__", _uxn_eq)  # noqa: B010
-setattr(UsageExecNode, "__ne__", _uxn_ne)  # noqa: B010
-setattr(UsageExecNode, "__gt__", _uxn_gt)  # noqa: B010
-setattr(UsageExecNode, "__ge__", _uxn_ge)  # noqa: B010
-setattr(UsageExecNode, "__add__", _uxn_add)  # noqa: B010
-setattr(UsageExecNode, "__sub__", _uxn_sub)  # noqa: B010
-setattr(UsageExecNode, "__mul__", _uxn_mul)  # noqa: B010
-setattr(UsageExecNode, "__matmul__", _uxn_matmul)  # noqa: B010
-setattr(UsageExecNode, "__truediv__", _uxn_truediv)  # noqa: B010
-setattr(UsageExecNode, "__floordiv__", _uxn_floordiv)  # noqa: B010
-setattr(UsageExecNode, "__mod__", _uxn_mod)  # noqa: B010
-setattr(UsageExecNode, "__divmod__", _uxn_divmod)  # noqa: B010
-setattr(UsageExecNode, "__pow__", _uxn_pow)  # noqa: B010
-setattr(UsageExecNode, "__lshift__", _uxn_lshift)  # noqa: B010
-setattr(UsageExecNode, "__rshift__", _uxn_rshift)  # noqa: B010
-setattr(UsageExecNode, "__and__", _uxn_and)  # noqa: B010
-setattr(UsageExecNode, "__xor__", _uxn_xor)  # noqa: B010
-setattr(UsageExecNode, "__or__", _uxn_or)  # noqa: B010
+setattr(UsageExecNode, "__lt__", _lt)  # noqa: B010
+setattr(UsageExecNode, "__le__", _le)  # noqa: B010
+setattr(UsageExecNode, "__eq__", _eq)  # noqa: B010
+setattr(UsageExecNode, "__ne__", _ne)  # noqa: B010
+setattr(UsageExecNode, "__gt__", _gt)  # noqa: B010
+setattr(UsageExecNode, "__ge__", _ge)  # noqa: B010
+setattr(UsageExecNode, "__add__", _add)  # noqa: B010
+setattr(UsageExecNode, "__sub__", _sub)  # noqa: B010
+setattr(UsageExecNode, "__mul__", _mul)  # noqa: B010
+setattr(UsageExecNode, "__matmul__", _matmul)  # noqa: B010
+setattr(UsageExecNode, "__truediv__", _truediv)  # noqa: B010
+setattr(UsageExecNode, "__floordiv__", _floordiv)  # noqa: B010
+setattr(UsageExecNode, "__mod__", _mod)  # noqa: B010
+setattr(UsageExecNode, "__divmod__", _divmod)  # noqa: B010
+setattr(UsageExecNode, "__pow__", _pow)  # noqa: B010
+setattr(UsageExecNode, "__lshift__", _lshift)  # noqa: B010
+setattr(UsageExecNode, "__rshift__", _rshift)  # noqa: B010
+setattr(UsageExecNode, "__and__", _and)  # noqa: B010
+setattr(UsageExecNode, "__xor__", _xor)  # noqa: B010
+setattr(UsageExecNode, "__or__", _or)  # noqa: B010
 
 # reflected binary operators
-setattr(UsageExecNode, "__radd__", reflected(_uxn_add))  # noqa:B010
-setattr(UsageExecNode, "__rsub__", reflected(_uxn_sub))  # noqa:B010
-setattr(UsageExecNode, "__rmul__", reflected(_uxn_mul))  # noqa:B010
-setattr(UsageExecNode, "__rmatmul__", reflected(_uxn_matmul))  # noqa:B010
-setattr(UsageExecNode, "__rtruediv__", reflected(_uxn_truediv))  # noqa:B010
-setattr(UsageExecNode, "__rfloordiv__", reflected(_uxn_floordiv))  # noqa:B010
-setattr(UsageExecNode, "__rmod__", reflected(_uxn_mod))  # noqa:B010
-setattr(UsageExecNode, "__rdivmod__", reflected(_uxn_divmod))  # noqa:B010
-setattr(UsageExecNode, "__rpow__", reflected(_uxn_pow))  # noqa:B010
-setattr(UsageExecNode, "__rlshift__", reflected(_uxn_lshift))  # noqa:B010
-setattr(UsageExecNode, "__rrshift__", reflected(_uxn_rshift))  # noqa:B010
-setattr(UsageExecNode, "__rand__", reflected(_uxn_and))  # noqa:B010
-setattr(UsageExecNode, "__rxor__", reflected(_uxn_xor))  # noqa:B010
-setattr(UsageExecNode, "__ror__", reflected(_uxn_or))  # noqa:B010
+setattr(UsageExecNode, "__radd__", reflected(_add))  # noqa:B010
+setattr(UsageExecNode, "__rsub__", reflected(_sub))  # noqa:B010
+setattr(UsageExecNode, "__rmul__", reflected(_mul))  # noqa:B010
+setattr(UsageExecNode, "__rmatmul__", reflected(_matmul))  # noqa:B010
+setattr(UsageExecNode, "__rtruediv__", reflected(_truediv))  # noqa:B010
+setattr(UsageExecNode, "__rfloordiv__", reflected(_floordiv))  # noqa:B010
+setattr(UsageExecNode, "__rmod__", reflected(_mod))  # noqa:B010
+setattr(UsageExecNode, "__rdivmod__", reflected(_divmod))  # noqa:B010
+setattr(UsageExecNode, "__rpow__", reflected(_pow))  # noqa:B010
+setattr(UsageExecNode, "__rlshift__", reflected(_lshift))  # noqa:B010
+setattr(UsageExecNode, "__rrshift__", reflected(_rshift))  # noqa:B010
+setattr(UsageExecNode, "__rand__", reflected(_and))  # noqa:B010
+setattr(UsageExecNode, "__rxor__", reflected(_xor))  # noqa:B010
+setattr(UsageExecNode, "__ror__", reflected(_or))  # noqa:B010
 
 # unary operations
-setattr(UsageExecNode, "__neg__", _uxn_neg)  # noqa: B010
-setattr(UsageExecNode, "__pos__", _uxn_pos)  # noqa: B010
-setattr(UsageExecNode, "__abs__", _uxn_abs)  # noqa: B010
-setattr(UsageExecNode, "__invert__", _uxn_invert)  # noqa: B010
+setattr(UsageExecNode, "__neg__", _neg)  # noqa: B010
+setattr(UsageExecNode, "__pos__", _pos)  # noqa: B010
+setattr(UsageExecNode, "__abs__", _abs)  # noqa: B010
+setattr(UsageExecNode, "__invert__", _invert)  # noqa: B010
