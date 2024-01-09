@@ -147,7 +147,7 @@ class DiGraphEx(nx.DiGraph):
         Returns:
             A set of tags
         """
-        return set(chain([tags for _, tags in self.nodes(data="tag")]))
+        return set(chain(*[tags for _, tags in self.nodes(data="tag")]))
 
     @property
     def topologically_sorted(self) -> List[Identifier]:
