@@ -142,17 +142,6 @@ class ExecNode:
         if not isinstance(self.resource, Resource):
             raise ValueError(f"resource must be of type {Resource}, provided {type(self.resource)}")
 
-        if not isinstance(self.is_sequential, bool):
-            raise TypeError(
-                f"is_sequential should be of type bool, but {self.is_sequential} provided"
-            )
-
-        if not isinstance(self.debug, bool):
-            raise TypeError(f"debug must be of type bool, but {self.debug} provided")
-
-        if not isinstance(self.setup, bool):
-            raise TypeError(f"setup must be of type bool, but {self.setup} provided")
-
         # other validations
         if self.debug and self.setup:
             raise ValueError(
@@ -254,12 +243,6 @@ class ExecNode:
         # 3. useless return value
         logger.debug("Finished executing %s with task %s", self.id, self.exec_function)
         return self.result
-
-    def _validate(self) -> None:
-        if getattr(self, "debug", None) and getattr(self, "setup", None):
-            raise ValueError(
-                f"The node {self.id} can't be a setup and a debug node at the same time."
-            )
 
 
 class ReturnExecNode(ExecNode):
