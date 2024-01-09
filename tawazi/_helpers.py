@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, List, NoReturn, Tuple, Union
 
 import yaml
 
-from tawazi.consts import USE_SEP_END, USE_SEP_START, Identifier, NoVal, NoValType
+from tawazi.consts import NoVal, NoValType
 from tawazi.errors import _raise_arg_exc
 
 
@@ -78,13 +78,6 @@ def _make_raise_arg_error(func_name: str, arg_name: str) -> Callable[[], NoRetur
         _raise_arg_exc(func_name, arg_name)
 
     return local_func
-
-
-def _lazy_xn_id(base_id: Identifier, count_usages: int) -> Identifier:
-    if count_usages > 0:
-        return f"{base_id}{USE_SEP_START}{count_usages}{USE_SEP_END}"
-
-    return base_id
 
 
 def _filter_noval(v: Union[NoValType, Any]) -> Any:

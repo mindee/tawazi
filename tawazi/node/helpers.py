@@ -2,6 +2,7 @@
 from typing import Any, Callable, Optional, Union
 
 from tawazi._helpers import ordinal
+from tawazi.consts import USE_SEP_END, USE_SEP_START, Identifier
 
 
 def _validate_tuple(func: Callable[..., Any], unpack_to: int) -> Optional[bool]:
@@ -42,3 +43,10 @@ def make_suffix(name_or_order: Union[int, str]) -> str:
     if isinstance(name_or_order, int):
         return f"{ordinal(name_or_order)} argument"
     return name_or_order
+
+
+def _lazy_xn_id(base_id: Identifier, count_usages: int) -> Identifier:
+    if count_usages > 0:
+        return f"{base_id}{USE_SEP_START}{count_usages}{USE_SEP_END}"
+
+    return base_id
