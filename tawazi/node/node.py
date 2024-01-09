@@ -9,6 +9,7 @@ from types import MethodType
 from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, Union
 
 from loguru import logger
+from typing_extensions import Self
 
 from tawazi._helpers import _make_raise_arg_error
 from tawazi.config import cfg
@@ -218,7 +219,7 @@ class ExecNode:
 
         return deps
 
-    def execute(self, node_dict: Dict[Identifier, "ExecNode"]) -> Optional[Any]:
+    def execute(self, node_dict: Dict[Identifier, Self]) -> Optional[Any]:
         """Execute the ExecNode inside of a DAG.
 
         Args:

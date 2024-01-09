@@ -5,6 +5,7 @@ from typing import Dict, Iterable, List, Optional, Sequence, Set
 
 import networkx as nx
 from networkx import NetworkXNoCycle, NetworkXUnfeasible, find_cycle
+from typing_extensions import Self
 
 from tawazi.config import Config
 from tawazi.consts import Identifier, Tag
@@ -18,7 +19,7 @@ class DiGraphEx(nx.DiGraph):
     @classmethod
     def from_exec_nodes(
         cls, input_nodes: List[UsageExecNode], exec_nodes: Dict[Identifier, ExecNode]
-    ) -> "DiGraphEx":
+    ) -> Self:
         """Build a DigraphEx from exec nodes.
 
         Args:
@@ -70,7 +71,7 @@ class DiGraphEx(nx.DiGraph):
         target_nodes: Optional[List[str]] = None,
         exclude_nodes: Optional[List[str]] = None,
         root_nodes: Optional[List[str]] = None,
-    ) -> "DiGraphEx":
+    ) -> Self:
         """Builds the DigraphEx, with potential graph pruning.
 
         Args:
@@ -241,9 +242,7 @@ class DiGraphEx(nx.DiGraph):
                             leaves_ids.append(successor_id)
         return leaves_ids
 
-    def extend_graph_with_debug_nodes(
-        self, original_graph: "DiGraphEx", cfg: Config
-    ) -> "DiGraphEx":
+    def extend_graph_with_debug_nodes(self, original_graph: Self, cfg: Config) -> Self:
         """Add or remove debug nodes depending on the configuration.
 
         Args:
@@ -263,7 +262,7 @@ class DiGraphEx(nx.DiGraph):
         # networkx typing problem
         return original_graph.subgraph(nodes_to_include).copy()  # type: ignore[no-any-return]
 
-    def minimal_induced_subgraph(self, nodes: List[Identifier]) -> "DiGraphEx":
+    def minimal_induced_subgraph(self, nodes: List[Identifier]) -> Self:
         """Get the minimal induced subgraph containing the provided nodes.
 
         The generated subgraph contains the provided nodes as leaf nodes.
