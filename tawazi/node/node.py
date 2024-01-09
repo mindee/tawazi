@@ -263,24 +263,12 @@ class ReturnExecNode(ExecNode):
         Raises:
             TypeError: if type parameter is passed (Internal)
         """
-        if callable(func):
-            base_id = func
-        else:
-            raise TypeError("ReturnExecNode can only be attached to a Callable")
-
-        if isinstance(name_or_order, str):
-            suffix = name_or_order
-        elif isinstance(name_or_order, int):
-            suffix = f"{ordinal(name_or_order)} argument"
-        else:
-            raise TypeError(
-                f"ReturnExecNode needs the key (str) or order (int) of the returned value, "
-                f"but {name_or_order} of type {type(name_or_order)} is provided"
-            )
-
-        id_ = f"{base_id}{RETURN_NAME_SEP}{suffix}"
-
-        super().__init__(id_=id_, is_sequential=False)
+        suffix = (
+            f"{ordinal(name_or_order)} argument"
+            if isinstance(name_or_order, int)
+            else name_or_order
+        )
+        super().__init__(id_=f"{func}{RETURN_NAME_SEP}{suffix}", is_sequential=False)
 
         self.result = value
 
