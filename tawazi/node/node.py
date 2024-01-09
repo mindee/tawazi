@@ -450,228 +450,6 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         return tuple(UsageExecNode(self.id, key=[i]) for i in range(self.unpack_to))
 
 
-# NOTE: None is hashable! In theory it can be used as a key in a dict!
-KeyType = Union[str, int, Tuple[Any, ...], None, NoValType]
-
-
-# TODO: transform this logic into the ExecNode itself ?
-@dataclass(frozen=True)
-class UsageExecNode:
-    """The usage of the ExecNode / LazyExecNode inside the function describing the DAG.
-
-    If ExecNode is not indexed with a key or an int, NoVal is used as the key.
-    """
-
-    id: Identifier
-    key: List[KeyType] = field(default_factory=list)
-
-    # TODO: make type of key immutable or something hashable, that way
-    #  we can directly build a nx DAG with nodes instead of node ids
-    #  removing almost all of the duplicate graph building logic
-    # used in the dag dependency description
-    def __getitem__(self, key: KeyType) -> "UsageExecNode":
-        """Record the used key in a new UsageExecNode.
-
-        Args:
-            key (Union[str, int, Tuple[Any]]): the used key for indexing (whether int like Lists or strings like dicts)
-
-        Returns:
-            UsageExecNode: the new UsageExecNode where the key is recorded
-        """
-        # deepcopy self because UsageExecNode can be reused with different indexing
-        new_uxn = deepcopy(self)
-        new_uxn.key.append(key)
-        return new_uxn
-
-    @property
-    def is_indexable(self) -> bool:
-        """Whether UsageExecNode is used with an index.
-
-        Returns:
-            bool: whether the ExecNode is indexable
-        """
-        return bool(self.key)
-
-    def result(self, xn_dict: Dict[Identifier, ExecNode]) -> Any:
-        """Extract the result of the ExecNode corresponding to used key(s).
-
-        Returns:
-            Any: value inside the container
-        """
-        xn = xn_dict[self.id]
-        # ignore typing error because it is the responsibility of the user to ensure the result of the XN is indexable!
-        # Will raise the appropriate exception automatically
-        #  The user might have specified a subgraph to run => xn contain NoVal
-        #  or the user tried to access a non-indexable object
-        # NOTE: maybe handle the 3 types of exceptions that might occur properly to help the user through debugging
-        # if isinstance(xn.result, NoValType):
-        #     raise TawaziTypeError(f"{xn} didn't run, hence its result is not indexable. Check your DAG's config")
-
-        return _filter_noval(reduce(lambda obj, key: obj.__getitem__(key), self.key, xn.result))
-
-    def __lt__(self, other: Any) -> bool:
-        """__lt__ operator."""
-        return _uxn_lt(self, other)
-
-    def __le__(self, other: Any) -> bool:
-        """__le__ operator."""
-        return _uxn_le(self, other)
-
-    def __eq__(self, other: Any) -> bool:
-        """__eq__ operator."""
-        return _uxn_eq(self, other)
-
-    def __ne__(self, other: Any) -> bool:
-        """__ne__ operator."""
-        return _uxn_ne(self, other)
-
-    def __gt__(self, other: Any) -> bool:
-        """__gt__ operator."""
-        return _uxn_gt(self, other)
-
-    def __ge__(self, other: Any) -> bool:
-        """__ge__ operator."""
-        return _uxn_ge(self, other)
-
-    def __bool__(self) -> NoReturn:
-        """__bool__ operator."""
-        # __bool__ can not be faked because it must return True or False
-        raise NotImplementedError
-
-    def __contains__(self, other: Any) -> NoReturn:
-        """___contains__ operator."""
-        # __contains__ can not be faked because the return value gets automatically casted to bool
-        raise NotImplementedError
-
-    def __add__(self, other: Any) -> Any:
-        """__add__ operator."""
-        return _uxn_add(self, other)
-
-    def __radd__(self, other: Any) -> Any:
-        """__radd__ operator."""
-        return _uxn_add(other, self)
-
-    def __sub__(self, other: Any) -> Any:
-        """__sub__ operator."""
-        return _uxn_sub(self, other)
-
-    def __rsub__(self, other: Any) -> Any:
-        """__rsub__ operator."""
-        return _uxn_sub(other, self)
-
-    def __mul__(self, other: Any) -> Any:
-        """__mul__ operator."""
-        return _uxn_mul(self, other)
-
-    def __rmul__(self, other: Any) -> Any:
-        """__rmul__ operator."""
-        return _uxn_mul(other, self)
-
-    def __matmul__(self, other: Any) -> Any:
-        """__matmul__ operator."""
-        return _uxn_matmul(self, other)
-
-    def __rmatmul__(self, other: Any) -> Any:
-        """__rmatmul__ operator."""
-        return _uxn_matmul(other, self)
-
-    def __truediv__(self, other: Any) -> Any:
-        """__truediv__ operator."""
-        return _uxn_truediv(self, other)
-
-    def __rtruediv__(self, other: Any) -> Any:
-        """__rtruediv__ operator."""
-        return _uxn_truediv(other, self)
-
-    def __floordiv__(self, other: Any) -> Any:
-        """__floordiv__ operator."""
-        return _uxn_floordiv(self, other)
-
-    def __rfloordiv__(self, other: Any) -> Any:
-        """__rfloordiv__ operator."""
-        return _uxn_floordiv(other, self)
-
-    def __mod__(self, other: Any) -> Any:
-        """__mod__ operator."""
-        return _uxn_mod(self, other)
-
-    def __rmod__(self, other: Any) -> Any:
-        """__rmod__ operator."""
-        return _uxn_mod(other, self)
-
-    def __divmod__(self, other: Any) -> Any:
-        """__divmod__ operator."""
-        return _uxn_divmod(self, other)
-
-    def __rdivmod__(self, other: Any) -> Any:
-        """__rdivmod__ operator."""
-        return _uxn_divmod(other, self)
-
-    def __pow__(self, other: Any) -> Any:
-        """__pow__ operator."""
-        return _uxn_pow(self, other)
-
-    def __rpow__(self, other: Any) -> Any:
-        """__rpow__ operator."""
-        return _uxn_pow(other, self)
-
-    def __lshift__(self, other: Any) -> Any:
-        """__lshift__ operator."""
-        return _uxn_lshift(self, other)
-
-    def __rlshift__(self, other: Any) -> Any:
-        """__rlshift__ operator."""
-        return _uxn_lshift(other, self)
-
-    def __rshift__(self, other: Any) -> Any:
-        """__rshift__ operator."""
-        return _uxn_rshift(self, other)
-
-    def __rrshift__(self, other: Any) -> Any:
-        """__rrshift__ operator."""
-        return _uxn_rshift(other, self)
-
-    def __and__(self, other: Any) -> Any:
-        """__and__ operator."""
-        return _uxn_and(self, other)
-
-    def __rand__(self, other: Any) -> Any:
-        """__rand__ operator."""
-        return _uxn_and(other, self)
-
-    def __xor__(self, other: Any) -> Any:
-        """__xor__ operator."""
-        return _uxn_xor(self, other)
-
-    def __rxor__(self, other: Any) -> Any:
-        """__rxor__ operator."""
-        return _uxn_xor(other, self)
-
-    def __or__(self, other: Any) -> Any:
-        """__or__ operator."""
-        return _uxn_or(self, other)
-
-    def __ror__(self, other: Any) -> Any:
-        """__ror__ operator."""
-        return _uxn_or(other, self)
-
-    def __neg__(self) -> Any:
-        """__neg__ operator."""
-        return _uxn_neg(self)
-
-    def __pos__(self) -> Any:
-        """__pos__ operator."""
-        return _uxn_pos(self)
-
-    def __abs__(self) -> Any:
-        """__abs__ operator."""
-        return _uxn_abs(self)
-
-    def __invert__(self) -> Any:
-        """__invert__ operator."""
-        return _uxn_invert(self)
-
-
 def _xn(func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]:
     return LazyExecNode(
         exec_function=func,
@@ -831,3 +609,158 @@ def _uxn_invert(a: Any) -> Any:
 # __trunc__
 # __floor__
 # __ceil__
+
+
+# NOTE: None is hashable! In theory it can be used as a key in a dict!
+KeyType = Union[str, int, Tuple[Any, ...], None, NoValType]
+
+
+# TODO: transform this logic into the ExecNode itself ?
+@dataclass(frozen=True)
+class UsageExecNode:
+    """The usage of the ExecNode / LazyExecNode inside the function describing the DAG.
+
+    If ExecNode is not indexed with a key or an int, NoVal is used as the key.
+    """
+
+    id: Identifier
+    key: List[KeyType] = field(default_factory=list)
+
+    # TODO: make type of key immutable or something hashable, that way
+    #  we can directly build a nx DAG with nodes instead of node ids
+    #  removing almost all of the duplicate graph building logic
+    # used in the dag dependency description
+    def __getitem__(self, key: KeyType) -> "UsageExecNode":
+        """Record the used key in a new UsageExecNode.
+
+        Args:
+            key (Union[str, int, Tuple[Any]]): the used key for indexing (whether int like Lists or strings like dicts)
+
+        Returns:
+            UsageExecNode: the new UsageExecNode where the key is recorded
+        """
+        # deepcopy self because UsageExecNode can be reused with different indexing
+        new_uxn = deepcopy(self)
+        new_uxn.key.append(key)
+        return new_uxn
+
+    @property
+    def is_indexable(self) -> bool:
+        """Whether UsageExecNode is used with an index.
+
+        Returns:
+            bool: whether the ExecNode is indexable
+        """
+        return bool(self.key)
+
+    def result(self, xn_dict: Dict[Identifier, ExecNode]) -> Any:
+        """Extract the result of the ExecNode corresponding to used key(s).
+
+        Returns:
+            Any: value inside the container
+        """
+        xn = xn_dict[self.id]
+        # ignore typing error because it is the responsibility of the user to ensure the result of the XN is indexable!
+        # Will raise the appropriate exception automatically
+        #  The user might have specified a subgraph to run => xn contain NoVal
+        #  or the user tried to access a non-indexable object
+        # NOTE: maybe handle the 3 types of exceptions that might occur properly to help the user through debugging
+        # if isinstance(xn.result, NoValType):
+        #     raise TawaziTypeError(f"{xn} didn't run, hence its result is not indexable. Check your DAG's config")
+
+        return _filter_noval(reduce(lambda obj, key: obj.__getitem__(key), self.key, xn.result))
+
+    def __bool__(self) -> NoReturn:
+        """__bool__ operator."""
+        # __bool__ can not be faked because it must return True or False
+        raise NotImplementedError
+
+    def __contains__(self, other: Any) -> NoReturn:
+        """___contains__ operator."""
+        # __contains__ can not be faked because the return value gets automatically casted to bool
+        raise NotImplementedError
+
+    def __radd__(self, other: Any) -> Any:
+        """__radd__ operator."""
+        return _uxn_add(other, self)
+
+    def __rsub__(self, other: Any) -> Any:
+        """__rsub__ operator."""
+        return _uxn_sub(other, self)
+
+    def __rmul__(self, other: Any) -> Any:
+        """__rmul__ operator."""
+        return _uxn_mul(other, self)
+
+    def __rmatmul__(self, other: Any) -> Any:
+        """__rmatmul__ operator."""
+        return _uxn_matmul(other, self)
+
+    def __rtruediv__(self, other: Any) -> Any:
+        """__rtruediv__ operator."""
+        return _uxn_truediv(other, self)
+
+    def __rfloordiv__(self, other: Any) -> Any:
+        """__rfloordiv__ operator."""
+        return _uxn_floordiv(other, self)
+
+    def __rmod__(self, other: Any) -> Any:
+        """__rmod__ operator."""
+        return _uxn_mod(other, self)
+
+    def __rdivmod__(self, other: Any) -> Any:
+        """__rdivmod__ operator."""
+        return _uxn_divmod(other, self)
+
+    def __rpow__(self, other: Any) -> Any:
+        """__rpow__ operator."""
+        return _uxn_pow(other, self)
+
+    def __rlshift__(self, other: Any) -> Any:
+        """__rlshift__ operator."""
+        return _uxn_lshift(other, self)
+
+    def __rrshift__(self, other: Any) -> Any:
+        """__rrshift__ operator."""
+        return _uxn_rshift(other, self)
+
+    def __rand__(self, other: Any) -> Any:
+        """__rand__ operator."""
+        return _uxn_and(other, self)
+
+    def __rxor__(self, other: Any) -> Any:
+        """__rxor__ operator."""
+        return _uxn_xor(other, self)
+
+    def __ror__(self, other: Any) -> Any:
+        """__ror__ operator."""
+        return _uxn_or(other, self)
+
+
+# binary operations
+setattr(UsageExecNode, "__lt__", _uxn_lt)  # noqa: B010
+setattr(UsageExecNode, "__le__", _uxn_le)  # noqa: B010
+setattr(UsageExecNode, "__eq__", _uxn_eq)  # noqa: B010
+setattr(UsageExecNode, "__ne__", _uxn_ne)  # noqa: B010
+setattr(UsageExecNode, "__gt__", _uxn_gt)  # noqa: B010
+setattr(UsageExecNode, "__ge__", _uxn_ge)  # noqa: B010
+setattr(UsageExecNode, "__add__", _uxn_add)  # noqa: B010
+setattr(UsageExecNode, "__sub__", _uxn_sub)  # noqa: B010
+setattr(UsageExecNode, "__mul__", _uxn_mul)  # noqa: B010
+setattr(UsageExecNode, "__matmul__", _uxn_matmul)  # noqa: B010
+setattr(UsageExecNode, "__truediv__", _uxn_truediv)  # noqa: B010
+setattr(UsageExecNode, "__floordiv__", _uxn_floordiv)  # noqa: B010
+setattr(UsageExecNode, "__mod__", _uxn_mod)  # noqa: B010
+setattr(UsageExecNode, "__divmod__", _uxn_divmod)  # noqa: B010
+setattr(UsageExecNode, "__pow__", _uxn_pow)  # noqa: B010
+setattr(UsageExecNode, "__lshift__", _uxn_lshift)  # noqa: B010
+setattr(UsageExecNode, "__rshift__", _uxn_rshift)  # noqa: B010
+setattr(UsageExecNode, "__and__", _uxn_and)  # noqa: B010
+setattr(UsageExecNode, "__xor__", _uxn_xor)  # noqa: B010
+setattr(UsageExecNode, "__or__", _uxn_or)  # noqa: B010
+
+# unary operations
+setattr(UsageExecNode, "__neg__", _uxn_neg)  # noqa: B010
+setattr(UsageExecNode, "__pos__", _uxn_pos)  # noqa: B010
+setattr(UsageExecNode, "__abs__", _uxn_abs)  # noqa: B010
+setattr(UsageExecNode, "__invert__", _uxn_invert)  # noqa: B010
