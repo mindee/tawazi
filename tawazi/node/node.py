@@ -10,7 +10,7 @@ from typing import Any, Callable, Dict, Generic, List, NoReturn, Optional, Tuple
 
 from loguru import logger
 
-from tawazi._helpers import _filter_noval, _lazy_xn_id, _make_raise_arg_error
+from tawazi._helpers import _filter_noval, _make_raise_arg_error
 from tawazi.config import cfg
 from tawazi.consts import (
     ARG_NAME_ACTIVATE,
@@ -34,7 +34,7 @@ from tawazi.consts import (
 from tawazi.errors import TawaziBaseException, TawaziUsageError
 from tawazi.profile import Profile
 
-from .helpers import _validate_tuple, make_suffix
+from .helpers import _lazy_xn_id, _validate_tuple, make_suffix
 
 # a temporary variable used to pass in exec_nodes to the DAG during building
 exec_nodes: Dict[Identifier, "ExecNode"] = {}
@@ -334,16 +334,16 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
     The original function is kept to be called during the scheduling phase when calling the DAG.
     """
 
-    # in reality it returns "XNWrapper":
+    # in reality it returns "UsageExecNode":
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVXN:
         """Record the dependencies in a global variable to be called later in DAG.
 
         Args:
-            *args (Any): positional arguments passed to the function during dependency recording
-            **kwargs (Any): keyword arguments passed to the function during dependency recording
+            *args (P.args): positional arguments passed to the function during dependency recording
+            **kwargs (P.kwargs): keyword arguments passed to the function during dependency recording
 
         Returns:
-            a copy of the LazyExecNode. This copy corresponds to a call to the original function.
+            A copy of the LazyExecNode. This copy corresponds to a call to the original function.
 
         Raises:
             InvalidExecNodeCall: if this ExecNode is called outside of a DAG dependency calculation
@@ -362,20 +362,24 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             # else cfg.TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR == XNOutsideDAGCall.ignore:
             return self.exec_function(*args, **kwargs)  # type: ignore[no-any-return]
 
-        # # 0.2 if self is a debug ExecNode and Tawazi is configured to skip running debug Nodes
-        # #   then skip registering this node in the list of ExecNodes to be executed
-
         # 1.1 Make a deep copy of self because every Call to an ExecNode corresponds to a new instance
         self_copy = copy(self)
         # 1.2 Assign the id
-        count_usages = count_occurrences(self.id, exec_nodes)
         # if ExecNode is used multiple times, <<usage_count>> is appended to its ID
-        self_copy.id_ = _lazy_xn_id(self.id, count_usages)
+        self_copy.id_ = _lazy_xn_id(self.id, count_occurrences(self.id, exec_nodes))
 
-        # 2. Make the corresponding ExecNodes that corresponds to the Arguments
-        # Make new objects because these should be different between different XN_calls
-        self_copy.args = []
-        self_copy.kwargs = {}
+        # 2. Make the corresponding ArgExecNodes that corresponds to the Arguments
+        self_copy.args = self_copy._make_args(*args)
+        self_copy.kwargs = self_copy._make_kwargs(**kwargs)
+
+        self_copy._validate_dependencies()
+
+        exec_nodes[self_copy.id] = self_copy
+
+        return self_copy._usage_exec_node()  # type: ignore[return-value]
+
+    def _make_args(self, *args: P.args, **kwargs: P.kwargs) -> List["UsageExecNode"]:
+        xn_args = []
 
         # 2.1 *args can contain either:
         #  1. ExecNodes corresponding to the dependencies that come from predecessors
@@ -385,11 +389,15 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             if not isinstance(arg, UsageExecNode):
                 # arg here is definitely not a return value of a LazyExecNode!
                 # it must be a default value
-                xn = ArgExecNode(self_copy, i, arg)
+                xn = ArgExecNode(self, i, arg)
                 exec_nodes[xn.id] = xn
                 arg = UsageExecNode(xn.id)
 
-            self_copy.args.append(arg)
+            xn_args.append(arg)
+        return xn_args
+
+    def _make_kwargs(self, *args: P.args, **kwargs: P.kwargs) -> Dict[Identifier, "UsageExecNode"]:
+        xn_kwargs = {}
 
         # 2.2 support **kwargs
         for kwarg_name, kwarg in kwargs.items():
@@ -397,46 +405,50 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             # These are necessary in order to pass information about the call of an ExecNode (the deep copy)
             #  independently of the original LazyExecNode
             if kwarg_name == ARG_NAME_TAG:
-                self_copy.tag = kwarg  # type: ignore[assignment]
+                self.tag = kwarg  # type: ignore[assignment]
                 continue
             if kwarg_name == ARG_NAME_UNPACK_TO:
-                self_copy.unpack_to = kwarg  # type: ignore[assignment]
+                self.unpack_to = kwarg  # type: ignore[assignment]
                 continue
 
             if not isinstance(kwarg, UsageExecNode):
                 # passed in constants
-                xn = ArgExecNode(self_copy, kwarg_name, kwarg)
+                xn = ArgExecNode(self, kwarg_name, kwarg)
                 exec_nodes[xn.id] = xn
                 kwarg = UsageExecNode(xn.id)
 
+            # TODO: remove this line when fixing self.active
             if kwarg_name == ARG_NAME_ACTIVATE:
-                self_copy.active = kwarg
+                self.active = kwarg
 
-            self_copy.kwargs[kwarg_name] = kwarg
+            xn_kwargs[kwarg_name] = kwarg
+        return xn_kwargs
 
-        for dep in self_copy.dependencies:
+    def _validate_dependencies(self) -> None:
+        for dep in self.dependencies:
             # if ExecNode is not a debug node, all its dependencies must not be debug node
-            if not self_copy.debug and exec_nodes[dep.id].debug:
-                raise TawaziBaseException(f"Non debug node {self_copy} depends on debug node {dep}")
+            if not self.debug and exec_nodes[dep.id].debug:
+                raise TawaziBaseException(f"Non debug node {self} depends on debug node {dep}")
 
             # if ExecNode is a setup node, all its dependencies should be either:
             # 1. setup nodes
             # 2. Constants (ArgExecNode)
             # 3. Arguments passed directly to the PipeLine (ArgExecNode)
             accepted_case = exec_nodes[dep.id].setup or isinstance(exec_nodes[dep.id], ArgExecNode)
-            if self_copy.setup and not accepted_case:
-                raise TawaziBaseException(f"setup node {self_copy} depends on non setup node {dep}")
+            if self.setup and not accepted_case:
+                raise TawaziBaseException(f"setup node {self} depends on non setup node {dep}")
 
-        # exec_nodes contain a single copy of self!
-        # but multiple XNWrapper instances hang around in the dag.
-        # However, they might relate to the same ExecNode
-        exec_nodes[self_copy.id] = self_copy
+    def _usage_exec_node(self) -> Union[Tuple["UsageExecNode", ...], "UsageExecNode"]:
+        """Makes the corresponding UsageExecNode(s).
 
-        if self_copy.unpack_to is not None:
-            return tuple(
-                UsageExecNode(self_copy.id, key=[i]) for i in range(self_copy.unpack_to)
-            )  # type: ignore[return-value]
-        return UsageExecNode(self_copy.id)  # type: ignore[return-value]
+        Note:
+        exec_nodes dict contains a single copy of self!
+        but multiple UsageExecNode instances hang around in the dag.
+        However, they might relate to the same ExecNode.
+        """
+        if self.unpack_to is None:
+            return UsageExecNode(self.id)
+        return tuple(UsageExecNode(self.id, key=[i]) for i in range(self.unpack_to))
 
     def __get__(self, instance: "LazyExecNode[P, RVXN]", owner_cls: Optional[Any] = None) -> Any:
         """Simulate func_descr_get() in Objects/funcobject.c.
@@ -483,7 +495,7 @@ class UsageExecNode:
             key (Union[str, int, Tuple[Any]]): the used key for indexing (whether int like Lists or strings like dicts)
 
         Returns:
-            XNWrapper: the new UsageExecNode where the key is recorded
+            UsageExecNode: the new UsageExecNode where the key is recorded
         """
         # deepcopy self because UsageExecNode can be reused with different indexing
         new_uxn = deepcopy(self)
