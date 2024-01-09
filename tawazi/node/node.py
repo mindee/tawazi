@@ -100,7 +100,7 @@ class ExecNode:
     """
 
     # 1. assign attributes
-    id_: Identifier
+    id_: Identifier = field(default=None)  # type: ignore[assignment]
     exec_function: Callable[..., Any] = field(default_factory=lambda: lambda *args, **kwargs: None)
     priority: int = 0
     is_sequential: bool = cfg.TAWAZI_IS_SEQUENTIAL
@@ -127,6 +127,15 @@ class ExecNode:
 
     def __post_init__(self) -> None:
         """Post init to validate attributes."""
+        if isinstance(self.exec_function, partial):
+            self.exec_function = functools.update_wrapper(
+                self.exec_function, self.exec_function.func
+            )
+
+        # if id is not provided, the id is inferred from the exec_function
+        if self.id_ is None:
+            self.id_ = self.exec_function.__qualname__
+
         # type verifications
         is_none = self.tag is None
         is_tag = isinstance(self.tag, Tag)
@@ -324,44 +333,6 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
     The __call__ behavior of the original function is overridden to record the dependencies to build the DAG.
     The original function is kept to be called during the scheduling phase when calling the DAG.
     """
-
-    def __init__(
-        self,
-        func: Callable[P, RVXN],
-        priority: int,
-        is_sequential: bool,
-        debug: bool,
-        tag: Optional[TagOrTags],
-        setup: bool,
-        unpack_to: Optional[int],
-        resource: Resource,
-    ):
-        """Constructor of LazyExecNode.
-
-        Args:
-            func (Callable[..., Any]): Look at ExecNode's Documentation
-            priority (int): Look at ExecNode's Documentation
-            is_sequential (bool): Look at ExecNode's Documentation
-            debug (bool): Look at ExecNode's Documentation
-            tag (Any): Look at ExecNode's Documentation
-            setup (bool): Look at ExecNode's Documentation
-            unpack_to (Optional[int]): Look at ExecNode's Documentation
-            resource (Resource): Look at ExecNode's Documentation
-        """
-        if isinstance(func, partial):
-            func = functools.update_wrapper(func, func.func)
-
-        super().__init__(
-            id_=func.__qualname__,
-            exec_function=func,
-            priority=priority,
-            is_sequential=is_sequential,
-            debug=debug,
-            tag=tag,
-            setup=setup,
-            unpack_to=unpack_to,
-            resource=resource,
-        )
 
     # in reality it returns "XNWrapper":
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVXN:
@@ -710,7 +681,7 @@ class UsageExecNode:
 
 def _xn(func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]:
     return LazyExecNode(
-        func=func,
+        exec_function=func,
         priority=0,
         is_sequential=cfg.TAWAZI_IS_SEQUENTIAL,
         debug=False,

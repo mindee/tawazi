@@ -105,8 +105,15 @@ def xn(
     """
 
     def intermediate_wrapper(_func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]:
-        lazy_exec_node = LazyExecNode(
-            _func, priority, is_sequential, debug, tag, setup, unpack_to, resource
+        lazy_exec_node: LazyExecNode[P, RVXN] = LazyExecNode(
+            exec_function=_func,
+            priority=priority,
+            is_sequential=is_sequential,
+            debug=debug,
+            tag=tag,
+            setup=setup,
+            unpack_to=unpack_to,
+            resource=resource,
         )
         functools.update_wrapper(lazy_exec_node, _func)
         return lazy_exec_node
