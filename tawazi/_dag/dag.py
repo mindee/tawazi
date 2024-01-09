@@ -158,7 +158,7 @@ class DAG(Generic[P, RVDAG]):
         inputs: Union[Alias, Sequence[Alias]],
         outputs: Union[Alias, Sequence[Alias]],
         **kwargs: Dict[str, Any],
-    ) -> "DAG":  # type: ignore[type-arg]
+    ) -> "DAG[P, RVDAG]":
         """Compose a new DAG using inputs and outputs ExecNodes (Experimental).
 
         All provided `Alias`es must point to unique `ExecNode`s. Otherwise ValueError is raised
