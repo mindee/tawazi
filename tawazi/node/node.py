@@ -680,61 +680,14 @@ class UsageExecNode:
         # __contains__ can not be faked because the return value gets automatically casted to bool
         raise NotImplementedError
 
-    def __radd__(self, other: Any) -> Any:
-        """__radd__ operator."""
-        return _uxn_add(other, self)
 
-    def __rsub__(self, other: Any) -> Any:
-        """__rsub__ operator."""
-        return _uxn_sub(other, self)
+def reflected(operator: Callable[[Any, Any], Any]) -> Callable[[Any, Any], Any]:
+    """Reflects an operator."""
 
-    def __rmul__(self, other: Any) -> Any:
-        """__rmul__ operator."""
-        return _uxn_mul(other, self)
+    def inner_reflected(a: Any, b: Any) -> Any:
+        return operator(b, a)
 
-    def __rmatmul__(self, other: Any) -> Any:
-        """__rmatmul__ operator."""
-        return _uxn_matmul(other, self)
-
-    def __rtruediv__(self, other: Any) -> Any:
-        """__rtruediv__ operator."""
-        return _uxn_truediv(other, self)
-
-    def __rfloordiv__(self, other: Any) -> Any:
-        """__rfloordiv__ operator."""
-        return _uxn_floordiv(other, self)
-
-    def __rmod__(self, other: Any) -> Any:
-        """__rmod__ operator."""
-        return _uxn_mod(other, self)
-
-    def __rdivmod__(self, other: Any) -> Any:
-        """__rdivmod__ operator."""
-        return _uxn_divmod(other, self)
-
-    def __rpow__(self, other: Any) -> Any:
-        """__rpow__ operator."""
-        return _uxn_pow(other, self)
-
-    def __rlshift__(self, other: Any) -> Any:
-        """__rlshift__ operator."""
-        return _uxn_lshift(other, self)
-
-    def __rrshift__(self, other: Any) -> Any:
-        """__rrshift__ operator."""
-        return _uxn_rshift(other, self)
-
-    def __rand__(self, other: Any) -> Any:
-        """__rand__ operator."""
-        return _uxn_and(other, self)
-
-    def __rxor__(self, other: Any) -> Any:
-        """__rxor__ operator."""
-        return _uxn_xor(other, self)
-
-    def __ror__(self, other: Any) -> Any:
-        """__ror__ operator."""
-        return _uxn_or(other, self)
+    return inner_reflected
 
 
 # binary operations
@@ -758,6 +711,22 @@ setattr(UsageExecNode, "__rshift__", _uxn_rshift)  # noqa: B010
 setattr(UsageExecNode, "__and__", _uxn_and)  # noqa: B010
 setattr(UsageExecNode, "__xor__", _uxn_xor)  # noqa: B010
 setattr(UsageExecNode, "__or__", _uxn_or)  # noqa: B010
+
+# reflected binary operators
+setattr(UsageExecNode, "__radd__", reflected(_uxn_add))  # noqa:B010
+setattr(UsageExecNode, "__rsub__", reflected(_uxn_sub))  # noqa:B010
+setattr(UsageExecNode, "__rmul__", reflected(_uxn_mul))  # noqa:B010
+setattr(UsageExecNode, "__rmatmul__", reflected(_uxn_matmul))  # noqa:B010
+setattr(UsageExecNode, "__rtruediv__", reflected(_uxn_truediv))  # noqa:B010
+setattr(UsageExecNode, "__rfloordiv__", reflected(_uxn_floordiv))  # noqa:B010
+setattr(UsageExecNode, "__rmod__", reflected(_uxn_mod))  # noqa:B010
+setattr(UsageExecNode, "__rdivmod__", reflected(_uxn_divmod))  # noqa:B010
+setattr(UsageExecNode, "__rpow__", reflected(_uxn_pow))  # noqa:B010
+setattr(UsageExecNode, "__rlshift__", reflected(_uxn_lshift))  # noqa:B010
+setattr(UsageExecNode, "__rrshift__", reflected(_uxn_rshift))  # noqa:B010
+setattr(UsageExecNode, "__rand__", reflected(_uxn_and))  # noqa:B010
+setattr(UsageExecNode, "__rxor__", reflected(_uxn_xor))  # noqa:B010
+setattr(UsageExecNode, "__ror__", reflected(_uxn_or))  # noqa:B010
 
 # unary operations
 setattr(UsageExecNode, "__neg__", _uxn_neg)  # noqa: B010
