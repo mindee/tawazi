@@ -3,7 +3,7 @@ import json
 import pickle
 import time
 import warnings
-from copy import copy, deepcopy
+from copy import copy
 from dataclasses import dataclass, field
 from itertools import chain
 from pathlib import Path
@@ -479,16 +479,7 @@ class DAG(Generic[P, RVDAG]):
         if kwargs:
             raise TawaziUsageError(f"currently DAG does not support keyword arguments: {kwargs}")
 
-        graph = deepcopy(self.graph_ids)
-
-        # add debug nodes
-        if cfg.RUN_DEBUG_NODES:
-            debug_nodes = self.graph_ids.include_debug_nodes(graph.leaf_nodes)
-            graph = self.graph_ids.subgraph(list(graph.nodes) + debug_nodes).copy()
-
-        # 3. Remove debug nodes
-        else:
-            graph.remove_nodes_from([node_id for node_id in graph.debug_nodes])
+        graph = self.graph_ids.extend_graph_with_debug_nodes(self.graph_ids, cfg)
 
         # copy the ExecNodes
         call_xn_dict = make_call_xn_dict(self.node_dict, self.input_uxns, *args)
@@ -618,17 +609,14 @@ class DAGExecution(Generic[P, RVDAG]):
     from_cache: str = ""
 
     call_id: Optional[str] = None
-    xn_dict: Dict[Identifier, ExecNode] = field(init=False)
-    results: Dict[Identifier, Any] = field(init=False)
+    xn_dict: Dict[Identifier, ExecNode] = field(init=False, default_factory=dict)
+    results: Dict[Identifier, Any] = field(init=False, default_factory=dict)
     graph: DiGraphEx = field(init=False)
     scheduled_nodes: NodeView = field(init=False)
     executed: bool = False
 
     def __post_init__(self) -> None:
         """Dynamic construction of attributes."""
-        self.xn_dict = {}
-        self.results = {}
-
         # build the graph from cache if it exists
         if self.cache_deps_of is not None:
             if (
@@ -663,14 +651,7 @@ class DAGExecution(Generic[P, RVDAG]):
                 root_nodes=self.root_nodes,
             )
 
-        if cfg.RUN_DEBUG_NODES:
-            debug_ids = self.dag.graph_ids.include_debug_nodes(self.graph.leaf_nodes)
-            self.graph = self.dag.graph_ids.subgraph(list(self.graph.nodes) + debug_ids).copy()
-
-        # 3. Remove debug nodes
-        else:
-            self.graph.remove_nodes_from([node_id for node_id in self.graph.debug_nodes])
-
+        self.graph = self.graph.extend_graph_with_debug_nodes(self.dag.graph_ids, cfg)
         self.scheduled_nodes = self.graph.nodes
 
     # we need to reimplement the public methods of DAG here in order to have a constant public interface

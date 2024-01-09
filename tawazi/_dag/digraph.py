@@ -6,6 +6,7 @@ from typing import Dict, Iterable, List, Optional, Sequence, Set
 import networkx as nx
 from networkx import NetworkXNoCycle, NetworkXUnfeasible, find_cycle
 
+from tawazi.config import Config
 from tawazi.consts import Identifier, Tag
 from tawazi.errors import TawaziUsageError
 from tawazi.node import ExecNode, UsageExecNode
@@ -239,6 +240,28 @@ class DiGraphEx(nx.DiGraph):
                             # this new XN can run by only running the current leaves_ids
                             leaves_ids.append(successor_id)
         return leaves_ids
+
+    def extend_graph_with_debug_nodes(
+        self, original_graph: "DiGraphEx", cfg: Config
+    ) -> "DiGraphEx":
+        """Add or remove debug nodes depending on the configuration.
+
+        Args:
+            original_graph: the graph containing a broader set of nodes
+            cfg: the tawazi configuration
+
+        Returns:
+            the correct subgraph
+        """
+        if cfg.RUN_DEBUG_NODES:
+            nodes_to_include = original_graph.include_debug_nodes(self.leaf_nodes) + list(
+                self.nodes
+            )
+        else:
+            nodes_to_include = list(set(self.nodes) - set(self.debug_nodes))
+
+        # networkx typing problem
+        return original_graph.subgraph(nodes_to_include).copy()  # type: ignore[no-any-return]
 
     def minimal_induced_subgraph(self, nodes: List[Identifier]) -> "DiGraphEx":
         """Get the minimal induced subgraph containing the provided nodes.
