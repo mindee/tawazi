@@ -95,7 +95,6 @@ def execute(
     behavior: ErrorStrategy,
     graph: DiGraphEx,
     modified_node_dict: Optional[Dict[str, ExecNode]] = None,
-    call_id: str = "",
 ) -> Dict[Identifier, Any]:
     """Thread safe execution of the DAG.
 
@@ -107,9 +106,6 @@ def execute(
         behavior: the behavior to be used in case of error.
         graph: the graph ids to be executed
         modified_node_dict: A dictionary of the ExecNodes that have been modified by setting the input parameters of the DAG.
-        call_id (str): A unique identifier for the execution.
-            It can be used to distinguish the id of the call inside the thread.
-            It might be useful to debug and to exchange information between the main thread and the sub-threads (per-node threads)
 
     Returns:
         node_dict: dictionary with keys the name of the function and value the result after the execution
@@ -131,7 +127,7 @@ def execute(
     # runnable_nodes_ids will be empty if all root nodes are running
     runnable_xns_ids = graph.root_nodes
 
-    with ThreadPoolExecutor(max_workers=max_concurrency, thread_name_prefix=call_id) as executor:
+    with ThreadPoolExecutor(max_workers=max_concurrency) as executor:
         while len(graph):
             # Attempt to run **A SINGLE** root node.
 
