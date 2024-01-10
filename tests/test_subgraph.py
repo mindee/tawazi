@@ -90,16 +90,16 @@ def dag_describer() -> None:
 
 def test_scheduled_nodes() -> None:
     executor = dag_describer.executor(target_nodes=["a"])
-    assert {"a"} == set(executor.scheduled_nodes)
+    assert {"a"} == set(executor.graph.nodes)
 
     executor = dag_describer.executor(target_nodes=["b"])
-    assert {"a", "b"} == set(executor.scheduled_nodes)
+    assert {"a", "b"} == set(executor.graph.nodes)
 
     executor = dag_describer.executor(target_nodes=["c"])
-    assert {"a", "c"} == set(executor.scheduled_nodes)
+    assert {"a", "c"} == set(executor.graph.nodes)
 
     executor = dag_describer.executor(target_nodes=["d"])
-    assert {"a", "c", "d"} == set(executor.scheduled_nodes)
+    assert {"a", "c", "d"} == set(executor.graph.nodes)
 
 
 def test_dag_subgraph_all_nodes() -> None:

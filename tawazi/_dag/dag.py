@@ -12,7 +12,6 @@ from typing import Any, Dict, Generic, List, NoReturn, Optional, Sequence, Set, 
 import networkx as nx
 import yaml
 from loguru import logger
-from networkx.classes.reportviews import NodeView
 
 from tawazi._helpers import _make_raise_arg_error, _UniqueKeyLoader
 from tawazi.config import cfg
@@ -565,8 +564,6 @@ class DAG(Generic[P, RVDAG]):
         self.config_from_dict(json_config)
 
 
-# TODO: check if the arguments are the same, then run the DAG using the from_cache.
-#  If the arguments are not the same, then rerun the DAG!
 @dataclass
 class DAGExecution(Generic[P, RVDAG]):
     """A disposable callable instance of a DAG.
@@ -612,7 +609,6 @@ class DAGExecution(Generic[P, RVDAG]):
     xn_dict: Dict[Identifier, ExecNode] = field(init=False, default_factory=dict)
     results: Dict[Identifier, Any] = field(init=False, default_factory=dict)
     graph: DiGraphEx = field(init=False)
-    scheduled_nodes: NodeView = field(init=False)
     executed: bool = False
 
     def __post_init__(self) -> None:
@@ -652,7 +648,6 @@ class DAGExecution(Generic[P, RVDAG]):
             )
 
         self.graph = self.graph.extend_graph_with_debug_nodes(self.dag.graph_ids, cfg)
-        self.scheduled_nodes = self.graph.nodes
 
     # we need to reimplement the public methods of DAG here in order to have a constant public interface
     # getters
