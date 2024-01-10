@@ -641,36 +641,6 @@ class DAGExecution(Generic[P, RVDAG]):
 
         self.graph = graph.extend_graph_with_debug_nodes(self.dag.graph_ids, cfg)
 
-    # we need to reimplement the public methods of DAG here in order to have a constant public interface
-    # getters
-    def get_nodes_by_tag(self, tag: Tag) -> List[ExecNode]:
-        """Get all the nodes with the given tag.
-
-        Args:
-            tag (Tag): tag of ExecNodes in question
-
-        Returns:
-            List[ExecNode]: corresponding ExecNodes
-        """
-        if self.executed:
-            return [ex_n for ex_n in self.xn_dict.values() if ex_n.tag == tag]
-        return self.dag.get_nodes_by_tag(tag)
-
-    def get_node_by_id(self, id_: Identifier) -> ExecNode:
-        """Get node with the given id.
-
-        Args:
-            id_ (Identifier): id of the ExecNode
-
-        Returns:
-            ExecNode: Corresponding ExecNode
-        """
-        # TODO: ? catch the keyError and
-        #   help the user know the id of the ExecNode by pointing to documentation!?
-        if self.executed:
-            return self.xn_dict[id_]
-        return self.dag.get_node_by_id(id_)
-
     def setup(self) -> None:
         """Same thing as DAG.setup but `target_nodes` and `exclude_nodes` come from the DAGExecution's init."""
         # TODO: handle the case where cache_deps_of is provided instead of target_nodes and exclude_nodes
@@ -744,5 +714,3 @@ class DAGExecution(Generic[P, RVDAG]):
         self.executed = True
         # 3. extract the returned value/values
         return get_return_values(self.dag.return_uxns, self.xn_dict)  # type: ignore[return-value]
-
-    # TODO: add execution order (the order in which the nodes were executed)
