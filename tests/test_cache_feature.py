@@ -7,7 +7,46 @@ import numpy as np
 import pytest
 from tawazi import DAGExecution, dag, xn
 from tawazi.consts import NoVal
-from tawazi.node.node import ExecNode
+from tawazi.node import ExecNode
+
+
+def conditional_assert(result: Any, expected: Any) -> None:
+    if expected is not None:
+        assert np.array_equal(result, expected)
+    else:
+        assert result is None
+
+
+def validate(_cache_path: str, _cache_deps_of: List[Any]) -> None:
+    with open(_cache_path, "rb") as f:
+        cached_results = pickle.load(f)  # noqa: S301
+    for xn_ in _cache_deps_of:
+        assert cached_results.get(xn_.id) is None
+
+
+@pytest.fixture
+def zeros() -> Any:
+    return np.zeros(10**6)
+
+
+@pytest.fixture
+def ones() -> Any:
+    return np.ones(10**6)
+
+
+@pytest.fixture
+def avg() -> int:
+    return 1
+
+
+@pytest.fixture
+def cache_path(request: Any) -> str:
+    cache_path = (
+        f"tests/cache_results/test_cache_in_deps-{request.node.get_closest_marker('suffix')}.pkl"
+    )
+    if Path(cache_path).is_file():
+        os.remove(cache_path)
+    return cache_path
 
 
 @xn
@@ -32,149 +71,96 @@ def avg_array(array: Any) -> Any:
 
 @dag
 def pipe() -> Tuple[Any, Any, Any, Any]:
-    zeros = generate_large_zeros_array()
-    ones = incr_large_array(zeros)
-    ones_ = pass_large_array(ones)
-    avg = avg_array(ones)
+    zeros_res = generate_large_zeros_array()
+    ones_res = incr_large_array(zeros_res)
+    ones_res2 = pass_large_array(ones_res)
+    avg_res = avg_array(ones_res)
 
-    return zeros, ones, ones_, avg
+    return zeros_res, ones_res, ones_res2, avg_res
 
 
-def test_cache_results_basic() -> None:
-    cache_path = "tests/cache_results/test_cache_results_basic.pkl"
-    if Path(cache_path).is_file():
-        os.remove(cache_path)
-
+def test_cache_results_basic(cache_path: str, zeros: Any, ones: Any, avg: Any) -> None:
     exc = DAGExecution(pipe, cache_in=cache_path)
-
-    zeros = np.zeros(10**6)
-    ones = np.ones(10**6)
-    ones_ = ones
-    avg = 1
-
-    r1, r2, r3, r4 = exc()
-    assert (r1 == zeros).all()
-    assert (r2 == ones).all()
-    assert (r3 == ones_).all()
-    assert r4 == avg
+    _ = exc()
 
     # notice how the size of the cached value is only 2MB because ones and ones_ are the same object
-    # hence only zeros and ones take space with avg and ones_ taking negligeable space
+    # hence only zeros and ones take space with avg and ones_ taking minimal space
 
     with open(cache_path, "rb") as f:
         cached_results = pickle.load(f)  # noqa: S301
-    assert (cached_results["generate_large_zeros_array"] == zeros).all()
-    assert (cached_results["incr_large_array"] == ones).all()
-    assert (cached_results["pass_large_array"] == ones_).all()
+    assert np.array_equal(cached_results["generate_large_zeros_array"], zeros)
+    assert np.array_equal(cached_results["incr_large_array"], ones)
+    assert np.array_equal(cached_results["pass_large_array"], ones)
     assert cached_results["avg_array"] == avg
 
 
-def test_cache_results_subgraph() -> None:
-    cache_path = "tests/cache_results/test_cache_results_subgraph.pkl"
-    if Path(cache_path).is_file():
-        os.remove(cache_path)
-
+def test_cache_results_subgraph(cache_path: str, zeros: Any, ones: Any) -> None:
     exc = DAGExecution(
         pipe, target_nodes=[generate_large_zeros_array, incr_large_array], cache_in=cache_path
     )
-    zeros = np.zeros(10**6)
-    ones = np.ones(10**6)
-    ones_ = NoVal
-    avg = NoVal
 
-    r1, r2, r3, r4 = exc()
-    assert (r1 == zeros).all()
-    assert (r2 == ones).all()
-    assert r3 is None
-    assert r4 is None
+    _ = exc()
 
     with open(cache_path, "rb") as f:
         cached_results = pickle.load(f)  # noqa: S301
-    assert (cached_results["generate_large_zeros_array"] == zeros).all()
-    assert (cached_results["incr_large_array"] == ones).all()
-    assert cached_results["pass_large_array"] is ones_
-    assert cached_results["avg_array"] is avg
+    assert np.array_equal(cached_results["generate_large_zeros_array"], zeros)
+    assert np.array_equal(cached_results["incr_large_array"], ones)
+    assert cached_results["pass_large_array"] is NoVal
+    assert cached_results["avg_array"] is NoVal
 
 
-def test_running_cached_dag() -> None:
-    cache_path = "tests/cache_results/test_running_cached_dag.pkl"
-    if Path(cache_path).is_file():
-        os.remove(cache_path)
-
+def test_running_cached_dag(cache_path: str, zeros: Any, ones: Any, avg: Any) -> None:
     exc = DAGExecution(
         pipe, target_nodes=[generate_large_zeros_array, incr_large_array], cache_in=cache_path
     )
-    zeros = np.zeros(10**6)
-    ones = np.ones(10**6)
-    ones_ = ones
-    avg = 1
-
-    r1, r2, r3, r4 = exc()
-    assert (r1 == zeros).all()
-    assert (r2 == ones).all()
-    assert r3 is None
-    assert r4 is None
+    _ = exc()
 
     exc_cached = DAGExecution(pipe, from_cache=cache_path)
     r1, r2, r3, r4 = exc_cached()
-    assert (r1 == zeros).all()
-    assert (r2 == ones).all()
-    assert (r3 == ones_).all()
+    assert np.array_equal(r1, zeros)
+    assert np.array_equal(r2, ones)
+    assert np.array_equal(r3, ones)
     assert r4 == avg
 
 
-def test_cache_read_write() -> None:
+@pytest.mark.parametrize(
+    "target_nodes, expected_results",
+    [
+        ([generate_large_zeros_array], (np.zeros(10**6), None, None, None)),
+        (
+            [generate_large_zeros_array, incr_large_array],
+            (np.zeros(10**6), np.ones(10**6), None, None),
+        ),
+        (
+            [generate_large_zeros_array, incr_large_array, pass_large_array],
+            (np.zeros(10**6), np.ones(10**6), np.ones(10**6), None),
+        ),
+        (
+            [generate_large_zeros_array, incr_large_array, pass_large_array, avg_array],
+            (np.zeros(10**6), np.ones(10**6), np.ones(10**6), 1),
+        ),
+    ],
+)
+def test_cache_read_write(target_nodes: List[ExecNode], expected_results: List[Any]) -> None:
     cache_path = "tests/cache_results/test_cache_read_write.pkl"
     if Path(cache_path).is_file():
         os.remove(cache_path)
 
-    exc = DAGExecution(pipe, target_nodes=[generate_large_zeros_array], cache_in=cache_path)
-    zeros = np.zeros(10**6)
-    ones = np.ones(10**6)
-    ones_ = ones
-    avg = 1
-
+    # with target nodes
+    exc = DAGExecution(pipe, target_nodes=target_nodes, cache_in=cache_path)
     r1, r2, r3, r4 = exc()
-    assert (r1 == zeros).all()
-    assert r2 is None
-    assert r3 is None
-    assert r4 is None
+    conditional_assert(r1, expected_results[0])
+    conditional_assert(r2, expected_results[1])
+    conditional_assert(r3, expected_results[2])
+    assert r4 == expected_results[3]
 
-    exc = DAGExecution(
-        pipe, target_nodes=[generate_large_zeros_array, incr_large_array], cache_in=cache_path
-    )
-    r1, r2, r3, r4 = exc()
-    assert (r1 == zeros).all()
-    assert (r2 == ones).all()
-    assert r3 is None
-    assert r4 is None
-
-    exc = DAGExecution(
-        pipe,
-        target_nodes=[generate_large_zeros_array, incr_large_array, pass_large_array],
-        cache_in=cache_path,
-    )
-    r1, r2, r3, r4 = exc()
-    assert (r1 == zeros).all()
-    assert (r2 == ones).all()
-    assert (r3 == ones_).all()
-    assert r4 is None
-
-    exc = DAGExecution(
-        pipe,
-        target_nodes=[generate_large_zeros_array, incr_large_array, pass_large_array, avg_array],
-        cache_in=cache_path,
-    )
-    r1, r2, r3, r4 = exc()
-    assert (r1 == zeros).all()
-    assert (r2 == ones).all()
-    assert (r3 == ones_).all()
-    assert r4 == avg
-
-
-def load_cached_results(cache_path: str) -> Any:
-    with open(cache_path, "rb") as f:
-        return pickle.load(f)  # noqa: S301
+    # with cache_deps_of
+    exc2 = DAGExecution(pipe, cache_deps_of=target_nodes, cache_in=cache_path)
+    r11, r21, r31, r41 = exc2()
+    conditional_assert(r11, expected_results[0])
+    conditional_assert(r21, expected_results[1])
+    conditional_assert(r31, expected_results[2])
+    assert r41 == expected_results[3]
 
 
 def test_cache_in_deps_cache_deps_of_same_as_exclude_nodes() -> None:
@@ -191,83 +177,3 @@ def test_target_nodes_non_existing() -> None:
         _ = DAGExecution(
             pipe, cache_deps_of=[generate_large_zeros_array], target_nodes=["twinkle toes"]
         )
-
-
-def validate(_cache_path: str, _cache_deps_of: List[Any]) -> None:
-    cached_results = load_cached_results(_cache_path)
-    for xn_ in _cache_deps_of:
-        assert cached_results.get(xn_.id) is None
-
-
-@pytest.fixture
-def res() -> Tuple[Any, Any, Any, Any]:
-    zeros = np.zeros(10**6)
-    ones = np.ones(10**6)
-    ones_ = ones
-    avg = 1
-    return zeros, ones, ones_, avg
-
-
-@pytest.fixture
-def cache_path(request: Any) -> str:
-    cache_path = (
-        f"tests/cache_results/test_cache_in_dpes-{request.node.get_closest_marker('suffix')}.pkl"
-    )
-    if Path(cache_path).is_file():
-        os.remove(cache_path)
-    return cache_path
-
-
-def test_cache_in_deps1(cache_path: str, res: Tuple[Any, ...]) -> None:
-    # case 1 node
-    cache_deps_of = [generate_large_zeros_array]
-    exc = DAGExecution(pipe, cache_deps_of=cache_deps_of, cache_in=cache_path)
-    r1, r2, r3, r4 = exc()
-
-    assert (r1 == res[0]).all()
-
-    validate(cache_path, cache_deps_of)
-
-
-def test_cache_in_deps2(cache_path: str, res: Tuple[Any, ...]) -> None:
-    # case 2 nodes
-    cache_deps_of: List[ExecNode] = [generate_large_zeros_array, incr_large_array]
-    exc = DAGExecution(pipe, cache_deps_of=cache_deps_of, cache_in=cache_path)
-    r1, r2, r3, r4 = exc()
-
-    assert (r1 == res[0]).all()
-    assert (r2 == res[1]).all()
-
-    validate(cache_path, cache_deps_of)
-
-
-def test_cache_in_deps3(cache_path: str, res: Tuple[Any, ...]) -> None:
-    # case 3 nodes
-    cache_deps_of: List[ExecNode] = [generate_large_zeros_array, incr_large_array, pass_large_array]
-    exc = DAGExecution(pipe, cache_deps_of=cache_deps_of, cache_in=cache_path)
-    r1, r2, r3, r4 = exc()
-
-    assert (r1 == res[0]).all()
-    assert (r2 == res[1]).all()
-    assert (r3 == res[2]).all()
-
-    validate(cache_path, cache_deps_of)
-
-
-def test_cache_in_deps4(cache_path: str, res: Tuple[Any, ...]) -> None:
-    # case 4 nodes
-    cache_deps_of: List[ExecNode] = [
-        generate_large_zeros_array,
-        incr_large_array,
-        pass_large_array,
-        avg_array,
-    ]
-    exc = DAGExecution(pipe, cache_deps_of=cache_deps_of, cache_in=cache_path)
-    r1, r2, r3, r4 = exc()
-
-    assert (r1 == res[0]).all()
-    assert (r2 == res[1]).all()
-    assert (r3 == res[2]).all()
-    assert (r4 == res[3]).all()
-
-    validate(cache_path, cache_deps_of)

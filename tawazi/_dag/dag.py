@@ -588,10 +588,6 @@ class DAGExecution(Generic[P, RVDAG]):
             the path to the file where the execution should be loaded from.
             The path should end in `.pkl`.
             Will skip loading from cache if `from_cache` is Falsy.
-        call_id (Optional[str]): identification of the current execution.
-            This will be inserted into thread_name_prefix while executing the threadPool.
-            It will be used in the future for identifying the execution inside Processes etc.
-
     """
 
     dag: DAG[P, RVDAG]
@@ -605,10 +601,8 @@ class DAGExecution(Generic[P, RVDAG]):
     cache_in: str = ""
     from_cache: str = ""
 
-    call_id: Optional[str] = None
     xn_dict: Dict[Identifier, ExecNode] = field(init=False, default_factory=dict)
     results: Dict[Identifier, Any] = field(init=False, default_factory=dict)
-    graph: DiGraphEx = field(init=False)
     executed: bool = False
 
     def __post_init__(self) -> None:
@@ -624,12 +618,10 @@ class DAGExecution(Generic[P, RVDAG]):
                     "cache_deps_of can't be used together with target_nodes or exclude_nodes"
                 )
 
-            cache_deps_of = (
-                self.dag.get_multiple_nodes_aliases(self.cache_deps_of)
-                if self.cache_deps_of is not None
-                else self.cache_deps_of
-            )
-            self.graph = self.dag.graph_ids.make_subgraph(target_nodes=cache_deps_of)
+            if self.cache_deps_of is not None:
+                self.cache_deps_of = self.dag.get_multiple_nodes_aliases(self.cache_deps_of)
+
+            graph = self.dag.graph_ids.make_subgraph(target_nodes=self.cache_deps_of)
         else:
             # clean user input
             if self.target_nodes is not None:
@@ -641,13 +633,13 @@ class DAGExecution(Generic[P, RVDAG]):
             if self.root_nodes is not None:
                 self.root_nodes = self.dag.get_multiple_nodes_aliases(self.root_nodes)
 
-            self.graph = self.dag.graph_ids.make_subgraph(
+            graph = self.dag.graph_ids.make_subgraph(
                 target_nodes=self.target_nodes,
                 exclude_nodes=self.exclude_nodes,
                 root_nodes=self.root_nodes,
             )
 
-        self.graph = self.graph.extend_graph_with_debug_nodes(self.dag.graph_ids, cfg)
+        self.graph = graph.extend_graph_with_debug_nodes(self.dag.graph_ids, cfg)
 
     # we need to reimplement the public methods of DAG here in order to have a constant public interface
     # getters
@@ -725,10 +717,6 @@ class DAGExecution(Generic[P, RVDAG]):
         if self.executed:
             raise TawaziUsageError("DAGExecution object has already been executed.")
 
-        # maybe call_id will be changed to Union[int, str].
-        # Keep call_id as Optional[str] for now
-        call_id = self.call_id if self.call_id is not None else ""
-
         # 1. copy the ExecNodes
         call_xn_dict = make_call_xn_dict(self.dag.node_dict, self.dag.input_uxns, *args)
         if self.from_cache:
@@ -746,7 +734,6 @@ class DAGExecution(Generic[P, RVDAG]):
             behavior=self.dag.behavior,
             graph=self.graph,
             modified_node_dict=call_xn_dict,
-            call_id=call_id,
         )
         self.results = {xn.id: xn.result for xn in self.xn_dict.values()}
 
