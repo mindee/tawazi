@@ -7,10 +7,6 @@ import tawazi
 from tawazi import dag, xn
 
 
-# T = TypeVar("T", bound=Real)
-# def closeness(a: T, b: T) -> T:
-# I don't understand why this is not working with mypy!
-# helper function for testing
 def closeness(a: float, b: float) -> float:
     return abs(a - b)
 
@@ -52,19 +48,19 @@ def test_profiler_basic() -> None:
     exec_pipe = pipe_.executor()
     exec_pipe(0.1)
 
-    profile = exec_pipe.get_node_by_id("sleeper").profile
+    profile = exec_pipe.xn_dict["sleeper"].profile
     assert almost_equal(profile.abs_exec_time, 0.1)
     assert almost_equal(profile.process_exec_time, 0)
     assert almost_equal(profile.thread_exec_time, 0)
 
-    profile = exec_pipe.get_node_by_id("worker").profile
+    profile = exec_pipe.xn_dict["worker"].profile
     assert almost_equal(profile.abs_exec_time, 0.1)
     assert not almost_equal(
         profile.process_exec_time, 0, 0.05
     )  # make sur that it doesn't equal 0 by a large margin
     assert not almost_equal(profile.thread_exec_time, 0, 0.05)
 
-    profile = exec_pipe.get_node_by_id("setop").profile
+    profile = exec_pipe.xn_dict["setop"].profile
     assert not almost_equal(profile.abs_exec_time, 0, 0.002)
     assert not almost_equal(
         profile.process_exec_time, 0, 0.002
@@ -80,19 +76,19 @@ def test_profiler_setop() -> None:
 
     exec_pipe(0.1)
 
-    profile = exec_pipe.get_node_by_id("sleeper").profile
+    profile = exec_pipe.xn_dict["sleeper"].profile
     assert almost_equal(profile.abs_exec_time, 0.1)
     assert almost_equal(profile.process_exec_time, 0)
     assert almost_equal(profile.thread_exec_time, 0)
 
-    profile = exec_pipe.get_node_by_id("worker").profile
+    profile = exec_pipe.xn_dict["worker"].profile
     assert almost_equal(profile.abs_exec_time, 0.1)
     assert not almost_equal(
         profile.process_exec_time, 0, 0.05
     )  # make sur that it doesn't equal 0 by a large margin
     assert not almost_equal(profile.thread_exec_time, 0, 0.05)
 
-    profile = exec_pipe.get_node_by_id("setop").profile
+    profile = exec_pipe.xn_dict["setop"].profile
     assert almost_equal(profile.abs_exec_time, 0)
     assert almost_equal(profile.process_exec_time, 0)
     assert almost_equal(profile.thread_exec_time, 0)
