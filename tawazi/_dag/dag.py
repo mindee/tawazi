@@ -460,6 +460,27 @@ class DAG(Generic[P, RVDAG]):
         """
         return DAGExecution(self, **kwargs)
 
+    def run_subgraph(self, subgraph: DiGraphEx, *args: P.args) -> Dict[Identifier, ExecNode]:
+        """Run a subgraph of the original graph (might be the same graph).
+
+        Args:
+            subgraph: the subgraph to run
+            *args: the args to pass to the graph
+
+        Returns:
+            a mapping between the execnodes and there identifiers
+        """
+        call_xn_dict = make_call_xn_dict(self.node_dict, self.input_uxns, *args)
+
+        # Execute the scheduler
+        return execute(
+            node_dict=self.node_dict,
+            max_concurrency=self.max_concurrency,
+            behavior=self.behavior,
+            graph=subgraph,
+            modified_node_dict=call_xn_dict,
+        )
+
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
         """Execute the DAG scheduler via a similar interface to the function that describes the dependencies.
 
@@ -479,20 +500,7 @@ class DAG(Generic[P, RVDAG]):
             raise TawaziUsageError(f"currently DAG does not support keyword arguments: {kwargs}")
 
         graph = self.graph_ids.extend_graph_with_debug_nodes(self.graph_ids, cfg)
-
-        # copy the ExecNodes
-        call_xn_dict = make_call_xn_dict(self.node_dict, self.input_uxns, *args)
-
-        # Execute the scheduler
-        all_nodes_dict = execute(
-            node_dict=self.node_dict,
-            max_concurrency=self.max_concurrency,
-            behavior=self.behavior,
-            graph=graph,
-            modified_node_dict=call_xn_dict,
-        )
-
-        # extract the returned value/values
+        all_nodes_dict = self.run_subgraph(graph, *args)
         return get_return_values(self.return_uxns, all_nodes_dict)  # type: ignore[return-value]
 
     def config_from_dict(self, config: Dict[str, Any]) -> None:
@@ -636,6 +644,7 @@ class DAGExecution(Generic[P, RVDAG]):
                 root_nodes=self.root_nodes,
             )
 
+        # add debug nodes
         self.graph = graph.extend_graph_with_debug_nodes(self.dag.graph_ids, cfg)
 
     def setup(self) -> None:
@@ -683,24 +692,14 @@ class DAGExecution(Generic[P, RVDAG]):
         if self.executed:
             raise TawaziUsageError("DAGExecution object has already been executed.")
 
-        # 1. copy the ExecNodes
-        call_xn_dict = make_call_xn_dict(self.dag.node_dict, self.dag.input_uxns, *args)
+        # 2. Execute the scheduler
+        self.xn_dict = self.dag.run_subgraph(self.graph, *args)
+
         if self.from_cache:
             with open(self.from_cache, "rb") as f:
                 cached_results = pickle.load(f)  # noqa: S301
-            # set the result for the ExecNode that were previously executed
-            # this will make them skip execution inside the scheduler
             for id_, result in cached_results.items():
-                call_xn_dict[id_].result = result
-
-        # 2. Execute the scheduler
-        self.xn_dict = execute(
-            node_dict=self.dag.node_dict,
-            max_concurrency=self.dag.max_concurrency,
-            behavior=self.dag.behavior,
-            graph=self.graph,
-            modified_node_dict=call_xn_dict,
-        )
+                self.xn_dict[id_].result = result
 
         # 3. cache in the graph results
         if self.cache_in:
