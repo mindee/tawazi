@@ -1,7 +1,6 @@
 """module containing DAG and DAGExecution which are the containers that run ExecNodes in Tawazi."""
 import json
 import pickle
-import time
 import warnings
 from copy import copy
 from dataclasses import dataclass, field
@@ -328,24 +327,6 @@ class DAG(Generic[P, RVDAG]):
         # 6. return the composed DAG
         # ignore[arg-type] because the type of the kwargs is not known
         return DAG(xn_dict, in_uxns, out_uxns, **kwargs)  # type: ignore[arg-type]
-
-    def draw(self, k: float = 0.8, t: Union[float, int] = 3) -> None:
-        """Draws the Networkx directed graph.
-
-        Args:
-            k (float): parameter for the layout of the graph, the higher, the further the nodes apart. Defaults to 0.8.
-            t (int): time to display in seconds. Defaults to 3.
-        """
-        import matplotlib.pyplot as plt
-
-        # TODO: use graphviz instead! it is much more elegant
-
-        pos = nx.spring_layout(self.graph_ids, seed=42069, k=k, iterations=20)
-        nx.draw(self.graph_ids, pos, with_labels=True)
-        plt.ion()
-        plt.show()
-        time.sleep(t)
-        plt.close()
 
     def alias_to_ids(self, alias: Alias) -> List[Identifier]:
         """Extract an ExecNode ID from an Alias (Tag, ExecNode ID or ExecNode).
