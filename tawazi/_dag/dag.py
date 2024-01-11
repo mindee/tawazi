@@ -449,16 +449,37 @@ class DAG(Generic[P, RVDAG]):
             graph=graph,
         )
 
-    def executor(self, **kwargs: Any) -> "DAGExecution[P, RVDAG]":
+    def executor(
+        self,
+        target_nodes: Optional[Sequence[Alias]] = None,
+        exclude_nodes: Optional[Sequence[Alias]] = None,
+        root_nodes: Optional[Sequence[Alias]] = None,
+        cache_deps_of: Optional[Sequence[Alias]] = None,
+        cache_in: str = "",
+        from_cache: str = "",
+    ) -> "DAGExecution[P, RVDAG]":
         """Generates a DAGExecution for the DAG.
 
         Args:
-            **kwargs (Any): keyword arguments to be passed to DAGExecution's constructor
+            target_nodes: the nodes to execute, excluding all nodes that can be excluded
+            exclude_nodes: the nodes to exclude from the execution
+            root_nodes: these nodes and their children will be included in the execution
+            cache_deps_of: which nodes to cache the dependencies of
+            cache_in: the path to the file where to cache
+            from_cache: the cache
 
         Returns:
-            DAGExecution: an executor for the DAG
+            the DAGExecution object associated with the dag
         """
-        return DAGExecution(self, **kwargs)
+        return DAGExecution(
+            dag=self,
+            target_nodes=target_nodes,
+            exclude_nodes=exclude_nodes,
+            root_nodes=root_nodes,
+            cache_deps_of=cache_deps_of,
+            cache_in=cache_in,
+            from_cache=from_cache,
+        )
 
     def run_subgraph(self, subgraph: DiGraphEx, *args: P.args) -> Dict[Identifier, ExecNode]:
         """Run a subgraph of the original graph (might be the same graph).
