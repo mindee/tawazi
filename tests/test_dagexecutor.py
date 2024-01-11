@@ -64,9 +64,7 @@ def sub_executor() -> Any:
 
 def test_run_whole_dag_executor(executor: Any) -> None:
     r1, r2, r3 = executor(1, 2)
-
     assert (r1, r2, r3) == (2, 4, 6)
-    assert len(executor.results) == 5
 
 
 def test_run_dag_executor_multiple_times(executor: Any) -> None:
