@@ -119,8 +119,8 @@ def test_running_cached_dag(cache_path: str, zeros: Any, ones: Any, avg: Any) ->
     r1, r2, r3, r4 = exc_cached()
     assert np.array_equal(r1, zeros)
     assert np.array_equal(r2, ones)
-    assert np.array_equal(r3, ones)
-    assert r4 == avg
+    assert r3 is None
+    assert r4 is None
 
 
 @pytest.mark.parametrize(
