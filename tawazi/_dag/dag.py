@@ -602,7 +602,6 @@ class DAGExecution(Generic[P, RVDAG]):
     from_cache: str = ""
 
     xn_dict: Dict[Identifier, ExecNode] = field(init=False, default_factory=dict)
-    results: Dict[Identifier, Any] = field(init=False, default_factory=dict)
     executed: bool = False
 
     def __post_init__(self) -> None:
@@ -618,9 +617,7 @@ class DAGExecution(Generic[P, RVDAG]):
                     "cache_deps_of can't be used together with target_nodes or exclude_nodes"
                 )
 
-            if self.cache_deps_of is not None:
-                self.cache_deps_of = self.dag.get_multiple_nodes_aliases(self.cache_deps_of)
-
+            self.cache_deps_of = self.dag.get_multiple_nodes_aliases(self.cache_deps_of)
             graph = self.dag.graph_ids.make_subgraph(target_nodes=self.cache_deps_of)
         else:
             # clean user input
@@ -648,7 +645,7 @@ class DAGExecution(Generic[P, RVDAG]):
         #  This is an edge case though that is not important to handle at the current moment.
         self.dag.setup(target_nodes=self.target_nodes, exclude_nodes=self.exclude_nodes)
 
-    def _cache_results(self) -> None:
+    def _cache_results(self, results: Dict[Identifier, Any]) -> None:
         """Cache execution results.
 
         We are currently only storing the results of the execution,
@@ -656,7 +653,6 @@ class DAGExecution(Generic[P, RVDAG]):
         But this it should not change between executions.
         """
         Path(self.cache_in).parent.mkdir(parents=True, exist_ok=True)
-
         with open(self.cache_in, "wb") as f:
             if self.cache_deps_of is not None:
                 non_cacheable_ids: Set[Identifier] = set()
@@ -665,10 +661,10 @@ class DAGExecution(Generic[P, RVDAG]):
                     non_cacheable_ids = non_cacheable_ids.union(ids)
 
                 to_cache_results = {
-                    id_: res for id_, res in self.results.items() if id_ not in non_cacheable_ids
+                    id_: res for id_, res in results.items() if id_ not in non_cacheable_ids
                 }
             else:
-                to_cache_results = self.results
+                to_cache_results = results
             pickle.dump(to_cache_results, f, protocol=pickle.HIGHEST_PROTOCOL, fix_imports=False)
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
@@ -705,11 +701,10 @@ class DAGExecution(Generic[P, RVDAG]):
             graph=self.graph,
             modified_node_dict=call_xn_dict,
         )
-        self.results = {xn.id: xn.result for xn in self.xn_dict.values()}
 
         # 3. cache in the graph results
         if self.cache_in:
-            self._cache_results()
+            self._cache_results(results={xn.id: xn.result for xn in self.xn_dict.values()})
 
         self.executed = True
         # 3. extract the returned value/values
