@@ -613,6 +613,7 @@ class DAGExecution(Generic[P, RVDAG]):
 
     xn_dict: Dict[Identifier, ExecNode] = field(init=False, default_factory=dict)
     executed: bool = False
+    cached_nodes: List[ExecNode] = field(init=False, default_factory=list)
 
     def __post_init__(self) -> None:
         """Dynamic construction of attributes."""
@@ -629,6 +630,7 @@ class DAGExecution(Generic[P, RVDAG]):
 
             self.cache_deps_of = self.dag.get_multiple_nodes_aliases(self.cache_deps_of)
             graph = self.dag.graph_ids.make_subgraph(target_nodes=self.cache_deps_of)
+            self.cached_nodes = list(graph.nodes)
         else:
             # clean user input
             if self.target_nodes is not None:
@@ -700,8 +702,8 @@ class DAGExecution(Generic[P, RVDAG]):
         if self.from_cache:
             with open(self.from_cache, "rb") as f:
                 cached_results = pickle.load(f)  # noqa: S301
-            for id_, result in cached_results.items():
-                self.xn_dict[id_].result = result
+            for node in self.cached_nodes:
+                self.xn_dict[node.id].result = cached_results[node.id]
 
         # 3. cache in the graph results
         if self.cache_in:
