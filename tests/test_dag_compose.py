@@ -81,7 +81,7 @@ def xyz_pipe() -> Tuple[int, float, int]:
 
 
 def test_typing() -> None:
-    composed_dag: DAG[[int, str], float] = xyz_pipe.compose([x, y], z)
+    composed_dag: DAG[[int, str], float] = xyz_pipe.compose([x, y], z)  # type: ignore[assignment]
     assert composed_dag(2, "4") == 6.0
 
 
@@ -113,7 +113,7 @@ def test_input_more_sufficient_to_produce_output() -> None:
         UserWarning,
         match="Input ExecNode x<<2>> is not used to produce any of the requested outputs.",
     ):
-        sub = diamond_pipe.compose([x, "cst"], "x<<1>>")
+        sub: DAG[[int, int], int] = diamond_pipe.compose([x, "cst"], "x<<1>>")  # type: ignore[assignment]
         assert sub(2, 123) == 2
 
 
@@ -121,7 +121,7 @@ def test_input_more_sufficient_to_produce_empty_output() -> None:
     with pytest.warns(
         UserWarning, match="Input ExecNode x is not used to produce any of the requested outputs."
     ):
-        sub = diamond_pipe.compose(x, [])
+        sub: DAG[[int], Tuple[()]] = diamond_pipe.compose(x, [])  # type: ignore[assignment]
         assert sub(2) == ()
 
 
@@ -138,7 +138,7 @@ def test_duplicate_tag_in_inputs() -> None:
 
 
 def test_multiple_return_value() -> None:
-    sub: DAG[[int], Tuple[int, int, str, float]] = diamond_pipe.compose(
+    sub: DAG[[int], Tuple[int, int, str, float]] = diamond_pipe.compose(  # type: ignore[assignment]
         ["diamond_pipe>>>v"], ["x", "x<<1>>", "y", "z"]
     )
     assert sub(2) == (2, 2, "2", 4.0)
@@ -164,17 +164,17 @@ def test_inputs_outputs_overlapping() -> None:
 
 
 def test_inputs_empty_outputs_empty() -> None:
-    dag_compose = linear_pipe.compose([], [])
+    dag_compose: DAG[[], Tuple[()]] = linear_pipe.compose([], [])  # type: ignore[assignment]
     assert dag_compose() == ()
 
 
 def test_outputs_depends_on_csts_subgraph() -> None:
-    c_dag: DAG[[int], float] = xyz_pipe.compose([x], z)
+    c_dag: DAG[[int], float] = xyz_pipe.compose([x], z)  # type: ignore[assignment]
     assert c_dag(2) == 3.0
 
 
 def test_outputs_depends_on_csts_subgraph2() -> None:
-    c_dag = xyz_pipe.compose([], z)
+    c_dag: DAG[[], float] = xyz_pipe.compose([], z)  # type: ignore[assignment]
     assert c_dag() == 2.0
 
 
@@ -225,6 +225,6 @@ def test_setop() -> None:
     assert setop_counter == 2
 
     diamond_pipe_setop_ = deepcopy(diamond_pipe_setop)
-    c_dag = diamond_pipe_setop_.compose("diamond_pipe_setop>>>v", x)
-    assert c_dag(2) == 2
+    d_dag: DAG[[int], int] = diamond_pipe_setop_.compose("diamond_pipe_setop>>>v", x)  # type: ignore[assignment]
+    assert d_dag(2) == 2
     assert setop_counter == 2

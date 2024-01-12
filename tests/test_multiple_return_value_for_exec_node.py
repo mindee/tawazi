@@ -144,7 +144,7 @@ def test_mrv_wrong_bigger_unpack_to_number() -> None:
         @dag
         def pipe() -> Tuple[int, int]:
             r1, r2, _r3 = mulreturn()  # type: ignore[misc]
-            return r1, r2  # type: ignore[has-type]
+            return r1, r2
 
 
 def test_mrv_wrong_lower_unpack_to_number() -> None:
@@ -157,7 +157,7 @@ def test_mrv_wrong_lower_unpack_to_number() -> None:
         @dag
         def pipe() -> Tuple[int, int]:
             r1, r2, _r3 = mulreturn()  # type: ignore[misc]
-            return r1, r2  # type: ignore[has-type]
+            return r1, r2
 
 
 # test multiple return values for exec node without typing
