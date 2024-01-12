@@ -1,6 +1,7 @@
 from time import sleep
 from typing import Any
 
+import pytest
 from tawazi import dag, xn
 
 compound_priority_str = ""
@@ -51,13 +52,11 @@ def dependency_describer() -> None:
     _e = e()
 
 
-def test_compound_priority() -> None:
-    prio_view = dependency_describer.graph_ids.nodes(data="compound_priority")
-    assert prio_view["a"] == 4
-    assert prio_view["b"] == 2
-    assert prio_view["c"] == 1
-    assert prio_view["d"] == 1
-    assert prio_view["e"] == 1
+@pytest.mark.parametrize(
+    "node, expected_priority", [("a", 4), ("b", 2), ("c", 1), ("d", 1), ("e", 1)]
+)
+def test_compound_priority(node: str, expected_priority: int) -> None:
+    assert dependency_describer.graph_ids.nodes(data="compound_priority")[node] == expected_priority
 
 
 def test_compound_priority_execution() -> None:
