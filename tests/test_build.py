@@ -77,14 +77,17 @@ failing_execnodes = list_execnodes + [
 failing_node_dict = {xn.id: xn for xn in failing_execnodes}
 
 
-def test_dag_build() -> None:
-    g: DAG[Any, Any] = DAG(node_dict, [], [], 2, behavior=ErrorStrategy.strict)
-    g()  # must never fail!
+@pytest.fixture
+def strict_dag() -> DAG[Any, Any]:
+    return DAG(node_dict, [], [], 2, behavior=ErrorStrategy.strict)
 
 
-def test_draw() -> None:
-    g: DAG[Any, Any] = DAG(node_dict, [], [], 2, behavior=ErrorStrategy.strict)
-    g.graph_ids.draw(t=0.1)
+def test_dag_build(strict_dag: DAG[Any, Any]) -> None:
+    strict_dag()  # must never fail!
+
+
+def test_draw(strict_dag: DAG[Any, Any]) -> None:
+    strict_dag.graph_ids.draw(t=0.1)
 
 
 def test_bad_behaviour() -> None:
