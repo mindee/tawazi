@@ -82,7 +82,8 @@ def test_run_sub_dag_executor(sub_executor: Any) -> None:
 
 def test_scheduled_nodes(sub_executor: Any) -> None:
     scheduled_nodes = set(sub_executor.graph.nodes)
-    assert {"xn1", "xn2"}.issubset(scheduled_nodes) and "xn3" not in scheduled_nodes
+    assert {"xn1", "xn2"}.issubset(scheduled_nodes)
+    assert "xn3" not in scheduled_nodes
 
 
 def test_executed(executor: Any) -> None:
