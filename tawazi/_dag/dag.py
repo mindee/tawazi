@@ -462,6 +462,7 @@ class DAG(Generic[P, RVDAG]):
             from_cache=from_cache,
         )
 
+    # TODO: discuss whether we want to expose it or not
     def run_subgraph(self, subgraph: DiGraphEx, *args: P.args) -> Dict[Identifier, ExecNode]:
         """Run a subgraph of the original graph (might be the same graph).
 
@@ -474,7 +475,6 @@ class DAG(Generic[P, RVDAG]):
         """
         call_xn_dict = make_call_xn_dict(self.node_dict, self.input_uxns, *args)
 
-        # Execute the scheduler
         return execute(
             node_dict=self.node_dict,
             max_concurrency=self.max_concurrency,
