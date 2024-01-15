@@ -39,6 +39,6 @@ def test_id_is_increasing() -> None:
     a_1, a_2, a_3 = pipe_reuse_with_positional_and_keyword_args()
 
     assert (a_1, a_2, a_3) == (3, 5, 7)
-    assert pipe_reuse_with_positional_and_keyword_args.node_dict["complex_function"]
-    assert pipe_reuse_with_positional_and_keyword_args.node_dict["complex_function<<1>>"]
-    assert pipe_reuse_with_positional_and_keyword_args.node_dict["complex_function<<2>>"]
+    assert pipe_reuse_with_positional_and_keyword_args.exec_nodes["complex_function"]
+    assert pipe_reuse_with_positional_and_keyword_args.exec_nodes["complex_function<<1>>"]
+    assert pipe_reuse_with_positional_and_keyword_args.exec_nodes["complex_function<<2>>"]

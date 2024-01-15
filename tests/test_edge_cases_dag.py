@@ -9,7 +9,7 @@ from tawazi._dag.helpers import execute
 
 def shortcut_execute(dag: DAG[Any, Any], graph: DiGraphEx) -> Any:
     return execute(
-        node_dict=dag.node_dict,
+        node_dict=dag.exec_nodes,
         max_concurrency=dag.max_concurrency,
         behavior=dag.behavior,
         graph=graph,

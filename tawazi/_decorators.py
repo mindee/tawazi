@@ -216,7 +216,7 @@ def dag(
 
                 # 4. Construct the DAG instance
                 d: DAG[P, RVDAG] = DAG(
-                    node.exec_nodes,
+                    exec_nodes=node.exec_nodes,
                     input_uxns=uxn_args,
                     return_uxns=returned_usage_exec_nodes,
                     max_concurrency=max_concurrency,
