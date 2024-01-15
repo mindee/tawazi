@@ -22,6 +22,7 @@ from .digraph import DiGraphEx
 from .helpers import execute, get_return_values, make_call_xn_dict
 
 
+@dataclass
 class DAG(Generic[P, RVDAG]):
     """Data Structure containing ExecNodes with interdependencies.
 
@@ -29,59 +30,38 @@ class DAG(Generic[P, RVDAG]):
     The ExecNodes can be executed in parallel with the following restrictions:
         * Limited number of threads.
         * Parallelization constraint of each ExecNode (is_sequential attribute)
+
+    Args:
+        node_dict: all the ExecNodes
+        input_uxns: all the input UsageExecNodes
+        return_uxns: the return UsageExecNodes of various types: None, a single value, tuple, list, dict.
+        max_concurrency: the maximal number of threads running in parallel
+        behavior: specify the behavior if an ExecNode raises an Error. Three option are currently supported:
+            1. DAG.STRICT: stop the execution of all the DAG
+            2. DAG.ALL_CHILDREN: do not execute all children ExecNodes, and continue execution of the DAG
+            2. DAG.PERMISSIVE: continue execution of the DAG and ignore the error
     """
 
-    def __init__(
-        self,
-        exec_nodes: Dict[Identifier, ExecNode],
-        input_uxns: List[UsageExecNode],
-        return_uxns: ReturnUXNsType,
-        max_concurrency: int = 1,
-        behavior: ErrorStrategy = ErrorStrategy.strict,
-    ):
-        """Constructor of the DAG. Should not be called directly. Instead, use the `dag` decorator.
+    exec_nodes: Dict[Identifier, ExecNode]
+    input_uxns: List[UsageExecNode]
+    return_uxns: ReturnUXNsType
+    max_concurrency: int = 1
+    behavior: ErrorStrategy = ErrorStrategy.strict
 
-        Args:
-            exec_nodes: all the ExecNodes
-            input_uxns: all the input UsageExecNodes
-            return_uxns: the return UsageExecNodes of various types: None, a single value, tuple, list, dict.
-            max_concurrency: the maximal number of threads running in parallel
-            behavior: specify the behavior if an ExecNode raises an Error. Three option are currently supported:
-                1. DAG.STRICT: stop the execution of all the DAG
-                2. DAG.ALL_CHILDREN: do not execute all children ExecNodes, and continue execution of the DAG
-                2. DAG.PERMISSIVE: continue execution of the DAG and ignore the error
-        """
-        self.max_concurrency = max_concurrency
-        self.behavior = behavior
-        self.return_uxns = return_uxns
-        self.input_uxns = input_uxns
-
+    def __post_init__(self) -> None:
         # ExecNodes can be shared between Graphs, their call signatures might also be different
         # NOTE: maybe this should be transformed into a property because there is a deepcopy for node_dict...
         #  this means that there are different ExecNodes that are hanging around in the same instance of the DAG
-        self.node_dict = exec_nodes
-        self.graph_ids = DiGraphEx.from_exec_nodes(input_nodes=input_uxns, exec_nodes=exec_nodes)
+        self.graph_ids = DiGraphEx.from_exec_nodes(
+            input_nodes=self.input_uxns, exec_nodes=self.exec_nodes
+        )
 
-    @property
-    def max_concurrency(self) -> int:
-        """Maximal number of threads running in parallel. (will change!)."""
-        return self._max_concurrency
-
-    @max_concurrency.setter
-    def max_concurrency(self, value: int) -> None:
-        """Set the maximal number of threads running in parallel.
-
-        Args:
-            value (int): maximum number of threads running in parallel
-
-        Raises:
-            ValueError: if value is not a positive integer
-        """
-        if not isinstance(value, int):
+        # verification
+        if not isinstance(self.max_concurrency, int):
             raise ValueError("max_concurrency must be an int")
-        if value < 1:
+        if self.max_concurrency < 1:
             raise ValueError("Invalid maximum number of threads! Must be a positive integer")
-        self._max_concurrency = value
+        self._max_concurrency = self.max_concurrency
 
     # getters
     def get_nodes_by_tag(self, tag: Tag) -> List[ExecNode]:
@@ -99,7 +79,7 @@ class DAG(Generic[P, RVDAG]):
             List[ExecNode]: corresponding ExecNodes
         """
         if isinstance(tag, Tag):
-            return [self.node_dict[xn_id] for xn_id in self.graph_ids.get_tagged_nodes(tag)]
+            return [self.exec_nodes[xn_id] for xn_id in self.graph_ids.get_tagged_nodes(tag)]
         raise TypeError(f"tag {tag} must be of Tag type. Got {type(tag)}")
 
     def get_node_by_id(self, node_id: Identifier) -> ExecNode:
@@ -117,7 +97,7 @@ class DAG(Generic[P, RVDAG]):
             ExecNode: corresponding ExecNode
         """
         try:
-            return self.node_dict[node_id]
+            return self.exec_nodes[node_id]
         except KeyError as e:
             raise ValueError(f"node {node_id} doesn't exist in the DAG.") from e
 
@@ -138,7 +118,7 @@ class DAG(Generic[P, RVDAG]):
             raise ValueError(
                 f"Alias {alias} is not unique. It points to {len(xns)} ExecNodes: {xns}"
             )
-        return self.node_dict[xns[0]]
+        return self.exec_nodes[xns[0]]
 
     # TODO: get node by usage (the order of call of an ExecNode)
 
@@ -272,7 +252,7 @@ class DAG(Generic[P, RVDAG]):
         # 4.1 original DAG's inputs that don't contain default values.
         # used to detect missing inputs
         dag_inputs_ids = [
-            uxn.id for uxn in self.input_uxns if self.node_dict[uxn.id].result is NoVal
+            uxn.id for uxn in self.input_uxns if self.exec_nodes[uxn.id].result is NoVal
         ]
 
         # 4.2 define helper function
@@ -307,7 +287,7 @@ class DAG(Generic[P, RVDAG]):
         # 5.1 copy the ExecNodes that will be in the composed DAG because
         #  maybe the composed DAG will modify them (e.g. change their tags)
         #  and we don't want to modify the original DAG
-        xn_dict = {xn_id: copy(self.node_dict[xn_id]) for xn_id in set_xn_ids}
+        xn_dict = {xn_id: copy(self.exec_nodes[xn_id]) for xn_id in set_xn_ids}
 
         # 5.2 change the inputs of the ExecNodes into ArgExecNodes
         for xn_id, xn in xn_dict.items():
@@ -342,23 +322,23 @@ class DAG(Generic[P, RVDAG]):
             TawaziTypeError: if the Type of the identifier is not Tag, Identifier or ExecNode
         """
         if isinstance(alias, ExecNode):
-            if alias.id not in self.node_dict:
+            if alias.id not in self.exec_nodes:
                 raise ValueError(f"ExecNode {alias} not found in DAG")
             return [alias.id]
         # todo: do further validation for the case of the tag!!
         if isinstance(alias, (Identifier, tuple)):
             # if leaves_identification is not ExecNode, it can be either
             #  1. a Tag (Highest priority in case an id with the same value exists)
-            nodes = [self.node_dict[xn_id] for xn_id in self.graph_ids.get_tagged_nodes(alias)]
+            nodes = [self.exec_nodes[xn_id] for xn_id in self.graph_ids.get_tagged_nodes(alias)]
             if nodes:
                 return [node.id for node in nodes]
             #  2. or a node id!
-            if isinstance(alias, Identifier) and alias in self.node_dict:
+            if isinstance(alias, Identifier) and alias in self.exec_nodes:
                 node = self.get_node_by_id(alias)
                 return [node.id]
             raise ValueError(
                 f"node or tag {alias} not found in DAG.\n"
-                f" Available nodes are {self.node_dict}.\n"
+                f" Available nodes are {self.exec_nodes}.\n"
                 f" Available tags are {list(self.graph_ids.tags)}"
             )
         raise TawaziTypeError(
@@ -424,7 +404,7 @@ class DAG(Generic[P, RVDAG]):
         )
 
         _ = execute(
-            node_dict=self.node_dict,
+            node_dict=self.exec_nodes,
             max_concurrency=self.max_concurrency,
             behavior=self.behavior,
             graph=graph,
@@ -473,10 +453,10 @@ class DAG(Generic[P, RVDAG]):
         Returns:
             a mapping between the execnodes and there identifiers
         """
-        call_xn_dict = make_call_xn_dict(self.node_dict, self.input_uxns, *args)
+        call_xn_dict = make_call_xn_dict(self.exec_nodes, self.input_uxns, *args)
 
         return execute(
-            node_dict=self.node_dict,
+            node_dict=self.exec_nodes,
             max_concurrency=self.max_concurrency,
             behavior=self.behavior,
             graph=subgraph,

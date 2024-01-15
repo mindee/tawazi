@@ -73,7 +73,7 @@ def test_mypy_() -> None:
     # TODO: use assignements with typing for _var!
     _res = pipe(1)
     _res = pipe("1")  # type: ignore[arg-type]
-    pipe.node_dict  # noqa: B018
+    pipe.exec_nodes  # noqa: B018
     pipe.setup()
 
     exec = pipe.executor()
