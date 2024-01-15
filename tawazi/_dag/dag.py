@@ -32,7 +32,7 @@ class DAG(Generic[P, RVDAG]):
         * Parallelization constraint of each ExecNode (is_sequential attribute)
 
     Args:
-        node_dict: all the ExecNodes
+        exec_nodes: all the ExecNodes
         input_uxns: all the input UsageExecNodes
         return_uxns: the return UsageExecNodes of various types: None, a single value, tuple, list, dict.
         max_concurrency: the maximal number of threads running in parallel
@@ -50,7 +50,7 @@ class DAG(Generic[P, RVDAG]):
 
     def __post_init__(self) -> None:
         # ExecNodes can be shared between Graphs, their call signatures might also be different
-        # NOTE: maybe this should be transformed into a property because there is a deepcopy for node_dict...
+        # NOTE: maybe this should be transformed into a property because there is a deepcopy for exec_nodes...
         #  this means that there are different ExecNodes that are hanging around in the same instance of the DAG
         self.graph_ids = DiGraphEx.from_exec_nodes(
             input_nodes=self.input_uxns, exec_nodes=self.exec_nodes
@@ -404,7 +404,7 @@ class DAG(Generic[P, RVDAG]):
         )
 
         _ = execute(
-            node_dict=self.exec_nodes,
+            exec_nodes=self.exec_nodes,
             max_concurrency=self.max_concurrency,
             behavior=self.behavior,
             graph=graph,
@@ -456,11 +456,11 @@ class DAG(Generic[P, RVDAG]):
         call_xn_dict = make_call_xn_dict(self.exec_nodes, self.input_uxns, *args)
 
         return execute(
-            node_dict=self.exec_nodes,
+            exec_nodes=self.exec_nodes,
             max_concurrency=self.max_concurrency,
             behavior=self.behavior,
             graph=subgraph,
-            modified_node_dict=call_xn_dict,
+            modified_exec_nodes=call_xn_dict,
         )
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:

@@ -89,30 +89,32 @@ def get_highest_priority_node(
 ################
 def execute(
     *,
-    node_dict: Dict[Identifier, ExecNode],
+    exec_nodes: Dict[Identifier, ExecNode],
     max_concurrency: int,
     behavior: ErrorStrategy,
     graph: DiGraphEx,
-    modified_node_dict: Optional[Dict[str, ExecNode]] = None,
+    modified_exec_nodes: Optional[Dict[str, ExecNode]] = None,
 ) -> Dict[Identifier, Any]:
     """Thread safe execution of the DAG.
 
     (Except for the setup nodes! Please run DAG.setup() in a single thread because its results will be cached).
 
     Args:
-        node_dict: dictionary identifying ExecNodes.
+        exec_nodes: dictionary identifying ExecNodes.
         max_concurrency: maximum number of threads to be used for the execution.
         behavior: the behavior to be used in case of error.
         graph: the graph ids to be executed
-        modified_node_dict: A dictionary of the ExecNodes that have been modified by setting the input parameters of the DAG.
+        modified_exec_nodes: A dictionary of the ExecNodes that have been modified by setting the input parameters of the DAG.
 
     Returns:
-        node_dict: dictionary with keys the name of the function and value the result after the execution
+        exec_nodes: dictionary with keys the name of the function and value the result after the execution
     """
-    # 0.1 deepcopy the node_dict in order to modify the results inside every node and make the dag reusable
-    #     modified_node_dict are used to modify the values inside the ExecNode corresponding
+    # 0.1 deepcopy the exec_nodes in order to modify the results inside every node and make the dag reusable
+    #     modified_exec_nodes are used to modify the values inside the ExecNode corresponding
     #     to the input arguments provided to the whole DAG (ArgExecNode)
-    xns_dict = copy_non_setup_xns(node_dict) if modified_node_dict is None else modified_node_dict
+    xns_dict = (
+        copy_non_setup_xns(exec_nodes) if modified_exec_nodes is None else modified_exec_nodes
+    )
 
     # 0.2 prune the graph from the ArgExecNodes so that they don't get executed in the ThreadPool
     graph.remove_nodes_from([id_ for id_ in graph if xns_dict[id_].executed])
@@ -191,7 +193,7 @@ def execute(
 
             # 5.2 submit the exec node to the executor
             if xn.resource == Resource.thread:
-                exec_future = executor.submit(xn.execute, node_dict=xns_dict)
+                exec_future = executor.submit(xn.execute, exec_nodes=xns_dict)
                 running.add(exec_future)
                 futures[xn.id] = exec_future
             else:
@@ -199,7 +201,7 @@ def execute(
                 # it doesn't count as an additional thread that is running.
                 logger.debug("Executing %s in main thread", xn.id)
                 try:
-                    xn.execute(node_dict=xns_dict)
+                    xn.execute(exec_nodes=xns_dict)
                 except Exception as e:
                     if behavior == ErrorStrategy.strict:
                         raise e from e
@@ -248,7 +250,7 @@ def get_return_values(return_uxns: ReturnUXNsType, xn_dict: Dict[Identifier, Exe
 
 
 def make_call_xn_dict(
-    node_dict: Dict[Identifier, ExecNode], input_uxns: List[UsageExecNode], *args: Any
+    exec_nodes: Dict[Identifier, ExecNode], input_uxns: List[UsageExecNode], *args: Any
 ) -> Dict[Identifier, ExecNode]:
     """Generate the calling ExecNode dict.
 
@@ -260,7 +262,7 @@ def make_call_xn_dict(
 
     Args:
         input_uxns: the input execnodes
-        node_dict: the mapping between the node ids and the execnodes
+        exec_nodes: the mapping between the node ids and the execnodes
         *args (Any): arguments to be passed to the call of the DAG
 
     Returns:
@@ -269,8 +271,8 @@ def make_call_xn_dict(
     Raises:
         TypeError: If called with an invalid number of arguments
     """
-    # 1. deepcopy the node_dict because it will be modified by the DAG's execution
-    call_xn_dict = copy_non_setup_xns(node_dict)
+    # 1. deepcopy the exec_nodes because it will be modified by the DAG's execution
+    call_xn_dict = copy_non_setup_xns(exec_nodes)
 
     # 2. parse the input arguments of the pipeline
     # 2.1 default valued arguments can be skipped and not provided!

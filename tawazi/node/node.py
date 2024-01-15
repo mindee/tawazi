@@ -219,12 +219,12 @@ class ExecNode:
 
         return deps
 
-    def execute(self, node_dict: Dict[Identifier, Self]) -> Optional[Any]:
+    def execute(self, exec_nodes: Dict[Identifier, Self]) -> Optional[Any]:
         """Execute the ExecNode inside of a DAG.
 
         Args:
-            node_dict (Dict[Identifier, ExecNode]): A shared dictionary containing the other ExecNodes in the DAG;
-                the key is the id of the ExecNode. This node_dict refers to the current execution
+            exec_nodes (Dict[Identifier, ExecNode]): A shared dictionary containing the other ExecNodes in the DAG;
+                the key is the id of the ExecNode. This exec_nodes refers to the current execution
 
         Returns:
             the result of the execution of the current ExecNode
@@ -237,9 +237,9 @@ class ExecNode:
             return self.result
 
         # 1. prepare args and kwargs for usage:
-        args = [xnw.result(node_dict) for xnw in self.args]
+        args = [xnw.result(exec_nodes) for xnw in self.args]
         kwargs = {
-            key: xnw.result(node_dict)
+            key: xnw.result(exec_nodes)
             for key, xnw in self.kwargs.items()
             if key not in RESERVED_KWARGS
         }
