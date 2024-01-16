@@ -1,6 +1,6 @@
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Set, Tuple
 
 from loguru import logger
 
@@ -10,19 +10,19 @@ from tawazi.errors import TawaziTypeError
 from tawazi.node import ExecNode, ReturnUXNsType, UsageExecNode
 
 
-def _xn_active_in_call(xn: ExecNode, xns_dict: Dict[Identifier, ExecNode]) -> bool:
+def _xn_active_in_call(xn: ExecNode, results: Dict[Identifier, Any]) -> bool:
     """Check if a node is active.
 
     Args:
         xn: the execnode
-        xns_dict: the execnode mapping
+        results: dict containing the results of the execution
 
     Returns:
         is the node active
     """
     if isinstance(xn.active, bool):
         return xn.active
-    return bool(xns_dict[xn.active.id].result)
+    return bool(results[xn.active.id])
 
 
 def copy_non_setup_xns(x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
@@ -90,16 +90,17 @@ def get_highest_priority_node(
 def execute(
     *,
     exec_nodes: Dict[Identifier, ExecNode],
+    results: Dict[Identifier, Any],
     max_concurrency: int,
     graph: DiGraphEx,
-    modified_exec_nodes: Optional[Dict[str, ExecNode]] = None,
-) -> Dict[Identifier, Any]:
+) -> Tuple[Dict[Identifier, ExecNode], Dict[Identifier, Any]]:
     """Thread safe execution of the DAG.
 
     (Except for the setup nodes! Please run DAG.setup() in a single thread because its results will be cached).
 
     Args:
         exec_nodes: dictionary identifying ExecNodes.
+        results: dictionary containing results of setup and constants
         max_concurrency: maximum number of threads to be used for the execution.
         behavior: the behavior to be used in case of error.
         graph: the graph ids to be executed
@@ -108,15 +109,15 @@ def execute(
     Returns:
         exec_nodes: dictionary with keys the name of the function and value the result after the execution
     """
-    # 0.1 deepcopy the exec_nodes in order to modify the results inside every node and make the dag reusable
-    #     modified_exec_nodes are used to modify the values inside the ExecNode corresponding
-    #     to the input arguments provided to the whole DAG (ArgExecNode)
-    xns_dict = (
-        copy_non_setup_xns(exec_nodes) if modified_exec_nodes is None else modified_exec_nodes
-    )
+    # 0.1 copy results because it will be modified here
+    results = copy(results)
 
-    # 0.2 prune the graph from the ArgExecNodes so that they don't get executed in the ThreadPool
-    graph.remove_nodes_from([id_ for id_ in graph if xns_dict[id_].executed])
+    # TODO: remove copy of ExecNodes when profiling and is_active are stored outside of ExecNode
+    exec_nodes = copy_non_setup_xns(exec_nodes)
+
+    # 0.2 prune the graph from the ArgExecNodes and setup ExecNodes that are already executed
+    # so that they don't get executed in the ThreadPool
+    graph.remove_nodes_from([id_ for id_ in graph if id_ in results])
 
     # 0.3 create variables related to futures
     futures: Dict[Identifier, "Future[Any]"] = {}
@@ -168,7 +169,7 @@ def execute(
                 continue
 
             # 4.1 choose the most prioritized node to run
-            xn = get_highest_priority_node(graph, runnable_xns_ids, xns_dict)
+            xn = get_highest_priority_node(graph, runnable_xns_ids, exec_nodes)
 
             logger.info("%s will run!", xn.id)
 
@@ -180,28 +181,28 @@ def execute(
             num_running_threads = get_num_running_threads(futures)
             if xn.is_sequential and num_running_threads != 0:
                 logger.debug(
-                    f"{xn.id} must not run in parallel." f"Wait for the end of a node in {running}"
+                    "%s must not run in parallel. Wait for the end of a node in %s", xn.id, running
                 )
                 done_, running = wait(running, return_when=FIRST_COMPLETED)
                 # go to step 6
                 continue
 
             # 5.1 dynamic graph pruning
-            if not _xn_active_in_call(xn, xns_dict):
+            if not _xn_active_in_call(xn, results):
                 logger.debug("Prune %s from the graph", xn.id)
                 graph.remove_recursively(xn.id)
                 continue
 
             # 5.2 submit the exec node to the executor
             if xn.resource == Resource.thread:
-                exec_future = executor.submit(xn.execute, exec_nodes=xns_dict)
+                exec_future = executor.submit(xn.execute, results=results)
                 running.add(exec_future)
                 futures[xn.id] = exec_future
             else:
                 # a single execution will be launched and will end.
                 # it doesn't count as an additional thread that is running.
                 logger.debug("Executing %s in main thread", xn.id)
-                xn.execute(exec_nodes=xns_dict)
+                xn.execute(results=results)
 
                 logger.debug("Remove ExecNode % from the graph", xn.id)
                 graph.remove_node(xn.id)
@@ -213,15 +214,15 @@ def execute(
                 # ALL_COMPLETED is equivalent to FIRST_COMPLETED because there is only a single future running!
                 done_, running = wait(futures.values(), return_when=ALL_COMPLETED)
 
-    return xns_dict
+    return exec_nodes, results
 
 
-def get_return_values(return_uxns: ReturnUXNsType, xn_dict: Dict[Identifier, ExecNode]) -> RVTypes:
+def get_return_values(return_uxns: ReturnUXNsType, results: Dict[Identifier, Any]) -> RVTypes:
     """Extract the return value/values from the output of the DAG's scheduler!
 
     Args:
         return_uxns: the return execnodes
-        xn_dict (Dict[Identifier, ExecNode]): Modified ExecNodes returned by the DAG's scheduler
+        results: the results of the execution of the DAG's ExecNodes
 
     Raises:
         TawaziTypeError: if the type of the return value is not compatible with RVTypes
@@ -232,33 +233,27 @@ def get_return_values(return_uxns: ReturnUXNsType, xn_dict: Dict[Identifier, Exe
     if return_uxns is None:
         return None
     if isinstance(return_uxns, UsageExecNode):
-        return return_uxns.result(xn_dict)
+        return return_uxns.result(results)
     if isinstance(return_uxns, (tuple, list)):
-        gen = (ren_uxn.result(xn_dict) for ren_uxn in return_uxns)
+        gen = (ren_uxn.result(results) for ren_uxn in return_uxns)
         if isinstance(return_uxns, tuple):
             return tuple(gen)
         if isinstance(return_uxns, list):
             return list(gen)
     if isinstance(return_uxns, dict):
-        return {key: ren_uxn.result(xn_dict) for key, ren_uxn in return_uxns.items()}
+        return {key: ren_uxn.result(results) for key, ren_uxn in return_uxns.items()}
 
     raise TawaziTypeError("Return type for the DAG can only be a single value, Tuple or List")
 
 
-def make_call_xn_dict(
-    exec_nodes: Dict[Identifier, ExecNode], input_uxns: List[UsageExecNode], *args: Any
-) -> Dict[Identifier, ExecNode]:
-    """Generate the calling ExecNode dict.
-
-    This is a dict containing ExecNodes that will be executed (hence modified) by the DAG scheduler.
-    This takes into consideration:
-     1. deep copying the ExecNodes
-     2. filling the arguments of the call
-     3. skipping the copy for setup ExecNodes
+def extend_results_with_args(
+    results: Dict[Identifier, Any], input_uxns: List[UsageExecNode], *args: Any
+) -> Dict[Identifier, Any]:
+    """Extends the results of dict with the values provided by args.
 
     Args:
+        results: results of the DAG (Constant arguments of ExecNodes and setup ExecNodes)
         input_uxns: the input execnodes
-        exec_nodes: the mapping between the node ids and the execnodes
         *args (Any): arguments to be passed to the call of the DAG
 
     Returns:
@@ -267,9 +262,8 @@ def make_call_xn_dict(
     Raises:
         TypeError: If called with an invalid number of arguments
     """
-    # 1. deepcopy the exec_nodes because it will be modified by the DAG's execution
-    call_xn_dict = copy_non_setup_xns(exec_nodes)
-
+    # copy results in order to avoid modifying the original dict
+    results = copy(results)
     # 2. parse the input arguments of the pipeline
     # 2.1 default valued arguments can be skipped and not provided!
     # note: if not enough arguments are provided then the code will fail
@@ -285,6 +279,6 @@ def make_call_xn_dict(
         for ind_arg, arg in enumerate(args):
             node_id = input_uxns[ind_arg].id
 
-            call_xn_dict[node_id].result = arg
+            results[node_id] = arg
 
-    return call_xn_dict
+    return results

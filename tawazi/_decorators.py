@@ -174,6 +174,7 @@ def dag(
             # 1. node.exec_nodes contains all the ExecNodes that concern the DAG being built at the moment.
             #      make sure it is empty
             node.exec_nodes = {}
+            node.results = {}
             try:
                 # 2. make ExecNodes corresponding to the arguments of the ExecNode
                 # 2.1 get the names of the arguments and the default values
@@ -183,12 +184,12 @@ def dag(
                 # Corresponding values must be provided during usage
                 args: List[ExecNode] = [ArgExecNode(_func, arg_name) for arg_name in func_args]
                 # 2.2 Construct Default arguments.
-                args.extend(
-                    [
-                        ArgExecNode(_func, arg_name, arg)
-                        for arg_name, arg in func_default_args.items()
-                    ]
-                )
+
+                for arg_name, arg in func_default_args.items():
+                    axn = ArgExecNode(_func, arg_name)
+                    args.append(axn)
+                    node.results[axn.id] = arg
+
                 # 2.3 Arguments are also ExecNodes that get executed inside the scheduler
                 node.exec_nodes.update({exec_node.id: exec_node for exec_node in args})
                 # 2.4 make UsageExecNodes for input arguments
@@ -204,6 +205,7 @@ def dag(
 
                 # 4. Construct the DAG instance
                 d: DAG[P, RVDAG] = DAG(
+                    results=node.results,
                     exec_nodes=node.exec_nodes,
                     input_uxns=uxn_args,
                     return_uxns=returned_usage_exec_nodes,
@@ -216,6 +218,7 @@ def dag(
                 # node.exec_nodes are deep copied inside the DAG.
                 #   we can empty the global variable node.exec_nodes
                 node.exec_nodes = {}
+                node.results = {}
 
         functools.update_wrapper(d, _func)
         return d

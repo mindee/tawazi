@@ -9,7 +9,6 @@ from types import MethodType
 from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, Union
 
 from loguru import logger
-from typing_extensions import Self
 
 from tawazi._helpers import _make_raise_arg_error
 from tawazi.config import cfg
@@ -24,8 +23,6 @@ from tawazi.consts import (
     USE_SEP_END,
     USE_SEP_START,
     Identifier,
-    NoVal,
-    NoValType,
     P,
     Resource,
     Tag,
@@ -40,6 +37,8 @@ from .helpers import _lazy_xn_id, _validate_tuple, make_suffix
 
 # a temporary variable used to pass in exec_nodes to the DAG during building
 exec_nodes: Dict[Identifier, "ExecNode"] = {}
+# a temporary variable to hold default values concerning the DAG's description
+results: Dict[Identifier, Any] = {}
 exec_nodes_lock = Lock()
 
 # multiple ways of identifying an XN
@@ -118,13 +117,6 @@ class ExecNode:
     # TODO: fix _active behavior!
     _active: Union[bool, UsageExecNode] = field(init=False, default=True)
 
-    # 4. Assign a default NoVal to the result of the execution of this ExecNode,
-    #  when this ExecNode will be executed, self.result will be overridden
-    # It would be amazing if we can remove self.result and make ExecNode immutable
-    result: Union[NoValType, Any] = field(init=False, default=NoVal)
-    """Internal attribute to store the result of the execution of this ExecNode (Might change!)."""
-    # even though setting result to NoVal is not necessary... it clarifies debugging
-
     profile: Profile = field(default_factory=lambda: Profile(cfg.TAWAZI_PROFILE_ALL_NODES))
 
     def __post_init__(self) -> None:
@@ -172,11 +164,6 @@ class ExecNode:
 
             _validate_tuple(self.exec_function, self.unpack_to)
 
-    @property
-    def executed(self) -> bool:
-        """Whether this ExecNode has been executed."""
-        return self.result is not NoVal
-
     def __repr__(self) -> str:
         """Human representation of the ExecNode.
 
@@ -184,6 +171,10 @@ class ExecNode:
             str: human representation of the ExecNode.
         """
         return f"{self.__class__.__name__} {self.id} ~ | <{hex(id(self))}>"
+
+    def executed(self, results: Dict[Identifier, Any]) -> bool:
+        """Returns whether this ExecNode was executed or not."""
+        return self.id in results
 
     @property
     def active(self) -> Union[UsageExecNode, bool]:
@@ -219,12 +210,11 @@ class ExecNode:
 
         return deps
 
-    def execute(self, exec_nodes: Dict[Identifier, Self]) -> Optional[Any]:
+    def execute(self, results: Dict[Identifier, Any]) -> Any:
         """Execute the ExecNode inside of a DAG.
 
         Args:
-            exec_nodes (Dict[Identifier, ExecNode]): A shared dictionary containing the other ExecNodes in the DAG;
-                the key is the id of the ExecNode. This exec_nodes refers to the current execution
+            results (Dict[Identifier, Any]): A shared dictionary containing the results of other ExecNodes in the DAG;
 
         Returns:
             the result of the execution of the current ExecNode
@@ -232,14 +222,14 @@ class ExecNode:
         logger.debug("Start executing %s with task %s", self.id, self.exec_function)
         self.profile = Profile(cfg.TAWAZI_PROFILE_ALL_NODES)
 
-        if self.executed:
+        if self.executed(results):
             logger.debug("Skipping execution of a pre-computed node %s", self.id)
-            return self.result
+            return results[self.id]
 
         # 1. prepare args and kwargs for usage:
-        args = [xnw.result(exec_nodes) for xnw in self.args]
+        args = [xnw.result(results) for xnw in self.args]
         kwargs = {
-            key: xnw.result(exec_nodes)
+            key: xnw.result(results)
             for key, xnw in self.kwargs.items()
             if key not in RESERVED_KWARGS
         }
@@ -249,17 +239,17 @@ class ExecNode:
         with self.profile:
             # 2 post-
             # 2.1 write the result
-            self.result = self.exec_function(*args, **kwargs)
+            results[self.id] = self.exec_function(*args, **kwargs)
 
         # 3. useless return value
         logger.debug("Finished executing %s with task %s", self.id, self.exec_function)
-        return self.result
+        return results[self.id]
 
 
 class ReturnExecNode(ExecNode):
     """ExecNode corresponding to a constant Return value of a DAG."""
 
-    def __init__(self, func: Callable[..., Any], name_or_order: Union[str, int], value: Any):
+    def __init__(self, func: Callable[..., Any], name_or_order: Union[str, int]):
         """Constructor of ArgExecNode.
 
         Args:
@@ -269,21 +259,20 @@ class ReturnExecNode(ExecNode):
                     1. If called like this: sorted([1,2,3]) then [1,2,3] will be of type ArgExecNode with an order=0
                     2. If called like this: sorted(iterable=[4,5,6]) then [4,5,6]
                        will be an ArgExecNode with a name="iterable"
-            value (Any): The preassigned value to the corresponding Return value.
 
         Raises:
             TypeError: if type parameter is passed (Internal)
         """
         suffix = make_suffix(name_or_order)
         super().__init__(id_=f"{func}{RETURN_NAME_SEP}{suffix}", is_sequential=False)
-        self.result = value
 
 
 class ArgExecNode(ExecNode):
     """ExecNode corresponding to an Argument.
 
-    Every Argument is Attached to a Function or an ExecNode (especially a LazyExecNode)
-    If a value is not passed to the function call / ExecNode,
+    Every Argument is Attached to the DAG or a LazyExecNode
+    NOTE: If a value is not passed to the function call / ExecNode
+    and the argument doesn't have a default value
     it will raise an error similar to Python's Error.
     """
 
@@ -291,7 +280,6 @@ class ArgExecNode(ExecNode):
         self,
         xn_or_func_or_id: Union[ExecNode, Callable[..., Any], Identifier],
         name_or_order: Union[str, int],
-        value: Any = NoVal,
     ):
         """Constructor of ArgExecNode.
 
@@ -302,7 +290,6 @@ class ArgExecNode(ExecNode):
                     1. If called like this: sorted([1,2,3]) then [1,2,3] will be of type ArgExecNode with an order=0
                     2. If called like this: sorted(iterable=[4,5,6]) then [4,5,6] will be of
                        type ArgExecNode with a name="iterable"
-            value (Any): The preassigned value to the corresponding Argument.
 
         Raises:
             TypeError: if type parameter is passed (Internal)
@@ -325,8 +312,6 @@ class ArgExecNode(ExecNode):
         super().__init__(
             id_=f"{base_id}{ARG_NAME_SEP}{suffix}", exec_function=raise_err, is_sequential=False
         )
-
-        self.result = value
 
 
 class LazyExecNode(ExecNode, Generic[P, RVXN]):
@@ -391,8 +376,10 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             if not isinstance(arg, UsageExecNode):
                 # arg here is definitely not a return value of a LazyExecNode!
                 # it must be a default value
-                xn = ArgExecNode(self, i, arg)
+                xn = ArgExecNode(self, i)
                 exec_nodes[xn.id] = xn
+
+                results[xn.id] = arg
                 arg = UsageExecNode(xn.id)
 
             xn_args.append(arg)
@@ -415,8 +402,10 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
 
             if not isinstance(kwarg, UsageExecNode):
                 # passed in constants
-                xn = ArgExecNode(self, kwarg_name, kwarg)
+                xn = ArgExecNode(self, kwarg_name)
                 exec_nodes[xn.id] = xn
+                results[xn.id] = kwarg
+
                 kwarg = UsageExecNode(xn.id)
 
             # TODO: remove this line when fixing self.active

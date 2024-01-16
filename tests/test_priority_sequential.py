@@ -71,7 +71,7 @@ def test_priority() -> None:
         list_execnodes = [en_a, en_b, en_c, en_d]
         node_dict = {xn.id: xn for xn in list_execnodes}
 
-        g: DAG[Any, Any] = DAG(node_dict, [], [], 1)
+        g: DAG[Any, Any] = DAG({}, node_dict, [], [], 1, )
         g()
         assert priority_sequential_comp_str == "abcd", f"during {_i}th iteration"
 
@@ -114,7 +114,7 @@ def test_sequentiality() -> None:
         list_execnodes = [en_a, en_b, en_c, en_d, en_e]
         node_dict = {xn.id: xn for xn in list_execnodes}
 
-        g: DAG[Any, Any] = DAG(node_dict, [], [], 2)
+        g: DAG[Any, Any] = DAG({}, node_dict, [], [], 2)
         g()
         sequential_comp_str = priority_sequential_comp_str
         ind_a = sequential_comp_str.index("a")

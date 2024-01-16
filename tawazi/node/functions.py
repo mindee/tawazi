@@ -17,10 +17,12 @@ def _wrap_in_iterator_helper(
     l_uxn: List[UsageExecNode] = []
     for i, v in enumerate(r_val):
         if not isinstance(v, UsageExecNode):
-            xn = ReturnExecNode(func, i, v)
-            node.exec_nodes[xn.id] = xn
+            xn = ReturnExecNode(func, i)
             uxn = UsageExecNode(xn.id)
             l_uxn.append(uxn)
+
+            node.exec_nodes[xn.id] = xn
+            node.results[xn.id] = v
         else:
             l_uxn.append(v)
     return iter(l_uxn)
@@ -44,10 +46,12 @@ def _wrap_in_dict(func: Callable[..., Any], r_val: Any) -> Optional[Dict[str, Us
     d_uxn: Dict[str, UsageExecNode] = {}
     for k, v in r_val.items():
         if not isinstance(v, UsageExecNode):
-            xn = ReturnExecNode(func, k, v)
-            node.exec_nodes[xn.id] = xn
+            xn = ReturnExecNode(func, k)
             uxn = UsageExecNode(xn.id)
             d_uxn[k] = uxn
+
+            node.exec_nodes[xn.id] = xn
+            node.results[xn.id] = v
         else:
             d_uxn[k] = v
     return d_uxn
@@ -55,8 +59,9 @@ def _wrap_in_dict(func: Callable[..., Any], r_val: Any) -> Optional[Dict[str, Us
 
 def _wrap_in_uxn(func: Callable[..., Any], r_val: Any) -> UsageExecNode:
     if not isinstance(r_val, UsageExecNode):
-        xn = ReturnExecNode(func, 0, r_val)
+        xn = ReturnExecNode(func, 0)
         node.exec_nodes[xn.id] = xn
+        node.results[xn.id] = r_val
         return UsageExecNode(xn.id)
     return r_val
 
@@ -67,6 +72,7 @@ def wrap_in_uxns(func: Callable[..., Any], r_val: Any) -> ReturnUXNsType:
     Args:
         func (ReturnXNsType): function of the DAG description
         r_val (Any): Returned value from DAG describing function
+        results (Dict[Identifier, Any): The results of the DAG's description containg the results (containing the constants in this context)
 
     Raises:
         TawaziTypeError: _description_

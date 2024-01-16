@@ -6,7 +6,7 @@ from copy import copy
 from dataclasses import dataclass, field
 from itertools import chain
 from pathlib import Path
-from typing import Any, Dict, Generic, List, NoReturn, Optional, Sequence, Set, Union
+from typing import Any, Dict, Generic, List, NoReturn, Optional, Sequence, Set, Tuple, Union
 
 import networkx as nx
 import yaml
@@ -14,12 +14,12 @@ from loguru import logger
 
 from tawazi._helpers import _make_raise_arg_error, _UniqueKeyLoader
 from tawazi.config import cfg
-from tawazi.consts import RVDAG, Identifier, NoVal, P, Tag
+from tawazi.consts import RVDAG, Identifier, P, Tag
 from tawazi.errors import TawaziTypeError, TawaziUsageError
 from tawazi.node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode
 
 from .digraph import DiGraphEx
-from .helpers import execute, get_return_values, make_call_xn_dict
+from .helpers import execute, extend_results_with_args, get_return_values
 
 
 @dataclass
@@ -38,6 +38,7 @@ class DAG(Generic[P, RVDAG]):
         max_concurrency: the maximal number of threads running in parallel
     """
 
+    results: Dict[Identifier, Any]
     exec_nodes: Dict[Identifier, ExecNode]
     input_uxns: List[UsageExecNode]
     return_uxns: ReturnUXNsType
@@ -246,9 +247,7 @@ class DAG(Generic[P, RVDAG]):
 
         # 4.1 original DAG's inputs that don't contain default values.
         # used to detect missing inputs
-        dag_inputs_ids = [
-            uxn.id for uxn in self.input_uxns if self.exec_nodes[uxn.id].result is NoVal
-        ]
+        dag_inputs_ids = [uxn.id for uxn in self.input_uxns if uxn.id not in self.results]
 
         # 4.2 define helper function
         def _add_missing_deps(candidate_id: Identifier, xn_ids: Set[Identifier]) -> None:
@@ -299,9 +298,14 @@ class DAG(Generic[P, RVDAG]):
         # if a single value is returned make the output a single value
         out_uxns = _alias_or_aliases_to_uxns(outputs)
 
-        # 6. return the composed DAG
+        # 6. extract the results of only the remaining ExecNodes
+        results = {
+            node_id: result for node_id, result in self.results.items() if node_id in xn_dict
+        }
+
+        # 7. return the composed DAG
         # ignore[arg-type] because the type of the kwargs is not known
-        return DAG(xn_dict, in_uxns, out_uxns, **kwargs)  # type: ignore[arg-type]
+        return DAG(results=results, exec_nodes=xn_dict, input_uxns=in_uxns, return_uxns=out_uxns, **kwargs)  # type: ignore[arg-type]
 
     def alias_to_ids(self, alias: Alias) -> List[Identifier]:
         """Extract an ExecNode ID from an Alias (Tag, ExecNode ID or ExecNode).
@@ -398,7 +402,13 @@ class DAG(Generic[P, RVDAG]):
             [node_id for node_id in graph if node_id not in self.graph_ids.setup_nodes]
         )
 
-        _ = execute(exec_nodes=self.exec_nodes, max_concurrency=self.max_concurrency, graph=graph)
+        # 4. execute the graph and set the results to setup_results
+        _, self.results = execute(
+            exec_nodes=self.exec_nodes,
+            results=self.results,
+            max_concurrency=self.max_concurrency,
+            graph=graph,
+        )
 
     def executor(
         self,
@@ -433,24 +443,37 @@ class DAG(Generic[P, RVDAG]):
         )
 
     # TODO: discuss whether we want to expose it or not
-    def run_subgraph(self, subgraph: DiGraphEx, *args: P.args) -> Dict[Identifier, ExecNode]:
+    def run_subgraph(
+        self, subgraph: DiGraphEx, results: Optional[Dict[Identifier, Any]], *args: P.args
+    ) -> Tuple[Dict[Identifier, ExecNode], Dict[Identifier, Any]]:
         """Run a subgraph of the original graph (might be the same graph).
 
         Args:
             subgraph: the subgraph to run
+            results: the results provided from the dag (containing setup) or coming from a modified DAG (from DAGExecution)
             *args: the args to pass to the graph
 
         Returns:
             a mapping between the execnodes and there identifiers
         """
-        call_xn_dict = make_call_xn_dict(self.exec_nodes, self.input_uxns, *args)
+        if results is None:
+            results = extend_results_with_args(self.results, self.input_uxns, *args)
+        else:
+            results = extend_results_with_args(results, self.input_uxns, *args)
 
-        return execute(
+        exec_nodes, results = execute(
             exec_nodes=self.exec_nodes,
+            results=results,
             max_concurrency=self.max_concurrency,
             graph=subgraph,
-            modified_exec_nodes=call_xn_dict,
         )
+
+        # set DAG.results to the obtained value from setup ExecNodes
+        for node_id, result in results.items():
+            if self.exec_nodes[node_id].setup:
+                self.results[node_id] = result
+
+        return exec_nodes, results
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
         """Execute the DAG scheduler via a similar interface to the function that describes the dependencies.
@@ -471,8 +494,8 @@ class DAG(Generic[P, RVDAG]):
             raise TawaziUsageError(f"currently DAG does not support keyword arguments: {kwargs}")
 
         graph = self.graph_ids.extend_graph_with_debug_nodes(self.graph_ids, cfg)
-        all_nodes_dict = self.run_subgraph(graph, *args)
-        return get_return_values(self.return_uxns, all_nodes_dict)  # type: ignore[return-value]
+        _, results = self.run_subgraph(graph, None, *args)
+        return get_return_values(self.return_uxns, results)  # type: ignore[return-value]
 
     def config_from_dict(self, config: Dict[str, Any]) -> None:
         """Allows reconfiguring the parameters of the nodes from a dictionary.
@@ -620,6 +643,22 @@ class DAGExecution(Generic[P, RVDAG]):
         # add debug nodes
         self.graph = graph.extend_graph_with_debug_nodes(self.dag.graph_ids, cfg)
 
+    @property
+    def results(self) -> Dict[Identifier, Any]:
+        """Returns the results of the previous DAGExecution.
+
+        Before the DAG is executed, the results are the same as the underlying DAG. This also includes before/after setup.
+        After Execution, the results have been enriched with all the ExecNodes' results.
+        """
+        if self.executed:
+            return self._results
+        return self.dag.results
+
+    @results.setter
+    def results(self, value: Dict[Identifier, Any]) -> None:
+        """Set results."""
+        self._results = value
+
     def setup(self) -> None:
         """Same thing as DAG.setup but `target_nodes` and `exclude_nodes` come from the DAGExecution's init."""
         # TODO: handle the case where cache_deps_of is provided instead of target_nodes and exclude_nodes
@@ -665,19 +704,21 @@ class DAGExecution(Generic[P, RVDAG]):
         if self.executed:
             raise TawaziUsageError("DAGExecution object has already been executed.")
 
-        # 2. Execute the scheduler
-        self.xn_dict = self.dag.run_subgraph(self.graph, *args)
-
         if self.from_cache:
             with open(self.from_cache, "rb") as f:
                 cached_results = pickle.load(f)  # noqa: S301
             for node in self.cached_nodes:
-                self.xn_dict[node.id].result = cached_results[node.id]
+                self.results = cached_results[node.id]
+
+        # 2. Execute the scheduler
+        self.xn_dict, self.results = self.dag.run_subgraph(self.graph, self.results, *args)
+
+        # mark as executed. Important for the next step
+        self.executed = True
 
         # 3. cache in the graph results
         if self.cache_in:
-            self._cache_results(results={xn.id: xn.result for xn in self.xn_dict.values()})
+            self._cache_results(self.results)
 
-        self.executed = True
         # 3. extract the returned value/values
-        return get_return_values(self.dag.return_uxns, self.xn_dict)  # type: ignore[return-value]
+        return get_return_values(self.dag.return_uxns, self.results)  # type: ignore[return-value]

@@ -1,10 +1,9 @@
 """Module for helper functions."""
 import inspect
-from typing import Any, Callable, Dict, List, NoReturn, Tuple, Union
+from typing import Any, Callable, Dict, List, NoReturn, Tuple
 
 import yaml
 
-from tawazi.consts import NoVal, NoValType
 from tawazi.errors import _raise_arg_exc
 
 
@@ -78,12 +77,6 @@ def _make_raise_arg_error(func_name: str, arg_name: str) -> Callable[[], NoRetur
         _raise_arg_exc(func_name, arg_name)
 
     return local_func
-
-
-def _filter_noval(v: Union[NoValType, Any]) -> Any:
-    if v is NoVal:
-        return None
-    return v
 
 
 # courtesy of https://gist.github.com/pypt/94d747fe5180851196eb?permalink_comment_id=3401011#gistcomment-3401011
