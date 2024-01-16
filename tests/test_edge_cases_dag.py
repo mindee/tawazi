@@ -11,7 +11,12 @@ from tawazi.node import ExecNode, UsageExecNode
 
 
 def shortcut_execute(dag: DAG[Any, Any], graph: DiGraphEx) -> Any:
-    return execute(exec_nodes=dag.exec_nodes, max_concurrency=dag.max_concurrency, graph=graph)
+    return execute(
+        results=dag.results,
+        exec_nodes=dag.exec_nodes,
+        max_concurrency=dag.max_concurrency,
+        graph=graph,
+    )
 
 
 def a(c: str) -> str:
@@ -44,10 +49,10 @@ def test_same_constant_name_in_two_exec_nodes() -> None:
         var_a = a(1234)
         b(var_a, "poulpe")
 
-    exec_nodes = shortcut_execute(my_dag, my_dag.graph_ids.make_subgraph())
+    exec_nodes, results = shortcut_execute(my_dag, my_dag.graph_ids.make_subgraph())
     assert len(exec_nodes) == 4
-    assert exec_nodes[a.id].result == 1234
-    assert exec_nodes[b.id].result == "1234poulpe"
+    assert results[a.id] == 1234
+    assert results[b.id] == "1234poulpe"
 
 
 def test_dag_with_weird_nodes() -> None:

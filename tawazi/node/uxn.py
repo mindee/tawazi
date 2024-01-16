@@ -5,7 +5,8 @@ from dataclasses import dataclass, field
 from functools import reduce
 from typing import Any, Dict, List, NoReturn, Tuple, Union
 
-from tawazi._helpers import _filter_noval
+from typing_extensions import Self
+
 from tawazi.consts import Identifier, NoValType
 
 # NOTE: None is hashable! In theory it can be used as a key in a dict!
@@ -27,7 +28,7 @@ class UsageExecNode:
     #  we can directly build a nx DAG with nodes instead of node ids
     #  removing almost all of the duplicate graph building logic
     # used in the dag dependency description
-    def __getitem__(self, key: KeyType) -> "UsageExecNode":
+    def __getitem__(self, key: KeyType) -> Self:
         """Record the used key in a new UsageExecNode.
 
         Args:
@@ -50,16 +51,14 @@ class UsageExecNode:
         """
         return bool(self.key)
 
-    def result(self, xn_dict: Dict[Identifier, Any]) -> Any:
+    def result(self, results: Dict[Identifier, Any]) -> Any:
         """Extract the result of the ExecNode corresponding to used key(s).
+
+        If no Value exists returns None.
 
         Returns:
             Any: value inside the container
         """
-        # TODO: move this elsewhere
-        from .node import ExecNode
-
-        xn: ExecNode = xn_dict[self.id]
         # ignore typing error because it is the responsibility of the user to ensure the result of the XN is indexable!
         # Will raise the appropriate exception automatically
         #  The user might have specified a subgraph to run => xn contain NoVal
@@ -68,7 +67,9 @@ class UsageExecNode:
         # if isinstance(xn.result, NoValType):
         #     raise TawaziTypeError(f"{xn} didn't run, hence its result is not indexable. Check your DAG's config")
 
-        return _filter_noval(reduce(lambda obj, key: obj.__getitem__(key), self.key, xn.result))
+        if self.id in results:
+            return reduce(lambda obj, key: obj.__getitem__(key), self.key, results[self.id])
+        return None
 
     def __bool__(self) -> NoReturn:
         """__bool__ operator."""

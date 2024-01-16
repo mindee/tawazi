@@ -18,7 +18,7 @@ class TawaziArgumentException(TawaziBaseException):
             func_name (str): The corresponding function name.
             arg_name (str): The corresponding argument name.
         """
-        msg = f"Argument {arg_name} wasn't passed for the DAG" f" created from function {func_name}"
+        msg = f"Argument {arg_name} wasn't passed for the DAG/ExecNode created from function {func_name}"
         super().__init__(msg)
 
 

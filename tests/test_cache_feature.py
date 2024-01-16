@@ -6,7 +6,6 @@ from typing import Any, List, Tuple
 import numpy as np
 import pytest
 from tawazi import DAGExecution, dag, xn
-from tawazi.consts import NoVal
 from tawazi.node import ExecNode
 
 
@@ -105,8 +104,8 @@ def test_cache_results_subgraph(cache_path: str, zeros: Any, ones: Any) -> None:
         cached_results = pickle.load(f)  # noqa: S301
     assert np.array_equal(cached_results["generate_large_zeros_array"], zeros)
     assert np.array_equal(cached_results["incr_large_array"], ones)
-    assert cached_results["pass_large_array"] is NoVal
-    assert cached_results["avg_array"] is NoVal
+    assert "pass_large_array" not in cached_results
+    assert "avg_array" not in cached_results
 
 
 def test_running_cached_dag(cache_path: str, zeros: Any, ones: Any, avg: Any) -> None:
