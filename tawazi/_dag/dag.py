@@ -17,6 +17,7 @@ from tawazi.config import cfg
 from tawazi.consts import RVDAG, Identifier, P, Tag
 from tawazi.errors import TawaziTypeError, TawaziUsageError
 from tawazi.node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode
+from tawazi.profile import Profile
 
 from .digraph import DiGraphEx
 from .helpers import execute, extend_results_with_args, get_return_values
@@ -403,7 +404,7 @@ class DAG(Generic[P, RVDAG]):
         )
 
         # 4. execute the graph and set the results to setup_results
-        _, self.results = execute(
+        _, self.results, _ = execute(
             exec_nodes=self.exec_nodes,
             results=self.results,
             max_concurrency=self.max_concurrency,
@@ -445,7 +446,7 @@ class DAG(Generic[P, RVDAG]):
     # TODO: discuss whether we want to expose it or not
     def run_subgraph(
         self, subgraph: DiGraphEx, results: Optional[Dict[Identifier, Any]], *args: P.args
-    ) -> Tuple[Dict[Identifier, ExecNode], Dict[Identifier, Any]]:
+    ) -> Tuple[Dict[Identifier, ExecNode], Dict[Identifier, Any], Dict[Identifier, Profile]]:
         """Run a subgraph of the original graph (might be the same graph).
 
         Args:
@@ -461,7 +462,7 @@ class DAG(Generic[P, RVDAG]):
         else:
             results = extend_results_with_args(results, self.input_uxns, *args)
 
-        exec_nodes, results = execute(
+        exec_nodes, results, profiles = execute(
             exec_nodes=self.exec_nodes,
             results=results,
             max_concurrency=self.max_concurrency,
@@ -473,7 +474,7 @@ class DAG(Generic[P, RVDAG]):
             if self.exec_nodes[node_id].setup:
                 self.results[node_id] = result
 
-        return exec_nodes, results
+        return exec_nodes, results, profiles
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
         """Execute the DAG scheduler via a similar interface to the function that describes the dependencies.
@@ -494,7 +495,7 @@ class DAG(Generic[P, RVDAG]):
             raise TawaziUsageError(f"currently DAG does not support keyword arguments: {kwargs}")
 
         graph = self.graph_ids.extend_graph_with_debug_nodes(self.graph_ids, cfg)
-        _, results = self.run_subgraph(graph, None, *args)
+        _, results, _ = self.run_subgraph(graph, None, *args)
         return get_return_values(self.return_uxns, results)  # type: ignore[return-value]
 
     def config_from_dict(self, config: Dict[str, Any]) -> None:
@@ -607,6 +608,8 @@ class DAGExecution(Generic[P, RVDAG]):
     executed: bool = False
     cached_nodes: List[ExecNode] = field(init=False, default_factory=list)
 
+    profiles: Dict[Identifier, Profile] = field(init=False, default_factory=dict)
+
     def __post_init__(self) -> None:
         """Dynamic construction of attributes."""
         # build the graph from cache if it exists
@@ -711,7 +714,9 @@ class DAGExecution(Generic[P, RVDAG]):
                 self.results = cached_results[node.id]
 
         # 2. Execute the scheduler
-        self.xn_dict, self.results = self.dag.run_subgraph(self.graph, self.results, *args)
+        self.xn_dict, self.results, self.profiles = self.dag.run_subgraph(
+            self.graph, self.results, *args
+        )
 
         # mark as executed. Important for the next step
         self.executed = True

@@ -49,7 +49,7 @@ def test_same_constant_name_in_two_exec_nodes() -> None:
         var_a = a(1234)
         b(var_a, "poulpe")
 
-    exec_nodes, results = shortcut_execute(my_dag, my_dag.graph_ids.make_subgraph())
+    exec_nodes, results, _ = shortcut_execute(my_dag, my_dag.graph_ids.make_subgraph())
     assert len(exec_nodes) == 4
     assert results[a.id] == 1234
     assert results[b.id] == "1234poulpe"
