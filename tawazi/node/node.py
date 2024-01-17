@@ -39,6 +39,7 @@ from .helpers import _lazy_xn_id, _validate_tuple, make_suffix
 exec_nodes: Dict[Identifier, "ExecNode"] = {}
 # a temporary variable to hold default values concerning the DAG's description
 results: Dict[Identifier, Any] = {}
+actives: Dict[Identifier, Union[bool, UsageExecNode]] = {}
 exec_nodes_lock = Lock()
 
 # multiple ways of identifying an XN
@@ -71,36 +72,34 @@ def count_occurrences(id_: str, exec_nodes: Dict[str, "ExecNode"]) -> int:
 
 @dataclass
 class ExecNode:
-    """This class is the base executable node of the Directed Acyclic Execution Graph.
+    """Base class for executable node in a DAG.
 
     An ExecNode is an Object that can be executed inside a DAG scheduler.
     It basically consists of a function (exec_function) that takes args and kwargs and returns a value.
-    When the ExecNode is executed in the DAG, the resulting value will be stored in the `result` instance attribute.
+    When the ExecNode is executed in the DAG, the resulting value will be stored in a results dict.
     Note: This class is not meant to be instantiated directly.
         Please use `@xn` decorator.
 
-
     Args:
-        id_ (Identifier): identifier of ExecNode.
-        exec_function (Callable): a callable will be executed in the graph.
-        args (Optional[List[ExecNode]], optional): *args to pass to exec_function.
-        kwargs (Optional[Dict[str, ExecNode]], optional): **kwargs to pass to exec_function.
+        id_ (Identifier): Identifier.
+        exec_function (Callable): callable to execute in the DAG.
+        args (Optional[List[ExecNode]], optional): *args to pass to exec_function during execution.
+        kwargs (Optional[Dict[str, ExecNode]], optional): **kwargs to pass to exec_function during execution.
         priority (int): priority compared to other ExecNodes; the higher the number the higher the priority.
         is_sequential (bool): whether to execute this ExecNode in sequential order with respect to others.
-            When this ExecNode must be executed, all other nodes are waited to finish before starting execution.
+            (i.e. When this ExecNode must be executed, all other nodes are waited to finish before starting execution.)
             Defaults to False.
         debug (bool): Make this ExecNode a debug Node. Defaults to False.
         tag (TagOrTags): Attach a Tag or Tags to this ExecNode. Defaults to None.
         setup (bool): Make this ExecNode a setup Node. Defaults to False.
         unpack_to (Optional[int]): if not None, this ExecNode's execution must return unpacked results corresponding
             to the given value
-        resource (str): the resource to use to execute this ExecNode. Defaults to "thread".
+        resource (str): The resource to use to execute this ExecNode. Defaults to "thread".
 
     Raises:
         ValueError: if setup and debug are both True.
     """
 
-    # 1. assign attributes
     id_: Identifier = field(default=None)  # type: ignore[assignment]
     exec_function: Callable[..., Any] = field(default_factory=lambda: lambda *args, **kwargs: None)
     priority: int = 0
@@ -113,9 +112,6 @@ class ExecNode:
 
     args: List[UsageExecNode] = field(default_factory=list)  # args or []
     kwargs: Dict[Identifier, UsageExecNode] = field(default_factory=dict)  # kwargs or {}
-
-    # TODO: fix _active behavior!
-    _active: Union[bool, UsageExecNode] = field(init=False, default=True)
 
     def __post_init__(self) -> None:
         """Post init to validate attributes."""
@@ -173,19 +169,6 @@ class ExecNode:
     def executed(self, results: Dict[Identifier, Any]) -> bool:
         """Returns whether this ExecNode was executed or not."""
         return self.id in results
-
-    @property
-    def active(self) -> Union[UsageExecNode, bool]:
-        """Whether this ExecNode is active or not."""
-        # the value is set during the DAG description
-        if isinstance(self._active, UsageExecNode):
-            return self._active
-        # the value set is a constant value
-        return bool(self._active)
-
-    @active.setter
-    def active(self, value: Any) -> None:
-        self._active = value
 
     @property
     def id(self) -> Identifier:
@@ -409,7 +392,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
 
             # TODO: remove this line when fixing self.active
             if kwarg_name == ARG_NAME_ACTIVATE:
-                self.active = kwarg
+                actives[self.id] = kwarg
 
             xn_kwargs[kwarg_name] = kwarg
         return xn_kwargs

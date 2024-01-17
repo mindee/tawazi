@@ -13,6 +13,7 @@ from tawazi.node import ExecNode, UsageExecNode
 def shortcut_execute(dag: DAG[Any, Any], graph: DiGraphEx) -> Any:
     return execute(
         results=dag.results,
+        actives=dag.actives,
         exec_nodes=dag.exec_nodes,
         max_concurrency=dag.max_concurrency,
         graph=graph,
