@@ -48,19 +48,19 @@ def test_profiler_basic() -> None:
     exec_pipe = pipe_.executor()
     exec_pipe(0.1)
 
-    profile = exec_pipe.xn_dict["sleeper"].profile
+    profile = exec_pipe.profiles["sleeper"]
     assert almost_equal(profile.abs_exec_time, 0.1)
     assert almost_equal(profile.process_exec_time, 0)
     assert almost_equal(profile.thread_exec_time, 0)
 
-    profile = exec_pipe.xn_dict["worker"].profile
+    profile = exec_pipe.profiles["worker"]
     assert almost_equal(profile.abs_exec_time, 0.1)
     assert not almost_equal(
         profile.process_exec_time, 0, 0.05
     )  # make sur that it doesn't equal 0 by a large margin
     assert not almost_equal(profile.thread_exec_time, 0, 0.05)
 
-    profile = exec_pipe.xn_dict["setop"].profile
+    profile = exec_pipe.profiles["setop"]
     assert not almost_equal(profile.abs_exec_time, 0, 0.002)
     assert not almost_equal(
         profile.process_exec_time, 0, 0.002
@@ -76,19 +76,16 @@ def test_profiler_setop() -> None:
 
     exec_pipe(0.1)
 
-    profile = exec_pipe.xn_dict["sleeper"].profile
+    profile = exec_pipe.profiles["sleeper"]
     assert almost_equal(profile.abs_exec_time, 0.1)
     assert almost_equal(profile.process_exec_time, 0)
     assert almost_equal(profile.thread_exec_time, 0)
 
-    profile = exec_pipe.xn_dict["worker"].profile
+    profile = exec_pipe.profiles["worker"]
     assert almost_equal(profile.abs_exec_time, 0.1)
     assert not almost_equal(
         profile.process_exec_time, 0, 0.05
     )  # make sur that it doesn't equal 0 by a large margin
     assert not almost_equal(profile.thread_exec_time, 0, 0.05)
 
-    profile = exec_pipe.xn_dict["setop"].profile
-    assert almost_equal(profile.abs_exec_time, 0)
-    assert almost_equal(profile.process_exec_time, 0)
-    assert almost_equal(profile.thread_exec_time, 0)
+    assert "setop" not in exec_pipe.profiles

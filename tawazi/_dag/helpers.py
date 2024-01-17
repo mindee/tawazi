@@ -8,6 +8,7 @@ from tawazi._dag.digraph import DiGraphEx
 from tawazi.consts import Identifier, Resource, RVTypes
 from tawazi.errors import TawaziTypeError
 from tawazi.node import ExecNode, ReturnUXNsType, UsageExecNode
+from tawazi.profile import Profile
 
 
 def _xn_active_in_call(xn: ExecNode, results: Dict[Identifier, Any]) -> bool:
@@ -93,7 +94,7 @@ def execute(
     results: Dict[Identifier, Any],
     max_concurrency: int,
     graph: DiGraphEx,
-) -> Tuple[Dict[Identifier, ExecNode], Dict[Identifier, Any]]:
+) -> Tuple[Dict[Identifier, ExecNode], Dict[Identifier, Any], Dict[Identifier, Profile]]:
     """Thread safe execution of the DAG.
 
     (Except for the setup nodes! Please run DAG.setup() in a single thread because its results will be cached).
@@ -111,6 +112,7 @@ def execute(
     """
     # 0.1 copy results because it will be modified here
     results = copy(results)
+    profiles: Dict[Identifier, Profile] = {}
 
     # TODO: remove copy of ExecNodes when profiling and is_active are stored outside of ExecNode
     exec_nodes = copy_non_setup_xns(exec_nodes)
@@ -195,14 +197,14 @@ def execute(
 
             # 5.2 submit the exec node to the executor
             if xn.resource == Resource.thread:
-                exec_future = executor.submit(xn.execute, results=results)
+                exec_future = executor.submit(xn.execute, results=results, profiles=profiles)
                 running.add(exec_future)
                 futures[xn.id] = exec_future
             else:
                 # a single execution will be launched and will end.
                 # it doesn't count as an additional thread that is running.
                 logger.debug("Executing %s in main thread", xn.id)
-                xn.execute(results=results)
+                xn.execute(results=results, profiles=profiles)
 
                 logger.debug("Remove ExecNode % from the graph", xn.id)
                 graph.remove_node(xn.id)
@@ -214,7 +216,7 @@ def execute(
                 # ALL_COMPLETED is equivalent to FIRST_COMPLETED because there is only a single future running!
                 done_, running = wait(futures.values(), return_when=ALL_COMPLETED)
 
-    return exec_nodes, results
+    return exec_nodes, results, profiles
 
 
 def get_return_values(return_uxns: ReturnUXNsType, results: Dict[Identifier, Any]) -> RVTypes:

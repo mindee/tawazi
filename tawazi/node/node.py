@@ -117,8 +117,6 @@ class ExecNode:
     # TODO: fix _active behavior!
     _active: Union[bool, UsageExecNode] = field(init=False, default=True)
 
-    profile: Profile = field(default_factory=lambda: Profile(cfg.TAWAZI_PROFILE_ALL_NODES))
-
     def __post_init__(self) -> None:
         """Post init to validate attributes."""
         if isinstance(self.exec_function, partial):
@@ -210,17 +208,18 @@ class ExecNode:
 
         return deps
 
-    def execute(self, results: Dict[Identifier, Any]) -> Any:
+    def execute(self, results: Dict[Identifier, Any], profiles: Dict[Identifier, Profile]) -> Any:
         """Execute the ExecNode inside of a DAG.
 
         Args:
             results (Dict[Identifier, Any]): A shared dictionary containing the results of other ExecNodes in the DAG;
+            profiles (Dict[Identifier, Profile]): A dictionary containing the profiles of the execution of all other ExecNodes in the DAG
 
         Returns:
             the result of the execution of the current ExecNode
         """
         logger.debug("Start executing %s with task %s", self.id, self.exec_function)
-        self.profile = Profile(cfg.TAWAZI_PROFILE_ALL_NODES)
+        profiles[self.id] = Profile(cfg.TAWAZI_PROFILE_ALL_NODES)
 
         if self.executed(results):
             logger.debug("Skipping execution of a pre-computed node %s", self.id)
@@ -236,7 +235,7 @@ class ExecNode:
 
         # 1. pre-
         # 1.1 prepare the profiling
-        with self.profile:
+        with profiles[self.id]:
             # 2 post-
             # 2.1 write the result
             results[self.id] = self.exec_function(*args, **kwargs)
