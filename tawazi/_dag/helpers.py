@@ -1,6 +1,6 @@
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple, Union
 
 from loguru import logger
 
@@ -11,19 +11,25 @@ from tawazi.node import ExecNode, ReturnUXNsType, UsageExecNode
 from tawazi.profile import Profile
 
 
-def _xn_active_in_call(xn: ExecNode, results: Dict[Identifier, Any]) -> bool:
+def _xn_active_in_call(
+    xn: ExecNode,
+    results: Dict[Identifier, Any],
+    actives: Dict[Identifier, Union[Any, UsageExecNode]],
+) -> bool:
     """Check if a node is active.
 
     Args:
         xn: the execnode
         results: dict containing the results of the execution
+        actives: dict containing active data of all ExecNodes in current DAG
 
     Returns:
         is the node active
     """
-    if isinstance(xn.active, bool):
-        return xn.active
-    return bool(results[xn.active.id])
+    active = actives.get(xn.id, True)
+    if isinstance(active, UsageExecNode):
+        return bool(results[active.id])
+    return bool(active)
 
 
 def copy_non_setup_xns(x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
@@ -92,6 +98,7 @@ def execute(
     *,
     exec_nodes: Dict[Identifier, ExecNode],
     results: Dict[Identifier, Any],
+    actives: Dict[Identifier, Union[Any, UsageExecNode]],
     max_concurrency: int,
     graph: DiGraphEx,
 ) -> Tuple[Dict[Identifier, ExecNode], Dict[Identifier, Any], Dict[Identifier, Profile]]:
@@ -102,6 +109,7 @@ def execute(
     Args:
         exec_nodes: dictionary identifying ExecNodes.
         results: dictionary containing results of setup and constants
+        actives: actives information of all ExecNodes
         max_concurrency: maximum number of threads to be used for the execution.
         behavior: the behavior to be used in case of error.
         graph: the graph ids to be executed
@@ -112,6 +120,7 @@ def execute(
     """
     # 0.1 copy results because it will be modified here
     results = copy(results)
+    actives = copy(actives)
     profiles: Dict[Identifier, Profile] = {}
 
     # TODO: remove copy of ExecNodes when profiling and is_active are stored outside of ExecNode
@@ -190,7 +199,7 @@ def execute(
                 continue
 
             # 5.1 dynamic graph pruning
-            if not _xn_active_in_call(xn, results):
+            if not _xn_active_in_call(xn, results, actives):
                 logger.debug("Prune %s from the graph", xn.id)
                 graph.remove_recursively(xn.id)
                 continue

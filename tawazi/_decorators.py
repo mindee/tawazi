@@ -175,6 +175,7 @@ def dag(
             #      make sure it is empty
             node.exec_nodes = {}
             node.results = {}
+            node.actives = {}
             try:
                 # 2. make ExecNodes corresponding to the arguments of the ExecNode
                 # 2.1 get the names of the arguments and the default values
@@ -206,6 +207,7 @@ def dag(
                 # 4. Construct the DAG instance
                 d: DAG[P, RVDAG] = DAG(
                     results=node.results,
+                    actives=node.actives,
                     exec_nodes=node.exec_nodes,
                     input_uxns=uxn_args,
                     return_uxns=returned_usage_exec_nodes,
@@ -219,6 +221,7 @@ def dag(
                 #   we can empty the global variable node.exec_nodes
                 node.exec_nodes = {}
                 node.results = {}
+                node.actives = {}
 
         functools.update_wrapper(d, _func)
         return d

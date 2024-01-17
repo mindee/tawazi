@@ -40,6 +40,7 @@ class DAG(Generic[P, RVDAG]):
     """
 
     results: Dict[Identifier, Any]
+    actives: Dict[Identifier, Union[bool, UsageExecNode]]
     exec_nodes: Dict[Identifier, ExecNode]
     input_uxns: List[UsageExecNode]
     return_uxns: ReturnUXNsType
@@ -299,14 +300,15 @@ class DAG(Generic[P, RVDAG]):
         # if a single value is returned make the output a single value
         out_uxns = _alias_or_aliases_to_uxns(outputs)
 
-        # 6. extract the results of only the remaining ExecNodes
+        # 6. extract the results and the actives of only the remaining ExecNodes
         results = {
             node_id: result for node_id, result in self.results.items() if node_id in xn_dict
         }
+        actives = {xn_id: active for xn_id, active in self.actives.items() if xn_id in xn_dict}
 
         # 7. return the composed DAG
         # ignore[arg-type] because the type of the kwargs is not known
-        return DAG(results=results, exec_nodes=xn_dict, input_uxns=in_uxns, return_uxns=out_uxns, **kwargs)  # type: ignore[arg-type]
+        return DAG(results=results, actives=actives, exec_nodes=xn_dict, input_uxns=in_uxns, return_uxns=out_uxns, **kwargs)  # type: ignore[arg-type]
 
     def alias_to_ids(self, alias: Alias) -> List[Identifier]:
         """Extract an ExecNode ID from an Alias (Tag, ExecNode ID or ExecNode).
@@ -407,6 +409,7 @@ class DAG(Generic[P, RVDAG]):
         _, self.results, _ = execute(
             exec_nodes=self.exec_nodes,
             results=self.results,
+            actives=self.actives,
             max_concurrency=self.max_concurrency,
             graph=graph,
         )
@@ -465,6 +468,7 @@ class DAG(Generic[P, RVDAG]):
         exec_nodes, results, profiles = execute(
             exec_nodes=self.exec_nodes,
             results=results,
+            actives=self.actives,
             max_concurrency=self.max_concurrency,
             graph=subgraph,
         )
