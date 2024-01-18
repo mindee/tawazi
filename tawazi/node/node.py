@@ -1,6 +1,7 @@
 """Module describing ExecNode Class and subclasses (The basic building Block of a DAG."""
 import functools
 import warnings
+from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from functools import partial
 from threading import Lock
@@ -347,6 +348,8 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         id_ = _lazy_xn_id(self.id, count_occurrences(self.id, exec_nodes))
         # 1.1 Construct a new LazyExecNode corresponding to the current call
         values = asdict(self)
+        # force deepcopying instead of the default behavior of asdict: recursively apply asdict to dataclasses!
+        values["exec_function"] = deepcopy(self.exec_function)
         values["id_"] = id_
 
         # 2. Make the corresponding ArgExecNodes that corresponds to the Arguments
