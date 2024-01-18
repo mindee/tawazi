@@ -47,7 +47,7 @@ def test_basic_compose() -> None:
 
 
 def test_full_pipe() -> None:
-    composed_dag: DAG[[int], int] = linear_pipe.compose("linear_pipe>>>i", d)
+    composed_dag: DAG[[int], int] = linear_pipe.compose("linear_pipe>!>i", d)
     assert linear_pipe(0) == 4
     assert composed_dag(0) == 4
 
@@ -139,7 +139,7 @@ def test_duplicate_tag_in_inputs() -> None:
 
 def test_multiple_return_value() -> None:
     sub: DAG[[int], Tuple[int, int, str, float]] = diamond_pipe.compose(  # type: ignore[assignment]
-        ["diamond_pipe>>>v"], ["x", "x<<1>>", "y", "z"]
+        ["diamond_pipe>!>v"], ["x", "x<<1>>", "y", "z"]
     )
     assert sub(2) == (2, 2, "2", 4.0)
 
@@ -187,7 +187,7 @@ def diamond_pipe2(v: int, c: int = 10) -> float:
 
 
 def test_outputs_depends_on_csts_subgraph_including_const_inputs() -> None:
-    c_dag = diamond_pipe2.compose("diamond_pipe2>>>v", z)
+    c_dag = diamond_pipe2.compose("diamond_pipe2>!>v", z)
     assert c_dag(2) == 24.0
 
 
@@ -218,13 +218,13 @@ def test_setop() -> None:
     assert setop_counter == 1
 
     diamond_pipe_setop_ = deepcopy(diamond_pipe_setop)
-    c_dag = diamond_pipe_setop_.compose("diamond_pipe_setop>>>v", [y, x])
+    c_dag = diamond_pipe_setop_.compose("diamond_pipe_setop>!>v", [y, x])
     assert c_dag(2) == ("twinkle toes", 2)
     assert setop_counter == 2
     assert c_dag(2) == ("twinkle toes", 2)
     assert setop_counter == 2
 
     diamond_pipe_setop_ = deepcopy(diamond_pipe_setop)
-    d_dag: DAG[[int], int] = diamond_pipe_setop_.compose("diamond_pipe_setop>>>v", x)  # type: ignore[assignment]
+    d_dag: DAG[[int], int] = diamond_pipe_setop_.compose("diamond_pipe_setop>!>v", x)  # type: ignore[assignment]
     assert d_dag(2) == 2
     assert setop_counter == 2
