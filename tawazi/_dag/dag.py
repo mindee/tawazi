@@ -2,7 +2,7 @@
 import json
 import pickle
 import warnings
-from copy import copy
+from copy import deepcopy
 from dataclasses import dataclass, field
 from itertools import chain
 from pathlib import Path
@@ -12,11 +12,12 @@ import networkx as nx
 import yaml
 from loguru import logger
 
-from tawazi._helpers import _make_raise_arg_error, _UniqueKeyLoader
+from tawazi._helpers import _UniqueKeyLoader
 from tawazi.config import cfg
 from tawazi.consts import RVDAG, Identifier, P, Tag
 from tawazi.errors import TawaziTypeError, TawaziUsageError
 from tawazi.node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode
+from tawazi.node.node import make_axn_id
 from tawazi.profile import Profile
 
 from .digraph import DiGraphEx
@@ -283,20 +284,30 @@ class DAG(Generic[P, RVDAG]):
         # 5.1 copy the ExecNodes that will be in the composed DAG because
         #  maybe the composed DAG will modify them (e.g. change their tags)
         #  and we don't want to modify the original DAG
-        xn_dict = {xn_id: copy(self.exec_nodes[xn_id]) for xn_id in set_xn_ids}
+        xn_dict: Dict[Identifier, ExecNode] = {}
+        for in_id in set_xn_ids:
+            if in_id not in in_ids:
+                xn_dict[in_id] = deepcopy(self.exec_nodes[in_id])
 
-        # 5.2 change the inputs of the ExecNodes into ArgExecNodes
-        for xn_id, xn in xn_dict.items():
-            if xn_id in in_ids:
-                logger.debug("changing Composed-DAG's input {} into ArgExecNode", xn_id)
-                xn.__class__ = ArgExecNode
-                xn.exec_function = _make_raise_arg_error("composed", xn.id)
-                # eliminate all dependencies
-                xn.args = []
-                xn.kwargs = {}
+        # change input ExecNodes to ArgExecNodes
+        new_in_ids = [make_axn_id(old_id, id_="composed") for old_id in in_ids]
+        for old_id, new_id in zip(in_ids, new_in_ids):
+            logger.debug("changing Composed-DAG's input {} into ArgExecNode", new_id)
+            xn_dict[new_id] = ArgExecNode(new_id)
+
+            # because id changed, we must change the id in the corresponding dependencies everywhere
+            for xn in xn_dict.values():
+                for i, xn_dep in enumerate(xn.args):
+                    # if the dependency of xn is an input_id of the newly composed DAG.
+                    if xn_dep.id == old_id:
+                        xn.args[i] = UsageExecNode(new_id, xn_dep.key)
+                for xn_dep_name, xn_dep in xn.kwargs.items():
+                    # if dependency of xn is an input_id of the newly composed DAG.
+                    if xn_dep.id == old_id:
+                        xn.kwargs[xn_dep_name] = UsageExecNode(new_id, xn_dep.key)
 
         # 5.3 make the inputs and outputs UXNs for the composed DAG
-        in_uxns = [UsageExecNode(xn_id) for xn_id in in_ids]
+        in_uxns = [UsageExecNode(xn_id) for xn_id in new_in_ids]
         # if a single value is returned make the output a single value
         out_uxns = _alias_or_aliases_to_uxns(outputs)
 

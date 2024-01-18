@@ -1,8 +1,7 @@
 """Module describing ExecNode Class and subclasses (The basic building Block of a DAG."""
 import functools
 import warnings
-from copy import copy
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from functools import partial
 from threading import Lock
 from types import MethodType
@@ -10,7 +9,7 @@ from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, Union
 
 from loguru import logger
 
-from tawazi._helpers import _make_raise_arg_error
+from tawazi._helpers import make_raise_arg_error
 from tawazi.config import cfg
 from tawazi.consts import (
     ARG_NAME_ACTIVATE,
@@ -70,7 +69,7 @@ def count_occurrences(id_: str, exec_nodes: Dict[str, "ExecNode"]) -> int:
     return sum(xn_id == id_ or xn_id.endswith(USE_SEP_END) for xn_id in candidate_ids)
 
 
-@dataclass
+@dataclass(frozen=True)
 class ExecNode:
     """Base class for executable node in a DAG.
 
@@ -100,7 +99,7 @@ class ExecNode:
         ValueError: if setup and debug are both True.
     """
 
-    id_: Identifier = field(default=None)  # type: ignore[assignment]
+    id_: Identifier = field(default="")
     exec_function: Callable[..., Any] = field(default_factory=lambda: lambda *args, **kwargs: None)
     priority: int = 0
     is_sequential: bool = cfg.TAWAZI_IS_SEQUENTIAL
@@ -121,8 +120,8 @@ class ExecNode:
             )
 
         # if id is not provided, the id is inferred from the exec_function
-        if self.id_ is None:
-            self.id_ = self.exec_function.__qualname__
+        if self.id_ == "":
+            object.__setattr__(self, "id_", self.exec_function.__qualname__)
 
         # type verifications
         is_none = self.tag is None
@@ -258,42 +257,49 @@ class ArgExecNode(ExecNode):
     it will raise an error similar to Python's Error.
     """
 
-    def __init__(
-        self,
-        xn_or_func_or_id: Union[ExecNode, Callable[..., Any], Identifier],
-        name_or_order: Union[str, int],
-    ):
-        """Constructor of ArgExecNode.
+    def __init__(self, id: Identifier):
+        """Constructor of ArgExecNode."""
+        base_id, suffix = id.split(ARG_NAME_SEP)
+        raise_err = make_raise_arg_error(base_id, suffix)
 
-        Args:
-            xn_or_func_or_id (Union[ExecNode, Callable[..., Any], Identifier]): the corresponding execnode
-            name_or_order (Union[str, int]): Argument name or order in the calling function.
-                For example Python's builtin sorted function takes 3 arguments (iterable, key, reverse).
-                    1. If called like this: sorted([1,2,3]) then [1,2,3] will be of type ArgExecNode with an order=0
-                    2. If called like this: sorted(iterable=[4,5,6]) then [4,5,6] will be of
-                       type ArgExecNode with a name="iterable"
+        super().__init__(id_=id, exec_function=raise_err, is_sequential=False)
 
-        Raises:
-            TypeError: if type parameter is passed (Internal)
-        """
-        # raises TawaziArgumentException: if this argument is not provided during the Attached ExecNode usage
 
-        if isinstance(xn_or_func_or_id, ExecNode):
-            base_id = xn_or_func_or_id.id
-        elif callable(xn_or_func_or_id):
-            base_id = xn_or_func_or_id.__qualname__
-        elif isinstance(xn_or_func_or_id, Identifier):
-            base_id = xn_or_func_or_id
-        else:
-            raise TypeError("ArgExecNode can only be attached to a LazyExecNode or a Callable")
+def make_axn_id(
+    name_or_order: Union[str, int],
+    xn: Optional[ExecNode] = None,
+    func: Optional[Callable[[Any], Any]] = None,
+    id_: Optional[Identifier] = None,
+) -> Identifier:
+    """Makes ArgExecNode id.
 
-        suffix = make_suffix(name_or_order)
+    Args:
+        name_or_order (Union[str, int]): name of the Argument in case of KWarg or order of the Argument in case of an arg
+            For example Python's builtin sorted function takes 3 arguments (iterable, key, reverse).
+                1. If called like this: sorted([1,2,3]) then [1,2,3] will be of type ArgExecNode with an order=0
+                2. If called like this: sorted(iterable=[4,5,6]) then [4,5,6] will be of
+                    type ArgExecNode with a name="iterable"
+        xn (Optional[ExecNode], optional): ExecNode to which the corresponding ArgExecNode is attached. Defaults to None.
+        func (Optional[Callable[[Any], Any]], optional): DAG to which the corresponding ArgExecNode is attached. Defaults to None.
+        id (Optional[Identifier], optional): id of an ExecNode to which the corresopnding ArgExecNode is attached. Defaults to None.
 
-        raise_err = _make_raise_arg_error(base_id, suffix)
+    Raises:
+        TypeError: if type parameter is passed (Internal)
 
-        super().__init__(
-            id_=f"{base_id}{ARG_NAME_SEP}{suffix}", exec_function=raise_err, is_sequential=False
-        )
+    Returns:
+        Identifier: Id of the ArgExecNode
+    """
+    if isinstance(xn, ExecNode):
+        base_id = xn.id
+    elif callable(func):
+        base_id = func.__qualname__
+    elif isinstance(id_, Identifier):
+        base_id = id_
+    else:
+        raise TypeError("ArgExecNode can only be attached to a LazyExecNode or a Callable")
+
+    suffix = make_suffix(name_or_order)
+    return f"{base_id}{ARG_NAME_SEP}{suffix}"
 
 
 class LazyExecNode(ExecNode, Generic[P, RVXN]):
@@ -331,71 +337,27 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             # else cfg.TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR == XNOutsideDAGCall.ignore:
             return self.exec_function(*args, **kwargs)  # type: ignore[no-any-return]
 
-        # 1.1 Make a deep copy of self because every Call to an ExecNode corresponds to a new instance
-        self_copy = copy(self)
-        # 1.2 Assign the id
-        # if ExecNode is used multiple times, <<usage_count>> is appended to its ID
-        self_copy.id_ = _lazy_xn_id(self.id, count_occurrences(self.id, exec_nodes))
+        # 1.1 if ExecNode is used multiple times, <<usage_count>> is appended to its ID
+        id_ = _lazy_xn_id(self.id, count_occurrences(self.id, exec_nodes))
+        # 1.1 Construct a new LazyExecNode corresponding to the current call
+        values = asdict(self)
+        values["id_"] = id_
 
         # 2. Make the corresponding ArgExecNodes that corresponds to the Arguments
-        self_copy.args = self_copy._make_args(*args)
-        self_copy.kwargs = self_copy._make_kwargs(**kwargs)
+        values["args"] = make_args(id_, *args)
+        values["kwargs"] = make_kwargs(id_, **kwargs)
 
-        self_copy._validate_dependencies()
+        # 3. extract reserved arguments for current LazyExecNode call
+        values["tag"] = extract_tag(**kwargs) or self.tag
+        values["unpack_to"] = extract_unpack_to(**kwargs) or self.unpack_to
 
-        exec_nodes[self_copy.id] = self_copy
+        new_lxn = LazyExecNode(**values)
 
-        return self_copy._usage_exec_node()  # type: ignore[return-value]
+        new_lxn._validate_dependencies()
 
-    def _make_args(self, *args: P.args, **kwargs: P.kwargs) -> List[UsageExecNode]:
-        xn_args = []
+        exec_nodes[new_lxn.id] = new_lxn
 
-        # 2.1 *args can contain either:
-        #  1. ExecNodes corresponding to the dependencies that come from predecessors
-        #  2. or non ExecNode values which are constants passed directly to the
-        #  LazyExecNode.__call__ (eg. strings, int, etc.)
-        for i, arg in enumerate(args):
-            if not isinstance(arg, UsageExecNode):
-                # arg here is definitely not a return value of a LazyExecNode!
-                # it must be a default value
-                xn = ArgExecNode(self, i)
-                exec_nodes[xn.id] = xn
-
-                results[xn.id] = arg
-                arg = UsageExecNode(xn.id)
-
-            xn_args.append(arg)
-        return xn_args
-
-    def _make_kwargs(self, *args: P.args, **kwargs: P.kwargs) -> Dict[Identifier, UsageExecNode]:
-        xn_kwargs = {}
-
-        # 2.2 support **kwargs
-        for kwarg_name, kwarg in kwargs.items():
-            # support reserved kwargs for tawazi
-            # These are necessary in order to pass information about the call of an ExecNode (the deep copy)
-            #  independently of the original LazyExecNode
-            if kwarg_name == ARG_NAME_TAG:
-                self.tag = kwarg  # type: ignore[assignment]
-                continue
-            if kwarg_name == ARG_NAME_UNPACK_TO:
-                self.unpack_to = kwarg  # type: ignore[assignment]
-                continue
-
-            if not isinstance(kwarg, UsageExecNode):
-                # passed in constants
-                xn = ArgExecNode(self, kwarg_name)
-                exec_nodes[xn.id] = xn
-                results[xn.id] = kwarg
-
-                kwarg = UsageExecNode(xn.id)
-
-            # TODO: remove this line when fixing self.active
-            if kwarg_name == ARG_NAME_ACTIVATE:
-                actives[self.id] = kwarg
-
-            xn_kwargs[kwarg_name] = kwarg
-        return xn_kwargs
+        return new_lxn._usage_exec_node()  # type: ignore[return-value]
 
     def _validate_dependencies(self) -> None:
         for dep in self.dependencies:
@@ -440,3 +402,59 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             # https://stackoverflow.com/questions/3798835/understanding-get-and-set-and-python-descriptors
             return self
         return MethodType(self, instance)  # func=self  # obj=instance
+
+
+def make_args(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> List[UsageExecNode]:
+    xn_args = []
+
+    # *args can contain either:
+    #  1. UsageExecNode corresponding to the dependencies that come from predecessors
+    #  2. or non ExecNode values which are constants passed directly to the
+    #  LazyExecNode.__call__ (eg. strings, int, etc.)
+    for i, arg in enumerate(args):
+        if not isinstance(arg, UsageExecNode):
+            # arg here is definitely not a return value of a LazyExecNode!
+            # it must be a default value
+            xn = ArgExecNode(make_axn_id(i, id_=id_))
+            exec_nodes[xn.id] = xn
+
+            results[xn.id] = arg
+            arg = UsageExecNode(xn.id)
+
+        xn_args.append(arg)
+    return xn_args
+
+
+def make_kwargs(
+    id_: Identifier, *args: P.args, **kwargs: P.kwargs
+) -> Dict[Identifier, UsageExecNode]:
+    xn_kwargs = {}
+    # **kwargs contain either
+    #  1. UsageExecNode corresponding to the dependencies that come from predecessors
+    #  2. or non ExecNode values which are constants passed directly to the
+    #  3. or Reserved Keyword Arguments for Tawazi. These are used to assign different values per LXN call
+    for kwarg_name, kwarg in kwargs.items():
+        if kwargs in [ARG_NAME_TAG, ARG_NAME_UNPACK_TO]:
+            continue
+        if not isinstance(kwarg, UsageExecNode):
+            # passed in constants
+            xn = ArgExecNode(make_axn_id(kwarg_name, id_=id_))
+            exec_nodes[xn.id] = xn
+            results[xn.id] = kwarg
+
+            kwarg = UsageExecNode(xn.id)
+
+        # TODO: remove this line when fixing self.active
+        if kwarg_name == ARG_NAME_ACTIVATE:
+            actives[id_] = kwarg
+
+        xn_kwargs[kwarg_name] = kwarg
+    return xn_kwargs
+
+
+def extract_tag(*args: P.args, **kwargs: P.kwargs) -> TagOrTags:
+    return kwargs.get(ARG_NAME_TAG)
+
+
+def extract_unpack_to(*args: P.args, **kwargs: P.kwargs) -> Optional[int]:
+    return kwargs.get(ARG_NAME_UNPACK_TO)

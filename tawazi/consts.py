@@ -10,8 +10,8 @@ ARG_NAME_UNPACK_TO = "twz_unpack_to"
 RESERVED_KWARGS = ARG_NAME_TAG, ARG_NAME_ACTIVATE, ARG_NAME_UNPACK_TO
 
 # TODO: check for possible collisions
-ARG_NAME_SEP = ">>>"
-RETURN_NAME_SEP = "<<<"
+ARG_NAME_SEP = ">!>"
+RETURN_NAME_SEP = "<!<"
 USE_SEP_START = "<<"
 USE_SEP_END = ">>"
 

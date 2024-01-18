@@ -70,7 +70,7 @@ def get_args_and_default_args(func: Callable[..., Any]) -> Tuple[List[str], Dict
     return args, default_args
 
 
-def _make_raise_arg_error(func_name: str, arg_name: str) -> Callable[[], NoReturn]:
+def make_raise_arg_error(func_name: str, arg_name: str) -> Callable[[], NoReturn]:
     # declare a local function that will raise an error in the scheduler if
     # the user doesn't pass in This ArgExecNode as argument to the Attached LazyExecNode
     def local_func() -> NoReturn:
