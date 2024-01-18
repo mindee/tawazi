@@ -183,11 +183,13 @@ def dag(
 
                 # 2.2 Construct non default arguments.
                 # Corresponding values must be provided during usage
-                args: List[ExecNode] = [ArgExecNode(_func, arg_name) for arg_name in func_args]
+                args: List[ExecNode] = [
+                    ArgExecNode(node.make_axn_id(arg_name, func=_func)) for arg_name in func_args
+                ]
                 # 2.2 Construct Default arguments.
 
                 for arg_name, arg in func_default_args.items():
-                    axn = ArgExecNode(_func, arg_name)
+                    axn = ArgExecNode(node.make_axn_id(arg_name, func=_func))
                     args.append(axn)
                     node.results[axn.id] = arg
 
