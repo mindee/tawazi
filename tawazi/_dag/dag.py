@@ -1,9 +1,10 @@
 """module containing DAG and DAGExecution which are the containers that run ExecNodes in Tawazi."""
+import collections
 import json
 import pickle
 import warnings
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from itertools import chain
 from pathlib import Path
 from typing import Any, Dict, Generic, List, NoReturn, Optional, Sequence, Set, Tuple, Union
@@ -232,16 +233,16 @@ class DAG(Generic[P, RVDAG]):
         # 3. check edge cases
         # inputs should not be successors of inputs, otherwise (error)
         # and inputs should produce at least one of the outputs, otherwise (warning)
-        for i in in_ids:
+        for in_id in in_ids:
             # if pred is ancestor of an input, raise error
-            if i in in_ids_ancestors:
-                _raise_input_successor_of_input(i, set(in_ids))
+            if in_id in in_ids_ancestors:
+                _raise_input_successor_of_input(in_id, set(in_ids))
 
-            # if i doesn't produce any of the wanted outputs, raise a warning!
-            descendants: Set[Identifier] = nx.descendants(self.graph_ids, i)
+            # if in_id doesn't produce any of the wanted outputs, raise a warning!
+            descendants: Set[Identifier] = nx.descendants(self.graph_ids, in_id)
             if descendants.isdisjoint(out_ids):
                 warnings.warn(
-                    f"Input ExecNode {i} is not used to produce any of the requested outputs."
+                    f"Input ExecNode {in_id} is not used to produce any of the requested outputs."
                     f"Consider removing it from the inputs.",
                     stacklevel=2,
                 )
@@ -524,40 +525,45 @@ class DAG(Generic[P, RVDAG]):
             ValueError: if two nodes are configured by the provided config (which is ambiguous)
         """
 
-        def _override_node_config(n: ExecNode, conf: Dict[str, Any]) -> bool:
-            if "is_sequential" in conf:
-                n.is_sequential = conf["is_sequential"]
+        def node_values(n: ExecNode, conf: Dict[str, Any]) -> Dict[str, Any]:
+            values = asdict(n)
+            values["is_sequential"] = conf.get("is_sequential", n.is_sequential)
+            values["priority"] = conf.get("priority", n.priority)
+            return values
 
-            if "priority" in conf:
-                n.priority = conf["priority"]
-                return True
+        def expand_config(
+            config_nodes: Dict[Union[Tag, Identifier], Any]
+        ) -> List[Tuple[Identifier, Any]]:
+            expanded_config = []
+            for alias, conf_node in config_nodes.items():
+                ids = self.alias_to_ids(alias)
+                expanded_config.extend(
+                    [(id, conf) for id, conf in zip(ids, len(ids) * [conf_node])]
+                )
+            return expanded_config
 
-            return False
+        def detect_duplicates(expanded_config: List[Tuple[Identifier, Any]]) -> None:
+            duplicates = [
+                id
+                for id, count in collections.Counter([id for id, _ in expanded_config]).items()
+                if count > 1
+            ]
+            if duplicates:
+                raise ValueError(f"trying to set two configs for nodes {duplicates}.")
 
-        prio_flag = False
-        visited: Dict[str, Any] = {}
         if "nodes" in config:
-            for alias, conf_node in config["nodes"].items():
-                ids_ = self.alias_to_ids(alias)
-                for node_id in ids_:
-                    if node_id not in visited:
-                        node = self.get_node_by_id(node_id)
-                        node_prio_flag = _override_node_config(node, conf_node)
-                        prio_flag = node_prio_flag or prio_flag  # keep track of flag
-
-                    else:
-                        raise ValueError(
-                            f"trying to set two configs for node {node_id}.\n 1) {visited[node_id]}\n 2) {conf_node}"
-                        )
-
-                    visited[node_id] = conf_node
+            expanded_config = expand_config(config["nodes"])
+            detect_duplicates(expanded_config)
+            for node_id, conf_node in expanded_config:
+                node = self.get_node_by_id(node_id)
+                values = node_values(node, conf_node)
+                self.exec_nodes[node_id] = node.__class__(**values)
 
         if "max_concurrency" in config:
             self.max_concurrency = config["max_concurrency"]
 
-        if prio_flag:
-            # if we changed the priority of some nodes we need to recompute the compound prio
-            self.graph_ids.assign_compound_priority()
+        # we might have changed the priority of some nodes we need to recompute the compound prio
+        self.graph_ids.assign_compound_priority()
 
     def config_from_yaml(self, config_path: str) -> None:
         """Allows reconfiguring the parameters of the nodes from a YAML file.

@@ -115,8 +115,10 @@ class ExecNode:
     def __post_init__(self) -> None:
         """Post init to validate attributes."""
         if isinstance(self.exec_function, partial):
-            self.exec_function = functools.update_wrapper(
-                self.exec_function, self.exec_function.func
+            object.__setattr__(
+                self,
+                "exec_function",
+                functools.update_wrapper(self.exec_function, self.exec_function.func),
             )
 
         # if id is not provided, the id is inferred from the exec_function
@@ -281,7 +283,7 @@ def make_axn_id(
                     type ArgExecNode with a name="iterable"
         xn (Optional[ExecNode], optional): ExecNode to which the corresponding ArgExecNode is attached. Defaults to None.
         func (Optional[Callable[[Any], Any]], optional): DAG to which the corresponding ArgExecNode is attached. Defaults to None.
-        id (Optional[Identifier], optional): id of an ExecNode to which the corresopnding ArgExecNode is attached. Defaults to None.
+        id_ (Optional[Identifier], optional): id of an ExecNode to which the corresopnding ArgExecNode is attached. Defaults to None.
 
     Raises:
         TypeError: if type parameter is passed (Internal)
@@ -351,7 +353,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         values["tag"] = extract_tag(**kwargs) or self.tag
         values["unpack_to"] = extract_unpack_to(**kwargs) or self.unpack_to
 
-        new_lxn = LazyExecNode(**values)
+        new_lxn: LazyExecNode[P, RVXN] = LazyExecNode(**values)
 
         new_lxn._validate_dependencies()
 
@@ -405,6 +407,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
 
 
 def make_args(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> List[UsageExecNode]:
+    """Constructs the positional arguments for an ExecNode."""
     xn_args = []
 
     # *args can contain either:
@@ -428,13 +431,14 @@ def make_args(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> List[UsageE
 def make_kwargs(
     id_: Identifier, *args: P.args, **kwargs: P.kwargs
 ) -> Dict[Identifier, UsageExecNode]:
+    """Constructs the keyword arguments for an ExecNode."""
     xn_kwargs = {}
     # **kwargs contain either
     #  1. UsageExecNode corresponding to the dependencies that come from predecessors
     #  2. or non ExecNode values which are constants passed directly to the
     #  3. or Reserved Keyword Arguments for Tawazi. These are used to assign different values per LXN call
     for kwarg_name, kwarg in kwargs.items():
-        if kwargs in [ARG_NAME_TAG, ARG_NAME_UNPACK_TO]:
+        if kwarg in [ARG_NAME_TAG, ARG_NAME_UNPACK_TO]:
             continue
         if not isinstance(kwarg, UsageExecNode):
             # passed in constants
@@ -452,9 +456,11 @@ def make_kwargs(
     return xn_kwargs
 
 
-def extract_tag(*args: P.args, **kwargs: P.kwargs) -> TagOrTags:
-    return kwargs.get(ARG_NAME_TAG)
+def extract_tag(*args: P.args, **kwargs: P.kwargs) -> Optional[TagOrTags]:
+    """Extracts the tag special keyword argument from kwargs."""
+    return kwargs.get(ARG_NAME_TAG)  # type:ignore[return-value]
 
 
 def extract_unpack_to(*args: P.args, **kwargs: P.kwargs) -> Optional[int]:
-    return kwargs.get(ARG_NAME_UNPACK_TO)
+    """Extracts the unpack_to special keyword argument from kwargs."""
+    return kwargs.get(ARG_NAME_UNPACK_TO)  # type:ignore[return-value]
