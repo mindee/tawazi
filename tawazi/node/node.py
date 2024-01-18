@@ -261,7 +261,11 @@ class ArgExecNode(ExecNode):
 
     def __init__(self, id: Identifier):
         """Constructor of ArgExecNode."""
-        base_id, suffix = id.split(ARG_NAME_SEP)
+        # prefix might contain ARG_NAME_SEP
+        # eg. for example a DAG composed from another with an ArgExecNode input``
+        *prefix, suffix = id.split(ARG_NAME_SEP)
+        base_id = "".join(prefix)
+
         raise_err = make_raise_arg_error(base_id, suffix)
 
         super().__init__(id_=id, exec_function=raise_err, is_sequential=False)
@@ -438,7 +442,7 @@ def make_kwargs(
     #  2. or non ExecNode values which are constants passed directly to the
     #  3. or Reserved Keyword Arguments for Tawazi. These are used to assign different values per LXN call
     for kwarg_name, kwarg in kwargs.items():
-        if kwarg in [ARG_NAME_TAG, ARG_NAME_UNPACK_TO]:
+        if isinstance(kwarg, str) and kwarg in [ARG_NAME_TAG, ARG_NAME_UNPACK_TO]:
             continue
         if not isinstance(kwarg, UsageExecNode):
             # passed in constants
