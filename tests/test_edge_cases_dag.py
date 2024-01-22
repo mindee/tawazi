@@ -1,3 +1,4 @@
+import os
 from functools import partial
 from typing import Any, Tuple
 
@@ -91,3 +92,21 @@ def test_circular_deps() -> None:
 
     with pytest.raises(NetworkXUnfeasible):
         DAG({xn.id: xn for xn in [en_a, en_b, en_c]}, [], [], 2)
+
+
+def test_non_pickalable_args() -> None:
+    @xn
+    def _a(in1: Any = 1) -> Any:
+        if isinstance(in1, int):
+            return in1 + 1
+        return in1
+
+    @xn
+    def _b(in1: int, in2: int) -> int:
+        return in1 + in2
+
+    @dag
+    def pipe() -> Tuple[Any, int]:
+        return _a(os), _b(_a(10), _a())
+
+    assert pipe() == (os, 13)

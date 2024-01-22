@@ -78,7 +78,7 @@ def test_return_single_const() -> None:
 def test_return_tuple_consts() -> None:
     @dag
     def pipe() -> Tuple[str, str, str]:
-        return ("v1", "v2", "v3")
+        return "v1", "v2", "v3"
 
     assert pipe() == ("v1", "v2", "v3")
 
@@ -86,7 +86,7 @@ def test_return_tuple_consts() -> None:
 def test_return_tuple_consts_uxn() -> None:
     @dag
     def pipe() -> Tuple[str, str, str]:
-        return (stub("v1"), "v2", stub("v3"))
+        return stub("v1"), "v2", stub("v3")
 
     assert pipe() == ("v1", "v2", "v3")
 
