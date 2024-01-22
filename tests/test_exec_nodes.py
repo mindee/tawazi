@@ -1,12 +1,13 @@
-from typing import Any
+from typing import Any, Tuple, Union
 
 import pytest
 from tawazi import dag, xn
 from tawazi.errors import TawaziUsageError
 
+glb_third_argument = None
+glb_fourth_argument = None
 
-# tests different cases of @op decoration for Python functions
-# 1. different signatures
+
 @xn
 def f1() -> int:
     return 1
@@ -26,7 +27,6 @@ def f3(f1: int, f2: int) -> int:
 
 @xn
 def f4(f1: int, cst: int = 0) -> int:
-    # TODO: test with argument param and without argument param cst
     return 4 + cst
 
 
@@ -53,8 +53,6 @@ def f8(f1: int, *args: Any, **kwargs: Any) -> int:
 @dag
 def pipe() -> None:
     _1 = f1()
-    # import ipdb
-    # ipdb.set_trace()
     _2 = f2(_1)
     _3 = f3(_1, _2)
     _4 = f4(_1)
@@ -64,8 +62,69 @@ def pipe() -> None:
     _8 = f8(_1, _2, _3)
 
 
-def test_ops_signatures() -> None:
+def test_xns_signatures() -> None:
     pipe()
+
+
+def test_xns_interface() -> None:
+    @xn
+    def a() -> str:
+        return "a"
+
+    @xn
+    def b(a: str) -> str:
+        return "b"
+
+    @xn
+    def c(a: str) -> str:
+        return "c"
+
+    @xn
+    def d(
+        b: str, c: str, third_argument: Union[str, int] = 1234, fourth_argument: int = 6789
+    ) -> str:
+        global glb_third_argument, glb_fourth_argument
+        glb_third_argument = third_argument
+        glb_fourth_argument = fourth_argument
+        return "d"
+
+    @dag
+    def my_custom_dag() -> None:
+        vara = a()
+        varb = b(vara)
+        varc = c(vara)
+        _vard = d(varb, c=varc, fourth_argument=1111)
+
+    @xn
+    def e() -> str:
+        return "e"
+
+    @dag
+    def my_other_custom_dag() -> Tuple[Any, Any]:
+        vara = a()
+        varb = b(vara)
+        varc = c(vara)
+        vard = d(varb, c=varc, fourth_argument=2222, third_argument="blabla")
+        vare = e()
+        return vard, vare
+
+    my_custom_dag()
+    assert glb_third_argument == 1234
+    assert glb_fourth_argument == 1111
+    my_custom_dag()
+    assert glb_third_argument == 1234
+    assert glb_fourth_argument == 1111
+
+    my_other_custom_dag()
+    assert glb_third_argument == "blabla"
+    assert glb_fourth_argument == 2222
+    my_other_custom_dag()
+    assert glb_third_argument == "blabla"
+    assert glb_fourth_argument == 2222
+
+    my_custom_dag()
+    assert glb_third_argument == 1234
+    assert glb_fourth_argument == 1111
 
 
 def test_call_directly_with_warning() -> None:
@@ -75,9 +134,9 @@ def test_call_directly_with_warning() -> None:
     cfg.TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR = XNOutsideDAGCall.warning
 
     with pytest.warns(RuntimeWarning):
-        assert 15 == f8(1, 2, 3, foo=4, bar=5)
+        assert f8(1, 2, 3, foo=4, bar=5) == 15
     with pytest.warns(RuntimeWarning):
-        assert 4 == f4(1)
+        assert f4(1) == 4
 
 
 def test_call_directly_with_error() -> None:
@@ -87,9 +146,9 @@ def test_call_directly_with_error() -> None:
     cfg.TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR = XNOutsideDAGCall.error
 
     with pytest.raises(TawaziUsageError):
-        assert 15 == f8(1, 2, 3, foo=4, bar=5)
+        assert f8(1, 2, 3, foo=4, bar=5) == 15
     with pytest.raises(TawaziUsageError):
-        assert 4 == f4(1)
+        assert f4(1) == 4
 
 
 def test_call_directly_with_ignore() -> None:
@@ -99,8 +158,8 @@ def test_call_directly_with_ignore() -> None:
     cfg.TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR = XNOutsideDAGCall.ignore
 
     with pytest.warns(None) as record:  # type: ignore[call-overload]
-        assert 15 == f8(1, 2, 3, foo=4, bar=5)
+        assert f8(1, 2, 3, foo=4, bar=5) == 15
     assert len(record) == 0
     with pytest.warns(None) as record:  # type: ignore[call-overload]
-        assert 4 == f4(1)
+        assert f4(1) == 4
     assert len(record) == 0
