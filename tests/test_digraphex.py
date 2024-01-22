@@ -10,14 +10,6 @@ def graph() -> DiGraphEx:
     return g
 
 
-@pytest.fixture
-def graph_cycle() -> DiGraphEx:
-    g = DiGraphEx()
-    g.add_nodes_from([1, 2, 3, 4, 5, 6, 7])
-    g.add_edges_from([(1, 2), (1, 3), (4, 5), (5, 6), (4, 7), (6, 5)])
-    return g
-
-
 def test_digraph_nodes(graph: DiGraphEx) -> None:
     assert graph.root_nodes == [1, 4]  # type: ignore[comparison-overlap]
     assert graph.leaf_nodes == [2, 3, 6, 7]  # type: ignore[comparison-overlap]

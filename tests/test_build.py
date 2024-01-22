@@ -2,7 +2,7 @@ from time import sleep
 from typing import Any, cast
 
 import pytest
-from tawazi import DAG
+from tawazi import DAG, dag
 from tawazi.node import ExecNode, UsageExecNode
 
 T = 0.1
@@ -93,3 +93,13 @@ def test_draw(strict_dag: DAG[Any, Any]) -> None:
 def test_setting_execnode_id_should_fail() -> None:
     with pytest.raises(AttributeError):
         en_a.id = "fdsakfjs"  # type: ignore[misc]
+
+
+def test_execnodes() -> None:
+    with pytest.raises(NameError):
+
+        @dag
+        def pipe() -> None:
+            a()
+            # purposefully an undefined ExecNode
+            b_()  # type: ignore[name-defined] # noqa: F821
