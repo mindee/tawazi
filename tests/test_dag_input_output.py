@@ -1,11 +1,8 @@
-from logging import Logger
-from typing import Any, List, Tuple
+from typing import List, Tuple
 
 import pytest
 from tawazi import dag, xn
 from tawazi.errors import TawaziArgumentException, TawaziBaseException
-
-logger = Logger(name="mylogger", level="ERROR")
 
 
 @xn
@@ -13,14 +10,8 @@ def a(input_img: List[int], cst: int) -> int:
     return sum(input_img) + cst
 
 
-@xn
-def lazy_print(*args: Any) -> None:
-    logger.debug(*args)
-
-
 @dag
 def declare_dag_function(input_img: List[int], cst: int = 0) -> int:
-    lazy_print(cst)
     return a(input_img, cst)
 
 
@@ -29,12 +20,11 @@ def op1(in1: int) -> int:
     return in1 + 1
 
 
-def test_pipeline_input_output() -> None:
-    assert declare_dag_function([1, 2, 3], 10) == 16
-
-
-def test_pipeline_input_output_skipping_default_params() -> None:
-    assert declare_dag_function([1, 2, 3]) == 6
+@pytest.mark.parametrize(
+    "input_list, cst, expected_output", [([1, 2, 3], 10, 16), ([1, 2, 3], 0, 6)]
+)
+def test_pipeline_input_output(input_list: List[int], cst: int, expected_output: int) -> None:
+    assert declare_dag_function(input_list, cst) == expected_output
 
 
 def test_pipeline_input_output_missing_argument() -> None:
@@ -51,7 +41,6 @@ def test_pipeline_default_args_input_not_provided() -> None:
 
 
 def test_pipeline_args_input_not_provided() -> None:
-    # should fail!!
     @dag
     def pipe(in1: int, in2: int, in3: int, in4: int) -> Tuple[int, ...]:
         return op1(in1), op1(in2), op1(in3), op1(in4)
