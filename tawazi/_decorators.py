@@ -159,7 +159,6 @@ def dag(
             However, you can use some simple python code to generate constants.
             These constants are computed only once during the `DAG` declaration.
         max_concurrency: the maximum number of concurrent threads to execute in parallel.
-        behavior: the behavior of the `DAG` when an error occurs during the execution of a function (`ExecNode`).
 
     Returns:
         a `DAG` instance that can be used just like a normal Python function. It will be executed by Tawazi's scheduler.
