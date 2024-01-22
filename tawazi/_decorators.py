@@ -7,7 +7,6 @@ from typing import Any, Callable, List, Optional, Union, overload
 
 from tawazi._dag import DAG
 from tawazi._helpers import get_args_and_default_args
-from tawazi.errors import ErrorStrategy
 
 from .config import cfg
 from .consts import RVDAG, RVXN, P, Resource, TagOrTags
@@ -133,27 +132,17 @@ def dag(declare_dag_function: Callable[P, RVDAG]) -> DAG[P, RVDAG]:
 
 
 @overload
-def dag(
-    declare_dag_function: Callable[P, RVDAG],
-    *,
-    max_concurrency: int = 1,
-    behavior: ErrorStrategy = ErrorStrategy.strict,
-) -> DAG[P, RVDAG]:
+def dag(declare_dag_function: Callable[P, RVDAG], *, max_concurrency: int = 1) -> DAG[P, RVDAG]:
     ...
 
 
 @overload
-def dag(
-    *, max_concurrency: int = 1, behavior: ErrorStrategy = ErrorStrategy.strict
-) -> Callable[[Callable[P, RVDAG]], DAG[P, RVDAG]]:
+def dag(*, max_concurrency: int = 1) -> Callable[[Callable[P, RVDAG]], DAG[P, RVDAG]]:
     ...
 
 
 def dag(
-    declare_dag_function: Optional[Callable[P, RVDAG]] = None,
-    *,
-    max_concurrency: int = 1,
-    behavior: ErrorStrategy = ErrorStrategy.strict,
+    declare_dag_function: Optional[Callable[P, RVDAG]] = None, *, max_concurrency: int = 1
 ) -> Union[Callable[[Callable[P, RVDAG]], DAG[P, RVDAG]], DAG[P, RVDAG]]:
     """Transform the declared `ExecNode`s into a DAG that can be executed by Tawazi's scheduler.
 
@@ -220,7 +209,6 @@ def dag(
                     input_uxns=uxn_args,
                     return_uxns=returned_usage_exec_nodes,
                     max_concurrency=max_concurrency,
-                    behavior=behavior,
                 )
 
             # clean up even in case an error is raised during dag construction

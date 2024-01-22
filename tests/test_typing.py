@@ -5,7 +5,6 @@ from typing import Tuple
 
 import pytest
 from tawazi import dag, xn
-from tawazi.errors import ErrorStrategy
 
 
 @xn
@@ -51,7 +50,7 @@ def pipe(input: int) -> Tuple[int, str]:
     return tt
 
 
-@dag(behavior=ErrorStrategy.strict)
+@dag
 def pipe_configured(input: int) -> Tuple[int, str]:
     _none = function_no_parameter()
     _none = function_with_parameter(1234)

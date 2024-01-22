@@ -15,7 +15,7 @@ from loguru import logger
 from tawazi._helpers import _make_raise_arg_error, _UniqueKeyLoader
 from tawazi.config import cfg
 from tawazi.consts import RVDAG, Identifier, NoVal, P, Tag
-from tawazi.errors import ErrorStrategy, TawaziTypeError, TawaziUsageError
+from tawazi.errors import TawaziTypeError, TawaziUsageError
 from tawazi.node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode
 
 from .digraph import DiGraphEx
@@ -36,17 +36,12 @@ class DAG(Generic[P, RVDAG]):
         input_uxns: all the input UsageExecNodes
         return_uxns: the return UsageExecNodes of various types: None, a single value, tuple, list, dict.
         max_concurrency: the maximal number of threads running in parallel
-        behavior: specify the behavior if an ExecNode raises an Error. Three option are currently supported:
-            1. DAG.STRICT: stop the execution of all the DAG
-            2. DAG.ALL_CHILDREN: do not execute all children ExecNodes, and continue execution of the DAG
-            2. DAG.PERMISSIVE: continue execution of the DAG and ignore the error
     """
 
     exec_nodes: Dict[Identifier, ExecNode]
     input_uxns: List[UsageExecNode]
     return_uxns: ReturnUXNsType
     max_concurrency: int = 1
-    behavior: ErrorStrategy = ErrorStrategy.strict
 
     def __post_init__(self) -> None:
         # ExecNodes can be shared between Graphs, their call signatures might also be different
@@ -403,12 +398,7 @@ class DAG(Generic[P, RVDAG]):
             [node_id for node_id in graph if node_id not in self.graph_ids.setup_nodes]
         )
 
-        _ = execute(
-            exec_nodes=self.exec_nodes,
-            max_concurrency=self.max_concurrency,
-            behavior=self.behavior,
-            graph=graph,
-        )
+        _ = execute(exec_nodes=self.exec_nodes, max_concurrency=self.max_concurrency, graph=graph)
 
     def executor(
         self,
@@ -458,7 +448,6 @@ class DAG(Generic[P, RVDAG]):
         return execute(
             exec_nodes=self.exec_nodes,
             max_concurrency=self.max_concurrency,
-            behavior=self.behavior,
             graph=subgraph,
             modified_exec_nodes=call_xn_dict,
         )

@@ -6,7 +6,7 @@ from loguru import logger
 
 from tawazi._dag.digraph import DiGraphEx
 from tawazi.consts import Identifier, Resource, RVTypes
-from tawazi.errors import ErrorStrategy, TawaziTypeError
+from tawazi.errors import TawaziTypeError
 from tawazi.node import ExecNode, ReturnUXNsType, UsageExecNode
 
 
@@ -91,7 +91,6 @@ def execute(
     *,
     exec_nodes: Dict[Identifier, ExecNode],
     max_concurrency: int,
-    behavior: ErrorStrategy,
     graph: DiGraphEx,
     modified_exec_nodes: Optional[Dict[str, ExecNode]] = None,
 ) -> Dict[Identifier, Any]:
@@ -154,7 +153,9 @@ def execute(
             for id_, fut in futures.items():
                 if fut.done() and id_ in graph:
                     logger.debug("Remove ExecNode % from the graph", id_)
-                    handle_future_exception(behavior, graph, fut, id_)
+                    # will raise the first encountered exception if there's one
+                    _ = fut.result()
+
                     graph.remove_node(id_)
 
             # 2. list the root nodes that aren't being executed
@@ -200,12 +201,7 @@ def execute(
                 # a single execution will be launched and will end.
                 # it doesn't count as an additional thread that is running.
                 logger.debug("Executing %s in main thread", xn.id)
-                try:
-                    xn.execute(exec_nodes=xns_dict)
-                except Exception as e:
-                    if behavior == ErrorStrategy.strict:
-                        raise e from e
-                    handle_exception(behavior, graph, xn.id, e)
+                xn.execute(exec_nodes=xns_dict)
 
                 logger.debug("Remove ExecNode % from the graph", xn.id)
                 graph.remove_node(xn.id)
@@ -292,56 +288,3 @@ def make_call_xn_dict(
             call_xn_dict[node_id].result = arg
 
     return call_xn_dict
-
-
-def handle_future_exception(
-    behavior: ErrorStrategy, graph: DiGraphEx, fut: "Future[Any]", id_: Identifier
-) -> None:
-    """Checks if futures have produced exceptions, and handles them according to the specified behavior.
-
-    Args:
-        behavior: the behavior to adopt in case of exception
-        graph: the graph
-        fut: the thread future
-        id_: the Identifier of the current ExecNode
-
-    Raises:
-        NotImplementedError: if self.behavior is not known
-    """
-    if behavior == ErrorStrategy.strict:
-        # will raise the first encountered exception if there's one
-        # no simpler way to check for exception, and not supported by flake8
-        _res = fut.result()  # noqa: F841
-
-    else:
-        try:
-            _res = fut.result()  # noqa: F841
-
-        except Exception as e:
-            handle_exception(behavior, graph, id_, e)
-
-
-def handle_exception(
-    behavior: ErrorStrategy, graph: DiGraphEx, id_: Identifier, e: Exception
-) -> None:
-    """Handle any kind of exception in the scheduler according to a given strategy.
-
-    Args:
-        behavior: the error strategy
-        graph: the graph
-        id_: the node id
-        e: the exception
-    """
-    logger.exception("The feature %s encountered the following error:", id_)
-
-    if behavior == ErrorStrategy.permissive:
-        logger.warning("Ignoring exception as the behavior is set to permissive")
-
-    elif behavior == ErrorStrategy.all_children:
-        # remove all its children.
-        # Skip removing root Node.
-        # It will be removed by default afterwards outside handle_exception
-        graph.remove_recursively(id_, remove_root_node=False)
-
-    else:
-        raise NotImplementedError(f"Unknown behavior name: {behavior}") from e

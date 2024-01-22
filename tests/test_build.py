@@ -2,7 +2,7 @@ from time import sleep
 from typing import Any, cast
 
 import pytest
-from tawazi import DAG, ErrorStrategy
+from tawazi import DAG
 from tawazi.node import ExecNode, UsageExecNode
 
 T = 0.1
@@ -79,7 +79,7 @@ failing_node_dict = {xn.id: xn for xn in failing_execnodes}
 
 @pytest.fixture
 def strict_dag() -> DAG[Any, Any]:
-    return DAG(node_dict, [], [], 2, behavior=ErrorStrategy.strict)
+    return DAG(node_dict, [], [], 2)
 
 
 def test_dag_build(strict_dag: DAG[Any, Any]) -> None:
@@ -88,14 +88,6 @@ def test_dag_build(strict_dag: DAG[Any, Any]) -> None:
 
 def test_draw(strict_dag: DAG[Any, Any]) -> None:
     strict_dag.graph_ids.draw(t=0.1)
-
-
-def test_bad_behaviour() -> None:
-    try:
-        g: DAG[Any, Any] = DAG(failing_node_dict, [], [], 2, behavior="Such Bad Behavior")  # type: ignore[arg-type]
-        g()
-    except NotImplementedError:
-        pass
 
 
 def test_setting_execnode_id_should_fail() -> None:
