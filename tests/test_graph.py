@@ -1,7 +1,7 @@
 from time import sleep
 
 from networkx import NetworkXUnfeasible
-from tawazi import DAG, ErrorStrategy
+from tawazi import DAG
 from tawazi.node import ExecNode, UsageExecNode
 
 T = 0.1
@@ -37,7 +37,7 @@ node_dict = {xn.id: xn for xn in list_exec_nodes}
 
 def test_circular_deps() -> None:
     try:
-        DAG(node_dict, [], [], 2, behavior=ErrorStrategy.strict)
+        DAG(node_dict, [], [], 2)
     except NetworkXUnfeasible:
         pass
 

@@ -4,7 +4,6 @@
 ::: tawazi.or_
 ::: tawazi.not_
 
-::: tawazi.ErrorStrategy
 ::: tawazi.Resource
     options:
         members:

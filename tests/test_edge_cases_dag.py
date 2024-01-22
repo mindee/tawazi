@@ -8,12 +8,7 @@ from tawazi._dag.helpers import execute
 
 
 def shortcut_execute(dag: DAG[Any, Any], graph: DiGraphEx) -> Any:
-    return execute(
-        exec_nodes=dag.exec_nodes,
-        max_concurrency=dag.max_concurrency,
-        behavior=dag.behavior,
-        graph=graph,
-    )
+    return execute(exec_nodes=dag.exec_nodes, max_concurrency=dag.max_concurrency, graph=graph)
 
 
 def func(a: str, b: str) -> str:

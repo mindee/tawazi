@@ -1,5 +1,4 @@
 """Module for custom errors raised by Tawazi."""
-from enum import Enum, unique
 from typing import Any, Callable, NoReturn, Union
 
 
@@ -46,13 +45,3 @@ class InvalidExecNodeCall(TawaziBaseException):
     """Raised when a ExecNode is called outside DAG definition (this will change in the future)."""
 
     pass
-
-
-@unique
-class ErrorStrategy(str, Enum):
-    """The strategy to use when an error is raised inside a function in a DAG."""
-
-    # supported behavior following a raised error
-    strict: str = "strict"  # stop the execution of the whole DAG
-    all_children: str = "all-children"  # stop the execution of the all successors
-    permissive: str = "permissive"  # continue the execution of the whole DAG
