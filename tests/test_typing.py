@@ -1,6 +1,3 @@
-# this is a file that describes using Tawazi without being protected from mypy!
-# it is tested during the formatting process.
-
 from typing import Tuple
 
 import pytest
@@ -69,12 +66,10 @@ def test_mypy_() -> None:
     with pytest.raises(TypeError):
         pipe(1, "str", "fjdkslajfld", "hi")  # type: ignore[call-arg]
 
-    # TODO: use assignements with typing for _var!
     _res = pipe(1)
     _res = pipe("1")  # type: ignore[arg-type]
-    pipe.exec_nodes  # noqa: B018
+    _ = pipe.exec_nodes  # noqa: B018
     pipe.setup()
 
-    exec = pipe.executor()
-
-    exec.dag(1234)
+    _exec = pipe.executor()
+    _exec.dag(1234)
