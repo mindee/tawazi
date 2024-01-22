@@ -615,14 +615,7 @@ assert pipe(0) == (None, None, None)
 1. You can control which node is preferred to run 1st when multiple `ExecNode`s are available for execution.
 This can be achieved through modifications of `priority` attribute of the `ExecNode`.
 1. You can even make an `ExecNode` run alone (i.e. without allowing other ExecNodes to execute in parallel to it). This can be helpful if you write code that is not thread-safe or use a library that is not thread-safe in a certain `ExecNode`.
-This is achieved by setting the `is_sequential` parameter to `True` for the `ExecNode` in question. The default value is set via the environment variable `TAWAZI_IS_SEQUENTIAL` (c.f. `tawazi.config`). 
-1. You can control the behavior of the `DAG` in case an `ExecNode` fails:
-
-      1. `"strict"`: stop execution of the DAG
-
-      1. `"all-children"`:  stop the execution of the all successors
-
-      1. `"permissive"`: continue the execution of the whole DAG
+This is achieved by setting the `is_sequential` parameter to `True` for the `ExecNode` in question. The default value is set via the environment variable `TAWAZI_IS_SEQUENTIAL` (c.f. `tawazi.config`).
 <!--pytest-codeblocks:cont-->
 
 ```python
@@ -652,7 +645,7 @@ def c(a, arg_b):
     return f"{a} + {arg_b} = C"
 
 # optionally customize the DAG
-@dag(max_concurrency=2, behavior="strict")
+@dag(max_concurrency=2)
 def deps_describer():
   res_a = a()
   res_b = b()
