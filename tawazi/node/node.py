@@ -414,6 +414,16 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         return MethodType(self, instance)  # func=self  # obj=instance
 
 
+def make_default_value_uxn(
+    id_: Identifier, name_or_order: Union[str, int], default_value: Any
+) -> UsageExecNode:
+    """Make a default ArgExecNode and its corresponding UsageExecNode."""
+    xn = ArgExecNode(make_axn_id(name_or_order=name_or_order, id_=id_))
+    exec_nodes[xn.id] = xn
+    results[xn.id] = default_value
+    return UsageExecNode(xn.id)
+
+
 def make_args(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> List[UsageExecNode]:
     """Constructs the positional arguments for an ExecNode."""
     xn_args = []
@@ -426,11 +436,7 @@ def make_args(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> List[UsageE
         if not isinstance(arg, UsageExecNode):
             # arg here is definitely not a return value of a LazyExecNode!
             # it must be a default value
-            xn = ArgExecNode(make_axn_id(i, id_=id_))
-            exec_nodes[xn.id] = xn
-
-            results[xn.id] = arg
-            arg = UsageExecNode(xn.id)
+            arg = make_default_value_uxn(id_, i, arg)
 
         xn_args.append(arg)
     return xn_args
@@ -450,11 +456,7 @@ def make_kwargs(
             continue
         if not isinstance(kwarg, UsageExecNode):
             # passed in constants
-            xn = ArgExecNode(make_axn_id(kwarg_name, id_=id_))
-            exec_nodes[xn.id] = xn
-            results[xn.id] = kwarg
-
-            kwarg = UsageExecNode(xn.id)
+            kwarg = make_default_value_uxn(id_, kwarg_name, kwarg)
 
         # TODO: remove this line when fixing self.active
         if kwarg_name == ARG_NAME_ACTIVATE:
