@@ -202,11 +202,11 @@ class ExecNode:
         Returns:
             the result of the execution of the current ExecNode
         """
-        logger.debug("Start executing %s with task %s", self.id, self.exec_function)
+        logger.debug("Start executing {} with task {}", self.id, self.exec_function)
         profiles[self.id] = Profile(cfg.TAWAZI_PROFILE_ALL_NODES)
 
         if self.executed(results):
-            logger.debug("Skipping execution of a pre-computed node %s", self.id)
+            logger.debug("Skipping execution of a pre-computed node {}", self.id)
             return results[self.id]
 
         # 1. prepare args and kwargs for usage:
@@ -225,7 +225,7 @@ class ExecNode:
             results[self.id] = self.exec_function(*args, **kwargs)
 
         # 3. useless return value
-        logger.debug("Finished executing %s with task %s", self.id, self.exec_function)
+        logger.debug("Finished executing {} with task {}", self.id, self.exec_function)
         return results[self.id]
 
 

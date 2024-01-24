@@ -154,7 +154,7 @@ def execute(
                 # must wait and not submit any workers before a worker ends
                 # (that might create a new more prioritized node) to be executed
                 logger.debug(
-                    "Waiting for ExecNodes %s to finish. Finished running %s", running, done
+                    "Waiting for ExecNodes {} to finish. Finished running {}", running, done
                 )
                 done_, running = wait(running, return_when=FIRST_COMPLETED)
                 done = done.union(done_)
@@ -164,7 +164,7 @@ def execute(
             #       2. and remove them from the graph
             for id_, fut in futures.items():
                 if fut.done() and id_ in graph:
-                    logger.debug("Remove ExecNode % from the graph", id_)
+                    logger.debug("Remove ExecNode {} rom the graph", id_)
                     # will raise the first encountered exception if there's one
                     _ = fut.result()
 
@@ -182,7 +182,7 @@ def execute(
             # 4.1 choose the most prioritized node to run
             xn = get_highest_priority_node(graph, runnable_xns_ids, exec_nodes)
 
-            logger.info("%s will run!", xn.id)
+            logger.info("{} will run!", xn.id)
 
             # 4.2 if the current node must be run sequentially, wait for a running node to finish.
             # in that case we must prune the graph to re-check whether a new root node
@@ -192,7 +192,7 @@ def execute(
             num_running_threads = get_num_running_threads(futures)
             if xn.is_sequential and num_running_threads != 0:
                 logger.debug(
-                    "%s must not run in parallel. Wait for the end of a node in %s", xn.id, running
+                    "{} must not run in parallel. Wait for the end of a node in {}", xn.id, running
                 )
                 done_, running = wait(running, return_when=FIRST_COMPLETED)
                 # go to step 6
@@ -200,7 +200,7 @@ def execute(
 
             # 5.1 dynamic graph pruning
             if not _xn_active_in_call(xn, results, actives):
-                logger.debug("Prune %s from the graph", xn.id)
+                logger.debug("Prune {} from the graph", xn.id)
                 graph.remove_recursively(xn.id)
                 continue
 
@@ -212,7 +212,7 @@ def execute(
             else:
                 # a single execution will be launched and will end.
                 # it doesn't count as an additional thread that is running.
-                logger.debug("Executing %s in main thread", xn.id)
+                logger.debug("Executing {} in main thread", xn.id)
                 xn.execute(results=results, profiles=profiles)
 
                 logger.debug("Remove ExecNode % from the graph", xn.id)
@@ -221,7 +221,7 @@ def execute(
             # 5.3 wait for the sequential node to finish
             # This code is executed only if this node is being executed purely by itself
             if xn.resource == Resource.thread and xn.is_sequential:
-                logger.debug("Wait for all Futures to finish because %s is sequential.", xn.id)
+                logger.debug("Wait for all Futures to finish because {} is sequential.", xn.id)
                 # ALL_COMPLETED is equivalent to FIRST_COMPLETED because there is only a single future running!
                 done_, running = wait(futures.values(), return_when=ALL_COMPLETED)
 
