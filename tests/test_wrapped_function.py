@@ -11,6 +11,7 @@ def abcd(i: int, b: List[str], cst: float = 0.1) -> int:
 
 @dag
 def pipe(entry: int) -> int:
+    """doc of my pipeline"""
     return abcd(entry, ["entry"])
 
 
