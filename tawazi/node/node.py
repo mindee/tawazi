@@ -357,8 +357,8 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         values["kwargs"] = make_kwargs(id_, **kwargs)
 
         # 3. extract reserved arguments for current LazyExecNode call
-        values["tag"] = extract_tag(**kwargs) or self.tag
-        values["unpack_to"] = extract_unpack_to(**kwargs) or self.unpack_to
+        values["tag"] = kwargs.get(ARG_NAME_TAG) or self.tag
+        values["unpack_to"] = kwargs.get(ARG_NAME_UNPACK_TO) or self.unpack_to
 
         new_lxn: LazyExecNode[P, RVXN] = LazyExecNode(**values)
 
@@ -464,13 +464,3 @@ def make_kwargs(
 
         xn_kwargs[kwarg_name] = kwarg
     return xn_kwargs
-
-
-def extract_tag(*args: P.args, **kwargs: P.kwargs) -> Optional[TagOrTags]:
-    """Extracts the tag special keyword argument from kwargs."""
-    return kwargs.get(ARG_NAME_TAG)  # type:ignore[return-value]
-
-
-def extract_unpack_to(*args: P.args, **kwargs: P.kwargs) -> Optional[int]:
-    """Extracts the unpack_to special keyword argument from kwargs."""
-    return kwargs.get(ARG_NAME_UNPACK_TO)  # type:ignore[return-value]
