@@ -14,19 +14,19 @@ from tawazi.profile import Profile
 def _xn_active_in_call(
     xn: ExecNode,
     results: Dict[Identifier, Any],
-    actives: Dict[Identifier, Union[Any, UsageExecNode]],
+    active_nodes: Dict[Identifier, Union[Any, UsageExecNode]],
 ) -> bool:
     """Check if a node is active.
 
     Args:
         xn: the execnode
         results: dict containing the results of the execution
-        actives: dict containing active data of all ExecNodes in current DAG
+        active_nodes: dict containing active data of all ExecNodes in current DAG
 
     Returns:
         is the node active
     """
-    active = actives.get(xn.id, True)
+    active = active_nodes.get(xn.id, True)
     if isinstance(active, UsageExecNode):
         return bool(results[active.id])
     return bool(active)
@@ -98,7 +98,7 @@ def execute(
     *,
     exec_nodes: Dict[Identifier, ExecNode],
     results: Dict[Identifier, Any],
-    actives: Dict[Identifier, Union[Any, UsageExecNode]],
+    active_nodes: Dict[Identifier, Union[Any, UsageExecNode]],
     max_concurrency: int,
     graph: DiGraphEx,
 ) -> Tuple[Dict[Identifier, ExecNode], Dict[Identifier, Any], Dict[Identifier, Profile]]:
@@ -109,7 +109,7 @@ def execute(
     Args:
         exec_nodes: dictionary identifying ExecNodes.
         results: dictionary containing results of setup and constants
-        actives: actives information of all ExecNodes
+        active_nodes: actives information of all ExecNodes
         max_concurrency: maximum number of threads to be used for the execution.
         behavior: the behavior to be used in case of error.
         graph: the graph ids to be executed
@@ -120,7 +120,7 @@ def execute(
     """
     # 0.1 copy results because it will be modified here
     results = copy(results)
-    actives = copy(actives)
+    active_nodes = copy(active_nodes)
     profiles: Dict[Identifier, Profile] = {}
 
     # TODO: remove copy of ExecNodes when profiling and is_active are stored outside of ExecNode
@@ -199,7 +199,7 @@ def execute(
                 continue
 
             # 5.1 dynamic graph pruning
-            if not _xn_active_in_call(xn, results, actives):
+            if not _xn_active_in_call(xn, results, active_nodes):
                 logger.debug("Prune {} from the graph", xn.id)
                 graph.remove_recursively(xn.id)
                 continue

@@ -1,8 +1,9 @@
 """Module describing ExecNode Class and subclasses (The basic building Block of a DAG."""
+import dataclasses
 import functools
 import warnings
 from copy import deepcopy
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from functools import partial
 from threading import Lock
 from types import MethodType
@@ -76,7 +77,7 @@ class ExecNode:
 
     An ExecNode is an Object that can be executed inside a DAG scheduler.
     It basically consists of a function (exec_function) that takes args and kwargs and returns a value.
-    When the ExecNode is executed in the DAG, the resulting value will be stored in a results dict.
+    When the ExecNode is executed in the DAG, the resulting value will be stored in a dictionary.
     Note: This class is not meant to be instantiated directly.
         Please use `@xn` decorator.
 
@@ -210,10 +211,10 @@ class ExecNode:
             return results[self.id]
 
         # 1. prepare args and kwargs for usage:
-        args = [xnw.result(results) for xnw in self.args]
+        args = [uxn.result(results) for uxn in self.args]
         kwargs = {
-            key: xnw.result(results)
-            for key, xnw in self.kwargs.items()
+            key: uxn.result(results)
+            for key, uxn in self.kwargs.items()
             if key not in RESERVED_KWARGS
         }
 
@@ -346,7 +347,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         # 1.1 if ExecNode is used multiple times, <<usage_count>> is appended to its ID
         id_ = _lazy_xn_id(self.id, count_occurrences(self.id, exec_nodes))
         # 1.1 Construct a new LazyExecNode corresponding to the current call
-        values = asdict(self)
+        values = dataclasses.asdict(self)
         # force deepcopying instead of the default behavior of asdict: recursively apply asdict to dataclasses!
         values["exec_function"] = deepcopy(self.exec_function)
         values["id_"] = id_
@@ -365,7 +366,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
 
         exec_nodes[new_lxn.id] = new_lxn
 
-        return new_lxn._usage_exec_node()  # type: ignore[return-value]
+        return new_lxn._usage_exec_node  # type: ignore[return-value]
 
     def _validate_dependencies(self) -> None:
         for dep in self.dependencies:
@@ -381,6 +382,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             if self.setup and not accepted_case:
                 raise TawaziBaseException(f"setup node {self} depends on non setup node {dep}")
 
+    @property
     def _usage_exec_node(self) -> Union[Tuple[UsageExecNode, ...], UsageExecNode]:
         """Makes the corresponding UsageExecNode(s).
 
