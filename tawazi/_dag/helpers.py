@@ -154,7 +154,7 @@ def execute(
                 # must wait and not submit any workers before a worker ends
                 # (that might create a new more prioritized node) to be executed
                 logger.debug(
-                    "Waiting for ExecNodes %s to finish. Finished running %", running, done
+                    "Waiting for ExecNodes %s to finish. Finished running %s", running, done
                 )
                 done_, running = wait(running, return_when=FIRST_COMPLETED)
                 done = done.union(done_)

@@ -177,7 +177,6 @@ class ExecNode:
         """The identifier of this ExecNode."""
         return self.id_
 
-    # TODO: make cached_property ?
     @property
     def dependencies(self) -> List[UsageExecNode]:
         """The List of ExecNode dependencies of This ExecNode.

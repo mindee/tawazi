@@ -698,7 +698,7 @@ def pipe(x, y, z, w):
 
 assert pipe(2,3,4,5) == 50
 # declare a sub-dag that only depends on v1, y, z and produces v3
-sub_dag = pipe.compose(inputs=["add_v1", "pipe>>>y", "pipe>>>z"], outputs="add_v3")
+sub_dag = pipe.compose(inputs=["add_v1", "pipe>!>y", "pipe>!>z"], outputs="add_v3")
 assert sub_dag(2,3,4) == 9
 # notice that for inputs, we provide the return value of the ExecNode (return value of ExecNode tagged "add_v1")
 # but for the outputs, we indicate the the ExecNode whose return value must return.
