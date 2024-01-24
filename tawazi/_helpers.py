@@ -80,8 +80,11 @@ def make_raise_arg_error(func_name: str, arg_name: str) -> Callable[[], NoReturn
 
 
 # courtesy of https://gist.github.com/pypt/94d747fe5180851196eb?permalink_comment_id=3401011#gistcomment-3401011
-class _UniqueKeyLoader(yaml.SafeLoader):
+class UniqueKeyLoader(yaml.SafeLoader):
+    """Unique key safe loader for yaml."""
+
     def construct_mapping(self, node: Any, deep: bool = False) -> Any:
+        """Construct mapping of the corresponding YAML."""
         mapping = []
         for key_node, _value_node in node.value:
             key = self.construct_object(key_node, deep=deep)

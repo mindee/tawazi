@@ -13,7 +13,7 @@ from tawazi.node import ExecNode, UsageExecNode
 def shortcut_execute(dag: DAG[Any, Any], graph: DiGraphEx) -> Any:
     return execute(
         results=dag.results,
-        actives=dag.actives,
+        active_nodes=dag.actives,
         exec_nodes=dag.exec_nodes,
         max_concurrency=dag.max_concurrency,
         graph=graph,
@@ -94,10 +94,17 @@ def test_circular_deps() -> None:
     en_c = ExecNode(
         id_="c", exec_function=c, args=[UsageExecNode(en_a.id)], priority=1, is_sequential=False
     )
-    en_a.args = [UsageExecNode(en_c.id)]
+    object.__setattr__(en_a, "args", [UsageExecNode(en_c.id)])  # typing: ignore[misc]
 
     with pytest.raises(NetworkXUnfeasible):
-        DAG({xn.id: xn for xn in [en_a, en_b, en_c]}, [], [], 2)
+        DAG(
+            results={},
+            actives={},
+            exec_nodes={xn.id: xn for xn in [en_a, en_b, en_c]},
+            input_uxns=[],
+            return_uxns=[],
+            max_concurrency=2,
+        )  # typing: ignore[misc]
 
 
 def test_non_pickalable_args() -> None:

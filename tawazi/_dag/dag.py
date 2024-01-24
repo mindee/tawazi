@@ -1,10 +1,11 @@
 """module containing DAG and DAGExecution which are the containers that run ExecNodes in Tawazi."""
-import collections
+import dataclasses
 import json
 import pickle
 import warnings
+from collections import Counter
 from copy import deepcopy
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from itertools import chain
 from pathlib import Path
 from typing import Any, Dict, Generic, List, NoReturn, Optional, Sequence, Set, Tuple, Union
@@ -13,7 +14,7 @@ import networkx as nx
 import yaml
 from loguru import logger
 
-from tawazi._helpers import _UniqueKeyLoader
+from tawazi._helpers import UniqueKeyLoader
 from tawazi.config import cfg
 from tawazi.consts import RVDAG, Identifier, P, Tag
 from tawazi.errors import TawaziTypeError, TawaziUsageError
@@ -285,10 +286,9 @@ class DAG(Generic[P, RVDAG]):
         # 5.1 copy the ExecNodes that will be in the composed DAG because
         #  maybe the composed DAG will modify them (e.g. change their tags)
         #  and we don't want to modify the original DAG
-        xn_dict: Dict[Identifier, ExecNode] = {}
-        for in_id in set_xn_ids:
-            if in_id not in in_ids:
-                xn_dict[in_id] = deepcopy(self.exec_nodes[in_id])
+        xn_dict = {
+            in_id: deepcopy(self.exec_nodes[in_id]) for in_id in set_xn_ids if in_id not in in_ids
+        }
 
         # change input ExecNodes to ArgExecNodes
         new_in_ids = [make_axn_id(old_id, id_="composed") for old_id in in_ids]
@@ -421,7 +421,7 @@ class DAG(Generic[P, RVDAG]):
         _, self.results, _ = execute(
             exec_nodes=self.exec_nodes,
             results=self.results,
-            actives=self.actives,
+            active_nodes=self.actives,
             max_concurrency=self.max_concurrency,
             graph=graph,
         )
@@ -480,7 +480,7 @@ class DAG(Generic[P, RVDAG]):
         exec_nodes, results, profiles = execute(
             exec_nodes=self.exec_nodes,
             results=results,
-            actives=self.actives,
+            active_nodes=self.actives,
             max_concurrency=self.max_concurrency,
             graph=subgraph,
         )
@@ -526,10 +526,10 @@ class DAG(Generic[P, RVDAG]):
         """
 
         def node_values(n: ExecNode, conf: Dict[str, Any]) -> Dict[str, Any]:
-            values = asdict(n)
+            values = dataclasses.asdict(n)
             values["is_sequential"] = conf.get("is_sequential", n.is_sequential)
             values["priority"] = conf.get("priority", n.priority)
-            return values
+            return values  # ignore: typing[no-any-return]
 
         def expand_config(
             config_nodes: Dict[Union[Tag, Identifier], Any]
@@ -544,9 +544,7 @@ class DAG(Generic[P, RVDAG]):
 
         def detect_duplicates(expanded_config: List[Tuple[Identifier, Any]]) -> None:
             duplicates = [
-                id
-                for id, count in collections.Counter([id for id, _ in expanded_config]).items()
-                if count > 1
+                id for id, count in Counter([id for id, _ in expanded_config]).items() if count > 1
             ]
             if duplicates:
                 raise ValueError(f"trying to set two configs for nodes {duplicates}.")
@@ -572,7 +570,7 @@ class DAG(Generic[P, RVDAG]):
             config_path: the path to the YAML file
         """
         with open(config_path) as f:
-            yaml_config = yaml.load(f, Loader=_UniqueKeyLoader)  # noqa: S506
+            yaml_config = yaml.load(f, Loader=UniqueKeyLoader)  # noqa: S506
 
         self.config_from_dict(yaml_config)
 
