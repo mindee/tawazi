@@ -20,11 +20,12 @@ def op1(in1: int) -> int:
     return in1 + 1
 
 
-@pytest.mark.parametrize(
-    "input_list, cst, expected_output", [([1, 2, 3], 10, 16), ([1, 2, 3], 0, 6)]
-)
-def test_pipeline_input_output(input_list: List[int], cst: int, expected_output: int) -> None:
-    assert declare_dag_function(input_list, cst) == expected_output
+def test_pipeline_input_output() -> None:
+    assert declare_dag_function([1, 2, 3], 10) == 16
+
+
+def test_pipeline_input_output_skipping_default_params() -> None:
+    assert declare_dag_function([1, 2, 3]) == 6
 
 
 def test_pipeline_input_output_missing_argument() -> None:
