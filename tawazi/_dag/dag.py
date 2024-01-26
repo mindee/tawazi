@@ -286,6 +286,7 @@ class DAG(Generic[P, RVDAG]):
         # 5.1 copy the ExecNodes that will be in the composed DAG because
         #  maybe the composed DAG will modify them (e.g. change their tags)
         #  and we don't want to modify the original DAG
+        # we avoid adding the inputs because they will be modified just afterwards
         xn_dict = {
             in_id: deepcopy(self.exec_nodes[in_id]) for in_id in set_xn_ids if in_id not in in_ids
         }
@@ -296,7 +297,7 @@ class DAG(Generic[P, RVDAG]):
             logger.debug("changing Composed-DAG's input {} into ArgExecNode", new_id)
             xn_dict[new_id] = ArgExecNode(new_id)
 
-            # because id changed, we must change the id in the corresponding dependencies everywhere
+            # because old_id changed, we must change it to new_id in its corresponding dependencies everywhere
             for xn in xn_dict.values():
                 for i, xn_dep in enumerate(xn.args):
                     # if the dependency of xn is an input_id of the newly composed DAG.
