@@ -142,6 +142,12 @@ class ExecNode:
         if not isinstance(self.resource, Resource):
             raise ValueError(f"resource must be of type {Resource}, provided {type(self.resource)}")
 
+        if any(not isinstance(arg, UsageExecNode) for arg in self.args):
+            raise ValueError("args must be of type UsageExecNode")
+
+        if any(not isinstance(arg, UsageExecNode) for arg in self.kwargs.values()):
+            raise ValueError("kwargs must be of type UsageExecNode")
+
         # other validations
         if self.debug and self.setup:
             raise ValueError(

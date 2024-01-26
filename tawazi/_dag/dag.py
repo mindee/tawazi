@@ -528,6 +528,8 @@ class DAG(Generic[P, RVDAG]):
 
         def node_values(n: ExecNode, conf: Dict[str, Any]) -> Dict[str, Any]:
             values = dataclasses.asdict(n)
+            values["args"] = n.args
+            values["kwargs"] = n.kwargs
             values["is_sequential"] = conf.get("is_sequential", n.is_sequential)
             values["priority"] = conf.get("priority", n.priority)
             return values  # ignore: typing[no-any-return]
