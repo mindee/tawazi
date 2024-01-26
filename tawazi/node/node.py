@@ -87,8 +87,8 @@ class ExecNode:
     unpack_to: Optional[int] = None
     resource: Resource = cfg.TAWAZI_DEFAULT_RESOURCE
 
-    args: List[UsageExecNode] = field(default_factory=list)  # args or []
-    kwargs: Dict[Identifier, UsageExecNode] = field(default_factory=dict)  # kwargs or {}
+    args: List[UsageExecNode] = field(default_factory=list)
+    kwargs: Dict[Identifier, UsageExecNode] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Post init to validate attributes."""
