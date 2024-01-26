@@ -226,12 +226,16 @@ class ExecNode:
         Returns:
             int: the number of occurrences of self in exec_nodes
         """
-        # only choose the ids that are exactly exactly the same as the original id
-        candidate_ids = (xn_id for xn_id in exec_nodes if xn_id.split(USE_SEP_START)[0] == self.id)
-
         # count the number of ids that are exactly the same as the original id
         #  or that end with USE_SEP_END (which means they come from a reuse of the same ExecNode)
-        return sum(xn_id == self.id or xn_id.endswith(USE_SEP_END) for xn_id in candidate_ids)
+        return len(
+            [
+                xn_id
+                for xn_id in exec_nodes
+                if xn_id == self.id
+                or (xn_id.split(USE_SEP_START)[0] == self.id and xn_id.endswith(USE_SEP_END))
+            ]
+        )
 
 
 class ReturnExecNode(ExecNode):
@@ -350,9 +354,15 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
 
         # 1.1 if ExecNode is used multiple times, <<usage_count>> is appended to its ID
         id_ = _lazy_xn_id(self.id, self.count_occurrences(exec_nodes))
-        # 1.1 Construct a new LazyExecNode corresponding to the current call
+        exec_nodes[id_] = self._new_lxn(id_, *args, **kwargs)
+        return exec_nodes[id_]._usage_exec_node  # type: ignore[no-any-return,attr-defined]
+
+    def _new_lxn(
+        self, id_: Identifier, *args: P.args, **kwargs: P.kwargs
+    ) -> "LazyExecNode[P, RVXN]":
+        """Construct a new LazyExecNode corresponding to the current call."""
         values = dataclasses.asdict(self)
-        # force deepcopying instead of the default behavior of asdict: recursively apply asdict to dataclasses!
+        # force deep copy instead of the default behavior of asdict: recursively apply asdict to dataclasses!
         values["exec_function"] = deepcopy(self.exec_function)
         values["id_"] = id_
 
@@ -364,13 +374,9 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         values["tag"] = kwargs.get(ARG_NAME_TAG) or self.tag
         values["unpack_to"] = kwargs.get(ARG_NAME_UNPACK_TO) or self.unpack_to
 
-        new_lxn: LazyExecNode[P, RVXN] = LazyExecNode(**values)
-
-        new_lxn._validate_dependencies()
-
-        exec_nodes[new_lxn.id] = new_lxn
-
-        return new_lxn._usage_exec_node  # type: ignore[return-value]
+        lxn: LazyExecNode[P, RVXN] = LazyExecNode(**values)
+        lxn._validate_dependencies()
+        return lxn
 
     def _validate_dependencies(self) -> None:
         for dep in self.dependencies:
