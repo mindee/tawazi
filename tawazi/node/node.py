@@ -47,30 +47,6 @@ exec_nodes_lock = Lock()
 Alias = Union[Tag, Identifier, "ExecNode"]
 
 
-def count_occurrences(id_: str, exec_nodes: Dict[str, "ExecNode"]) -> int:
-    """Count the number of occurrences of an id in exec_nodes.
-
-    Avoids counting the ids of the arguments passed to previously called ExecNodes.
-    example: id_ = "a"
-    ExecNode a is called five times, hence we should have ids a, a<<1>>, a<<2>>, a<<3>>, a<<4>>
-    ExecNode a is called with many arguments:
-    we want to avoid counting "a>>>nth argument" and a<<1>>>>nth argument"
-
-    Args:
-        id_ (str): the id to count
-        exec_nodes (Dict[str, ExecNode]): the dictionary of ExecNodes
-
-    Returns:
-        int: the number of occurrences of id_ in exec_nodes
-    """
-    # only choose the ids that are exactly exactly the same as the original id
-    candidate_ids = (xn_id for xn_id in exec_nodes if xn_id.split(USE_SEP_START)[0] == id_)
-
-    # count the number of ids that are exactly the same as the original id
-    #  or that end with USE_SEP_END (which means they come from a reuse of the same ExecNode)
-    return sum(xn_id == id_ or xn_id.endswith(USE_SEP_END) for xn_id in candidate_ids)
-
-
 @dataclass(frozen=True)
 class ExecNode:
     """Base class for executable node in a DAG.
@@ -235,6 +211,28 @@ class ExecNode:
         logger.debug("Finished executing {} with task {}", self.id, self.exec_function)
         return results[self.id]
 
+    def count_occurrences(self, exec_nodes: Dict[str, "ExecNode"]) -> int:
+        """Count the number of occurrences of an id in exec_nodes.
+
+        Avoids counting the ids of the arguments passed to previously called ExecNodes.
+        example: id_ = "a"
+        ExecNode a is called five times, hence we should have ids a, a<<1>>, a<<2>>, a<<3>>, a<<4>>
+        ExecNode a is called with many arguments:
+        we want to avoid counting "a>>>nth argument" and a<<1>>>>nth argument"
+
+        Args:
+            exec_nodes (Dict[str, ExecNode]): the dictionary of ExecNodes
+
+        Returns:
+            int: the number of occurrences of self in exec_nodes
+        """
+        # only choose the ids that are exactly exactly the same as the original id
+        candidate_ids = (xn_id for xn_id in exec_nodes if xn_id.split(USE_SEP_START)[0] == self.id)
+
+        # count the number of ids that are exactly the same as the original id
+        #  or that end with USE_SEP_END (which means they come from a reuse of the same ExecNode)
+        return sum(xn_id == self.id or xn_id.endswith(USE_SEP_END) for xn_id in candidate_ids)
+
 
 class ReturnExecNode(ExecNode):
     """ExecNode corresponding to a constant Return value of a DAG."""
@@ -351,7 +349,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             return self.exec_function(*args, **kwargs)  # type: ignore[no-any-return]
 
         # 1.1 if ExecNode is used multiple times, <<usage_count>> is appended to its ID
-        id_ = _lazy_xn_id(self.id, count_occurrences(self.id, exec_nodes))
+        id_ = _lazy_xn_id(self.id, self.count_occurrences(exec_nodes))
         # 1.1 Construct a new LazyExecNode corresponding to the current call
         values = dataclasses.asdict(self)
         # force deepcopying instead of the default behavior of asdict: recursively apply asdict to dataclasses!
