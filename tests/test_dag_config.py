@@ -30,6 +30,7 @@ def test_config_from_dict() -> None:
     assert d.max_concurrency == 3
     assert d.get_node_by_id("a").priority == 42
     assert not d.get_node_by_id("a").is_sequential
+    assert my_dag() == "1234poulpe"
 
 
 def test_config_from_yaml(tmp_path: str) -> None:
@@ -44,6 +45,7 @@ def test_config_from_yaml(tmp_path: str) -> None:
     assert d.max_concurrency == 3
     assert d.get_node_by_id("a").priority == 42
     assert not d.get_node_by_id("a").is_sequential
+    assert my_dag() == "1234poulpe"
 
 
 def test_config_from_json(tmp_path: str) -> None:
@@ -57,6 +59,7 @@ def test_config_from_json(tmp_path: str) -> None:
     assert d.max_concurrency == 3
     assert d.get_node_by_id("a").priority == 42
     assert not d.get_node_by_id("a").is_sequential
+    assert my_dag() == "1234poulpe"
 
 
 def test_dup_conf_dag() -> None:
