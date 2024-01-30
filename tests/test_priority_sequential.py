@@ -1,127 +1,100 @@
 from time import sleep
 from typing import Any
 
-from tawazi import DAG
-from tawazi.node import ExecNode, UsageExecNode
+from tawazi import dag, xn
 
 T = 0.01
-# global priority_sequential_comp_str
 priority_sequential_comp_str = ""
 
 
-# pass *args because different the same function is used in multiple deps
+@xn
 def a(*__args: Any) -> None:
     sleep(T)
     global priority_sequential_comp_str
     priority_sequential_comp_str += "a"
 
 
+@xn
 def b(*__args: Any) -> None:
     sleep(T)
     global priority_sequential_comp_str
     priority_sequential_comp_str += "b"
 
 
+@xn
 def c(*__args: Any) -> None:
     sleep(T)
     global priority_sequential_comp_str
     priority_sequential_comp_str += "c"
 
 
+@xn
 def d(*__args: Any) -> None:
     sleep(T)
     global priority_sequential_comp_str
     priority_sequential_comp_str += "d"
 
 
+@xn
 def e(*__args: Any) -> None:
     sleep(T)
     global priority_sequential_comp_str
     priority_sequential_comp_str += "e"
 
 
+@dag
+def my_dag() -> None:
+    _a = a()
+    _b = b(_a)
+    _c = c(_b)
+    _d = d(_a)
+
+
+@dag
+def my_seq_dag() -> None:
+    _a = a()
+    _b = b(_a)
+    _c = c(_a)
+    _d = d(_b)
+    _e = e(_a)
+
+
 def test_priority() -> None:
-    # tests to run 1000s of time
-    # Priority test
     global priority_sequential_comp_str
+    conf = {
+        "a": {"priority": 1, "is_sequential": False},
+        "b": {"priority": 2, "is_sequential": False},
+        "c": {"priority": 2, "is_sequential": False},
+        "d": {"priority": 1, "is_sequential": False},
+    }
+    my_dag.config_from_dict(conf)
+
     for _i in range(100):
         priority_sequential_comp_str = ""
-        en_a = ExecNode(id_=a.__name__, exec_function=a, priority=1, is_sequential=False)
-        en_b = ExecNode(
-            id_=b.__name__,
-            exec_function=b,
-            args=[UsageExecNode(en_a.id)],
-            priority=2,
-            is_sequential=False,
-        )
-        en_c = ExecNode(
-            id_=c.__name__,
-            exec_function=c,
-            args=[UsageExecNode(en_b.id)],
-            priority=2,
-            is_sequential=False,
-        )
-        en_d = ExecNode(
-            id_=d.__name__,
-            exec_function=d,
-            args=[UsageExecNode(en_a.id)],
-            priority=1,
-            is_sequential=False,
-        )
-        list_execnodes = [en_a, en_b, en_c, en_d]
-        node_dict = {xn.id: xn for xn in list_execnodes}
-
-        g: DAG[Any, Any] = DAG({}, {}, node_dict, [], [], 1)
-        g()
+        my_dag()
         assert priority_sequential_comp_str == "abcd", f"during {_i}th iteration"
 
 
 def test_sequentiality() -> None:
     global priority_sequential_comp_str
-
+    conf = {
+        "a": {"is_sequential": False},
+        "b": {"priority": 2, "is_sequential": False},
+        "c": {"priority": 2, "is_sequential": False},
+        "d": {"priority": 1, "is_sequential": False},
+        "e": {"priority": 1, "is_sequential": True},
+    }
+    my_seq_dag.config_from_dict(conf)
     for _i in range(100):
         # Sequentiality test
         priority_sequential_comp_str = ""
-        en_a = ExecNode(id_=a.__name__, exec_function=a, is_sequential=False)
-        en_b = ExecNode(
-            id_=b.__name__,
-            exec_function=b,
-            args=[UsageExecNode(en_a.id)],
-            priority=2,
-            is_sequential=False,
-        )
-        en_c = ExecNode(
-            id_=c.__name__,
-            exec_function=c,
-            args=[UsageExecNode(en_a.id)],
-            priority=2,
-            is_sequential=False,
-        )
-        en_d = ExecNode(
-            id_=d.__name__,
-            exec_function=d,
-            args=[UsageExecNode(en_b.id)],
-            priority=2,
-            is_sequential=False,
-        )
-        en_e = ExecNode(
-            id_=e.__name__,
-            exec_function=e,
-            args=[UsageExecNode(en_a.id)],
-            priority=1,
-            is_sequential=True,
-        )
-        list_execnodes = [en_a, en_b, en_c, en_d, en_e]
-        node_dict = {xn.id: xn for xn in list_execnodes}
+        my_seq_dag()
 
-        g: DAG[Any, Any] = DAG({}, {}, node_dict, [], [], 2)
-        g()
-        sequential_comp_str = priority_sequential_comp_str
-        ind_a = sequential_comp_str.index("a")
-        ind_b = sequential_comp_str.index("b")
-        ind_c = sequential_comp_str.index("c")
-        ind_d = sequential_comp_str.index("d")
-        ind_e = sequential_comp_str.index("e")
+        ind_a = priority_sequential_comp_str.index("a")
+        ind_b = priority_sequential_comp_str.index("b")
+        ind_c = priority_sequential_comp_str.index("c")
+        ind_d = priority_sequential_comp_str.index("d")
+        ind_e = priority_sequential_comp_str.index("e")
 
         assert ind_e > ind_b, f"during {_i}th iteration"
         assert ind_d > ind_b, f"during {_i}th iteration"
