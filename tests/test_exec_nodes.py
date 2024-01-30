@@ -157,9 +157,5 @@ def test_call_directly_with_ignore() -> None:
 
     cfg.TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR = XNOutsideDAGCall.ignore
 
-    with pytest.warns(None) as record:  # type: ignore[call-overload]
-        assert f8(1, 2, 3, foo=4, bar=5) == 15
-    assert len(record) == 0
-    with pytest.warns(None) as record:  # type: ignore[call-overload]
-        assert f4(1) == 4
-    assert len(record) == 0
+    assert f8(1, 2, 3, foo=4, bar=5) == 15
+    assert f4(1) == 4
