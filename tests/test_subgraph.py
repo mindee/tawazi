@@ -1,10 +1,9 @@
-from typing import Any, List
+from typing import Any, List, Set
 
 import pytest
 from tawazi import DAG, dag, xn
 from tawazi._dag.digraph import DiGraphEx
 from tawazi._dag.helpers import execute
-from tawazi.node import ExecNode
 
 subgraph_comp_str = ""
 T = 1e-3
@@ -89,82 +88,38 @@ def dag_describer() -> None:
     i(var_h)
 
 
-def test_scheduled_nodes() -> None:
-    executor = dag_describer.executor(target_nodes=["a"])
-    assert {"a"} == set(executor.graph.nodes)
-
-    executor = dag_describer.executor(target_nodes=["b"])
-    assert {"a", "b"} == set(executor.graph.nodes)
-
-    executor = dag_describer.executor(target_nodes=["c"])
-    assert {"a", "c"} == set(executor.graph.nodes)
-
-    executor = dag_describer.executor(target_nodes=["d"])
-    assert {"a", "c", "d"} == set(executor.graph.nodes)
+@pytest.mark.parametrize(
+    "target_nodes, expected_nodes",
+    [(["a"], {"a"}), (["b"], {"a", "b"}), (["c"], {"a", "c"}), (["d"], {"a", "c", "d"})],
+)
+def test_scheduled_nodes(target_nodes: List[str], expected_nodes: Set[str]) -> None:
+    executor = dag_describer.executor(target_nodes=target_nodes)
+    assert expected_nodes == set(executor.graph.nodes)
 
 
-def test_dag_subgraph_all_nodes() -> None:
+@pytest.mark.parametrize(
+    "nodes_ids, expected_nodes",
+    [
+        (["a", "b", "c", "d", "e", "f", "g", "h", "i"], "abcdefghi"),
+        (["b", "d", "f", "g", "i"], "abcdefghi"),
+        (["b", "c", "e", "h", "g"], "abcegh"),
+        (["b", "c", "e", "h", "g"], "abcegh"),
+    ],
+)
+def test_dag_subgraph(nodes_ids: List[str], expected_nodes: str) -> None:
     global subgraph_comp_str
     subgraph_comp_str = ""
-    dag = dag_describer
-    nodes: List[ExecNode] = [a, b, c, d, e, f, g, h, i]
-    nodes_ids = [n.id for n in nodes]
-
-    graph = dag.graph_ids.make_subgraph(nodes_ids)
-    shortcut_execute(dag, graph)
-    assert set("abcdefghi") == set(subgraph_comp_str)
-
-
-def test_dag_subgraph_leaf_nodes() -> None:
-    global subgraph_comp_str
-    subgraph_comp_str = ""
-    dag = dag_describer
-    nodes: List[ExecNode] = [b, d, f, g, i]
-    nodes_ids: List[str] = [n.id for n in nodes]
-
-    graph = dag.graph_ids.make_subgraph(nodes_ids)
-    shortcut_execute(dag, graph)
-    assert set("abcdefghi") == set(subgraph_comp_str)
-
-
-def test_dag_subgraph_leaf_nodes_with_extra_nodes() -> None:
-    global subgraph_comp_str
-    subgraph_comp_str = ""
-    dag = dag_describer
-    nodes: List[ExecNode] = [b, c, e, h, g]
-    nodes_ids = [n.id for n in nodes]
-
-    graph = dag.graph_ids.make_subgraph(nodes_ids)
-    shortcut_execute(dag, graph)
-    assert set("abcegh") == set(subgraph_comp_str)
-
-
-def test_dag_subgraph_nodes_ids() -> None:
-    global subgraph_comp_str
-    subgraph_comp_str = ""
-    dag = dag_describer
-    graph = dag.graph_ids.make_subgraph([b.id, c.id, e.id, h.id, g.id])
-    shortcut_execute(dag, graph)
-    assert set("abcegh") == set(subgraph_comp_str)
+    graph = dag_describer.graph_ids.make_subgraph(nodes_ids)
+    shortcut_execute(dag_describer, graph)
+    assert set(expected_nodes) == set(subgraph_comp_str)
 
 
 def test_dag_subgraph_non_existing_nodes_ids() -> None:
     with pytest.raises(ValueError):
-        dag = dag_describer
-        graph = dag.graph_ids.make_subgraph(["gibirish"])
-        shortcut_execute(dag, graph)
-
-
-@xn
-def a1(in1: int) -> int:
-    return in1 + 1
-
-
-@dag
-def pipe(in1: int) -> int:
-    return a1(in1)
+        graph = dag_describer.graph_ids.make_subgraph(["gibirish"])
+        shortcut_execute(dag_describer, graph)
 
 
 def test_no_nodes_running_in_subgraph() -> None:
-    exec_ = pipe.executor(target_nodes=[])
-    assert exec_() is None  # type: ignore[call-arg]
+    exec_ = dag_describer.executor(target_nodes=[])
+    assert exec_() is None
