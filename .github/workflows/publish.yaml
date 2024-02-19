@@ -1,0 +1,46 @@
+name: Publish
+
+on:
+  release:
+    types: [ published ]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Publish release to PyPi
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ "3.8" ]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+
+      - name: Install dependencies
+        run: python -m flit install -s
+
+      - name: Build
+        run: |
+          rm -rf ./dist
+          python -m build
+
+      - name: Check
+        run: twine check --strict ./dist/*
+
+      - name: Test Upload
+        env:
+          TWINE_NON_INTERACTIVE: "1"
+          TWINE_USERNAME: ${{ secrets.PYPI_TEST_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_TEST_PASSWORD }}
+        run: twine upload --disable-progress-bar --repository testpypi ./dist/*
+
+      - name: Upload
+        env:
+          TWINE_NON_INTERACTIVE: "1"
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: twine upload --disable-progress-bar ./dist/*
