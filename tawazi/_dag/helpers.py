@@ -42,6 +42,26 @@ def get_num_running_threads(_futures: Dict[Identifier, "Future[Any]"]) -> int:
     return sum([not future.done() for future in _futures.values()])
 
 
+def get_highest_priority_node(
+    xns_dict: Dict[Identifier, ExecNode], runnable_xns_ids: List[Identifier]
+) -> ExecNode:
+    # runnable_xns = [xns_dict[node_id] for node_id in runnable_xns_ids]
+    # highest_priority_xns = get_highest_priority_nodes(runnable_xns)
+
+    # # 4.1.2 get the node with the highest compound priority
+    # # (randomly selected if multiple are suggested)
+    # highest_priority_xns.sort(key=lambda node: node.compound_priority)
+    # xn = highest_priority_xns[-1]
+
+    max_priority = 0
+    xn = xns_dict[runnable_xns_ids[0]]
+    for runnable_node_id in runnable_xns_ids:
+        if max_priority < xns_dict[runnable_node_id].compound_priority:
+            max_priority = xns_dict[runnable_node_id].compound_priority
+            xn = xns_dict[runnable_node_id]
+    return xn
+
+
 def get_highest_priority_nodes(nodes: List[ExecNode]) -> List[ExecNode]:
     highest_priority = max(node.priority for node in nodes)
     return [node for node in nodes if node.priority == highest_priority]
@@ -137,13 +157,7 @@ def execute(
             # 4. choose a node to run
             # 4.1 get the most prioritized node to run
             # 4.1.1 get all the nodes that have the highest priority
-            runnable_xns = [xns_dict[node_id] for node_id in runnable_xns_ids]
-            highest_priority_xns = get_highest_priority_nodes(runnable_xns)
-
-            # 4.1.2 get the node with the highest compound priority
-            # (randomly selected if multiple are suggested)
-            highest_priority_xns.sort(key=lambda node: node.compound_priority)
-            xn = highest_priority_xns[-1]
+            xn = get_highest_priority_node(xns_dict, runnable_xns_ids)
 
             logger.info("%s will run!", xn.id)
 
