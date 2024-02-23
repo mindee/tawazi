@@ -11,7 +11,7 @@ def graph() -> DiGraphEx:
 
 
 def test_digraph_nodes(graph: DiGraphEx) -> None:
-    assert graph.root_nodes == [1, 4]  # type: ignore[comparison-overlap]
+    assert graph.root_nodes == {1, 4}  # type: ignore[comparison-overlap]
     assert graph.leaf_nodes == [2, 3, 6, 7]  # type: ignore[comparison-overlap]
 
 
