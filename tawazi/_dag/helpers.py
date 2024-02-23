@@ -1,6 +1,6 @@
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, TypeVar
 
 from loguru import logger
 
@@ -67,6 +67,70 @@ def get_highest_priority_nodes(nodes: List[ExecNode]) -> List[ExecNode]:
     return [node for node in nodes if node.priority == highest_priority]
 
 
+K = TypeVar("K")
+V = TypeVar("V")
+
+
+class BiDict(Dict[K, V]):
+    """A bidirectional dictionary that raises an error if two keys are mapped to the same value.
+
+    >>> b = BiDict({1: 'one', 2: 'two'})
+    >>> b[1]
+    'one'
+    >>> b.inverse['one']
+    1
+    >>> b[3] = 'three'
+    >>> b.inverse['three']
+    3
+    >>> b[4] = 'one'
+    Traceback (most recent call last):
+    ...
+    ValueError: Value one is already in the BiDict
+    >>> del b[1]
+    >>> assert 1 not in b
+    >>> b[4] = 'one'
+    >>> b.inverse['one']
+    4
+    """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.inverse: Dict[V, K] = {}
+        for key, value in self.items():
+            self._setitem_inverse(key, value)
+
+    def _setitem_inverse(self, key: K, value: V) -> None:
+        if value in self.inverse:
+            raise ValueError(f"Value {value} is already in the BiDict")
+        self.inverse[value] = key
+
+    def __setitem__(self, key: K, value: V) -> None:
+        if key in self:
+            del self.inverse[self[key]]
+        super().__setitem__(key, value)
+        self._setitem_inverse(key, value)
+
+    def __delitem__(self, key: K) -> None:
+        del self.inverse[self[key]]
+        super().__delitem__(key)
+
+
+def remove_done_futures(
+    done_: Set["Future[Any]"],
+    behavior: ErrorStrategy,
+    graph: DiGraphEx,
+    futures: BiDict[Identifier, "Future[Any]"],
+) -> None:
+    # 1. among the finished futures:
+    #   1. checks for exceptions
+    #   2. and remove them from the graph
+    for done_future in done_:
+        id_ = futures.inverse[done_future]
+        logger.debug("Remove ExecNode % from the graph", id_)
+        handle_future_exception(behavior, graph, done_future, id_)
+        graph.remove_node(id_)
+
+
 ################
 # The scheduler!
 ################
@@ -107,7 +171,7 @@ def execute(
         graph.remove_node(id_)
 
     # 0.3 create variables related to futures
-    futures: Dict[Identifier, "Future[Any]"] = {}
+    futures: BiDict[Identifier, "Future[Any]"] = BiDict()
     done: Set["Future[Any]"] = set()
     running: Set["Future[Any]"] = set()
 
@@ -136,14 +200,7 @@ def execute(
                 done_, running = wait(running, return_when=FIRST_COMPLETED)
                 done = done.union(done_)
 
-            # 1. among the finished futures:
-            #       1. checks for exceptions
-            #       2. and remove them from the graph
-            for id_, fut in futures.items():
-                if fut.done() and id_ in graph:
-                    logger.debug("Remove ExecNode % from the graph", id_)
-                    handle_future_exception(behavior, graph, fut, id_)
-                    graph.remove_node(id_)
+                remove_done_futures(done_, behavior, graph, futures)
 
             # 2. list the root nodes that aren't being executed
             runnable_xns_ids = list(set(graph.root_nodes()) - set(futures.keys()))
@@ -172,7 +229,8 @@ def execute(
                     f"{xn.id} must not run in parallel." f"Wait for the end of a node in {running}"
                 )
                 done_, running = wait(running, return_when=FIRST_COMPLETED)
-                # go to step 6
+                done = done.union(done_)
+                remove_done_futures(done_, behavior, graph, futures)
                 continue
 
             # 5.1 dynamic graph pruning
@@ -206,8 +264,9 @@ def execute(
             if xn.resource == Resource.thread and xn.is_sequential:
                 logger.debug("Wait for all Futures to finish because %s is sequential.", xn.id)
                 # ALL_COMPLETED is equivalent to FIRST_COMPLETED because there is only a single future running!
-                done_, running = wait(futures.values(), return_when=ALL_COMPLETED)
-
+                done_, running = wait(running, return_when=ALL_COMPLETED)
+                done = done.union(done_)
+                remove_done_futures(done_, behavior, graph, futures)
     return xns_dict
 
 
