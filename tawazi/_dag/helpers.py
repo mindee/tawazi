@@ -1,6 +1,6 @@
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy
-from typing import Any, Dict, List, Optional, Set, TypeVar
+from typing import Any, Dict, Optional, Set, Tuple, TypeVar
 
 from loguru import logger
 
@@ -43,7 +43,7 @@ def get_num_running_threads(running_futures: Set["Future[Any]"]) -> int:
 
 
 def get_highest_priority_node(
-    xns_dict: Dict[Identifier, ExecNode], runnable_xns_ids: List[Identifier]
+    xns_dict: Dict[Identifier, ExecNode], runnable_xns_ids: Set[Identifier]
 ) -> ExecNode:
     # runnable_xns = [xns_dict[node_id] for node_id in runnable_xns_ids]
     # highest_priority_xns = get_highest_priority_nodes(runnable_xns)
@@ -52,10 +52,10 @@ def get_highest_priority_node(
     # # (randomly selected if multiple are suggested)
     # highest_priority_xns.sort(key=lambda node: node.compound_priority)
     # xn = highest_priority_xns[-1]
-
+    list_runnable_xns_ids = list(runnable_xns_ids)
     max_priority = 0
-    xn = xns_dict[runnable_xns_ids[0]]
-    for runnable_node_id in runnable_xns_ids:
+    xn = xns_dict[list_runnable_xns_ids[0]]
+    for runnable_node_id in list_runnable_xns_ids:
         if max_priority < xns_dict[runnable_node_id].compound_priority:
             max_priority = xns_dict[runnable_node_id].compound_priority
             xn = xns_dict[runnable_node_id]
@@ -110,20 +110,28 @@ class BiDict(Dict[K, V]):
         super().__delitem__(key)
 
 
-def remove_done_futures(
-    done_: Set["Future[Any]"],
+def wait_for_finsihed_nodes(
+    return_when: str,
     behavior: ErrorStrategy,
     graph: DiGraphEx,
     futures: BiDict[Identifier, "Future[Any]"],
-) -> None:
+    done: Set["Future[Any]"],
+    running: Set["Future[Any]"],
+    runnable_xns_ids: Set[Identifier],
+) -> Tuple[Set["Future[Any]"], Set["Future[Any]"], Set[Identifier]]:
+    done_, running = wait(running, return_when=return_when)
+    done = done.union(done_)
+
     # 1. among the finished futures:
     #   1. checks for exceptions
     #   2. and remove them from the graph
     for done_future in done_:
-        id_ = futures.inverse[done_future]
-        logger.debug("Remove ExecNode {} from the graph", id_)
-        handle_future_exception(behavior, graph, done_future, id_)
-        graph.remove_node(id_)
+        future_id = futures.inverse[done_future]
+        logger.debug("Remove ExecNode {} from the graph", future_id)
+        handle_future_exception(behavior, graph, futures[future_id], future_id)
+        runnable_xns_ids |= graph.remove_root_node(future_id)
+
+    return done, running, runnable_xns_ids
 
 
 ################
@@ -172,7 +180,7 @@ def execute(
 
     # 0.4 get the candidates root nodes that can be executed
     # runnable_nodes_ids will be empty if all root nodes are running
-    runnable_xns_ids = graph.root_nodes()
+    runnable_xns_ids: Set[Identifier] = graph.root_nodes()
 
     with ThreadPoolExecutor(max_workers=max_concurrency, thread_name_prefix=call_id) as executor:
         while len(graph):
@@ -189,16 +197,11 @@ def execute(
             if num_running_threads == max_concurrency or num_runnable_nodes_ids == 0:
                 # must wait and not submit any workers before a worker ends
                 # (that might create a new more prioritized node) to be executed
-                logger.debug(
-                    "Waiting for ExecNodes {} to finish. Finished running {}", running, done
+                logger.debug("Waiting for ExecNodes {} to finish.", running)
+                logger.debug("Finished running {}", done)
+                done, running, runnable_xns_ids = wait_for_finsihed_nodes(
+                    FIRST_COMPLETED, behavior, graph, futures, done, running, runnable_xns_ids
                 )
-                done_, running = wait(running, return_when=FIRST_COMPLETED)
-                done = done.union(done_)
-
-                remove_done_futures(done_, behavior, graph, futures)
-
-            # 2. list the root nodes that aren't being executed
-            runnable_xns_ids = list(set(graph.root_nodes()) - set(futures.keys()))
 
             # 3. if no runnable node exist, go to step 6 (wait for a node to finish)
             #   (This **might** create a new root node)
@@ -223,10 +226,13 @@ def execute(
                 logger.debug(
                     "{} must not run in parallel. Wait for the end of a node in {}", xn.id, running
                 )
-                done_, running = wait(running, return_when=FIRST_COMPLETED)
-                done = done.union(done_)
-                remove_done_futures(done_, behavior, graph, futures)
+                done, running, runnable_xns_ids = wait_for_finsihed_nodes(
+                    FIRST_COMPLETED, behavior, graph, futures, done, running, runnable_xns_ids
+                )
                 continue
+
+            # xn will definitely be executed
+            runnable_xns_ids.remove(xn.id)
 
             # 5.1 dynamic graph pruning
             if not _xn_active_in_call(xn, xns_dict):
@@ -248,20 +254,19 @@ def execute(
                 except Exception as e:
                     if behavior == ErrorStrategy.strict:
                         raise e from e
-                    # else:
                     handle_exception(behavior, graph, xn.id, e)
 
                 logger.debug("Remove ExecNode {} from the graph", xn.id)
-                graph.remove_node(xn.id)
+                runnable_xns_ids |= graph.remove_root_node(xn.id)
 
             # 5.3 wait for the sequential node to finish
             # This code is executed only if this node is being executed purely by itself
             if xn.resource == Resource.thread and xn.is_sequential:
                 logger.debug("Wait for all Futures to finish because {} is sequential.", xn.id)
                 # ALL_COMPLETED is equivalent to FIRST_COMPLETED because there is only a single future running!
-                done_, running = wait(running, return_when=ALL_COMPLETED)
-                done = done.union(done_)
-                remove_done_futures(done_, behavior, graph, futures)
+                done, running, runnable_xns_ids = wait_for_finsihed_nodes(
+                    ALL_COMPLETED, behavior, graph, futures, done, running, runnable_xns_ids
+                )
     return xns_dict
 
 
