@@ -62,11 +62,6 @@ def get_highest_priority_node(
     return xn
 
 
-def get_highest_priority_nodes(nodes: List[ExecNode]) -> List[ExecNode]:
-    highest_priority = max(node.priority for node in nodes)
-    return [node for node in nodes if node.priority == highest_priority]
-
-
 K = TypeVar("K")
 V = TypeVar("V")
 
