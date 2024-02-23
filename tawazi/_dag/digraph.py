@@ -115,8 +115,8 @@ class DiGraphEx(nx.DiGraph):
 
         if len(unremovable_nodes) > 0:
             logger.debug(
-                f"The provided nodes contain more nodes than necessary, "
-                f"please remove {unremovable_nodes} nodes"
+                "The provided nodes contain more nodes than necessary, please remove {} nodes",
+                unremovable_nodes,
             )
 
         return unremovable_nodes

@@ -121,7 +121,7 @@ def remove_done_futures(
     #   2. and remove them from the graph
     for done_future in done_:
         id_ = futures.inverse[done_future]
-        logger.debug("Remove ExecNode % from the graph", id_)
+        logger.debug("Remove ExecNode {} from the graph", id_)
         handle_future_exception(behavior, graph, done_future, id_)
         graph.remove_node(id_)
 
@@ -190,7 +190,7 @@ def execute(
                 # must wait and not submit any workers before a worker ends
                 # (that might create a new more prioritized node) to be executed
                 logger.debug(
-                    "Waiting for ExecNodes %s to finish. Finished running %", running, done
+                    "Waiting for ExecNodes {} to finish. Finished running {}", running, done
                 )
                 done_, running = wait(running, return_when=FIRST_COMPLETED)
                 done = done.union(done_)
@@ -211,7 +211,7 @@ def execute(
             # 4.1.1 get all the nodes that have the highest priority
             xn = get_highest_priority_node(xns_dict, runnable_xns_ids)
 
-            logger.info("%s will run!", xn.id)
+            logger.info("{} will run!", xn.id)
 
             # 4.2 if the current node must be run sequentially, wait for a running node to finish.
             # in that case we must prune the graph to re-check whether a new root node
@@ -221,7 +221,7 @@ def execute(
             num_running_threads = get_num_running_threads(running)
             if xn.is_sequential and num_running_threads != 0:
                 logger.debug(
-                    f"{xn.id} must not run in parallel." f"Wait for the end of a node in {running}"
+                    "{} must not run in parallel. Wait for the end of a node in {}", xn.id, running
                 )
                 done_, running = wait(running, return_when=FIRST_COMPLETED)
                 done = done.union(done_)
@@ -230,7 +230,7 @@ def execute(
 
             # 5.1 dynamic graph pruning
             if not _xn_active_in_call(xn, xns_dict):
-                logger.debug("Prune %s from the graph", xn.id)
+                logger.debug("Prune {} from the graph", xn.id)
                 graph.remove_recursively(xn.id)
                 continue
 
@@ -242,7 +242,7 @@ def execute(
             else:
                 # a single execution will be launched and will end.
                 # it doesn't count as an additional thread that is running.
-                logger.debug("Executing %s in main thread", xn.id)
+                logger.debug("Executing {} in main thread", xn.id)
                 try:
                     xn._execute(node_dict=xns_dict)
                 except Exception as e:
@@ -251,13 +251,13 @@ def execute(
                     # else:
                     handle_exception(behavior, graph, xn.id, e)
 
-                logger.debug("Remove ExecNode % from the graph", xn.id)
+                logger.debug("Remove ExecNode {} from the graph", xn.id)
                 graph.remove_node(xn.id)
 
             # 5.3 wait for the sequential node to finish
             # This code is executed only if this node is being executed purely by itself
             if xn.resource == Resource.thread and xn.is_sequential:
-                logger.debug("Wait for all Futures to finish because %s is sequential.", xn.id)
+                logger.debug("Wait for all Futures to finish because {} is sequential.", xn.id)
                 # ALL_COMPLETED is equivalent to FIRST_COMPLETED because there is only a single future running!
                 done_, running = wait(running, return_when=ALL_COMPLETED)
                 done = done.union(done_)
@@ -295,7 +295,7 @@ def handle_future_exception(
 def handle_exception(
     behavior: ErrorStrategy, graph: DiGraphEx, id_: Identifier, e: Exception
 ) -> None:
-    logger.exception("The feature %s encountered the following error:", id_)
+    logger.exception("The feature {} encountered the following error:", id_)
 
     if behavior == ErrorStrategy.permissive:
         logger.warning("Ignoring exception as the behavior is set to permissive")
