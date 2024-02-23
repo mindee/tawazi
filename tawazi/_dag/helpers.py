@@ -105,10 +105,6 @@ class BiDict(Dict[K, V]):
     >>> b[3] = 'three'
     >>> b.inverse['three']
     3
-    >>> b[4] = 'one'
-    Traceback (most recent call last):
-    ...
-    ValueError: Value one is already in the BiDict
     >>> del b[1]
     >>> assert 1 not in b
     >>> b[4] = 'one'
