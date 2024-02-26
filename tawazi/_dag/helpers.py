@@ -36,12 +36,6 @@ def copy_non_setup_xns(x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
     return x_nodes_copy
 
 
-def get_num_running_threads(running_futures: Set["Future[Any]"]) -> int:
-    # use not future.done() because there is no guarantee that Thread pool will directly execute
-    # the submitted thread
-    return sum([not future.done() for future in running_futures])
-
-
 def get_highest_priority_node(
     xns_dict: Dict[Identifier, ExecNode], runnable_xns_ids: Set[Identifier]
 ) -> ExecNode:
@@ -192,9 +186,8 @@ def execute(
             #       2. if no runnable node exists (i.e. all root nodes are being executed)
             #    in both cases: block until a node finishes
             #       => a new root node will be available
-            num_running_threads = get_num_running_threads(running)
             num_runnable_nodes_ids = len(runnable_xns_ids)
-            if num_running_threads == max_concurrency or num_runnable_nodes_ids == 0:
+            if len(running) == max_concurrency or num_runnable_nodes_ids == 0:
                 # must wait and not submit any workers before a worker ends
                 # (that might create a new more prioritized node) to be executed
                 logger.debug("Waiting for ExecNodes {} to finish.", running)
@@ -221,8 +214,7 @@ def execute(
             # (maybe with a higher priority) has been created => continue the loop
             # Note: This step might run a number of times in the while loop
             #       before the exec_node gets submitted
-            num_running_threads = get_num_running_threads(running)
-            if xn.is_sequential and num_running_threads != 0:
+            if xn.is_sequential and len(running) != 0:
                 logger.debug(
                     "{} must not run in parallel. Wait for the end of a node in {}", xn.id, running
                 )
