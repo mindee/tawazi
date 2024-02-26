@@ -1,3 +1,4 @@
+from line_profiler import profile
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy
 from typing import Any, Dict, Optional, Set, Tuple, TypeVar
@@ -35,11 +36,17 @@ def copy_non_setup_xns(x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
             x_nodes_copy[id_] = copy(x_nd)
     return x_nodes_copy
 
+from concurrent.futures._base import CANCELLED, CANCELLED_AND_NOTIFIED, FINISHED
 
+@profile
 def get_num_running_threads(running_futures: Set["Future[Any]"]) -> int:
     # use not future.done() because there is no guarantee that Thread pool will directly execute
     # the submitted thread
-    return sum([not future.done() for future in running_futures])
+    return sum(
+        [not 
+         future._state in [CANCELLED, CANCELLED_AND_NOTIFIED, FINISHED]
+         for future in running_futures]
+        )
 
 
 def get_highest_priority_node(
@@ -137,6 +144,7 @@ def wait_for_finsihed_nodes(
 ################
 # The scheduler!
 ################
+@profile
 def execute(
     *,
     node_dict: Dict[Identifier, ExecNode],
