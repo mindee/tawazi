@@ -3,9 +3,9 @@ name: Formatting Workflow
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "v0.3/main" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "v0.3/main" ]
   workflow_dispatch:
 
 concurrency:
