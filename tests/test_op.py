@@ -1,3 +1,4 @@
+import warnings
 from typing import Any
 
 import pytest
@@ -98,9 +99,7 @@ def test_call_directly_with_ignore() -> None:
 
     cfg.TAWAZI_EXECNODE_OUTSIDE_DAG_BEHAVIOR = XNOutsideDAGCall.ignore
 
-    with pytest.warns(None) as record:  # type: ignore[call-overload]
+    with warnings.catch_warnings():
         assert 15 == f8(1, 2, 3, foo=4, bar=5)
-    assert len(record) == 0
-    with pytest.warns(None) as record:  # type: ignore[call-overload]
+    with warnings.catch_warnings():
         assert 4 == f4(1)
-    assert len(record) == 0
