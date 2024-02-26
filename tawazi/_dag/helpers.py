@@ -86,18 +86,18 @@ class BiDict(Dict[K, V]):
         super().__init__(*args, **kwargs)
         self.inverse: Dict[V, K] = {}
         for key, value in self.items():
-            self._setitem_inverse(key, value)
-
-    def _setitem_inverse(self, key: K, value: V) -> None:
-        if value in self.inverse:
-            raise ValueError(f"Value {value} is already in the BiDict")
-        self.inverse[value] = key
+            if value in self.inverse:
+                raise ValueError(f"Value {value} is already in the BiDict")
+            self.inverse[value] = key
 
     def __setitem__(self, key: K, value: V) -> None:
         if key in self:
             del self.inverse[self[key]]
+        # check for errors before setting the value
+        if value in self.inverse:
+            raise ValueError(f"Value {value} is already in the BiDict")
         super().__setitem__(key, value)
-        self._setitem_inverse(key, value)
+        self.inverse[value] = key
 
     def __delitem__(self, key: K) -> None:
         del self.inverse[self[key]]
