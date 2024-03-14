@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.3.4 (2024-03-14)
+
+### Bug Fixes
+* :bug: failing Tuple typing check with future annotations
+
 ## v0.3.3 (2024-02-26)
 
 ### Improvements
