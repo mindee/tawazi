@@ -429,11 +429,7 @@ class DAG(Generic[P, RVDAG]):
         nx_graph = self.graph_ids
 
         ig_graph = ig.Graph(directed=True)
-
-        # Add nodes to igraph graph
         ig_graph.add_vertices(list(nx_graph.nodes()))
-
-        # Add edges to igraph graph
         ig_graph.add_edges(list(nx_graph.edges()))
 
         labels = list(ig_graph.vs["name"])
