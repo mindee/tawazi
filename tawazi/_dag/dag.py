@@ -416,16 +416,12 @@ class DAG(Generic[P, RVDAG]):
             # assign the new leaf nodes
             leaf_ids = graph_ids.leaf_nodes
 
-    def draw(
-        self, display: bool = False, fig_name: str = "", t: int = 3, show_nodes_names: bool = False
-    ) -> None:
+    def draw(self, show_nodes_names: bool = False, fig_name: str = "") -> None:
         """Draws the Networkx directed graph.
 
         Args:
-            display (bool): display the layout created. Defaults to False.
-            fig_name (str): if valid, save figure locally.
-            t (int): time to display in seconds. Defaults to 3.
             show_nodes_names (bool): whether to display nodes names over datapoints
+            fig_name (str): save in local file path if valid input
         """
         import igraph as ig
         from plotly.graph_objs import Figure, Layout, Scatter, layout
@@ -520,6 +516,8 @@ class DAG(Generic[P, RVDAG]):
         data = [trace1, trace2]
         fig = Figure(data=data, layout=layout)
         fig.show()
+        if fig_name:
+            fig.write_html(f"{fig_name}.html")
 
     def _execute(
         self,
