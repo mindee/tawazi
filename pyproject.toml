@@ -61,7 +61,7 @@ strict_equality = true
 # --strict end
 
 [[tool.mypy.overrides]]
-module = "matplotlib.*,networkx.*,yaml.*,multiprocessing_on_dill.*,pathos.*"
+module = "matplotlib.*,networkx.*,yaml.*,multiprocessing_on_dill.*,pathos.*,igraph.*,plotly.*"
 ignore_missing_imports = true
 
 [tool.black]
