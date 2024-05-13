@@ -1,7 +1,6 @@
 """module containing DAG and DAGExecution which are the containers that run ExecNodes in Tawazi."""
 import json
 import pickle
-import time
 import warnings
 from collections import defaultdict
 from copy import copy, deepcopy
@@ -9,7 +8,6 @@ from itertools import chain
 from pathlib import Path
 from typing import Any, Dict, Generic, List, NoReturn, Optional, Sequence, Set, Union
 
-import igraph as ig
 import networkx as nx
 import yaml
 from loguru import logger
@@ -418,15 +416,19 @@ class DAG(Generic[P, RVDAG]):
             # assign the new leaf nodes
             leaf_ids = graph_ids.leaf_nodes
 
-    def draw(self, display: bool = False, fig_name: str = "", t: int = 3) -> None:
+    def draw(
+        self, display: bool = False, fig_name: str = "", t: int = 3, show_nodes_names: bool = False
+    ) -> None:
         """Draws the Networkx directed graph.
 
         Args:
             display (bool): display the layout created. Defaults to False.
             fig_name (str): if valid, save figure locally.
             t (int): time to display in seconds. Defaults to 3.
+            show_nodes_names (bool): whether to display nodes names over datapoints
         """
-        import matplotlib.pyplot as plt
+        import igraph as ig
+        from plotly.graph_objs import Figure, Layout, Scatter, layout
 
         nx_graph = self.graph_ids
 
@@ -438,25 +440,86 @@ class DAG(Generic[P, RVDAG]):
         # Add edges to igraph graph
         ig_graph.add_edges(list(nx_graph.edges()))
 
-        fig, ax = plt.subplots()
-        ig.plot(
-            ig_graph,
-            target=ax,
-            layout="sugiyama",
-            vertex_size=15,
-            vertex_color="grey",
-            edge_color="#222",
-            edge_width=1,
-            vertex_label=ig_graph.vs["name"],
+        labels = list(ig_graph.vs["name"])
+        n_labels = len(labels)
+        edges = [e.tuple for e in ig_graph.es]  # list of edges
+        layt = ig_graph.layout("kk")  # kamada-kawai layout
+
+        x_nodes = [layt[k][0] for k in range(n_labels)]
+        y_nodes = [layt[k][1] for k in range(n_labels)]
+        x_edges = []
+        y_edges = []
+        for e in edges:
+            x_edges += [layt[e[0]][0], layt[e[1]][0], None]
+            y_edges += [layt[e[0]][1], layt[e[1]][1], None]
+
+        trace1 = Scatter(
+            x=x_edges,
+            y=y_edges,
+            name="edges",
+            mode="lines+markers",
+            line=dict(color="rgb(210,210,210)", width=1),
+            hoverinfo="none",
+            marker=dict(symbol="arrow-bar-up", size=10, angleref="previous", color="rgb(0,0,0)"),
+        )
+        nodes_display_mode = "markers"
+        if show_nodes_names:
+            nodes_display_mode = "markers+text"
+
+        trace2 = Scatter(
+            x=x_nodes,
+            y=y_nodes,
+            mode=nodes_display_mode,
+            name="nodes",
+            marker=dict(
+                symbol="circle-dot",
+                size=5,
+                color="#6959CD",
+                line=dict(color="rgb(50,50,50)", width=0.5),
+            ),
+            text=labels,
+            hoverinfo="text",
         )
 
-        if fig_name:
-            plt.savefig(fig_name)
-        if display:
-            plt.ion()
-            plt.show()
-            time.sleep(t)
-            plt.close()
+        axis = dict(
+            showline=False,  # hide axis line, grid, ticklabels and  title
+            zeroline=False,
+            showgrid=False,
+            showticklabels=False,
+            title="",
+        )
+
+        width = 1200
+        height = 800
+        layout = Layout(
+            title="DAG",
+            font=dict(size=12),
+            showlegend=True,
+            autosize=False,
+            width=width,
+            height=height,
+            xaxis=layout.XAxis(axis),
+            yaxis=layout.YAxis(axis),
+            margin=layout.Margin(l=40, r=40, b=85, t=100),
+            hovermode="closest",
+            annotations=[
+                dict(
+                    showarrow=False,
+                    text="This igraph.Graph has the Kamada-Kawai layout",
+                    xref="paper",
+                    yref="paper",
+                    x=0,
+                    y=-0.1,
+                    xanchor="left",
+                    yanchor="bottom",
+                    font=dict(size=14),
+                )
+            ],
+        )
+
+        data = [trace1, trace2]
+        fig = Figure(data=data, layout=layout)
+        fig.show()
 
     def _execute(
         self,

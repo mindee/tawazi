@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.3.5 (2024-05-13)
+* :sparkles: improve dag draw using plotly and igraph
+
 ## v0.3.4 (2024-03-14)
 
 ### Bug Fixes
