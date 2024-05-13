@@ -9,6 +9,7 @@ from itertools import chain
 from pathlib import Path
 from typing import Any, Dict, Generic, List, NoReturn, Optional, Sequence, Set, Union
 
+import igraph as ig
 import networkx as nx
 import yaml
 from loguru import logger
@@ -417,20 +418,40 @@ class DAG(Generic[P, RVDAG]):
             # assign the new leaf nodes
             leaf_ids = graph_ids.leaf_nodes
 
-    def draw(self, k: float = 0.8, display: bool = True, t: int = 3) -> None:
+    def draw(self, display: bool = False, fig_name: str = "", t: int = 3) -> None:
         """Draws the Networkx directed graph.
 
         Args:
-            k (float): parameter for the layout of the graph, the higher, the further the nodes apart. Defaults to 0.8.
-            display (bool): display the layout created. Defaults to True.
+            display (bool): display the layout created. Defaults to False.
+            fig_name (str): if valid, save figure locally.
             t (int): time to display in seconds. Defaults to 3.
         """
         import matplotlib.pyplot as plt
 
-        # TODO: use graphviz instead! it is much more elegant
+        nx_graph = self.graph_ids
 
-        pos = nx.spring_layout(self.graph_ids, seed=42069, k=k, iterations=20)
-        nx.draw(self.graph_ids, pos, with_labels=True)
+        ig_graph = ig.Graph(directed=True)
+
+        # Add nodes to igraph graph
+        ig_graph.add_vertices(list(nx_graph.nodes()))
+
+        # Add edges to igraph graph
+        ig_graph.add_edges(list(nx_graph.edges()))
+
+        fig, ax = plt.subplots()
+        ig.plot(
+            ig_graph,
+            target=ax,
+            layout="sugiyama",
+            vertex_size=15,
+            vertex_color="grey",
+            edge_color="#222",
+            edge_width=1,
+            vertex_label=ig_graph.vs["name"],
+        )
+
+        if fig_name:
+            plt.savefig(fig_name)
         if display:
             plt.ion()
             plt.show()
