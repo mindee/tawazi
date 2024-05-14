@@ -429,24 +429,23 @@ class DAG(Generic[P, RVDAG]):
         import igraph as ig
         from plotly.graph_objs import Figure, Layout, Scatter, layout
 
-        nx_graph = self.graph_ids
 
         ig_graph = ig.Graph(directed=True)
-        ig_graph.add_vertices(list(nx_graph.nodes()))
-        ig_graph.add_edges(list(nx_graph.edges()))
+        ig_graph.add_vertices(list(self.graph_ids.nodes()))
+        ig_graph.add_edges(list(self.graph_ids.edges()))
         labels = list(ig_graph.vs["name"])
         n_labels = len(labels)
         edges = [e.tuple for e in ig_graph.es]  # list of edges
-        layt = ig_graph.layout(layout_algorithm)  # kamada_kawai layout
+        ig_layout = ig_graph.layout(layout_algorithm)  # kamada_kawai layout
         # check https://python.igraph.org/en/stable/tutorial.html#layout-algorithms
 
-        x_nodes = [layt[k][0] for k in range(n_labels)]
-        y_nodes = [layt[k][1] for k in range(n_labels)]
+        x_nodes = [ig_layout[k][0] for k in range(n_labels)]
+        y_nodes = [ig_layout[k][1] for k in range(n_labels)]
         x_edges = []
         y_edges = []
         for e in edges:
-            x_edges += [layt[e[0]][0], layt[e[1]][0], None]
-            y_edges += [layt[e[0]][1], layt[e[1]][1], None]
+            x_edges += [ig_layout[e[0]][0], ig_layout[e[1]][0], None]
+            y_edges += [ig_layout[e[0]][1], ig_layout[e[1]][1], None]
 
         trace1 = Scatter(
             x=x_edges,
