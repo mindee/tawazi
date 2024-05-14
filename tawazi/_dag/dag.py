@@ -417,18 +417,19 @@ class DAG(Generic[P, RVDAG]):
             leaf_ids = graph_ids.leaf_nodes
 
     def draw(
-        self, show_nodes_names: bool = False, fig_name: str = "", layout_algorithm: str = "kk"
+        self, show_nodes_names: bool = False, fig_name: str = "", layout_algorithm: str = "tree"
     ) -> None:
         """Draws the Networkx directed graph.
+
+        Note: install tawazi with extras [draw].
 
         Args:
             show_nodes_names (bool): whether to display nodes names over datapoints
             fig_name (str): save in local file path if valid input
-            layout_algorithm (str): layout algorithm for igraph, defaults to kk
+            layout_algorithm (str): layout algorithm for igraph, defaults to kk.
         """
         import igraph as ig
         from plotly.graph_objs import Figure, Layout, Scatter, layout
-
 
         ig_graph = ig.Graph(directed=True)
         ig_graph.add_vertices(list(self.graph_ids.nodes()))
