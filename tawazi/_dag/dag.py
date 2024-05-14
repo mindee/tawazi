@@ -417,14 +417,14 @@ class DAG(Generic[P, RVDAG]):
             leaf_ids = graph_ids.leaf_nodes
 
     def draw(
-        self, show_nodes_names: bool = False, fig_name: str = "", layout_algorithm: str = "kk_3d"
+        self, show_nodes_names: bool = False, fig_name: str = "", layout_algorithm: str = "kk"
     ) -> None:
         """Draws the Networkx directed graph.
 
         Args:
             show_nodes_names (bool): whether to display nodes names over datapoints
             fig_name (str): save in local file path if valid input
-            layout_algorithm (str): layout algorithm for igraph, defaults to kk_3d
+            layout_algorithm (str): layout algorithm for igraph, defaults to kk
         """
         import igraph as ig
         from plotly.graph_objs import Figure, Layout, Scatter, layout
@@ -434,7 +434,6 @@ class DAG(Generic[P, RVDAG]):
         ig_graph = ig.Graph(directed=True)
         ig_graph.add_vertices(list(nx_graph.nodes()))
         ig_graph.add_edges(list(nx_graph.edges()))
-
         labels = list(ig_graph.vs["name"])
         n_labels = len(labels)
         edges = [e.tuple for e in ig_graph.es]  # list of edges
@@ -461,7 +460,6 @@ class DAG(Generic[P, RVDAG]):
         nodes_display_mode = "markers"
         if show_nodes_names:
             nodes_display_mode = "markers+text"
-
         trace2 = Scatter(
             x=x_nodes,
             y=y_nodes,
