@@ -437,7 +437,7 @@ class DAG(Generic[P, RVDAG]):
         labels = list(ig_graph.vs["name"])
         n_labels = len(labels)
         edges = [e.tuple for e in ig_graph.es]  # list of edges
-        layt = ig_graph.layout(layout_algorithm)  # kamada_kawai_3d layout
+        layt = ig_graph.layout(layout_algorithm)  # kamada_kawai layout
         # check https://python.igraph.org/en/stable/tutorial.html#layout-algorithms
 
         x_nodes = [layt[k][0] for k in range(n_labels)]
@@ -467,11 +467,12 @@ class DAG(Generic[P, RVDAG]):
             name="nodes",
             marker=dict(
                 symbol="circle-dot",
-                size=5,
+                size=10,
                 color="#6959CD",
-                line=dict(color="rgb(50,50,50)", width=0.5),
+                line=dict(color="rgb(50,50,50)", width=1),
             ),
             text=labels,
+            textposition="top center",
             hoverinfo="text",
         )
 
