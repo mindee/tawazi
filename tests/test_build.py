@@ -74,8 +74,8 @@ def test_dag_build() -> None:
 
 def test_draw() -> None:
     g: DAG[Any, Any] = DAG(node_dict, [], [], 2, behavior=ErrorStrategy.strict)
-    g.draw(fig_name="test_figure", show_nodes_names=False, display=False)
-    g.draw(fig_name="test_figure", show_nodes_names=True, display=False)
+    g.draw(fig_name="test_figure", show_nodes_names=False)
+    g.draw(fig_name="test_figure", show_nodes_names=True)
 
 
 def test_bad_behaviour() -> None:

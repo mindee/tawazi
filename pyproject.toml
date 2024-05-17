@@ -20,7 +20,7 @@ dependencies = [
     "pydantic~=1.0",
     "loguru",
     "PyYaml>=6",
-    "typing-extensions>=3.10"
+    "typing_extensions>=3.10"
 ]
 
 [project.optional-dependencies]

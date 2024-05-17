@@ -95,3 +95,7 @@ print("\n3rd execution of dag")
 d1()
 assert pytest.third_argument == 1234
 assert pytest.fourth_argument == 1111
+
+
+my_custom_dag.draw(show_nodes_names=True, fig_name="my_custom_dag")
+my_other_custom_dag.draw(show_nodes_names=True, fig_name="my_other_custom_dag")

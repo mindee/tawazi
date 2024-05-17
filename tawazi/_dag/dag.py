@@ -421,7 +421,8 @@ class DAG(Generic[P, RVDAG]):
         fig_name: str,
         show_nodes_names: bool = False,
         layout_algorithm: str = "tree",
-        display: bool = True,
+        width: int = 1200,
+        height: int = 800,
     ) -> None:
         """Draws the Networkx directed graph.
 
@@ -431,7 +432,9 @@ class DAG(Generic[P, RVDAG]):
             fig_name (str): save in local file path if valid input
             show_nodes_names (bool): whether to display nodes names over datapoints
             layout_algorithm (str): layout algorithm for igraph, defaults to kk.
-            display (bool): display figure
+                https://python.igraph.org/en/stable/tutorial.html#layout-algorithms
+            width (int): figure width
+            height (int): figure height
         """
         import igraph as ig
         from plotly.graph_objs import Figure, Layout, Scatter, layout
@@ -441,17 +444,13 @@ class DAG(Generic[P, RVDAG]):
         ig_graph.add_edges(list(self.graph_ids.edges()))
         labels = list(ig_graph.vs["name"])
         n_labels = len(labels)
-        edges = [e.tuple for e in ig_graph.es]  # list of edges
-        ig_layout = ig_graph.layout(layout_algorithm)  # kamada_kawai layout
-        # check https://python.igraph.org/en/stable/tutorial.html#layout-algorithms
+        edges = [e.tuple for e in ig_graph.es]
+        ig_layout = ig_graph.layout(layout_algorithm)
 
         x_nodes = [ig_layout[k][0] for k in range(n_labels)]
         y_nodes = [ig_layout[k][1] for k in range(n_labels)]
-        x_edges = []
-        y_edges = []
-        for e in edges:
-            x_edges += [ig_layout[e[0]][0], ig_layout[e[1]][0], None]
-            y_edges += [ig_layout[e[0]][1], ig_layout[e[1]][1], None]
+        x_edges = [coord for e in edges for coord in (ig_layout[e[0]][0], ig_layout[e[1]][0], None)]
+        y_edges = [coord for e in edges for coord in (ig_layout[e[0]][1], ig_layout[e[1]][1], None)]
 
         trace1 = Scatter(
             x=x_edges,
@@ -464,7 +463,7 @@ class DAG(Generic[P, RVDAG]):
         )
         nodes_display_mode = "markers"
         if show_nodes_names:
-            nodes_display_mode = "markers+text"
+            nodes_display_mode += "+text"
         trace2 = Scatter(
             x=x_nodes,
             y=y_nodes,
@@ -489,8 +488,6 @@ class DAG(Generic[P, RVDAG]):
             title="",
         )
 
-        width = 1200
-        height = 800
         layout = Layout(
             title="DAG",
             font=dict(size=12),
@@ -520,8 +517,7 @@ class DAG(Generic[P, RVDAG]):
         data = [trace1, trace2]
         fig = Figure(data=data, layout=layout)
         fig.write_html(f"{fig_name}.html")
-        if display:
-            fig.show()
+        fig.show()
 
     def _execute(
         self,
