@@ -2,6 +2,7 @@ from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoo
 from copy import copy
 from typing import Any, Dict, List, Set, Tuple, TypeVar, Union
 
+from line_profiler import profile
 from loguru import logger
 
 from tawazi._dag.digraph import DiGraphEx
@@ -55,6 +56,7 @@ def copy_non_setup_xns(x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
     return x_nodes_copy
 
 
+@profile
 def get_highest_priority_node(
     graph: DiGraphEx, runnable_xns_ids: Set[str], xns_dict: Dict[Identifier, ExecNode]
 ) -> ExecNode:
@@ -163,6 +165,7 @@ def wait_for_finished_nodes(
 ################
 # The scheduler!
 ################
+@profile
 def execute(
     *,
     exec_nodes: Dict[Identifier, ExecNode],
