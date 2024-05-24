@@ -1,6 +1,7 @@
 """Module containing the definition of a Directed Graph Extension of networkx.DiGraph."""
 import time
 from copy import deepcopy
+from functools import cached_property
 from itertools import chain
 from typing import Dict, Iterable, List, Optional, Sequence, Set, Union
 
@@ -16,6 +17,12 @@ from tawazi.node import ExecNode, UsageExecNode
 
 class DiGraphEx(nx.DiGraph):
     """Extends the DiGraph with some methods."""
+
+    def __init__(self) -> None:
+        """Initializes the DiGraphEx."""
+        super().__init__()
+        # place holder to be filled
+        self.compound_priorities: Dict[Identifier, float] = {}
 
     @classmethod
     def from_exec_nodes(
@@ -64,10 +71,16 @@ class DiGraphEx(nx.DiGraph):
         except NetworkXNoCycle:
             pass
 
-        # compute the sum of priorities of all recursive children
-        graph.assign_compound_priority()
-
         return graph
+
+    @cached_property
+    def compound_priorities(self) -> Dict[Identifier, float]:
+        """Compute the sum of priorities of all recursive children
+
+        Returns:
+            Dict[Identifier, float]: Identifier of the node and its compound priority
+        """
+        return self.assign_compound_priority()
 
     def make_subgraph(
         self,
@@ -335,6 +348,8 @@ class DiGraphEx(nx.DiGraph):
 
         The compound priority is the sum of the priorities of all children recursively.
         """
+        compound_priorities = {}
+
         # 1. start from bottom up
         leaf_ids = set(self.leaf_nodes)
 
@@ -346,6 +361,8 @@ class DiGraphEx(nx.DiGraph):
             next_leaf_ids = set()
             for leaf_id in leaf_ids:
                 compound_priority = self.nodes(data="compound_priority")[leaf_id]
+                # every node will be a leaf node at some point during this loop
+                compound_priorities[leaf_id] = compound_priority
 
                 # for parent nodes, this loop won't execute
                 for parent_id in self.predecessors(leaf_id):
@@ -354,6 +371,8 @@ class DiGraphEx(nx.DiGraph):
 
                     next_leaf_ids.add(parent_id)
             leaf_ids = next_leaf_ids
+
+        return compound_priorities
 
     def draw(self, k: float = 0.8, t: Union[float, int] = 3) -> None:
         """Draws the Networkx directed graph.
