@@ -7,9 +7,26 @@
 * :memo: improve documentation and remove most of the outdated comments
 * :recycle: remove a lot of unnecessary code
 
+## v0.3.4 (2024-03-14)
+
+### Bug Fixes
+* :bug: failing Tuple typing check with future annotations
+
+## v0.3.3 (2024-02-26)
+
+### Improvements
+* :zap: accelerate getting highest priority node (optimizations)
+* :zap: accelerate get_num_running_threads
+* :zap: accelerate node removal by using BiDirectionalDict
+* :zap: accelerate node removal
+* :zap: accelerate get_num_running_threads by using len(running) instead
+
+### Bug Fixes
+* :bug: logging
+
 ## v0.3.2 (2024-01-04)
 
-## Bug Fixes
+### Bug Fixes
 * :bug: wrong error message
 * :bug: fix counting nodes during dag description
 * :bug: failing to run DAG inside a Process
