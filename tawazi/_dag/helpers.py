@@ -2,7 +2,6 @@ from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoo
 from copy import copy
 from typing import Any, Dict, List, Set, Tuple, TypeVar, Union
 
-from line_profiler import profile
 from loguru import logger
 
 from tawazi._dag.digraph import DiGraphEx
@@ -56,7 +55,6 @@ def copy_non_setup_xns(x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
     return x_nodes_copy
 
 
-@profile
 def get_highest_priority_node(
     graph: DiGraphEx, runnable_xns_ids: Set[str], xns_dict: Dict[Identifier, ExecNode]
 ) -> ExecNode:
@@ -70,16 +68,27 @@ def get_highest_priority_node(
     Returns:
         the node with the highest priority
     """
-    highest_priority_node, _ = max(
-        [
-            (node, priority)
-            for node, priority in graph.nodes(data="compound_priority")
-            if node in runnable_xns_ids
-        ],
-        key=lambda x: x[1],
-    )
+    list_runnable_xns_ids = list(runnable_xns_ids)
+    max_priority = 0
+    xn = xns_dict[list_runnable_xns_ids[0]]
+    nodes = graph.nodes
+    for runnable_node_id in list_runnable_xns_ids:
+        priority = nodes[runnable_node_id]["compound_priority"]
+        if max_priority < priority:
+            max_priority = priority
+            xn = xns_dict[runnable_node_id]
+    return xn
 
-    return xns_dict[highest_priority_node]
+    # highest_priority_node, _ = max(
+    #     [
+    #         (node, priority)
+    #         for node, priority in graph.nodes(data="compound_priority")
+    #         if node in runnable_xns_ids
+    #     ],
+    #     key=lambda x: x[1],
+    # )
+
+    # return xns_dict[highest_priority_node]
 
 
 class BiDict(Dict[K, V]):
@@ -165,7 +174,6 @@ def wait_for_finished_nodes(
 ################
 # The scheduler!
 ################
-@profile
 def execute(
     *,
     exec_nodes: Dict[Identifier, ExecNode],

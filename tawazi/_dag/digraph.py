@@ -32,6 +32,8 @@ class DiGraphEx(nx.DiGraph):
         """
         graph = DiGraphEx()
 
+        nodes = graph.nodes  # graph.nodes recreates the object every time!!
+
         input_ids = [uxn.id for uxn in input_nodes]
         for node in exec_nodes.values():
             # add node and edges
@@ -41,13 +43,13 @@ class DiGraphEx(nx.DiGraph):
             # add tag, setup and debug
             if node.tag:
                 if isinstance(node.tag, Tag):
-                    graph.nodes[node.id]["tag"] = [node.tag]
+                    nodes[node.id]["tag"] = [node.tag]
                 else:
-                    graph.nodes[node.id]["tag"] = [t for t in node.tag]
+                    nodes[node.id]["tag"] = [t for t in node.tag]
 
-            graph.nodes[node.id]["debug"] = node.debug
-            graph.nodes[node.id]["setup"] = node.setup
-            graph.nodes[node.id]["compound_priority"] = node.priority
+            nodes[node.id]["debug"] = node.debug
+            nodes[node.id]["setup"] = node.setup
+            nodes[node.id]["compound_priority"] = node.priority
 
             # validate setup ExecNodes
             if node.setup and any(dep.id in input_ids for dep in node.dependencies):
