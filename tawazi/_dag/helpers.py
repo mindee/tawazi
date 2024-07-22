@@ -55,10 +55,6 @@ def copy_non_setup_xns(x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
     return x_nodes_copy
 
 
-from line_profiler import profile
-
-
-@profile
 def get_highest_priority_node(
     graph: DiGraphEx, runnable_xns_ids: Set[str], xns_dict: Dict[Identifier, ExecNode]
 ) -> ExecNode:
