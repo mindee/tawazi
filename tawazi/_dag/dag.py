@@ -23,7 +23,7 @@ from tawazi.node.node import make_axn_id
 from tawazi.profile import Profile
 
 from .digraph import DiGraphEx
-from .helpers import execute, extend_results_with_args, get_return_values
+from .helpers import extend_results_with_args, get_return_values, sync_execute
 
 
 @dataclass
@@ -419,7 +419,7 @@ class DAG(Generic[P, RVDAG]):
         )
 
         # 4. execute the graph and set the results to setup_results
-        _, self.results, _ = execute(
+        _, self.results, _ = sync_execute(
             exec_nodes=self.exec_nodes,
             results=self.results,
             active_nodes=self.actives,
@@ -478,7 +478,7 @@ class DAG(Generic[P, RVDAG]):
         else:
             results = extend_results_with_args(results, self.input_uxns, *args)
 
-        exec_nodes, results, profiles = execute(
+        exec_nodes, results, profiles = sync_execute(
             exec_nodes=self.exec_nodes,
             results=results,
             active_nodes=self.actives,

@@ -1,3 +1,4 @@
+import asyncio
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy
 from typing import Any, Dict, List, Set, Tuple, TypeVar, Union
@@ -163,7 +164,30 @@ def wait_for_finished_nodes(
 ################
 # The scheduler!
 ################
-def execute(
+def sync_execute(
+    exec_nodes: Dict[Identifier, ExecNode],
+    results: Dict[Identifier, Any],
+    active_nodes: Dict[Identifier, Union[Any, UsageExecNode]],
+    max_concurrency: int,
+    graph: DiGraphEx,
+) -> Tuple[Dict[Identifier, ExecNode], Dict[Identifier, Any], Dict[Identifier, Profile]]:
+    """Look at the execute function for more information."""
+    try:
+        _pool = asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(
+            async_execute(
+                exec_nodes=exec_nodes,
+                results=results,
+                active_nodes=active_nodes,
+                max_concurrency=max_concurrency,
+                graph=graph,
+            )
+        )
+    raise RuntimeError("Cannot run the synchronous scheduler in an asynchronous context.")
+
+
+async def async_execute(
     *,
     exec_nodes: Dict[Identifier, ExecNode],
     results: Dict[Identifier, Any],
@@ -206,82 +230,89 @@ def execute(
     # runnable_nodes_ids will be empty if all root nodes are running
     runnable_xns_ids = graph.root_nodes
 
-    with ThreadPoolExecutor(max_workers=max_concurrency) as executor:
-        while len(graph):
-            # Attempt to run **A SINGLE** root node.
+    # avoid having a lot of indentations
+    executor = ThreadPoolExecutor(max_workers=max_concurrency)
+    executor.__enter__()
 
-            # 6. block scheduler execution if no root node can be executed.
-            #    this can occur in two cases:
-            #       1. if maximum concurrency is reached
-            #       2. if no runnable node exists (i.e. all root nodes are being executed)
-            #    in both cases: block until a node finishes
-            #       => a new root node will be available
-            if len(running) == max_concurrency or len(runnable_xns_ids) == 0:
-                # must wait and not submit any workers before a worker ends
-                # (that might create a new more prioritized node) to be executed
-                logger.debug(
-                    "Waiting for ExecNodes {} to finish. Finished running {}", running, done
-                )
-                done, running, runnable_xns_ids = wait_for_finished_nodes(
-                    FIRST_COMPLETED, graph, futures, done, running, runnable_xns_ids
-                )
+    if False:
+        import asyncio
 
-            # 3. if no runnable node exist, go to step 6 (wait for a node to finish)
-            #   (This **might** create a new root node)
-            if len(runnable_xns_ids) == 0:
-                logger.debug("No runnable Nodes available")
-                continue
+        await asyncio.sleep(0)
 
-            # 4.1 choose the most prioritized node to run
-            xn = get_highest_priority_node(graph, runnable_xns_ids, exec_nodes)
+    while len(graph):
+        # Attempt to run **A SINGLE** root node.
 
-            logger.info("{} will run!", xn.id)
+        # 6. block scheduler execution if no root node can be executed.
+        #    this can occur in two cases:
+        #       1. if maximum concurrency is reached
+        #       2. if no runnable node exists (i.e. all root nodes are being executed)
+        #    in both cases: block until a node finishes
+        #       => a new root node will be available
+        if len(running) == max_concurrency or len(runnable_xns_ids) == 0:
+            # must wait and not submit any workers before a worker ends
+            # (that might create a new more prioritized node) to be executed
+            logger.debug("Waiting for ExecNodes {} to finish. Finished running {}", running, done)
+            done, running, runnable_xns_ids = wait_for_finished_nodes(
+                FIRST_COMPLETED, graph, futures, done, running, runnable_xns_ids
+            )
 
-            # 4.2 if the current node must be run sequentially, wait for a running node to finish.
-            # in that case we must prune the graph to re-check whether a new root node
-            # (maybe with a higher priority) has been created => continue the loop
-            # Note: This step might run a number of times in the while loop
-            #       before the exec_node gets submitted
-            if xn.is_sequential and len(running) != 0:
-                logger.debug(
-                    "{} must not run in parallel. Wait for the end of a node in {}", xn.id, running
-                )
-                done, running, runnable_xns_ids = wait_for_finished_nodes(
-                    FIRST_COMPLETED, graph, futures, done, running, runnable_xns_ids
-                )
-                continue
+        # 3. if no runnable node exist, go to step 6 (wait for a node to finish)
+        #   (This **might** create a new root node)
+        if len(runnable_xns_ids) == 0:
+            logger.debug("No runnable Nodes available")
+            continue
 
-            # xn will definitely be executed
-            runnable_xns_ids.remove(xn.id)
+        # 4.1 choose the most prioritized node to run
+        xn = get_highest_priority_node(graph, runnable_xns_ids, exec_nodes)
 
-            # 5.1 dynamic graph pruning
-            if not _xn_active_in_call(xn, results, active_nodes):
-                logger.debug("Prune {} from the graph", xn.id)
-                graph.remove_recursively(xn.id)
-                continue
+        logger.info("{} will run!", xn.id)
 
-            # 5.2 submit the exec node to the executor
-            if xn.resource == Resource.thread:
-                exec_future = executor.submit(xn.execute, results=results, profiles=profiles)
-                running.add(exec_future)
-                futures[xn.id] = exec_future
-            else:
-                # a single execution will be launched and will end.
-                # it doesn't count as an additional thread that is running.
-                logger.debug("Executing {} in main thread", xn.id)
-                xn.execute(results=results, profiles=profiles)
+        # 4.2 if the current node must be run sequentially, wait for a running node to finish.
+        # in that case we must prune the graph to re-check whether a new root node
+        # (maybe with a higher priority) has been created => continue the loop
+        # Note: This step might run a number of times in the while loop
+        #       before the exec_node gets submitted
+        if xn.is_sequential and len(running) != 0:
+            logger.debug(
+                "{} must not run in parallel. Wait for the end of a node in {}", xn.id, running
+            )
+            done, running, runnable_xns_ids = wait_for_finished_nodes(
+                FIRST_COMPLETED, graph, futures, done, running, runnable_xns_ids
+            )
+            continue
 
-                logger.debug("Remove ExecNode {} from the graph", xn.id)
-                runnable_xns_ids |= graph.remove_root_node(xn.id)
+        # xn will definitely be executed
+        runnable_xns_ids.remove(xn.id)
 
-            # 5.3 wait for the sequential node to finish
-            # This code is executed only if this node is being executed purely by itself
-            if xn.resource == Resource.thread and xn.is_sequential:
-                logger.debug("Wait for all Futures to finish because {} is sequential.", xn.id)
-                # ALL_COMPLETED is equivalent to FIRST_COMPLETED because there is only a single future running!
-                done, running, runnable_xns_ids = wait_for_finished_nodes(
-                    ALL_COMPLETED, graph, futures, done, running, runnable_xns_ids
-                )
+        # 5.1 dynamic graph pruning
+        if not _xn_active_in_call(xn, results, active_nodes):
+            logger.debug("Prune {} from the graph", xn.id)
+            graph.remove_recursively(xn.id)
+            continue
+
+        # 5.2 submit the exec node to the executor
+        if xn.resource == Resource.thread:
+            exec_future = executor.submit(xn.execute, results=results, profiles=profiles)
+            running.add(exec_future)
+            futures[xn.id] = exec_future
+        else:
+            # a single execution will be launched and will end.
+            # it doesn't count as an additional thread that is running.
+            logger.debug("Executing {} in main thread", xn.id)
+            xn.execute(results=results, profiles=profiles)
+
+            logger.debug("Remove ExecNode {} from the graph", xn.id)
+            runnable_xns_ids |= graph.remove_root_node(xn.id)
+
+        # 5.3 wait for the sequential node to finish
+        # This code is executed only if this node is being executed purely by itself
+        if xn.resource == Resource.thread and xn.is_sequential:
+            logger.debug("Wait for all Futures to finish because {} is sequential.", xn.id)
+            # ALL_COMPLETED is equivalent to FIRST_COMPLETED because there is only a single future running!
+            done, running, runnable_xns_ids = wait_for_finished_nodes(
+                ALL_COMPLETED, graph, futures, done, running, runnable_xns_ids
+            )
+    executor.__exit__(None, None, None)
 
     return exec_nodes, results, profiles
 

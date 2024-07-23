@@ -3,14 +3,14 @@ from typing import Any, List, Set
 import pytest
 from tawazi import DAG, dag, xn
 from tawazi._dag.digraph import DiGraphEx
-from tawazi._dag.helpers import execute
+from tawazi._dag.helpers import sync_execute
 
 subgraph_comp_str = ""
 T = 1e-3
 
 
 def shortcut_execute(dag: DAG[Any, Any], graph: DiGraphEx) -> Any:
-    return execute(
+    return sync_execute(
         results=dag.results,
         active_nodes=dag.actives,
         exec_nodes=dag.exec_nodes,
