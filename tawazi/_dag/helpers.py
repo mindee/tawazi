@@ -1,7 +1,9 @@
 import asyncio
+import contextvars
+import functools
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy
-from typing import Any, Dict, List, Set, Tuple, TypeVar, Union
+from typing import Any, Callable, Dict, List, Set, Tuple, TypeVar, Union
 
 from loguru import logger
 
@@ -125,6 +127,7 @@ class BiDict(Dict[K, V]):
         super().__delitem__(key)
 
 
+# TODO: refactor these functions by re-using the common parts
 def wait_for_finished_nodes(
     return_when: str,
     graph: DiGraphEx,
@@ -146,6 +149,8 @@ def wait_for_finished_nodes(
     Returns:
         finisehd futures, running futures and runnable nodes
     """
+    if len(running) == 0:
+        return done, running, runnable_xns_ids
     done_, running = wait(running, return_when=return_when)
     done = done.union(done_)
 
@@ -161,6 +166,68 @@ def wait_for_finished_nodes(
     return done, running, runnable_xns_ids
 
 
+async def wait_for_finished_nodes_async(
+    return_when: str,
+    graph: DiGraphEx,
+    futures: BiDict[Identifier, asyncio.Future[Any]],
+    done: Set[asyncio.Future[Any]],
+    running: Set[asyncio.Future[Any]],
+    runnable_xns_ids: Set[Identifier],
+) -> Tuple[Set[asyncio.Future[Any]], Set[asyncio.Future[Any]], Set[Identifier]]:
+    """Wait for the finished futures before pruning them from the graph.
+
+    Args:
+        return_when: condition for thread return
+        graph: the directed graph
+        futures: the futures to id map and reverse map
+        done: the set of finished futures
+        running: the running async-threads
+        runnable_xns_ids: the exec nodes that are available to be run
+
+    Returns:
+        finisehd futures, running futures and runnable nodes
+    """
+    if len(running) == 0:
+        return done, running, runnable_xns_ids
+    done_, running = await asyncio.wait(running, return_when=return_when)
+    done = done.union(done_)
+
+    # 1. among the finished futures:
+    #   1. checks for exceptions
+    #   2. and remove them from the graph
+    for done_future in done_:
+        future_id = futures.inverse[done_future]
+        _ = futures[future_id].result()  # raise exception by calling the future
+        logger.debug("Remove ExecNode {} from the graph", future_id)
+        runnable_xns_ids |= graph.remove_root_node(future_id)
+
+    return done, running, runnable_xns_ids
+
+
+async def to_thread_in_executor(
+    func: Callable[..., Any],
+    executor: ThreadPoolExecutor,
+    /,
+    *args: Tuple[Any],
+    **kwargs: Dict[str, Any],
+) -> asyncio.Future[Any]:
+    """A modified copy of asyncio.to_thread.
+
+    Asynchronously run function *func* in a separate thread.
+
+    Any *args and **kwargs supplied for this function are directly passed
+    to *func*. Also, the current :class:`contextvars.Context` is propagated,
+    allowing context variables from the main thread to be accessed in the
+    separate thread.
+
+    Return a coroutine that can be awaited to get the eventual result of *func*.
+    """
+    loop = asyncio.get_running_loop()
+    ctx = contextvars.copy_context()
+    func_call = functools.partial(ctx.run, func, *args, **kwargs)
+    return await loop.run_in_executor(executor, func_call)
+
+
 ################
 # The scheduler!
 ################
@@ -174,17 +241,18 @@ def sync_execute(
     """Look at the execute function for more information."""
     try:
         _pool = asyncio.get_running_loop()
+        raise RuntimeError("Cannot run the synchronous scheduler in an asynchronous context.")
     except RuntimeError:
-        return asyncio.run(
-            async_execute(
-                exec_nodes=exec_nodes,
-                results=results,
-                active_nodes=active_nodes,
-                max_concurrency=max_concurrency,
-                graph=graph,
-            )
+        pass
+    return asyncio.run(
+        async_execute(
+            exec_nodes=exec_nodes,
+            results=results,
+            active_nodes=active_nodes,
+            max_concurrency=max_concurrency,
+            graph=graph,
         )
-    raise RuntimeError("Cannot run the synchronous scheduler in an asynchronous context.")
+    )
 
 
 async def async_execute(
@@ -222,9 +290,16 @@ async def async_execute(
     graph.remove_nodes_from([id_ for id_ in graph if id_ in results])
 
     # 0.3 create variables related to futures
-    futures: BiDict[Identifier, "Future[Any]"] = BiDict()
-    done: Set["Future[Any]"] = set()
-    running: Set["Future[Any]"] = set()
+    conc_futures: BiDict[Identifier, "Future[Any]"] = BiDict()
+    conc_done: Set["Future[Any]"] = set()
+    conc_running: Set["Future[Any]"] = set()
+
+    async_futures: BiDict[Identifier, asyncio.Future[Any]] = BiDict()
+    async_done: Set[asyncio.Future[Any]] = set()
+    async_running: Set[asyncio.Future[Any]] = set()
+
+    def running_threads() -> int:
+        return len(conc_running) + len(async_running)
 
     # 0.4 get the candidates root nodes that can be executed
     # runnable_nodes_ids will be empty if all root nodes are running
@@ -234,26 +309,35 @@ async def async_execute(
     executor = ThreadPoolExecutor(max_workers=max_concurrency)
     executor.__enter__()
 
-    if False:
-        import asyncio
-
-        await asyncio.sleep(0)
-
     while len(graph):
         # Attempt to run **A SINGLE** root node.
 
         # 6. block scheduler execution if no root node can be executed.
         #    this can occur in two cases:
-        #       1. if maximum concurrency is reached
+        #       1. if maximum thread pool concurrency is reached
         #       2. if no runnable node exists (i.e. all root nodes are being executed)
         #    in both cases: block until a node finishes
         #       => a new root node will be available
-        if len(running) == max_concurrency or len(runnable_xns_ids) == 0:
-            # must wait and not submit any workers before a worker ends
-            # (that might create a new more prioritized node) to be executed
-            logger.debug("Waiting for ExecNodes {} to finish. Finished running {}", running, done)
-            done, running, runnable_xns_ids = wait_for_finished_nodes(
-                FIRST_COMPLETED, graph, futures, done, running, runnable_xns_ids
+        # must wait and not submit any workers before a worker ends
+        # (that might create a new more prioritized node) to be executed
+        if running_threads() == max_concurrency or len(runnable_xns_ids) == 0:
+            # 1st block and wait for async threads to finish.
+            #  prefer giving the hand to the event loop
+            logger.debug(
+                "Waiting for ExecNodes threaded async {} to finish. Finished running {}",
+                async_running,
+                async_done,
+            )
+            async_done, async_running, runnable_xns_ids = await wait_for_finished_nodes_async(
+                FIRST_COMPLETED, graph, async_futures, async_done, async_running, runnable_xns_ids
+            )
+            logger.debug(
+                "Waiting for ExecNodes threaded {} to finish. Finished running {}",
+                conc_running,
+                conc_done,
+            )
+            conc_done, conc_running, runnable_xns_ids = wait_for_finished_nodes(
+                FIRST_COMPLETED, graph, conc_futures, conc_done, conc_running, runnable_xns_ids
             )
 
         # 3. if no runnable node exist, go to step 6 (wait for a node to finish)
@@ -272,12 +356,15 @@ async def async_execute(
         # (maybe with a higher priority) has been created => continue the loop
         # Note: This step might run a number of times in the while loop
         #       before the exec_node gets submitted
-        if xn.is_sequential and len(running) != 0:
+        if xn.is_sequential and running_threads() != 0:
             logger.debug(
-                "{} must not run in parallel. Wait for the end of a node in {}", xn.id, running
+                "{} must not run in parallel. Wait for the end of a node in {}", xn.id, conc_running
             )
-            done, running, runnable_xns_ids = wait_for_finished_nodes(
-                FIRST_COMPLETED, graph, futures, done, running, runnable_xns_ids
+            async_done, async_running, runnable_xns_ids = await wait_for_finished_nodes_async(
+                FIRST_COMPLETED, graph, async_futures, async_done, async_running, runnable_xns_ids
+            )
+            conc_done, conc_running, runnable_xns_ids = wait_for_finished_nodes(
+                FIRST_COMPLETED, graph, conc_futures, conc_done, conc_running, runnable_xns_ids
             )
             continue
 
@@ -292,9 +379,16 @@ async def async_execute(
 
         # 5.2 submit the exec node to the executor
         if xn.resource == Resource.thread:
-            exec_future = executor.submit(xn.execute, results=results, profiles=profiles)
-            running.add(exec_future)
-            futures[xn.id] = exec_future
+            exec_future_sync = executor.submit(xn.execute, results=results, profiles=profiles)
+            conc_running.add(exec_future_sync)
+            conc_futures[xn.id] = exec_future_sync
+        elif xn.resource == Resource.thread_async:
+            exec_future_async = asyncio.ensure_future(
+                to_thread_in_executor(xn.execute, executor, results=results, profiles=profiles)
+            )
+            logger.debug("Submitted ExecNode {} to the ThreadPool in async mode", xn.id)
+            async_running.add(exec_future_async)
+            async_futures[xn.id] = exec_future_async
         else:
             # a single execution will be launched and will end.
             # it doesn't count as an additional thread that is running.
@@ -306,12 +400,16 @@ async def async_execute(
 
         # 5.3 wait for the sequential node to finish
         # This code is executed only if this node is being executed purely by itself
-        if xn.resource == Resource.thread and xn.is_sequential:
+        if xn.is_sequential:
             logger.debug("Wait for all Futures to finish because {} is sequential.", xn.id)
             # ALL_COMPLETED is equivalent to FIRST_COMPLETED because there is only a single future running!
-            done, running, runnable_xns_ids = wait_for_finished_nodes(
-                ALL_COMPLETED, graph, futures, done, running, runnable_xns_ids
+            async_done, async_running, runnable_xns_ids = await wait_for_finished_nodes_async(
+                ALL_COMPLETED, graph, async_futures, async_done, async_running, runnable_xns_ids
             )
+            conc_done, conc_running, runnable_xns_ids = wait_for_finished_nodes(
+                ALL_COMPLETED, graph, conc_futures, conc_done, conc_running, runnable_xns_ids
+            )
+
     executor.__exit__(None, None, None)
 
     return exec_nodes, results, profiles
