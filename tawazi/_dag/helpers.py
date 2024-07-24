@@ -239,11 +239,6 @@ def sync_execute(
     graph: DiGraphEx,
 ) -> Tuple[Dict[Identifier, ExecNode], Dict[Identifier, Any], Dict[Identifier, Profile]]:
     """Look at the execute function for more information."""
-    try:
-        _pool = asyncio.get_running_loop()
-        raise RuntimeError("Cannot run the synchronous scheduler in an asynchronous context.")
-    except RuntimeError:
-        pass
     return asyncio.run(
         async_execute(
             exec_nodes=exec_nodes,

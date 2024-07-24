@@ -13,6 +13,7 @@ from typing import Any, Dict, Generic, List, NoReturn, Optional, Sequence, Set, 
 import networkx as nx
 import yaml
 from loguru import logger
+from typing_extensions import override
 
 from tawazi._helpers import UniqueKeyLoader
 from tawazi.config import cfg
@@ -23,7 +24,7 @@ from tawazi.node.node import make_axn_id
 from tawazi.profile import Profile
 
 from .digraph import DiGraphEx
-from .helpers import extend_results_with_args, get_return_values, sync_execute
+from .helpers import async_execute, extend_results_with_args, get_return_values, sync_execute
 
 
 @dataclass
@@ -321,7 +322,9 @@ class DAG(Generic[P, RVDAG]):
 
         # 7. return the composed DAG
         # ignore[arg-type] because the type of the kwargs is not known
-        return DAG(results=results, actives=actives, exec_nodes=xn_dict, input_uxns=in_uxns, return_uxns=out_uxns, **kwargs)  # type: ignore[arg-type]
+
+        constructor = AsyncDAG if isinstance(self, AsyncDAG) else DAG
+        return constructor(results=results, actives=actives, exec_nodes=xn_dict, input_uxns=in_uxns, return_uxns=out_uxns, **kwargs)  # type: ignore[arg-type]
 
     def alias_to_ids(self, alias: Alias) -> List[Identifier]:
         """Extract an ExecNode ID from an Alias (Tag, ExecNode ID or ExecNode).
@@ -435,7 +438,7 @@ class DAG(Generic[P, RVDAG]):
         cache_deps_of: Optional[Sequence[Alias]] = None,
         cache_in: str = "",
         from_cache: str = "",
-    ) -> "DAGExecution[P, RVDAG]":
+    ) -> Union["DAGExecution[P, RVDAG]", "AsyncDAGExecution[P, RVDAG]"]:
         """Generates a DAGExecution for the DAG.
 
         Args:
@@ -449,7 +452,8 @@ class DAG(Generic[P, RVDAG]):
         Returns:
             the DAGExecution object associated with the dag
         """
-        return DAGExecution(
+        constructor = AsyncDAGExecution if isinstance(self, AsyncDAG) else DAGExecution
+        return constructor(
             dag=self,
             target_nodes=target_nodes,
             exclude_nodes=exclude_nodes,
@@ -587,6 +591,67 @@ class DAG(Generic[P, RVDAG]):
             json_config = json.load(f)
 
         self.config_from_dict(json_config)
+
+
+@dataclass
+class AsyncDAG(DAG[P, RVDAG]):
+    # TODO: refactor this with previous method
+    @override
+    async def run_subgraph(
+        self, subgraph: DiGraphEx, results: Optional[Dict[Identifier, Any]], *args: P.args
+    ) -> Tuple[Dict[Identifier, ExecNode], Dict[Identifier, Any], Dict[Identifier, Profile]]:
+        """Run a subgraph of the original graph (might be the same graph).
+
+        Args:
+            subgraph: the subgraph to run
+            results: the results provided from the dag (containing setup) or coming from a modified DAG (from DAGExecution)
+            *args: the args to pass to the graph
+
+        Returns:
+            a mapping between the execnodes and there identifiers
+        """
+        if results is None:
+            results = extend_results_with_args(self.results, self.input_uxns, *args)
+        else:
+            results = extend_results_with_args(results, self.input_uxns, *args)
+
+        exec_nodes, results, profiles = await async_execute(
+            exec_nodes=self.exec_nodes,
+            results=results,
+            active_nodes=self.actives,
+            max_concurrency=self.max_concurrency,
+            graph=subgraph,
+        )
+
+        # set DAG.results to the obtained value from setup ExecNodes
+        for node_id, result in results.items():
+            if self.exec_nodes[node_id].setup:
+                self.results[node_id] = result
+
+        return exec_nodes, results, profiles
+
+    @override
+    async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
+        """Execute the DAG scheduler via a similar interface to the function that describes the dependencies.
+
+        Note: Currently kwargs are not supported.
+
+        Args:
+            *args (P.args): arguments to be passed to the call of the DAG
+            **kwargs (P.kwargs): keyword arguments to be passed to the call of the DAG
+
+        Returns:
+            RVDAG: return value of the DAG's execution
+
+        Raises:
+            TawaziUsageError: kwargs are passed
+        """
+        if kwargs:
+            raise TawaziUsageError(f"currently DAG does not support keyword arguments: {kwargs}")
+
+        graph = self.graph_ids.extend_graph_with_debug_nodes(self.graph_ids, cfg)
+        _, results, _ = await self.run_subgraph(graph, None, *args)
+        return get_return_values(self.return_uxns, results)  # type: ignore[return-value]
 
 
 @dataclass
@@ -737,6 +802,48 @@ class DAGExecution(Generic[P, RVDAG]):
 
         # 2. Execute the scheduler
         self.xn_dict, self.results, self.profiles = self.dag.run_subgraph(
+            self.graph, self.results, *args
+        )
+
+        # mark as executed. Important for the next step
+        self.executed = True
+
+        # 3. cache in the graph results
+        if self.cache_in:
+            self._cache_results(self.results)
+
+        # 3. extract the returned value/values
+        return get_return_values(self.dag.return_uxns, self.results)  # type: ignore[return-value]
+
+
+class AsyncDAGExecution(DAGExecution[P, RVDAG]):
+    dag: AsyncDAG[P, RVDAG]
+
+    @override
+    async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
+        """Call the DAG.
+
+        Args:
+            *args: positional arguments to pass in to the DAG
+            **kwargs: keyword arguments to pass in to the DAG
+
+        Raises:
+            TawaziUsageError: if the DAGExecution has already been executed.
+
+        Returns:
+            RVDAG: the return value of the DAG's Execution
+        """
+        if self.executed:
+            raise TawaziUsageError("DAGExecution object has already been executed.")
+
+        if self.from_cache:
+            with open(self.from_cache, "rb") as f:
+                cached_results = pickle.load(f)  # noqa: S301
+            for node in self.cached_nodes:
+                self.results = cached_results[node.id]
+
+        # 2. Execute the scheduler
+        self.xn_dict, self.results, self.profiles = await self.dag.run_subgraph(
             self.graph, self.results, *args
         )
 
