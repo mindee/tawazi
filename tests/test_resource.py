@@ -1,6 +1,6 @@
 import threading
 from time import sleep, time
-from typing import Tuple
+from typing import Literal, Tuple
 
 from tawazi import Resource, dag, xn
 
@@ -63,3 +63,15 @@ def test_main_thread_sequential_exec_node() -> None:
         return xn1()
 
     assert pipe() == 1
+
+
+def test_async_threaded_in_sync() -> None:
+    @xn(resource=Resource.thread_async)
+    def async_threaded_xn() -> Literal["async_threaded"]:
+        return "async_threaded"
+
+    @dag
+    def pipeline() -> Literal["async_threaded"]:
+        return async_threaded_xn()
+
+    assert pipeline() == "async_threaded"

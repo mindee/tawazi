@@ -12,6 +12,8 @@
 
 <!-- TODO: put a link explaining what a DAG is-->
 
+<!-- TODO: document that if you want to run DAG in a sync context, the DAG should be sync, if you want to run it in a async context, the DAG should be async-->
+
 [Tawazi](https://pypi.org/project/tawazi/) facilitates **parallel** execution of functions using a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph) dependency structure.
 
 ### Explanation
