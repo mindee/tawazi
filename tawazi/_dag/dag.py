@@ -375,30 +375,12 @@ class DAG(Generic[P, RVDAG]):
         """
         return list(chain(*(self.alias_to_ids(alias) for alias in nodes)))
 
-    def setup(
+    def _pre_setup(
         self,
-        target_nodes: Optional[Sequence[Alias]] = None,
-        exclude_nodes: Optional[Sequence[Alias]] = None,
-        root_nodes: Optional[Sequence[Alias]] = None,
-    ) -> None:
-        """Run the setup ExecNodes for the DAG.
-
-        If target_nodes are provided, run only the necessary setup ExecNodes, otherwise will run all setup ExecNodes.
-        NOTE: `DAG` arguments should not be passed to setup ExecNodes.
-            Only pass in constants or setup `ExecNode`s results.
-
-
-        Args:
-            target_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to use in the DAG.
-                This might include setup or non setup ExecNodes. If None is provided, will run all setup ExecNodes.
-                Defaults to None.
-            exclude_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to exclude from the DAG.
-                The user is responsible for ensuring that the overlapping between the target_nodes
-                and exclude_nodes is logical.
-            root_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to select as ancestor nodes.
-                The user is responsible for ensuring that the overlapping between the target_nodes, the exclude_nodes
-                and the root nodes is logical.
-        """
+        target_nodes: Optional[Sequence[Alias]],
+        exclude_nodes: Optional[Sequence[Alias]],
+        root_nodes: Optional[Sequence[Alias]],
+    ) -> DiGraphEx:
         # 1. if target_nodes is not provided run all setup ExecNodes
         if target_nodes is not None:
             target_nodes = self.get_multiple_nodes_aliases(target_nodes)
@@ -420,6 +402,32 @@ class DAG(Generic[P, RVDAG]):
         graph.remove_nodes_from(
             [node_id for node_id in graph if node_id not in self.graph_ids.setup_nodes]
         )
+        return graph
+
+    def setup(
+        self,
+        target_nodes: Optional[Sequence[Alias]] = None,
+        exclude_nodes: Optional[Sequence[Alias]] = None,
+        root_nodes: Optional[Sequence[Alias]] = None,
+    ) -> None:
+        """Run the setup ExecNodes for the DAG.
+
+        If target_nodes are provided, run only the necessary setup ExecNodes, otherwise will run all setup ExecNodes.
+        NOTE: `DAG` arguments should not be passed to setup ExecNodes.
+            Only pass in constants or setup `ExecNode`s results.
+
+        Args:
+            target_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to use in the DAG.
+                This might include setup or non setup ExecNodes. If None is provided, will run all setup ExecNodes.
+                Defaults to None.
+            exclude_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to exclude from the DAG.
+                The user is responsible for ensuring that the overlapping between the target_nodes
+                and exclude_nodes is logical.
+            root_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to select as ancestor nodes.
+                The user is responsible for ensuring that the overlapping between the target_nodes, the exclude_nodes
+                and the root nodes is logical.
+        """
+        graph = self._pre_setup(target_nodes, exclude_nodes, root_nodes)
 
         # 4. execute the graph and set the results to setup_results
         _, self.results, _ = sync_execute(
@@ -595,6 +603,40 @@ class DAG(Generic[P, RVDAG]):
 
 @dataclass
 class AsyncDAG(DAG[P, RVDAG]):
+    async def setup(
+        self,
+        target_nodes: Optional[Sequence[Alias]] = None,
+        exclude_nodes: Optional[Sequence[Alias]] = None,
+        root_nodes: Optional[Sequence[Alias]] = None,
+    ) -> None:
+        """Run the setup ExecNodes for the DAG.
+
+        If target_nodes are provided, run only the necessary setup ExecNodes, otherwise will run all setup ExecNodes.
+        NOTE: `DAG` arguments should not be passed to setup ExecNodes.
+            Only pass in constants or setup `ExecNode`s results.
+
+        Args:
+            target_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to use in the DAG.
+                This might include setup or non setup ExecNodes. If None is provided, will run all setup ExecNodes.
+                Defaults to None.
+            exclude_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to exclude from the DAG.
+                The user is responsible for ensuring that the overlapping between the target_nodes
+                and exclude_nodes is logical.
+            root_nodes (Optional[List[XNId]], optional): The ExecNodes that the user aims to select as ancestor nodes.
+                The user is responsible for ensuring that the overlapping between the target_nodes, the exclude_nodes
+                and the root nodes is logical.
+        """
+        graph = self._pre_setup(target_nodes, exclude_nodes, root_nodes)
+
+        # 4. execute the graph and set the results to setup_results
+        _, self.results, _ = await async_execute(
+            exec_nodes=self.exec_nodes,
+            results=self.results,
+            active_nodes=self.actives,
+            max_concurrency=self.max_concurrency,
+            graph=graph,
+        )
+
     # TODO: refactor this with previous method
     @override
     async def run_subgraph(
