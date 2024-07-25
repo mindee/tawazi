@@ -266,16 +266,21 @@ class ArgExecNode(ExecNode):
     it will raise an error similar to Python's Error.
     """
 
-    def __init__(self, id: Identifier):
-        """Constructor of ArgExecNode."""
+    def __init__(self, id_: Identifier, **_kwargs: Any) -> None:
+        """Constructor of ArgExecNode.
+
+        Args:
+            id_ (Identifier): Identifier of the ArgExecNode.
+            **_kwargs (Any): Additional arguments that are not used but necessary for configuring the DAG.
+        """
         # prefix might contain ARG_NAME_SEP
         # eg. for example a DAG composed from another with an ArgExecNode input``
-        *prefix, suffix = id.split(ARG_NAME_SEP)
+        *prefix, suffix = id_.split(ARG_NAME_SEP)
         base_id = "".join(prefix)
 
         raise_err = make_raise_arg_error(base_id, suffix)
 
-        super().__init__(id_=id, exec_function=raise_err, is_sequential=False)
+        super().__init__(id_=id_, exec_function=raise_err, is_sequential=False)
 
 
 def make_axn_id(
