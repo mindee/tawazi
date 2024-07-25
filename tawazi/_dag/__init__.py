@@ -1,3 +1,3 @@
-from .dag import DAG, DAGExecution
+from .dag import DAG, AsyncDAG, AsyncDAGExecution, DAGExecution
 
-__all__ = ["DAG", "DAGExecution"]
+__all__ = ["DAG", "DAGExecution", "AsyncDAG", "AsyncDAGExecution"]

@@ -40,6 +40,10 @@ async def test_async_in_async() -> None:
     assert await pipeline() == "ab"
 
 
+def test_async_in_sync_without_await() -> None:
+    assert asyncio.iscoroutine(pipeline())
+
+
 @xn(resource=Resource.thread_async)
 def threaded_async_sleep(t: float) -> str:
     sleep(t)
