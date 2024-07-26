@@ -2,25 +2,14 @@
 
 The user should use the decorators `@dag` and `@xn` to create Tawazi objects `DAG` and `ExecNode`.
 """
-import asyncio
 import functools
-from typing import Any, Callable, List, Optional, Union, overload
+from typing import Any, Callable, Optional, Union, overload
 
-from tawazi._dag import DAG
-from tawazi._dag.dag import AsyncDAG
-from tawazi._helpers import get_args_and_default_args
+from tawazi._dag import DAG, safe_make_dag
 
 from .config import cfg
 from .consts import RVDAG, RVXN, P, Resource, TagOrTags
-from .node import (
-    ArgExecNode,
-    ExecNode,
-    LazyExecNode,
-    ReturnUXNsType,
-    UsageExecNode,
-    node,
-    wrap_in_uxns,
-)
+from .node import LazyExecNode
 
 
 @overload
@@ -128,70 +117,6 @@ def xn(
     return intermediate_wrapper(func)
 
 
-def make_dag(
-    _func: Union[Callable[P, RVDAG]], max_concurrency: int
-) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
-    """Make DAG or AsyncDAG form the function that describes the DAG."""
-    # 1. node.exec_nodes contains all the ExecNodes that concern the DAG being built at the moment.
-    #      make sure it is empty
-    node.exec_nodes = {}
-    node.results = {}
-    node.actives = {}
-    try:
-        # 2. make ExecNodes corresponding to the arguments of the ExecNode
-        # 2.1 get the names of the arguments and the default values
-        func_args, func_default_args = get_args_and_default_args(_func)
-
-        # 2.2 Construct non default arguments.
-        # Corresponding values must be provided during usage
-        args: List[ExecNode] = [
-            ArgExecNode(node.make_axn_id(arg_name, func=_func)) for arg_name in func_args
-        ]
-        # 2.2 Construct Default arguments.
-
-        for arg_name, arg in func_default_args.items():
-            axn = ArgExecNode(node.make_axn_id(arg_name, func=_func))
-            args.append(axn)
-            node.results[axn.id] = arg
-
-        # 2.3 Arguments are also ExecNodes that get executed inside the scheduler
-        node.exec_nodes.update({exec_node.id: exec_node for exec_node in args})
-        # 2.4 make UsageExecNodes for input arguments
-        uxn_args = [UsageExecNode(exec_node.id) for exec_node in args]
-
-        # 3. Execute the dependency describer function
-        # NOTE: Only ordered parameters are supported at the moment!
-        #  No **kwargs!! Only positional Arguments
-        # used to be fetch the results at the end of the computation
-        returned_val: Any = (
-            asyncio.run(_func(*uxn_args))  # type: ignore[arg-type]
-            if asyncio.iscoroutinefunction(_func)
-            else _func(*uxn_args)  # type: ignore[arg-type]
-        )
-
-        returned_usage_exec_nodes: ReturnUXNsType = wrap_in_uxns(_func, returned_val)
-
-        # 4. Construct the DAG/AsyncDAG instance
-        constructor = AsyncDAG if asyncio.iscoroutinefunction(_func) else DAG
-        return constructor(
-            results=node.results,
-            actives=node.actives,
-            exec_nodes=node.exec_nodes,
-            input_uxns=uxn_args,
-            return_uxns=returned_usage_exec_nodes,
-            max_concurrency=max_concurrency,
-        )
-
-    # clean up even in case an error is raised during dag construction
-    finally:
-        # 5. Clean global variable
-        # node.exec_nodes are deep copied inside the DAG.
-        #   we can empty the global variable node.exec_nodes
-        node.exec_nodes = {}
-        node.results = {}
-        node.actives = {}
-
-
 @overload
 def dag(declare_dag_function: Callable[P, RVDAG]) -> DAG[P, RVDAG]:
     ...
@@ -236,8 +161,7 @@ def dag(
     # wrapper used to support parametrized and non parametrized decorators
     def intermediate_wrapper(_func: Callable[P, RVDAG]) -> DAG[P, RVDAG]:
         # 0. Protect against multiple threads declaring many DAGs at the same time
-        with node.exec_nodes_lock:
-            d = make_dag(_func, max_concurrency)
+        d = safe_make_dag(_func, max_concurrency)
         functools.update_wrapper(d, _func)
         return d
 
