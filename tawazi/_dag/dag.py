@@ -19,7 +19,7 @@ from tawazi._helpers import UniqueKeyLoader
 from tawazi.config import cfg
 from tawazi.consts import RVDAG, Identifier, P, Tag
 from tawazi.errors import TawaziTypeError, TawaziUsageError
-from tawazi.node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode
+from tawazi.node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode, node
 from tawazi.node.node import make_axn_id
 from tawazi.profile import Profile
 
@@ -522,6 +522,10 @@ class DAG(Generic[P, RVDAG]):
         """
         if kwargs:
             raise TawaziUsageError(f"currently DAG does not support keyword arguments: {kwargs}")
+
+        if node.exec_nodes_lock.locked():
+            logger.warning("Describing SubDAG in DAG")
+            raise RuntimeError("Currenlty impossible")
 
         graph = self.graph_ids.extend_graph_with_debug_nodes(self.graph_ids, cfg)
         _, results, _ = self.run_subgraph(graph, None, *args)
