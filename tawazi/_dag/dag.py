@@ -26,7 +26,6 @@ from typing import (
 import networkx as nx
 import yaml
 from loguru import logger
-from typing_extensions import override
 
 from tawazi import consts
 from tawazi._helpers import UniqueKeyLoader
@@ -62,7 +61,7 @@ def construct_subdag_arg_uxns(
 
 
 @dataclass
-class DAG(Generic[P, RVDAG]):
+class BaseDAG(Generic[P, RVDAG]):
     """Data Structure containing ExecNodes with interdependencies.
 
     Please do not instantiate this class directly. Use the decorator `@dag` instead.
@@ -174,7 +173,7 @@ class DAG(Generic[P, RVDAG]):
         inputs: Union[Alias, Sequence[Alias]],
         outputs: Union[Alias, Sequence[Alias]],
         **kwargs: Dict[str, Any],
-    ) -> "DAG[P, RVDAG]":
+    ) -> "Union[AsyncDAG[P, RVDAG], DAG[P, RVDAG]]":
         """Compose a new DAG using inputs and outputs ExecNodes (Experimental).
 
         All provided `Alias`es must point to unique `ExecNode`s. Otherwise ValueError is raised
@@ -360,8 +359,25 @@ class DAG(Generic[P, RVDAG]):
         # 7. return the composed DAG
         # ignore[arg-type] because the type of the kwargs is not known
 
-        constructor = AsyncDAG if isinstance(self, AsyncDAG) else DAG
-        return constructor(qualname=qualname, results=results, actives=actives, exec_nodes=xn_dict, input_uxns=in_uxns, return_uxns=out_uxns, **kwargs)  # type: ignore[arg-type]
+        if isinstance(self, DAG):
+            return DAG(
+                qualname=qualname,
+                results=results,
+                actives=actives,
+                exec_nodes=xn_dict,
+                input_uxns=in_uxns,
+                return_uxns=out_uxns,
+                **kwargs,  # type: ignore[arg-type]
+            )
+        return AsyncDAG(
+            qualname=qualname,
+            results=results,
+            actives=actives,
+            exec_nodes=xn_dict,
+            input_uxns=in_uxns,
+            return_uxns=out_uxns,
+            **kwargs,  # type: ignore[arg-type]
+        )
 
     def alias_to_ids(self, alias: Alias) -> List[Identifier]:
         """Extract an ExecNode ID from an Alias (Tag, ExecNode ID or ExecNode).
@@ -441,6 +457,128 @@ class DAG(Generic[P, RVDAG]):
         )
         return graph
 
+    def executor(
+        self,
+        target_nodes: Optional[Sequence[Alias]] = None,
+        exclude_nodes: Optional[Sequence[Alias]] = None,
+        root_nodes: Optional[Sequence[Alias]] = None,
+        cache_deps_of: Optional[Sequence[Alias]] = None,
+        cache_in: str = "",
+        from_cache: str = "",
+    ) -> Union["DAGExecution[P, RVDAG]", "AsyncDAGExecution[P, RVDAG]"]:
+        """Generates a DAGExecution for the DAG.
+
+        Args:
+            target_nodes: the nodes to execute, excluding all nodes that can be excluded
+            exclude_nodes: the nodes to exclude from the execution
+            root_nodes: these nodes and their children will be included in the execution
+            cache_deps_of: which nodes to cache the dependencies of
+            cache_in: the path to the file where to cache
+            from_cache: the cache
+
+        Returns:
+            the DAGExecution object associated with the dag
+        """
+        if isinstance(self, AsyncDAG):
+            return AsyncDAGExecution(
+                dag=self,
+                target_nodes=target_nodes,
+                exclude_nodes=exclude_nodes,
+                root_nodes=root_nodes,
+                cache_deps_of=cache_deps_of,
+                cache_in=cache_in,
+                from_cache=from_cache,
+            )
+        if isinstance(self, DAG):
+            return DAGExecution(
+                dag=self,
+                target_nodes=target_nodes,
+                exclude_nodes=exclude_nodes,
+                root_nodes=root_nodes,
+                cache_deps_of=cache_deps_of,
+                cache_in=cache_in,
+                from_cache=from_cache,
+            )
+        raise ValueError("Unknown DAG type")
+
+    def config_from_dict(self, config: Dict[str, Any]) -> None:
+        """Allows reconfiguring the parameters of the nodes from a dictionary.
+
+        Args:
+            config (Dict[str, Any]): the dictionary containing the config
+                example: {"nodes": {"a": {"priority": 3, "is_sequential": True}}, "max_concurrency": 3}
+
+        Raises:
+            ValueError: if two nodes are configured by the provided config (which is ambiguous)
+        """
+
+        def node_values(n: ExecNode, conf: Dict[str, Any]) -> Dict[str, Any]:
+            values = dataclasses.asdict(n)
+            values["args"] = n.args
+            values["kwargs"] = n.kwargs
+            values["is_sequential"] = conf.get("is_sequential", n.is_sequential)
+            values["priority"] = conf.get("priority", n.priority)
+            return values  # ignore: typing[no-any-return]
+
+        def expand_config(
+            config_nodes: Dict[Union[Tag, Identifier], Any]
+        ) -> List[Tuple[Identifier, Any]]:
+            expanded_config = []
+            for alias, conf_node in config_nodes.items():
+                ids = self.alias_to_ids(alias)
+                expanded_config.extend(
+                    [(id, conf) for id, conf in zip(ids, len(ids) * [conf_node])]
+                )
+            return expanded_config
+
+        def detect_duplicates(expanded_config: List[Tuple[Identifier, Any]]) -> None:
+            duplicates = [
+                id for id, count in Counter([id for id, _ in expanded_config]).items() if count > 1
+            ]
+            if duplicates:
+                raise ValueError(f"trying to set two configs for nodes {duplicates}.")
+
+        if "nodes" in config:
+            expanded_config = expand_config(config["nodes"])
+            detect_duplicates(expanded_config)
+            for node_id, conf_node in expanded_config:
+                node = self.get_node_by_id(node_id)
+                values = node_values(node, conf_node)
+                self.exec_nodes[node_id] = node.__class__(**values)
+
+        if "max_concurrency" in config:
+            self.max_concurrency = config["max_concurrency"]
+
+        # we might have changed the priority of some nodes we need to recompute the compound prio
+        self.graph_ids.assign_compound_priority()
+
+    def config_from_yaml(self, config_path: str) -> None:
+        """Allows reconfiguring the parameters of the nodes from a YAML file.
+
+        Args:
+            config_path: the path to the YAML file
+        """
+        with open(config_path) as f:
+            yaml_config = yaml.load(f, Loader=UniqueKeyLoader)  # noqa: S506
+
+        self.config_from_dict(yaml_config)
+
+    def config_from_json(self, config_path: str) -> None:
+        """Allows reconfiguring the parameters of the nodes from a JSON file.
+
+        Args:
+            config_path: the path to the JSON file
+        """
+        with open(config_path) as f:
+            json_config = json.load(f)
+
+        self.config_from_dict(json_config)
+
+
+@dataclass
+class DAG(BaseDAG[P, RVDAG]):
+    """SyncDAG implementation of the BaseDAG."""
+
     def setup(
         self,
         target_nodes: Optional[Sequence[Alias]] = None,
@@ -473,39 +611,6 @@ class DAG(Generic[P, RVDAG]):
             active_nodes=self.actives,
             max_concurrency=self.max_concurrency,
             graph=graph,
-        )
-
-    def executor(
-        self,
-        target_nodes: Optional[Sequence[Alias]] = None,
-        exclude_nodes: Optional[Sequence[Alias]] = None,
-        root_nodes: Optional[Sequence[Alias]] = None,
-        cache_deps_of: Optional[Sequence[Alias]] = None,
-        cache_in: str = "",
-        from_cache: str = "",
-    ) -> Union["DAGExecution[P, RVDAG]", "AsyncDAGExecution[P, RVDAG]"]:
-        """Generates a DAGExecution for the DAG.
-
-        Args:
-            target_nodes: the nodes to execute, excluding all nodes that can be excluded
-            exclude_nodes: the nodes to exclude from the execution
-            root_nodes: these nodes and their children will be included in the execution
-            cache_deps_of: which nodes to cache the dependencies of
-            cache_in: the path to the file where to cache
-            from_cache: the cache
-
-        Returns:
-            the DAGExecution object associated with the dag
-        """
-        constructor = AsyncDAGExecution if isinstance(self, AsyncDAG) else DAGExecution
-        return constructor(
-            dag=self,
-            target_nodes=target_nodes,
-            exclude_nodes=exclude_nodes,
-            root_nodes=root_nodes,
-            cache_deps_of=cache_deps_of,
-            cache_in=cache_in,
-            from_cache=from_cache,
         )
 
     # TODO: discuss whether we want to expose it or not
@@ -626,83 +731,9 @@ class DAG(Generic[P, RVDAG]):
         _, results, _ = self.run_subgraph(graph, None, *args)
         return get_return_values(self.return_uxns, results)  # type: ignore[return-value]
 
-    def config_from_dict(self, config: Dict[str, Any]) -> None:
-        """Allows reconfiguring the parameters of the nodes from a dictionary.
-
-        Args:
-            config (Dict[str, Any]): the dictionary containing the config
-                example: {"nodes": {"a": {"priority": 3, "is_sequential": True}}, "max_concurrency": 3}
-
-        Raises:
-            ValueError: if two nodes are configured by the provided config (which is ambiguous)
-        """
-
-        def node_values(n: ExecNode, conf: Dict[str, Any]) -> Dict[str, Any]:
-            values = dataclasses.asdict(n)
-            values["args"] = n.args
-            values["kwargs"] = n.kwargs
-            values["is_sequential"] = conf.get("is_sequential", n.is_sequential)
-            values["priority"] = conf.get("priority", n.priority)
-            return values  # ignore: typing[no-any-return]
-
-        def expand_config(
-            config_nodes: Dict[Union[Tag, Identifier], Any]
-        ) -> List[Tuple[Identifier, Any]]:
-            expanded_config = []
-            for alias, conf_node in config_nodes.items():
-                ids = self.alias_to_ids(alias)
-                expanded_config.extend(
-                    [(id, conf) for id, conf in zip(ids, len(ids) * [conf_node])]
-                )
-            return expanded_config
-
-        def detect_duplicates(expanded_config: List[Tuple[Identifier, Any]]) -> None:
-            duplicates = [
-                id for id, count in Counter([id for id, _ in expanded_config]).items() if count > 1
-            ]
-            if duplicates:
-                raise ValueError(f"trying to set two configs for nodes {duplicates}.")
-
-        if "nodes" in config:
-            expanded_config = expand_config(config["nodes"])
-            detect_duplicates(expanded_config)
-            for node_id, conf_node in expanded_config:
-                node = self.get_node_by_id(node_id)
-                values = node_values(node, conf_node)
-                self.exec_nodes[node_id] = node.__class__(**values)
-
-        if "max_concurrency" in config:
-            self.max_concurrency = config["max_concurrency"]
-
-        # we might have changed the priority of some nodes we need to recompute the compound prio
-        self.graph_ids.assign_compound_priority()
-
-    def config_from_yaml(self, config_path: str) -> None:
-        """Allows reconfiguring the parameters of the nodes from a YAML file.
-
-        Args:
-            config_path: the path to the YAML file
-        """
-        with open(config_path) as f:
-            yaml_config = yaml.load(f, Loader=UniqueKeyLoader)  # noqa: S506
-
-        self.config_from_dict(yaml_config)
-
-    def config_from_json(self, config_path: str) -> None:
-        """Allows reconfiguring the parameters of the nodes from a JSON file.
-
-        Args:
-            config_path: the path to the JSON file
-        """
-        with open(config_path) as f:
-            json_config = json.load(f)
-
-        self.config_from_dict(json_config)
-
 
 @dataclass
-class AsyncDAG(DAG[P, RVDAG]):
-    @override
+class AsyncDAG(BaseDAG[P, RVDAG]):
     async def setup(
         self,
         target_nodes: Optional[Sequence[Alias]] = None,
@@ -739,7 +770,6 @@ class AsyncDAG(DAG[P, RVDAG]):
         return
 
     # TODO: refactor this with previous method
-    @override
     async def run_subgraph(
         self, subgraph: DiGraphEx, results: Optional[Dict[Identifier, Any]], *args: P.args
     ) -> Tuple[Dict[Identifier, ExecNode], Dict[Identifier, Any], Dict[Identifier, Profile]]:
@@ -773,7 +803,6 @@ class AsyncDAG(DAG[P, RVDAG]):
 
         return exec_nodes, results, profiles
 
-    @override
     async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
         """Execute the DAG scheduler via a similar interface to the function that describes the dependencies.
 
@@ -798,7 +827,7 @@ class AsyncDAG(DAG[P, RVDAG]):
 
 
 @dataclass
-class DAGExecution(Generic[P, RVDAG]):
+class BaseDAGExecution(Generic[P, RVDAG]):
     """A disposable callable instance of a DAG.
 
     It holds information about the last execution and is not threadsafe.
@@ -823,7 +852,7 @@ class DAGExecution(Generic[P, RVDAG]):
             Will skip loading from cache if `from_cache` is Falsy.
     """
 
-    dag: DAG[P, RVDAG]
+    dag: BaseDAG[P, RVDAG]
     target_nodes: Optional[Sequence[Alias]] = None
     exclude_nodes: Optional[Sequence[Alias]] = None
     root_nodes: Optional[Sequence[Alias]] = None
@@ -892,13 +921,6 @@ class DAGExecution(Generic[P, RVDAG]):
         """Set results."""
         self._results = value
 
-    def setup(self) -> None:
-        """Same thing as DAG.setup but `target_nodes` and `exclude_nodes` come from the DAGExecution's init."""
-        # TODO: handle the case where cache_deps_of is provided instead of target_nodes and exclude_nodes
-        #  in which case the deps_of might have a setup node themselves which should not run.
-        #  This is an edge case though that is not important to handle at the current moment.
-        self.dag.setup(target_nodes=self.target_nodes, exclude_nodes=self.exclude_nodes)
-
     def _cache_results(self, results: Dict[Identifier, Any]) -> None:
         """Cache execution results.
 
@@ -920,6 +942,20 @@ class DAGExecution(Generic[P, RVDAG]):
             else:
                 to_cache_results = results
             pickle.dump(to_cache_results, f, protocol=pickle.HIGHEST_PROTOCOL, fix_imports=False)
+
+
+@dataclass
+class DAGExecution(BaseDAGExecution[P, RVDAG]):
+    """Sync implementation of BaseDAGExecution."""
+
+    dag: DAG[P, RVDAG]
+
+    def setup(self) -> None:
+        """Same thing as DAG.setup but `target_nodes` and `exclude_nodes` come from the DAGExecution's init."""
+        # TODO: handle the case where cache_deps_of is provided instead of target_nodes and exclude_nodes
+        #  in which case the deps_of might have a setup node themselves which should not run.
+        #  This is an edge case though that is not important to handle at the current moment.
+        self.dag.setup(target_nodes=self.target_nodes, exclude_nodes=self.exclude_nodes)
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
         """Call the DAG.
@@ -959,10 +995,18 @@ class DAGExecution(Generic[P, RVDAG]):
         return get_return_values(self.dag.return_uxns, self.results)  # type: ignore[return-value]
 
 
-class AsyncDAGExecution(DAGExecution[P, RVDAG]):
+class AsyncDAGExecution(BaseDAGExecution[P, RVDAG]):
+    """Async implementation of BaseDAGExecution."""
+
     dag: AsyncDAG[P, RVDAG]
 
-    @override
+    async def setup(self) -> None:
+        """Same thing as DAG.setup but `target_nodes` and `exclude_nodes` come from the DAGExecution's init."""
+        # TODO: handle the case where cache_deps_of is provided instead of target_nodes and exclude_nodes
+        #  in which case the deps_of might have a setup node themselves which should not run.
+        #  This is an edge case though that is not important to handle at the current moment.
+        await self.dag.setup(target_nodes=self.target_nodes, exclude_nodes=self.exclude_nodes)
+
     async def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVDAG:
         """Call the DAG.
 
