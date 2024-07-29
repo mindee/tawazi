@@ -5,6 +5,7 @@ The user should use the decorators `@dag` and `@xn` to create Tawazi objects `DA
 import functools
 from typing import Any, Callable, Optional, Union, overload
 
+from tawazi import AsyncDAG
 from tawazi._dag import DAG, safe_make_dag
 
 from .config import cfg
@@ -134,7 +135,11 @@ def dag(*, max_concurrency: int = 1) -> Callable[[Callable[P, RVDAG]], DAG[P, RV
 
 def dag(
     declare_dag_function: Optional[Callable[P, RVDAG]] = None, *, max_concurrency: int = 1
-) -> Union[Callable[[Callable[P, RVDAG]], DAG[P, RVDAG]], DAG[P, RVDAG]]:
+) -> Union[
+    DAG[P, RVDAG],
+    AsyncDAG[P, RVDAG],
+    Callable[[Callable[P, RVDAG]], Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]],
+]:
     """Transform the declared `ExecNode`s into a DAG that can be executed by Tawazi's scheduler.
 
     The same DAG can be executed multiple times.
@@ -159,7 +164,7 @@ def dag(
     """
 
     # wrapper used to support parametrized and non parametrized decorators
-    def intermediate_wrapper(_func: Callable[P, RVDAG]) -> DAG[P, RVDAG]:
+    def intermediate_wrapper(_func: Callable[P, RVDAG]) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
         # 0. Protect against multiple threads declaring many DAGs at the same time
         d = safe_make_dag(_func, max_concurrency)
         functools.update_wrapper(d, _func)

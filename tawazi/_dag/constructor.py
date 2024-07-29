@@ -70,8 +70,17 @@ def __make_dag(
     returned_usage_exec_nodes: ReturnUXNsType = wrap_in_uxns(_func, returned_val)
 
     # 4. Construct the DAG/AsyncDAG instance
-    constructor = AsyncDAG if asyncio.iscoroutinefunction(_func) else DAG
-    return constructor(
+    if asyncio.iscoroutinefunction(_func):
+        return AsyncDAG(
+            qualname=_func.__qualname__,
+            results=node.results,
+            actives=node.actives,
+            exec_nodes=node.exec_nodes,
+            input_uxns=uxn_args,
+            return_uxns=returned_usage_exec_nodes,
+            max_concurrency=max_concurrency,
+        )
+    return DAG(
         qualname=_func.__qualname__,
         results=node.results,
         actives=node.actives,
