@@ -72,3 +72,9 @@ async def test_async_call_next_to_async_pipeline() -> None:
     ]
     duration = time() - t0
     assert duration < 0.2
+
+
+@pytest.mark.asyncio
+async def test_make_async_executor() -> None:
+    stateful_pipeline = pipeline_sleep.executor()
+    assert await stateful_pipeline(0.1) == "slept"
