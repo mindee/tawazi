@@ -5,26 +5,60 @@ import pickle
 import warnings
 from collections import Counter
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from itertools import chain
 from pathlib import Path
-from typing import Any, Dict, Generic, List, NoReturn, Optional, Sequence, Set, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    NoReturn,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import networkx as nx
 import yaml
 from loguru import logger
 from typing_extensions import override
 
+from tawazi import consts
 from tawazi._helpers import UniqueKeyLoader
 from tawazi.config import cfg
 from tawazi.consts import RVDAG, Identifier, P, Tag
 from tawazi.errors import TawaziTypeError, TawaziUsageError
 from tawazi.node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode, node
-from tawazi.node.node import make_axn_id
+from tawazi.node.node import LazyExecNode, make_axn_id
 from tawazi.profile import Profile
 
 from .digraph import DiGraphEx
 from .helpers import async_execute, extend_results_with_args, get_return_values, sync_execute
+
+
+def construct_subdag_arg_uxns(
+    *args: Iterable[Union[UsageExecNode, Any]], to_subdag_id: Callable[[str], str], qualname: str
+) -> List[UsageExecNode]:
+    """Construct UsageExecNodes from the arguments passed to a subdag."""
+    # Construct default arguments
+    axns: List[UsageExecNode] = []
+    for i, arg in enumerate(args):
+        # arg is a default value
+        if not isinstance(arg, UsageExecNode):
+            axn = ArgExecNode(node.make_axn_id(i, id_=to_subdag_id(qualname)))
+            # TODO: check for duplications!!
+            node.exec_nodes[axn.id] = axn
+            node.results[axn.id] = arg
+            uxn = UsageExecNode(axn.id)
+        else:
+            uxn = arg
+        axns.append(uxn)
+    return axns
 
 
 @dataclass
@@ -43,6 +77,7 @@ class DAG(Generic[P, RVDAG]):
         max_concurrency: the maximal number of threads running in parallel
     """
 
+    qualname: str
     results: Dict[Identifier, Any]
     actives: Dict[Identifier, Union[bool, UsageExecNode]]
     exec_nodes: Dict[Identifier, ExecNode]
@@ -135,6 +170,7 @@ class DAG(Generic[P, RVDAG]):
 
     def compose(
         self,
+        qualname: str,
         inputs: Union[Alias, Sequence[Alias]],
         outputs: Union[Alias, Sequence[Alias]],
         **kwargs: Dict[str, Any],
@@ -171,6 +207,7 @@ class DAG(Generic[P, RVDAG]):
 
 
         Args:
+            qualname (str): the name of the composed DAG
             inputs (Alias | List[Alias]): the Inputs nodes whose results are provided.
             outputs (Alias | List[Alias]): the Output nodes that must execute last, The ones that will generate results
             **kwargs (Dict[str, Any]): additional arguments to be passed to the DAG's constructor
@@ -324,7 +361,7 @@ class DAG(Generic[P, RVDAG]):
         # ignore[arg-type] because the type of the kwargs is not known
 
         constructor = AsyncDAG if isinstance(self, AsyncDAG) else DAG
-        return constructor(results=results, actives=actives, exec_nodes=xn_dict, input_uxns=in_uxns, return_uxns=out_uxns, **kwargs)  # type: ignore[arg-type]
+        return constructor(qualname=qualname, results=results, actives=actives, exec_nodes=xn_dict, input_uxns=in_uxns, return_uxns=out_uxns, **kwargs)  # type: ignore[arg-type]
 
     def alias_to_ids(self, alias: Alias) -> List[Identifier]:
         """Extract an ExecNode ID from an Alias (Tag, ExecNode ID or ExecNode).
@@ -524,8 +561,66 @@ class DAG(Generic[P, RVDAG]):
             raise TawaziUsageError(f"currently DAG does not support keyword arguments: {kwargs}")
 
         if node.exec_nodes_lock.locked():
-            logger.warning("Describing SubDAG in DAG")
-            raise RuntimeError("Currenlty impossible")
+            logger.warning("Describing SubDAG {} in DAG", self)
+            # can't call the base describing function because composed DAGs can't be supported in that case
+            node.DAG_PREFIX.append(self.qualname)
+
+            def to_subdag_id(id_: str) -> str:
+                return ".".join(node.DAG_PREFIX + [id_])
+
+            input_uxns = [UsageExecNode(to_subdag_id(uxn.id), uxn.key) for uxn in self.input_uxns]
+
+            # provided args to the subdag
+            arg_uxns = construct_subdag_arg_uxns(
+                *args, to_subdag_id=to_subdag_id, qualname=self.qualname
+            )
+
+            # provided *args to the call is <= than input_uxns! because of defaults args
+            for axn, uxn in zip(arg_uxns, input_uxns):  # strict=False
+                # a stub that fills the value of an input ExecNode with an arg of the subdag
+                stub: LazyExecNode[[UsageExecNode], UsageExecNode] = LazyExecNode(
+                    id_=uxn.id,
+                    exec_function=lambda x: x,
+                    resource=consts.Resource.main_thread,
+                    args=[axn],
+                )
+                # register this LazyExecNode in the dict
+                val: UsageExecNode = stub(axn)
+                if val.id != uxn.id:
+                    raise RuntimeError(f"Constructing SubDAG failed while linking {uxn.id}")
+
+            # TODO: check if there is id duplication and raise error. This should never happen!!
+            node.results.update({to_subdag_id(id_): res for id_, res in self.results.items()})
+            node.actives.update({to_subdag_id(id_): act for id_, act in self.actives.items()})
+
+            for id_, exec_node in self.exec_nodes.items():
+                values = asdict(exec_node)
+                new_id = to_subdag_id(id_)
+                values["id_"] = new_id
+
+                values["args"] = [
+                    UsageExecNode(to_subdag_id(uxn.id), uxn.key) for uxn in exec_node.args
+                ]
+                values["kwargs"] = {
+                    to_subdag_id(id_): UsageExecNode(to_subdag_id(uxn.id), uxn.key)
+                    for id_, uxn in exec_node.kwargs.items()
+                }
+
+                # TODO: check if there is id duplication and raise error. This should never happen!!
+                node.exec_nodes[new_id] = exec_node.__class__(**values)
+
+            # maybe support this later on
+            if self.return_uxns is None:
+                raise RuntimeError("SubDAG must have return values")
+            if isinstance(self.return_uxns, UsageExecNode):
+                return UsageExecNode(to_subdag_id(self.return_uxns.id), self.return_uxns.key)  # type: ignore[return-value]
+
+            if isinstance(self.return_uxns, tuple):
+                return tuple(
+                    UsageExecNode(to_subdag_id(uxn.id), uxn.key) for uxn in self.return_uxns  # type: ignore[return-value]
+                )
+            if isinstance(self.return_uxns, list):
+                return [UsageExecNode(to_subdag_id(uxn.id), uxn.key) for uxn in self.return_uxns]  # type: ignore[return-value]
 
         graph = self.graph_ids.extend_graph_with_debug_nodes(self.graph_ids, cfg)
         _, results, _ = self.run_subgraph(graph, None, *args)
@@ -607,6 +702,7 @@ class DAG(Generic[P, RVDAG]):
 
 @dataclass
 class AsyncDAG(DAG[P, RVDAG]):
+    @override
     async def setup(
         self,
         target_nodes: Optional[Sequence[Alias]] = None,
@@ -640,6 +736,7 @@ class AsyncDAG(DAG[P, RVDAG]):
             max_concurrency=self.max_concurrency,
             graph=graph,
         )
+        return
 
     # TODO: refactor this with previous method
     @override

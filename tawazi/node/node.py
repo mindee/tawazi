@@ -41,6 +41,9 @@ exec_nodes: Dict[Identifier, "ExecNode"] = {}
 # a temporary variable to hold default values concerning the DAG's description
 results: Dict[Identifier, Any] = {}
 actives: Dict[Identifier, Union[bool, UsageExecNode]] = {}
+# Prefix prepended to the id of the ExecNodes inside a DAG
+# to avoid name conflicts when imbricating DAGs within each other
+DAG_PREFIX: List[str] = []
 exec_nodes_lock = Lock()
 
 # multiple ways of identifying an XN
@@ -262,8 +265,8 @@ class ArgExecNode(ExecNode):
 
     Every Argument is Attached to the DAG or a LazyExecNode
     NOTE: If a value is not passed to the function call / ExecNode
-    and the argument doesn't have a default value
-    it will raise an error similar to Python's Error.
+        and the argument doesn't have a default value
+        it will raise an error similar to Python's Error.
     """
 
     def __init__(self, id_: Identifier, **_kwargs: Any) -> None:

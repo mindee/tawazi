@@ -39,7 +39,7 @@ def linear_pipe(i: int) -> int:
 
 
 def test_basic_compose() -> None:
-    composed_dag: DAG[[int], int] = linear_pipe.compose(a, b)
+    composed_dag: DAG[[int], int] = linear_pipe.compose("twinkle", a, b)
     assert linear_pipe(0) == 4
     assert composed_dag(0) == 1
     assert linear_pipe(0) == 4
@@ -47,7 +47,7 @@ def test_basic_compose() -> None:
 
 
 def test_full_pipe() -> None:
-    composed_dag: DAG[[int], int] = linear_pipe.compose("linear_pipe>!>i", d)
+    composed_dag: DAG[[int], int] = linear_pipe.compose("twinkle", "linear_pipe>!>i", d)
     assert linear_pipe(0) == 4
     assert composed_dag(0) == 4
 
@@ -81,7 +81,7 @@ def xyz_pipe() -> Tuple[int, float, int]:
 
 
 def test_typing() -> None:
-    composed_dag: DAG[[int, str], float] = xyz_pipe.compose([x, y], z)  # type: ignore[assignment]
+    composed_dag: DAG[[int, str], float] = xyz_pipe.compose("twinkle", [x, y], z)  # type: ignore[assignment]
     assert composed_dag(2, "4") == 6.0
 
 
@@ -97,7 +97,7 @@ def test_input_insufficient_to_produce_output() -> None:
     with pytest.raises(
         ValueError, match="Either declare them as inputs or modify the requests outputs."
     ):
-        _ = diamond_pipe.compose([], z)
+        _ = diamond_pipe.compose("twinkle", [], z)
 
 
 def test_input_more_sufficient_to_produce_output() -> None:
@@ -113,7 +113,7 @@ def test_input_more_sufficient_to_produce_output() -> None:
         UserWarning,
         match="Input ExecNode x<<2>> is not used to produce any of the requested outputs.",
     ):
-        sub: DAG[[int, int], int] = diamond_pipe.compose([x, "cst"], "x<<1>>")  # type: ignore[assignment]
+        sub: DAG[[int, int], int] = diamond_pipe.compose("twinkle", [x, "cst"], "x<<1>>")  # type: ignore[assignment]
         assert sub(2, 123) == 2
 
 
@@ -121,7 +121,7 @@ def test_input_more_sufficient_to_produce_empty_output() -> None:
     with pytest.warns(
         UserWarning, match="Input ExecNode x is not used to produce any of the requested outputs."
     ):
-        sub: DAG[[int], Tuple[()]] = diamond_pipe.compose(x, [])  # type: ignore[assignment]
+        sub: DAG[[int], Tuple[()]] = diamond_pipe.compose("twinkle", x, [])  # type: ignore[assignment]
         assert sub(2) == ()
 
 
@@ -134,12 +134,12 @@ def test_duplicate_tag_in_inputs() -> None:
         return z(v2, v3)
 
     with pytest.raises(ValueError, match="Alias twinkle is not unique. It points to 2 ExecNodes: "):
-        _ = diamond_pipe.compose("twinkle", "z")
+        _ = diamond_pipe.compose("mycomposed", "twinkle", "z")
 
 
 def test_multiple_return_value() -> None:
-    sub: DAG[[int], Tuple[int, int, str, float]] = diamond_pipe.compose(  # type: ignore[assignment]
-        ["diamond_pipe>!>v"], ["x", "x<<1>>", "y", "z"]
+    sub: DAG[[int], Tuple[int, int, str, float]] = diamond_pipe.compose(
+        "twinkle", ["diamond_pipe>!>v"], ["x", "x<<1>>", "y", "z"]  # type: ignore[assignment]
     )
     assert sub(2) == (2, 2, "2", 4.0)
 
@@ -148,33 +148,33 @@ def test_input_successor_output() -> None:
     with pytest.raises(
         ValueError, match="Either declare them as inputs or modify the requests outputs."
     ):
-        _ = diamond_pipe.compose(z, [x, y])
+        _ = diamond_pipe.compose("twinkle", z, [x, y])
 
 
 def test_input_successor_input() -> None:
     with pytest.raises(ValueError, match="this is ambiguous. Remove either one of them."):
-        _ = linear_pipe.compose([a, b], c)
+        _ = linear_pipe.compose("twinkle", [a, b], c)
 
 
 def test_inputs_outputs_overlapping() -> None:
     with pytest.raises(
         ValueError, match="Either declare them as inputs or modify the requests outputs."
     ):
-        _ = linear_pipe.compose(a, a)
+        _ = linear_pipe.compose("twinkle", a, a)
 
 
 def test_inputs_empty_outputs_empty() -> None:
-    dag_compose: DAG[[], Tuple[()]] = linear_pipe.compose([], [])  # type: ignore[assignment]
+    dag_compose: DAG[[], Tuple[()]] = linear_pipe.compose("twinkle", [], [])  # type: ignore[assignment]
     assert dag_compose() == ()
 
 
 def test_outputs_depends_on_csts_subgraph() -> None:
-    c_dag: DAG[[int], float] = xyz_pipe.compose([x], z)  # type: ignore[assignment]
+    c_dag: DAG[[int], float] = xyz_pipe.compose("twinkle", [x], z)  # type: ignore[assignment]
     assert c_dag(2) == 3.0
 
 
 def test_outputs_depends_on_csts_subgraph2() -> None:
-    c_dag: DAG[[], float] = xyz_pipe.compose([], z)  # type: ignore[assignment]
+    c_dag: DAG[[], float] = xyz_pipe.compose("twinkle", [], z)  # type: ignore[assignment]
     assert c_dag() == 2.0
 
 
@@ -187,7 +187,7 @@ def diamond_pipe2(v: int, c: int = 10) -> float:
 
 
 def test_outputs_depends_on_csts_subgraph_including_const_inputs() -> None:
-    c_dag = diamond_pipe2.compose("diamond_pipe2>!>v", z)
+    c_dag = diamond_pipe2.compose("twinkle", "diamond_pipe2>!>v", z)
     assert c_dag(2) == 24.0
 
 
@@ -218,13 +218,13 @@ def test_setop() -> None:
     assert setop_counter == 1
 
     diamond_pipe_setop_ = deepcopy(diamond_pipe_setop)
-    c_dag = diamond_pipe_setop_.compose("diamond_pipe_setop>!>v", [y, x])
+    c_dag = diamond_pipe_setop_.compose("twinkle", "diamond_pipe_setop>!>v", [y, x])
     assert c_dag(2) == ("twinkle toes", 2)
     assert setop_counter == 2
     assert c_dag(2) == ("twinkle toes", 2)
     assert setop_counter == 2
 
     diamond_pipe_setop_ = deepcopy(diamond_pipe_setop)
-    d_dag: DAG[[int], int] = diamond_pipe_setop_.compose("diamond_pipe_setop>!>v", x)  # type: ignore[assignment]
+    d_dag: DAG[[int], int] = diamond_pipe_setop_.compose("twinkle", "diamond_pipe_setop>!>v", x)  # type: ignore[assignment]
     assert d_dag(2) == 2
     assert setop_counter == 2

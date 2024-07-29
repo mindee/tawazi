@@ -1,10 +1,11 @@
-from typing import Union, Callable, List, Any, Tuple, Dict
-from tawazi.node import node
-import inspect
-from tawazi.consts import RVDAG, P
-from .dag import DAG, AsyncDAG
-from tawazi.node import ArgExecNode, UsageExecNode, wrap_in_uxns, ExecNode, ReturnUXNsType
 import asyncio
+import inspect
+from typing import Any, Callable, Dict, List, Tuple, Union
+
+from tawazi.consts import RVDAG, P
+from tawazi.node import ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode, node, wrap_in_uxns
+
+from .dag import DAG, AsyncDAG
 
 
 def get_args_and_default_args(func: Callable[..., Any]) -> Tuple[List[str], Dict[str, Any]]:
@@ -32,7 +33,10 @@ def get_args_and_default_args(func: Callable[..., Any]) -> Tuple[List[str], Dict
 
     return args, default_args
 
-def __make_dag(_func: Callable[P, RVDAG], max_concurrency: int) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
+
+def __make_dag(
+    _func: Callable[P, RVDAG], max_concurrency: int
+) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
     # 2. make ExecNodes corresponding to the arguments of the ExecNode
     # 2.1 get the names of the arguments and the default values
     func_args, func_default_args = get_args_and_default_args(_func)
@@ -43,7 +47,6 @@ def __make_dag(_func: Callable[P, RVDAG], max_concurrency: int) -> Union[DAG[P, 
         ArgExecNode(node.make_axn_id(arg_name, func=_func)) for arg_name in func_args
     ]
     # 2.2 Construct Default arguments.
-
     for arg_name, arg in func_default_args.items():
         axn = ArgExecNode(node.make_axn_id(arg_name, func=_func))
         args.append(axn)
@@ -69,6 +72,7 @@ def __make_dag(_func: Callable[P, RVDAG], max_concurrency: int) -> Union[DAG[P, 
     # 4. Construct the DAG/AsyncDAG instance
     constructor = AsyncDAG if asyncio.iscoroutinefunction(_func) else DAG
     return constructor(
+        qualname=_func.__qualname__,
         results=node.results,
         actives=node.actives,
         exec_nodes=node.exec_nodes,
@@ -78,35 +82,33 @@ def __make_dag(_func: Callable[P, RVDAG], max_concurrency: int) -> Union[DAG[P, 
     )
 
 
-def _make_dag(_func: Callable[P, RVDAG], max_concurrency: int) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
+def _make_dag(
+    _func: Callable[P, RVDAG], max_concurrency: int
+) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
     # 1. node.exec_nodes contains all the ExecNodes that concern the DAG being built at the moment.
     #      make sure it is empty
     node.exec_nodes = {}
     node.results = {}
     node.actives = {}
-    if node.DAG_PREFIX == "":
-        node.DAG_PREFIX = _func.__name__
-    else:
-        node.DAG_PREFIX += f".{_func.__name__}"
+    node.DAG_PREFIX = []
 
     try:
         return __make_dag(_func, max_concurrency)
     # clean up even in case an error is raised during dag construction
     finally:
         # 5. Clean global variable
-        # node.exec_nodes are deep copied inside the DAG.
-        #   we can empty the global variable node.exec_nodes
+        # node.* are global variables, their value is used in the DAG.
         node.exec_nodes = {}
         node.results = {}
         node.actives = {}
-        node.DAG_PREFIX = ""
+        node.DAG_PREFIX = []
 
 
 def safe_make_dag(
     _func: Union[Callable[P, RVDAG]], max_concurrency: int
 ) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
     """Make DAG or AsyncDAG form the function that describes the DAG.
-    
+
     Thread safe and cleans after itself.
     """
     with node.exec_nodes_lock:
