@@ -44,7 +44,7 @@ doc = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--pdbcls=IPython.terminal.debugger:TerminalPdb --cov-report=term-missing:skip-covered --junit-xml=pytest-junit.xml --cov=tawazi"
+addopts = "--pdbcls=IPython.terminal.debugger:TerminalPdb --cov-report=term-missing:skip-covered  --cov-report=lcov:cov.info --junit-xml=pytest-junit.xml --cov=tawazi"
 
 [tool.mypy]
 python_version = "3.8"

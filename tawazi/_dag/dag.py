@@ -698,9 +698,15 @@ class DAG(BaseDAG[P, RVDAG]):
             node.results.update({to_subdag_id(id_): res for id_, res in self.results.items()})
             node.actives.update({to_subdag_id(id_): act for id_, act in self.actives.items()})
 
+            registered_input_ids = {uxn.id for uxn in input_uxns if uxn.id in node.exec_nodes}
             for id_, exec_node in self.exec_nodes.items():
-                values = asdict(exec_node)
                 new_id = to_subdag_id(id_)
+                if new_id in registered_input_ids:
+                    logger.debug(
+                        "Skipping ExecNode {} because it is an already registered input", new_id
+                    )
+                    continue
+                values = asdict(exec_node)
                 values["id_"] = new_id
 
                 values["args"] = [
@@ -726,6 +732,13 @@ class DAG(BaseDAG[P, RVDAG]):
                 )
             if isinstance(self.return_uxns, list):
                 return [UsageExecNode(to_subdag_id(uxn.id), uxn.key) for uxn in self.return_uxns]  # type: ignore[return-value]
+
+            if isinstance(self.return_uxns, dict):
+                return {  # type: ignore[return-value]
+                    k: UsageExecNode(to_subdag_id(uxn.id), uxn.key)
+                    for k, uxn in self.return_uxns.items()
+                }
+            raise RuntimeError("Unknown Error! while constructing SubDAG")
 
         graph = self.graph_ids.extend_graph_with_debug_nodes(self.graph_ids, cfg)
         _, results, _ = self.run_subgraph(graph, None, *args)
