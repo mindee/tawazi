@@ -98,6 +98,7 @@ def test_circular_deps() -> None:
 
     with pytest.raises(NetworkXUnfeasible):
         DAG(
+            qualname="test_circular_deps",
             results={},
             actives={},
             exec_nodes={xn.id: xn for xn in [en_a, en_b, en_c]},
