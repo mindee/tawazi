@@ -2,6 +2,7 @@ from functools import wraps
 from logging import Logger
 from typing import Callable, TypeVar
 
+import pytest
 from tawazi import dag, xn
 from typing_extensions import ParamSpec
 
@@ -42,3 +43,11 @@ def pipe() -> None:
 
 def test_decorator() -> None:
     pipe()
+
+
+def test_non_kwarg_args() -> None:
+    with pytest.raises(TypeError, match="is not a callable"):
+        # mistakenly passing non-keyword arguments
+        @dag(1)  # type: ignore[call-overload]
+        def d1(v: int) -> int:
+            return 1
