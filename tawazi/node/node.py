@@ -1,6 +1,7 @@
 """Module describing ExecNode Class and subclasses (The basic building Block of a DAG."""
 import dataclasses
 import functools
+import inspect
 import warnings
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -113,6 +114,7 @@ class ExecNode:
     setup: bool = False
     unpack_to: Optional[int] = None
     resource: Resource = cfg.TAWAZI_DEFAULT_RESOURCE
+    call_location: str = ""
 
     args: List[UsageExecNode] = field(default_factory=list)  # args or []
     kwargs: Dict[Identifier, UsageExecNode] = field(default_factory=dict)  # kwargs or {}
@@ -232,7 +234,15 @@ class ExecNode:
         with profiles[self.id]:
             # 2 post-
             # 2.1 write the result
-            results[self.id] = self.exec_function(*args, **kwargs)
+            try:
+                results[self.id] = self.exec_function(*args, **kwargs)
+            except Exception as e:
+                if self.call_location:
+                    raise TawaziBaseException(
+                        f"Error occurred while executing ExecNode at {self.call_location}"
+                    ) from e
+
+                raise e
 
         # 3. useless return value
         logger.debug("Finished executing {} with task {}", self.id, self.exec_function)
@@ -374,6 +384,9 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         values["tag"] = kwargs.get(ARG_NAME_TAG) or self.tag
         values["unpack_to"] = kwargs.get(ARG_NAME_UNPACK_TO) or self.unpack_to
 
+        # 4. construct error message to point the user
+        values["call_location"] = get_call_location(self.exec_function, 2)
+
         new_lxn: LazyExecNode[P, RVXN] = LazyExecNode(**values)
 
         new_lxn._validate_dependencies()
@@ -478,3 +491,11 @@ def make_kwargs(
 
         xn_kwargs[kwarg_name] = kwarg
     return xn_kwargs
+
+
+def get_call_location(function: Callable[..., Any], frames: int) -> str:
+    """Get Location where ExecNode was called."""
+    stack = inspect.stack()
+    frame = stack[frames]
+
+    return f"{frame.filename}:{frame.lineno}"
