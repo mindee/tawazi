@@ -11,6 +11,13 @@ def stub(x: T) -> T:
     return x
 
 
+@xn
+def my_add(x: Optional[int], y: Optional[int]) -> int:
+    if x is not None and y is not None:
+        return x + y
+    return 0
+
+
 @dag
 def pipe() -> Optional[int]:
     return stub(1, twz_active=True)  # type: ignore[call-arg]
@@ -63,9 +70,9 @@ def pipe7(
     c = stub(x + 1, twz_active=x > 0)  # type: ignore[call-arg]
     d = stub(x + y, twz_active=and_(a, b))  # type: ignore[call-arg]
 
-    imposs_1 = stub(a + c, twz_active=and_(a, c))  # type: ignore[call-arg]
+    imposs_1 = my_add(a, c, twz_active=and_(a, c))  # type: ignore[call-arg]
 
-    imposs_2 = stub(a + b, twz_active=and_(c, d))  # type: ignore[call-arg]
+    imposs_2 = my_add(a, b, twz_active=and_(c, d))  # type: ignore[call-arg]
 
     return a, b, c, d, imposs_1, imposs_2
 

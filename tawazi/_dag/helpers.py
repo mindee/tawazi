@@ -33,6 +33,7 @@ def _xn_active_in_call(
         is the node active
     """
     active = active_nodes.get(xn.id, True)
+    # activation can occur according to a result of a previous node or a constant
     if isinstance(active, UsageExecNode):
         return bool(results[active.id])
     return bool(active)
@@ -366,10 +367,13 @@ async def async_execute(
         # xn will definitely be executed
         runnable_xns_ids.remove(xn.id)
 
-        # 5.1 dynamic graph pruning
+        # 5.1 dynamic execution of a node
         if not _xn_active_in_call(xn, results, active_nodes):
             logger.debug("Prune {} from the graph", xn.id)
-            graph.remove_recursively(xn.id)
+            results[xn.id] = None
+            runnable_xns_ids |= graph.remove_root_node(xn.id)
+            # if node is starting point of a subgraph, the whole subgraph should be skipped
+            # by assigning None to all nodes in the subgraph
             continue
 
         # 5.2 submit the exec node to the executor
