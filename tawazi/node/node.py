@@ -385,7 +385,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         values["unpack_to"] = kwargs.get(ARG_NAME_UNPACK_TO) or self.unpack_to
 
         # 4. construct error message to point the user
-        values["call_location"] = get_call_location(self.exec_function, 2)
+        values["call_location"] = get_call_location(2)
 
         new_lxn: LazyExecNode[P, RVXN] = LazyExecNode(**values)
 
@@ -493,9 +493,9 @@ def make_kwargs(
     return xn_kwargs
 
 
-def get_call_location(function: Callable[..., Any], frames: int) -> str:
+def get_call_location(frames: int) -> str:
     """Get Location where ExecNode was called."""
-    stack = inspect.stack()
+    stack = inspect.stack(0)
     frame = stack[frames]
 
     return f"{frame.filename}:{frame.lineno}"
