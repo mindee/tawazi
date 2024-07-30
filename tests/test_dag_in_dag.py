@@ -1,4 +1,4 @@
-from typing import Dict, List, Literal, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 import pytest
 from tawazi import dag, xn
@@ -108,3 +108,47 @@ def test_return_none() -> None:
         @dag
         def d2() -> None:
             return d1()
+
+
+def test_is_active() -> None:
+    @xn
+    def to_bool(v: Any) -> bool:
+        return bool(v)
+
+    @dag
+    def d2(v: int) -> Tuple[Optional[bool], Optional[int]]:
+        res = d1(v, twz_active=v > 0)  # type: ignore[call-arg]
+        b = to_bool(res)
+        return b, res
+
+    assert d2(1) == (True, 4)
+    assert d2(0) == (False, None)
+
+
+counter = 0
+
+
+@xn
+def incr_counter() -> None:
+    global counter
+    counter += 1
+
+
+def test_is_active_deactivates_all_nodes_in_dag_in_dag() -> None:
+    global counter
+    counter = 0
+
+    @dag
+    def subdag(v: int) -> int:
+        incr_counter()
+        return v + 1
+
+    @dag
+    def my_dag(v: int, activate: bool) -> int:
+        return subdag(v, twz_active=activate)  # type: ignore[call-arg]
+
+    assert counter == 0
+    assert my_dag(1, True) == 2
+    assert counter == 1
+    assert my_dag(1, False) is None
+    assert counter == 1

@@ -30,7 +30,7 @@ from loguru import logger
 from tawazi import consts
 from tawazi._helpers import UniqueKeyLoader
 from tawazi.config import cfg
-from tawazi.consts import RVDAG, Identifier, P, Tag
+from tawazi.consts import ARG_NAME_ACTIVATE, RVDAG, Identifier, P, Tag
 from tawazi.errors import TawaziTypeError, TawaziUsageError
 from tawazi.node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode, node
 from tawazi.node.node import LazyExecNode, make_axn_id
@@ -662,11 +662,18 @@ class DAG(BaseDAG[P, RVDAG]):
         Raises:
             TawaziUsageError: kwargs are passed
         """
+        description_context = node.exec_nodes_lock.locked()
         if kwargs:
-            raise TawaziUsageError(f"currently DAG does not support keyword arguments: {kwargs}")
+            # is_active is only allowed when describing a SubDAG
+            if not description_context or set(kwargs.keys()) != {ARG_NAME_ACTIVATE}:
+                raise TawaziUsageError(
+                    f"currently DAG does not support keyword arguments: {kwargs}"
+                )
 
-        if node.exec_nodes_lock.locked():
+        if description_context:
             logger.warning("Describing SubDAG {} in DAG", self)
+            all_current_ids = set(node.exec_nodes.keys())
+
             # can't call the base describing function because composed DAGs can't be supported in that case
             node.DAG_PREFIX.append(self.qualname)
 
@@ -720,6 +727,19 @@ class DAG(BaseDAG[P, RVDAG]):
                 # TODO: check if there is id duplication and raise error. This should never happen!!
                 node.exec_nodes[new_id] = exec_node.__class__(**values)
 
+            is_active = kwargs.get(ARG_NAME_ACTIVATE)
+            if is_active is not None and not isinstance(is_active, (bool, UsageExecNode)):
+                raise TypeError(f"{ARG_NAME_ACTIVATE} must be a bool or a result of an ExecNode")
+            if is_active is not None:
+                added_ids = set(node.exec_nodes.keys()) - all_current_ids
+                for id_ in added_ids:
+                    if node.actives.get(id_):
+                        raise RuntimeError(
+                            f"Trying to set active status for ExecNode {id_} in SubDAG {self.qualname} "
+                            f"ExecNode {id_} already has an is_active associated with it."
+                            "This feature will be supported in the future."
+                        )
+                    node.actives[id_] = is_active
             # maybe support this later on
             if self.return_uxns is None:
                 raise RuntimeError("SubDAG must have return values")
