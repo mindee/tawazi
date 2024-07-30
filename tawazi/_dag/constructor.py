@@ -1,4 +1,3 @@
-import asyncio
 import inspect
 from typing import Any, Callable, Dict, List, Tuple, Union
 
@@ -35,7 +34,7 @@ def get_args_and_default_args(func: Callable[..., Any]) -> Tuple[List[str], Dict
 
 
 def __make_dag(
-    _func: Callable[P, RVDAG], max_concurrency: int
+    _func: Callable[P, RVDAG], max_concurrency: int, is_async: bool
 ) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
     # 2. make ExecNodes corresponding to the arguments of the ExecNode
     # 2.1 get the names of the arguments and the default values
@@ -61,16 +60,12 @@ def __make_dag(
     # NOTE: Only ordered parameters are supported at the moment!
     #  No **kwargs!! Only positional Arguments
     # used to be fetch the results at the end of the computation
-    returned_val: Any = (
-        asyncio.run(_func(*uxn_args))  # type: ignore[arg-type]
-        if asyncio.iscoroutinefunction(_func)
-        else _func(*uxn_args)  # type: ignore[arg-type]
-    )
+    returned_val: Any = _func(*uxn_args)  # type: ignore[arg-type]
 
     returned_usage_exec_nodes: ReturnUXNsType = wrap_in_uxns(_func, returned_val)
 
     # 4. Construct the DAG/AsyncDAG instance
-    if asyncio.iscoroutinefunction(_func):
+    if is_async:
         return AsyncDAG(
             qualname=_func.__qualname__,
             results=node.results,
@@ -92,7 +87,7 @@ def __make_dag(
 
 
 def _make_dag(
-    _func: Callable[P, RVDAG], max_concurrency: int
+    _func: Callable[P, RVDAG], max_concurrency: int, is_async: bool
 ) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
     # 1. node.exec_nodes contains all the ExecNodes that concern the DAG being built at the moment.
     #      make sure it is empty
@@ -102,7 +97,7 @@ def _make_dag(
     node.DAG_PREFIX = []
 
     try:
-        return __make_dag(_func, max_concurrency)
+        return __make_dag(_func, max_concurrency, is_async)
     # clean up even in case an error is raised during dag construction
     finally:
         # 5. Clean global variable
@@ -114,11 +109,11 @@ def _make_dag(
 
 
 def safe_make_dag(
-    _func: Union[Callable[P, RVDAG]], max_concurrency: int
+    _func: Union[Callable[P, RVDAG]], max_concurrency: int, is_async: bool
 ) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
     """Make DAG or AsyncDAG form the function that describes the DAG.
 
     Thread safe and cleans after itself.
     """
     with node.exec_nodes_lock:
-        return _make_dag(_func, max_concurrency)
+        return _make_dag(_func, max_concurrency, is_async)

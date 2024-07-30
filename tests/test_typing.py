@@ -1,7 +1,7 @@
 from typing import Tuple
 
 import pytest
-from tawazi import dag, xn
+from tawazi import AsyncDAG, dag, xn
 
 
 @xn
@@ -73,3 +73,13 @@ def test_mypy_() -> None:
 
     _exec = pipe.executor()
     _exec.dag(1234)
+
+
+def test_typing_async() -> None:
+    @dag(is_async=True)
+    def my_async_dag() -> None:
+        pass
+
+    # assert that mypy passes this test
+    var: AsyncDAG[[], None] = my_async_dag
+    assert isinstance(var, AsyncDAG)
