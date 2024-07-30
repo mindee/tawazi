@@ -3,7 +3,7 @@
 The user should use the decorators `@dag` and `@xn` to create Tawazi objects `DAG` and `ExecNode`.
 """
 import functools
-from typing import Any, Callable, Optional, Union, overload
+from typing import Any, Callable, Literal, Optional, Union, overload
 
 from tawazi import AsyncDAG
 from tawazi._dag import DAG, safe_make_dag
@@ -124,17 +124,44 @@ def dag(declare_dag_function: Callable[P, RVDAG]) -> DAG[P, RVDAG]:
 
 
 @overload
-def dag(declare_dag_function: Callable[P, RVDAG], *, max_concurrency: int = 1) -> DAG[P, RVDAG]:
+def dag(
+    declare_dag_function: Callable[P, RVDAG],
+    *,
+    max_concurrency: int = 1,
+    is_async: Literal[False] = False,
+) -> DAG[P, RVDAG]:
     ...
 
 
 @overload
-def dag(*, max_concurrency: int = 1) -> Callable[[Callable[P, RVDAG]], DAG[P, RVDAG]]:
+def dag(
+    declare_dag_function: Callable[P, RVDAG],
+    *,
+    max_concurrency: int = 1,
+    is_async: Literal[True] = True,
+) -> AsyncDAG[P, RVDAG]:
+    ...
+
+
+@overload
+def dag(
+    *, max_concurrency: int = 1, is_async: Literal[False] = False
+) -> Callable[[Callable[P, RVDAG]], DAG[P, RVDAG]]:
+    ...
+
+
+@overload
+def dag(
+    *, max_concurrency: int = 1, is_async: Literal[True] = True
+) -> Callable[[Callable[P, RVDAG]], AsyncDAG[P, RVDAG]]:
     ...
 
 
 def dag(
-    declare_dag_function: Optional[Callable[P, RVDAG]] = None, *, max_concurrency: int = 1
+    declare_dag_function: Optional[Callable[P, RVDAG]] = None,
+    *,
+    max_concurrency: int = 1,
+    is_async: bool = False,
 ) -> Union[
     DAG[P, RVDAG],
     AsyncDAG[P, RVDAG],
@@ -155,6 +182,7 @@ def dag(
             However, you can use some simple python code to generate constants.
             These constants are computed only once during the `DAG` declaration.
         max_concurrency: the maximum number of concurrent threads to execute in parallel.
+        is_async: if True, the returned object will be an `AsyncDAG` instead of a `DAG`.
 
     Returns:
         a `DAG` instance that can be used just like a normal Python function. It will be executed by Tawazi's scheduler.
@@ -166,7 +194,7 @@ def dag(
     # wrapper used to support parametrized and non parametrized decorators
     def intermediate_wrapper(_func: Callable[P, RVDAG]) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
         # 0. Protect against multiple threads declaring many DAGs at the same time
-        d = safe_make_dag(_func, max_concurrency)
+        d = safe_make_dag(_func, max_concurrency, is_async)
         functools.update_wrapper(d, _func)
         return d
 

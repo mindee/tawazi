@@ -3,7 +3,7 @@ from time import sleep, time
 from typing import Literal
 
 import pytest
-from tawazi import Resource, dag, xn
+from tawazi import AsyncDAGExecution, Resource, dag, xn
 
 
 @pytest.mark.asyncio
@@ -30,8 +30,8 @@ def b() -> Literal["b"]:
     return "b"
 
 
-@dag
-async def pipeline() -> str:
+@dag(is_async=True)
+def pipeline() -> str:
     return a() + b()
 
 
@@ -50,8 +50,8 @@ def threaded_async_sleep(t: float) -> str:
     return "slept"
 
 
-@dag
-async def pipeline_sleep(t: float) -> str:
+@dag(is_async=True)
+def pipeline_sleep(t: float) -> str:
     return threaded_async_sleep(t)
 
 
@@ -77,4 +77,5 @@ async def test_async_call_next_to_async_pipeline() -> None:
 @pytest.mark.asyncio
 async def test_make_async_executor() -> None:
     stateful_pipeline = pipeline_sleep.executor()
+    assert isinstance(stateful_pipeline, AsyncDAGExecution)
     assert await stateful_pipeline(0.1) == "slept"

@@ -479,6 +479,8 @@ class BaseDAG(Generic[P, RVDAG]):
         Returns:
             the DAGExecution object associated with the dag
         """
+        if not isinstance(self, DAG) and not isinstance(self, AsyncDAG):
+            raise TypeError("executor can only be called on a DAG or an AsyncDAG")
         if isinstance(self, AsyncDAG):
             return AsyncDAGExecution(
                 dag=self,
@@ -489,17 +491,15 @@ class BaseDAG(Generic[P, RVDAG]):
                 cache_in=cache_in,
                 from_cache=from_cache,
             )
-        if isinstance(self, DAG):
-            return DAGExecution(
-                dag=self,
-                target_nodes=target_nodes,
-                exclude_nodes=exclude_nodes,
-                root_nodes=root_nodes,
-                cache_deps_of=cache_deps_of,
-                cache_in=cache_in,
-                from_cache=from_cache,
-            )
-        raise ValueError("Unknown DAG type")
+        return DAGExecution(
+            dag=self,
+            target_nodes=target_nodes,
+            exclude_nodes=exclude_nodes,
+            root_nodes=root_nodes,
+            cache_deps_of=cache_deps_of,
+            cache_in=cache_in,
+            from_cache=from_cache,
+        )
 
     def config_from_dict(self, config: Dict[str, Any]) -> None:
         """Allows reconfiguring the parameters of the nodes from a dictionary.
