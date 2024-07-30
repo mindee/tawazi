@@ -172,6 +172,7 @@ class BaseDAG(Generic[P, RVDAG]):
         qualname: str,
         inputs: Union[Alias, Sequence[Alias]],
         outputs: Union[Alias, Sequence[Alias]],
+        is_async: Optional[bool] = None,
         **kwargs: Dict[str, Any],
     ) -> "Union[AsyncDAG[P, RVDAG], DAG[P, RVDAG]]":
         """Compose a new DAG using inputs and outputs ExecNodes (Experimental).
@@ -209,6 +210,7 @@ class BaseDAG(Generic[P, RVDAG]):
             qualname (str): the name of the composed DAG
             inputs (Alias | List[Alias]): the Inputs nodes whose results are provided.
             outputs (Alias | List[Alias]): the Output nodes that must execute last, The ones that will generate results
+            is_async (bool | None): if True, the composed DAG will be an AsyncDAG, if False, it will be a DAG. Defaults to whatever the original DAG is.
             **kwargs (Dict[str, Any]): additional arguments to be passed to the DAG's constructor
         """
         # what happens for edge cases ??
@@ -359,7 +361,7 @@ class BaseDAG(Generic[P, RVDAG]):
         # 7. return the composed DAG
         # ignore[arg-type] because the type of the kwargs is not known
 
-        if isinstance(self, DAG):
+        if is_async is False or (is_async is None and isinstance(self, DAG)):
             return DAG(
                 qualname=qualname,
                 results=results,
