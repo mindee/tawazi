@@ -495,7 +495,7 @@ def make_kwargs(
     #  2. or non ExecNode values which are constants passed directly to the
     #  3. or Reserved Keyword Arguments for Tawazi. These are used to assign different values per LXN call
     for kwarg_name, kwarg in kwargs.items():
-        if isinstance(kwarg, str) and kwarg in [ARG_NAME_TAG, ARG_NAME_UNPACK_TO]:
+        if isinstance(kwarg, str) and kwarg_name in [ARG_NAME_TAG, ARG_NAME_UNPACK_TO]:
             continue
         if not isinstance(kwarg, UsageExecNode):
             # passed in constants

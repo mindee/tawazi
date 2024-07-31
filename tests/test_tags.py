@@ -33,3 +33,17 @@ def test_call_tag() -> None:
     assert pipe() == 12
     assert pipe.get_nodes_by_tag("another_a_tag") == [pipe.get_node_by_id("a")]
     assert pipe.get_nodes_by_tag("another_b_tag") == [pipe.get_node_by_id("b")]
+
+
+def test_tag_is_not_registered() -> None:
+    @xn(tag="c")
+    def c() -> int:
+        return 1
+
+    @dag
+    def pipe() -> None:
+        c()
+        c(twz_tag="twinkle")  # type: ignore[call-arg]
+
+    assert pipe.get_nodes_by_tag("c")[0].kwargs == {}
+    assert pipe.get_nodes_by_tag("twinkle")[0].kwargs == {}
