@@ -152,3 +152,15 @@ def test_is_active_deactivates_all_nodes_in_dag_in_dag() -> None:
     assert counter == 1
     assert my_dag(1, False) is None
     assert counter == 1
+
+
+def test_kwarg_in_xn() -> None:
+    @dag
+    def subdag() -> int:
+        return x2(v=1)
+
+    @dag
+    def my_dag() -> int:
+        return subdag()
+
+    assert my_dag() == 1
