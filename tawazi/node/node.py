@@ -12,7 +12,7 @@ from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, Union
 
 from loguru import logger
 
-from tawazi._helpers import make_raise_arg_error
+from tawazi._helpers import StrictDict, make_raise_arg_error
 from tawazi.config import cfg
 from tawazi.consts import (
     ARG_NAME_ACTIVATE,
@@ -38,10 +38,10 @@ from tawazi.profile import Profile
 from .helpers import _lazy_xn_id, _validate_tuple, make_suffix
 
 # a temporary variable used to pass in exec_nodes to the DAG during building
-exec_nodes: Dict[Identifier, "ExecNode"] = {}
+exec_nodes: StrictDict[Identifier, "ExecNode"] = StrictDict()
 # a temporary variable to hold default values concerning the DAG's description
-results: Dict[Identifier, Any] = {}
-actives: Dict[Identifier, Union[bool, UsageExecNode]] = {}
+results: StrictDict[Identifier, Any] = StrictDict()
+actives: StrictDict[Identifier, Union[bool, UsageExecNode]] = StrictDict()
 # Prefix prepended to the id of the ExecNodes inside a DAG
 # to avoid name conflicts when imbricating DAGs within each other
 DAG_PREFIX: List[str] = []
@@ -498,7 +498,11 @@ def get_call_location(frames: int) -> str:
     frame = inspect.currentframe()
     # Traverse back the specified number of frames
     for _ in range(frames):
+        if frame is None:
+            return ""
         frame = frame.f_back
 
+    if frame is None:
+        return ""
     frame_info = inspect.getframeinfo(frame)
     return f"{frame_info.filename}:{frame_info.lineno}"

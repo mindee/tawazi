@@ -3,6 +3,7 @@ from typing import Any, cast
 
 import pytest
 from tawazi import DAG, dag
+from tawazi._helpers import StrictDict
 from tawazi.node import ExecNode, UsageExecNode
 
 T = 0.1
@@ -67,7 +68,7 @@ en_f = ExecNode(id_=f.__name__, exec_function=f, args=[UsageExecNode(en_e.id)], 
 en_g = ExecNode(id_=g.__name__, exec_function=g, args=[UsageExecNode(en_e.id)], is_sequential=False)
 
 list_execnodes = [en_a, en_b, en_c, en_d, en_e, en_f, en_g]
-node_dict = {xn.id: xn for xn in list_execnodes}
+node_dict = StrictDict((xn.id, xn) for xn in list_execnodes)
 
 failing_execnodes = list_execnodes + [
     ExecNode(
@@ -79,7 +80,7 @@ failing_node_dict = {xn.id: xn for xn in failing_execnodes}
 
 @pytest.fixture
 def strict_dag() -> DAG[Any, Any]:
-    return DAG("mydag", {}, {}, node_dict, [], [], 2)
+    return DAG("mydag", StrictDict(), StrictDict(), node_dict, [], [], 2)
 
 
 def test_dag_build(strict_dag: DAG[Any, Any]) -> None:

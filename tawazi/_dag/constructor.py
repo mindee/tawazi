@@ -1,6 +1,7 @@
 import inspect
 from typing import Any, Callable, Dict, List, Tuple, Union
 
+from tawazi._helpers import StrictDict
 from tawazi.consts import RVDAG, P
 from tawazi.node import ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode, node, wrap_in_uxns
 
@@ -91,9 +92,9 @@ def _make_dag(
 ) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
     # 1. node.exec_nodes contains all the ExecNodes that concern the DAG being built at the moment.
     #      make sure it is empty
-    node.exec_nodes = {}
-    node.results = {}
-    node.actives = {}
+    node.exec_nodes = StrictDict()
+    node.results = StrictDict()
+    node.actives = StrictDict()
     node.DAG_PREFIX = []
 
     try:
@@ -102,9 +103,9 @@ def _make_dag(
     finally:
         # 5. Clean global variable
         # node.* are global variables, their value is used in the DAG.
-        node.exec_nodes = {}
-        node.results = {}
-        node.actives = {}
+        node.exec_nodes = StrictDict()
+        node.results = StrictDict()
+        node.actives = StrictDict()
         node.DAG_PREFIX = []
 
 
