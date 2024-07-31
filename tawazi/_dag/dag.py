@@ -761,25 +761,28 @@ class DAG(BaseDAG[P, RVDAG]):
                             "This feature will be supported in the future."
                         )
                     node.actives[id_] = is_active
-            # maybe support this later on
-            if self.return_uxns is None:
-                raise RuntimeError("SubDAG must have return values")
-            if isinstance(self.return_uxns, UsageExecNode):
-                return UsageExecNode(to_subdag_id(self.return_uxns.id), self.return_uxns.key)  # type: ignore[return-value]
+            try:
+                # maybe support this later on
+                if self.return_uxns is None:
+                    raise RuntimeError("SubDAG must have return values")
+                if isinstance(self.return_uxns, UsageExecNode):
+                    return UsageExecNode(to_subdag_id(self.return_uxns.id), self.return_uxns.key)  # type: ignore[return-value]
 
-            if isinstance(self.return_uxns, tuple):
-                return tuple(
-                    UsageExecNode(to_subdag_id(uxn.id), uxn.key) for uxn in self.return_uxns  # type: ignore[return-value]
-                )
-            if isinstance(self.return_uxns, list):
-                return [UsageExecNode(to_subdag_id(uxn.id), uxn.key) for uxn in self.return_uxns]  # type: ignore[return-value]
+                if isinstance(self.return_uxns, tuple):
+                    return tuple(
+                        UsageExecNode(to_subdag_id(uxn.id), uxn.key) for uxn in self.return_uxns  # type: ignore[return-value]
+                    )
+                if isinstance(self.return_uxns, list):
+                    return [UsageExecNode(to_subdag_id(uxn.id), uxn.key) for uxn in self.return_uxns]  # type: ignore[return-value]
 
-            if isinstance(self.return_uxns, dict):
-                return {  # type: ignore[return-value]
-                    k: UsageExecNode(to_subdag_id(uxn.id), uxn.key)
-                    for k, uxn in self.return_uxns.items()
-                }
-            raise RuntimeError("Unknown Error! while constructing SubDAG")
+                if isinstance(self.return_uxns, dict):
+                    return {  # type: ignore[return-value]
+                        k: UsageExecNode(to_subdag_id(uxn.id), uxn.key)
+                        for k, uxn in self.return_uxns.items()
+                    }
+                raise RuntimeError("Unknown Error! while constructing SubDAG")
+            finally:
+                node.DAG_PREFIX.pop()
 
         graph = self.graph_ids.extend_graph_with_debug_nodes(self.graph_ids, cfg)
         _, results, _ = self.run_subgraph(graph, None, *args)
