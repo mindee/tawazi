@@ -1,5 +1,5 @@
 """Module for helper functions."""
-from typing import Any, Callable, NoReturn
+from typing import Any, Callable, Dict, NoReturn, TypeVar
 
 import yaml
 
@@ -65,3 +65,20 @@ class UniqueKeyLoader(yaml.SafeLoader):
                 raise KeyError(f"key {key} already in yaml file")
             mapping.append(key)
         return super().construct_mapping(node, deep)
+
+
+T = TypeVar("T")
+V = TypeVar("V")
+
+
+class StrictDict(Dict[T, V]):
+    """A Dict that raises an error if key already used."""
+
+    def __setitem__(self, key: T, value: V) -> None:
+        if key in self:
+            raise KeyError(f"key: {key}, is already occupied by {self[key]}")
+        super().__setitem__(key, value)
+
+    def force_set(self, key: T, value: V) -> None:
+        """Force Set a key to a value."""
+        super().__setitem__(key, value)

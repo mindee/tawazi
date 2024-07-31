@@ -28,7 +28,7 @@ import yaml
 from loguru import logger
 
 from tawazi import consts
-from tawazi._helpers import UniqueKeyLoader
+from tawazi._helpers import StrictDict, UniqueKeyLoader
 from tawazi.config import cfg
 from tawazi.consts import ARG_NAME_ACTIVATE, RVDAG, Identifier, P, Tag
 from tawazi.errors import TawaziTypeError, TawaziUsageError
@@ -77,9 +77,9 @@ class BaseDAG(Generic[P, RVDAG]):
     """
 
     qualname: str
-    results: Dict[Identifier, Any]
-    actives: Dict[Identifier, Union[bool, UsageExecNode]]
-    exec_nodes: Dict[Identifier, ExecNode]
+    results: StrictDict[Identifier, Any]
+    actives: StrictDict[Identifier, Union[bool, UsageExecNode]]
+    exec_nodes: StrictDict[Identifier, ExecNode]
     input_uxns: List[UsageExecNode]
     return_uxns: ReturnUXNsType
     max_concurrency: int = 1
@@ -98,6 +98,13 @@ class BaseDAG(Generic[P, RVDAG]):
         if self.max_concurrency < 1:
             raise ValueError("Invalid maximum number of threads! Must be a positive integer")
         self._max_concurrency = self.max_concurrency
+
+        if not isinstance(self.results, StrictDict):
+            raise ValueError("results must be a StrictDict")
+        if not isinstance(self.actives, StrictDict):
+            raise ValueError("actives must be a StrictDict")
+        if not isinstance(self.exec_nodes, StrictDict):
+            raise ValueError("exec_nodes must be a StrictDict")
 
     # getters
     def get_nodes_by_tag(self, tag: Tag) -> List[ExecNode]:
@@ -326,9 +333,9 @@ class BaseDAG(Generic[P, RVDAG]):
         #  maybe the composed DAG will modify them (e.g. change their tags)
         #  and we don't want to modify the original DAG
         # we avoid adding the inputs because they will be modified just afterwards
-        xn_dict = {
-            in_id: deepcopy(self.exec_nodes[in_id]) for in_id in set_xn_ids if in_id not in in_ids
-        }
+        xn_dict = StrictDict(
+            (in_id, deepcopy(self.exec_nodes[in_id])) for in_id in set_xn_ids if in_id not in in_ids
+        )
 
         # change input ExecNodes to ArgExecNodes
         new_in_ids = [make_axn_id(old_id, id_="composed") for old_id in in_ids]
@@ -353,10 +360,12 @@ class BaseDAG(Generic[P, RVDAG]):
         out_uxns = _alias_or_aliases_to_uxns(outputs)
 
         # 6. extract the results and the actives of only the remaining ExecNodes
-        results = {
-            node_id: result for node_id, result in self.results.items() if node_id in xn_dict
-        }
-        actives = {xn_id: active for xn_id, active in self.actives.items() if xn_id in xn_dict}
+        results = StrictDict(
+            (node_id, result) for node_id, result in self.results.items() if node_id in xn_dict
+        )
+        actives = StrictDict(
+            (xn_id, active) for xn_id, active in self.actives.items() if xn_id in xn_dict
+        )
 
         # 7. return the composed DAG
         # ignore[arg-type] because the type of the kwargs is not known
@@ -546,7 +555,7 @@ class BaseDAG(Generic[P, RVDAG]):
             for node_id, conf_node in expanded_config:
                 node = self.get_node_by_id(node_id)
                 values = node_values(node, conf_node)
-                self.exec_nodes[node_id] = node.__class__(**values)
+                self.exec_nodes.force_set(node_id, node.__class__(**values))
 
         if "max_concurrency" in config:
             self.max_concurrency = config["max_concurrency"]
@@ -617,8 +626,12 @@ class DAG(BaseDAG[P, RVDAG]):
 
     # TODO: discuss whether we want to expose it or not
     def run_subgraph(
-        self, subgraph: DiGraphEx, results: Optional[Dict[Identifier, Any]], *args: P.args
-    ) -> Tuple[Dict[Identifier, ExecNode], Dict[Identifier, Any], Dict[Identifier, Profile]]:
+        self, subgraph: DiGraphEx, results: Optional[StrictDict[Identifier, Any]], *args: P.args
+    ) -> Tuple[
+        StrictDict[Identifier, ExecNode],
+        StrictDict[Identifier, Any],
+        StrictDict[Identifier, Profile],
+    ]:
         """Run a subgraph of the original graph (might be the same graph).
 
         Args:
@@ -644,7 +657,9 @@ class DAG(BaseDAG[P, RVDAG]):
 
         # set DAG.results to the obtained value from setup ExecNodes
         for node_id, result in results.items():
-            if self.exec_nodes[node_id].setup:
+            if self.exec_nodes[node_id].setup and self.results.get(node_id) is None:
+                logger.debug("Setting result of setup ExecNode {} to {}", node_id, result)
+                logger.debug("Future executions will use this result.")
                 self.results[node_id] = result
 
         return exec_nodes, results, profiles
@@ -703,9 +718,12 @@ class DAG(BaseDAG[P, RVDAG]):
                 if val.id != uxn.id:
                     raise RuntimeError(f"Constructing SubDAG failed while linking {uxn.id}")
 
-            # TODO: check if there is id duplication and raise error. This should never happen!!
-            node.results.update({to_subdag_id(id_): res for id_, res in self.results.items()})
-            node.actives.update({to_subdag_id(id_): act for id_, act in self.actives.items()})
+            node.results.update(
+                StrictDict((to_subdag_id(id_), res) for id_, res in self.results.items())
+            )
+            node.actives.update(
+                StrictDict((to_subdag_id(id_), act) for id_, act in self.actives.items())
+            )
 
             registered_input_ids = {uxn.id for uxn in input_uxns if uxn.id in node.exec_nodes}
             for id_, exec_node in self.exec_nodes.items():
@@ -726,7 +744,6 @@ class DAG(BaseDAG[P, RVDAG]):
                     for id_, uxn in exec_node.kwargs.items()
                 }
 
-                # TODO: check if there is id duplication and raise error. This should never happen!!
                 node.exec_nodes[new_id] = exec_node.__class__(**values)
 
             is_active = kwargs.get(ARG_NAME_ACTIVATE)
@@ -806,8 +823,12 @@ class AsyncDAG(BaseDAG[P, RVDAG]):
 
     # TODO: refactor this with previous method
     async def run_subgraph(
-        self, subgraph: DiGraphEx, results: Optional[Dict[Identifier, Any]], *args: P.args
-    ) -> Tuple[Dict[Identifier, ExecNode], Dict[Identifier, Any], Dict[Identifier, Profile]]:
+        self, subgraph: DiGraphEx, results: Optional[StrictDict[Identifier, Any]], *args: P.args
+    ) -> Tuple[
+        StrictDict[Identifier, ExecNode],
+        StrictDict[Identifier, Any],
+        StrictDict[Identifier, Profile],
+    ]:
         """Run a subgraph of the original graph (might be the same graph).
 
         Args:
@@ -833,7 +854,7 @@ class AsyncDAG(BaseDAG[P, RVDAG]):
 
         # set DAG.results to the obtained value from setup ExecNodes
         for node_id, result in results.items():
-            if self.exec_nodes[node_id].setup:
+            if self.exec_nodes[node_id].setup and self.results.get(node_id) is None:
                 self.results[node_id] = result
 
         return exec_nodes, results, profiles
@@ -941,7 +962,7 @@ class BaseDAGExecution(Generic[P, RVDAG]):
         self.graph = graph.extend_graph_with_debug_nodes(self.dag.graph_ids, cfg)
 
     @property
-    def results(self) -> Dict[Identifier, Any]:
+    def results(self) -> StrictDict[Identifier, Any]:
         """Returns the results of the previous DAGExecution.
 
         Before the DAG is executed, the results are the same as the underlying DAG. This also includes before/after setup.
@@ -952,7 +973,7 @@ class BaseDAGExecution(Generic[P, RVDAG]):
         return self.dag.results
 
     @results.setter
-    def results(self, value: Dict[Identifier, Any]) -> None:
+    def results(self, value: StrictDict[Identifier, Any]) -> None:
         """Set results."""
         self._results = value
 

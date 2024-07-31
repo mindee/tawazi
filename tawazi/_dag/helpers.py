@@ -8,6 +8,7 @@ from typing import Any, Callable, Dict, List, Set, Tuple, TypeVar, Union
 from loguru import logger
 
 from tawazi._dag.digraph import DiGraphEx
+from tawazi._helpers import StrictDict
 from tawazi.consts import Identifier, Resource, RVTypes
 from tawazi.errors import TawaziTypeError
 from tawazi.node import ExecNode, ReturnUXNsType, UsageExecNode
@@ -39,7 +40,7 @@ def _xn_active_in_call(
     return bool(active)
 
 
-def copy_non_setup_xns(x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
+def copy_non_setup_xns(x_nodes: StrictDict[str, ExecNode]) -> StrictDict[str, ExecNode]:
     """Deep copy all ExecNodes except setup ExecNodes because they are shared throughout the DAG instance.
 
     Args:
@@ -48,7 +49,7 @@ def copy_non_setup_xns(x_nodes: Dict[str, ExecNode]) -> Dict[str, ExecNode]:
     Returns:
         Dict[str, ExecNode] copy of x_nodes
     """
-    x_nodes_copy = {}
+    x_nodes_copy: StrictDict[str, ExecNode] = StrictDict()
     for id_, x_nd in x_nodes.items():
         # if execnode is a setup node, it shouldn't be copied
         if x_nd.setup:
@@ -233,12 +234,14 @@ async def to_thread_in_executor(
 # The scheduler!
 ################
 def sync_execute(
-    exec_nodes: Dict[Identifier, ExecNode],
-    results: Dict[Identifier, Any],
-    active_nodes: Dict[Identifier, Union[Any, UsageExecNode]],
+    exec_nodes: StrictDict[Identifier, ExecNode],
+    results: StrictDict[Identifier, Any],
+    active_nodes: StrictDict[Identifier, Union[Any, UsageExecNode]],
     max_concurrency: int,
     graph: DiGraphEx,
-) -> Tuple[Dict[Identifier, ExecNode], Dict[Identifier, Any], Dict[Identifier, Profile]]:
+) -> Tuple[
+    StrictDict[Identifier, ExecNode], StrictDict[Identifier, Any], StrictDict[Identifier, Profile]
+]:
     """Look at the execute function for more information."""
     return asyncio.run(
         async_execute(
@@ -253,12 +256,14 @@ def sync_execute(
 
 async def async_execute(
     *,
-    exec_nodes: Dict[Identifier, ExecNode],
-    results: Dict[Identifier, Any],
-    active_nodes: Dict[Identifier, Union[Any, UsageExecNode]],
+    exec_nodes: StrictDict[Identifier, ExecNode],
+    results: StrictDict[Identifier, Any],
+    active_nodes: StrictDict[Identifier, Union[Any, UsageExecNode]],
     max_concurrency: int,
     graph: DiGraphEx,
-) -> Tuple[Dict[Identifier, ExecNode], Dict[Identifier, Any], Dict[Identifier, Profile]]:
+) -> Tuple[
+    StrictDict[Identifier, ExecNode], StrictDict[Identifier, Any], StrictDict[Identifier, Profile]
+]:
     """Thread safe execution of the DAG.
 
     (Except for the setup nodes! Please run DAG.setup() in a single thread because its results will be cached).
@@ -276,7 +281,7 @@ async def async_execute(
     # 0.1 copy results because it will be modified here
     results = copy(results)
     active_nodes = copy(active_nodes)
-    profiles: Dict[Identifier, Profile] = {}
+    profiles: StrictDict[Identifier, Profile] = StrictDict()
 
     # TODO: remove copy of ExecNodes when profiling and is_active are stored outside of ExecNode
     exec_nodes = copy_non_setup_xns(exec_nodes)
@@ -444,8 +449,8 @@ def get_return_values(return_uxns: ReturnUXNsType, results: Dict[Identifier, Any
 
 
 def extend_results_with_args(
-    results: Dict[Identifier, Any], input_uxns: List[UsageExecNode], *args: Any
-) -> Dict[Identifier, Any]:
+    results: StrictDict[Identifier, Any], input_uxns: List[UsageExecNode], *args: Any
+) -> StrictDict[Identifier, Any]:
     """Extends the results of dict with the values provided by args.
 
     Args:
@@ -476,6 +481,7 @@ def extend_results_with_args(
         for ind_arg, arg in enumerate(args):
             node_id = input_uxns[ind_arg].id
 
-            results[node_id] = arg
+            # overriding constant ExecNodes that already have a value is allowed
+            results.force_set(node_id, arg)
 
     return results
