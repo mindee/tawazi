@@ -39,7 +39,7 @@ def linear_pipe(i: int) -> int:
 
 
 def test_basic_compose() -> None:
-    composed_dag: DAG[[int], int] = linear_pipe.compose("twinkle", a, b)
+    composed_dag: DAG[[int], int] = linear_pipe.compose("twinkle", a, b)  # type: ignore[assignment]
     assert linear_pipe(0) == 4
     assert composed_dag(0) == 1
     assert linear_pipe(0) == 4
@@ -47,7 +47,7 @@ def test_basic_compose() -> None:
 
 
 def test_full_pipe() -> None:
-    composed_dag: DAG[[int], int] = linear_pipe.compose("twinkle", "linear_pipe>!>i", d)
+    composed_dag: DAG[[int], int] = linear_pipe.compose("twinkle", "linear_pipe>!>i", d)  # type: ignore[assignment]
     assert linear_pipe(0) == 4
     assert composed_dag(0) == 4
 
@@ -228,3 +228,12 @@ def test_setop() -> None:
     d_dag: DAG[[int], int] = diamond_pipe_setop_.compose("twinkle", "diamond_pipe_setop>!>v", x)  # type: ignore[assignment]
     assert d_dag(2) == 2
     assert setop_counter == 2
+
+
+def test_kwargs_in_xn_composed() -> None:
+    @dag
+    def dag_with_default_arg() -> int:
+        return x(v=1)
+
+    d: DAG[..., Tuple[int]] = dag_with_default_arg.compose("twinkle", [], [x])  # type: ignore[assignment]
+    assert d() == (1,)

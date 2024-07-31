@@ -115,6 +115,7 @@ class ExecNode:
     unpack_to: Optional[int] = None
     resource: Resource = cfg.TAWAZI_DEFAULT_RESOURCE
     call_location: str = ""
+    call_location_frame: int = 2
 
     args: List[UsageExecNode] = field(default_factory=list)  # args or []
     kwargs: Dict[Identifier, UsageExecNode] = field(default_factory=dict)  # kwargs or {}
@@ -224,7 +225,8 @@ class ExecNode:
         # 1. prepare args and kwargs for usage:
         args = [uxn.result(results) for uxn in self.args]
         kwargs = {
-            key: uxn.result(results)
+            # kwarg might be executed in a dag in dag "which will contain "."
+            key.split(".")[-1]: uxn.result(results)
             for key, uxn in self.kwargs.items()
             if key not in RESERVED_KWARGS
         }
@@ -247,6 +249,20 @@ class ExecNode:
         # 3. useless return value
         logger.debug("Finished executing {} with task {}", self.id, self.exec_function)
         return results[self.id]
+
+    def get_call_location(self) -> str:
+        """Get Location where ExecNode was called."""
+        frame = inspect.currentframe()
+        # Traverse back the specified number of frames
+        for _ in range(self.call_location_frame):
+            if frame is None:
+                return ""
+            frame = frame.f_back
+
+        if frame is None:
+            return ""
+        frame_info = inspect.getframeinfo(frame)
+        return f"{frame_info.filename}:{frame_info.lineno}"
 
 
 class ReturnExecNode(ExecNode):
@@ -385,7 +401,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         values["unpack_to"] = kwargs.get(ARG_NAME_UNPACK_TO) or self.unpack_to
 
         # 4. construct error message to point the user
-        values["call_location"] = get_call_location(3)
+        values["call_location"] = self.get_call_location()
 
         new_lxn: LazyExecNode[P, RVXN] = LazyExecNode(**values)
 
@@ -491,18 +507,3 @@ def make_kwargs(
 
         xn_kwargs[kwarg_name] = kwarg
     return xn_kwargs
-
-
-def get_call_location(frames: int) -> str:
-    """Get Location where ExecNode was called."""
-    frame = inspect.currentframe()
-    # Traverse back the specified number of frames
-    for _ in range(frames):
-        if frame is None:
-            return ""
-        frame = frame.f_back
-
-    if frame is None:
-        return ""
-    frame_info = inspect.getframeinfo(frame)
-    return f"{frame_info.filename}:{frame_info.lineno}"

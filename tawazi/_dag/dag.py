@@ -712,6 +712,9 @@ class DAG(BaseDAG[P, RVDAG]):
                     exec_function=lambda x: x,
                     resource=consts.Resource.main_thread,
                     args=[axn],
+                    # during subdag construction,
+                    # there are only two frames to get to the actual call site
+                    call_location_frame=2,
                 )
                 # register this LazyExecNode in the dict
                 val: UsageExecNode = stub(axn)
@@ -743,7 +746,6 @@ class DAG(BaseDAG[P, RVDAG]):
                     to_subdag_id(id_): UsageExecNode(to_subdag_id(uxn.id), uxn.key)
                     for id_, uxn in exec_node.kwargs.items()
                 }
-
                 node.exec_nodes[new_id] = exec_node.__class__(**values)
 
             is_active = kwargs.get(ARG_NAME_ACTIVATE)

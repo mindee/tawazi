@@ -7,6 +7,7 @@ from networkx import NetworkXUnfeasible
 from tawazi import DAG, dag, xn
 from tawazi._dag.digraph import DiGraphEx
 from tawazi._dag.helpers import sync_execute
+from tawazi._helpers import StrictDict
 from tawazi.node import ExecNode, UsageExecNode
 
 
@@ -99,9 +100,9 @@ def test_circular_deps() -> None:
     with pytest.raises(NetworkXUnfeasible):
         DAG(
             qualname="test_circular_deps",
-            results={},
-            actives={},
-            exec_nodes={xn.id: xn for xn in [en_a, en_b, en_c]},
+            results=StrictDict({}),
+            actives=StrictDict({}),
+            exec_nodes=StrictDict({xn.id: xn for xn in [en_a, en_b, en_c]}),
             input_uxns=[],
             return_uxns=[],
             max_concurrency=2,
@@ -124,3 +125,11 @@ def test_non_pickalable_args() -> None:
         return _a(os), _b(_a(10), _a())
 
     assert pipe() == (os, 13)
+
+
+def test_kwargs_in_local_defined_dag() -> None:
+    @dag
+    def my_dag() -> str:
+        return a(c="twinkle toes")
+
+    assert my_dag() == "a"
