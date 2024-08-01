@@ -41,6 +41,7 @@ from .helpers import _lazy_xn_id, _validate_tuple, make_suffix
 exec_nodes: StrictDict[Identifier, "ExecNode"] = StrictDict()
 # a temporary variable to hold default values concerning the DAG's description
 results: StrictDict[Identifier, Any] = StrictDict()
+# TODO: I think actives can be removed!
 actives: StrictDict[Identifier, Union[bool, UsageExecNode]] = StrictDict()
 # Prefix prepended to the id of the ExecNodes inside a DAG
 # to avoid name conflicts when imbricating DAGs within each other
@@ -119,6 +120,8 @@ class ExecNode:
 
     args: List[UsageExecNode] = field(default_factory=list)  # args or []
     kwargs: Dict[Identifier, UsageExecNode] = field(default_factory=dict)  # kwargs or {}
+    # TODO: make this a list of UsageExecNode to implement the And operation for the twz_active in SUBdag and in SUPdag
+    active: Optional[UsageExecNode] = None
 
     def __post_init__(self) -> None:
         """Post init to validate attributes."""
@@ -202,6 +205,9 @@ class ExecNode:
         deps = self.args.copy()
         # 2. and from kwargs
         deps.extend(self.kwargs.values())
+        # 3. and from active
+        if self.active is not None:
+            deps.append(self.active)
 
         return deps
 
@@ -399,6 +405,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         # 3. extract reserved arguments for current LazyExecNode call
         values["tag"] = kwargs.get(ARG_NAME_TAG) or self.tag
         values["unpack_to"] = kwargs.get(ARG_NAME_UNPACK_TO) or self.unpack_to
+        values["active"] = make_active(id_, **kwargs)
 
         # 4. construct error message to point the user
         values["call_location"] = self.get_call_location()
@@ -495,15 +502,22 @@ def make_kwargs(
     #  2. or non ExecNode values which are constants passed directly to the
     #  3. or Reserved Keyword Arguments for Tawazi. These are used to assign different values per LXN call
     for kwarg_name, kwarg in kwargs.items():
-        if isinstance(kwarg, str) and kwarg_name in [ARG_NAME_TAG, ARG_NAME_UNPACK_TO]:
+        if kwarg_name in [ARG_NAME_TAG, ARG_NAME_UNPACK_TO, ARG_NAME_ACTIVATE]:
             continue
         if not isinstance(kwarg, UsageExecNode):
             # passed in constants
             kwarg = make_default_value_uxn(id_, kwarg_name, kwarg)
 
-        # TODO: remove this line when fixing self.active
-        if kwarg_name == ARG_NAME_ACTIVATE:
-            actives[id_] = kwarg
-
         xn_kwargs[kwarg_name] = kwarg
     return xn_kwargs
+
+
+def make_active(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> Optional[UsageExecNode]:
+    """Constructs the active argument for an ExecNode."""
+    if ARG_NAME_ACTIVATE not in kwargs:
+        return None
+    active: Union[UsageExecNode, Any] = kwargs[ARG_NAME_ACTIVATE]
+    if not isinstance(active, UsageExecNode):
+        active = make_default_value_uxn(id_, ARG_NAME_ACTIVATE, active)
+    actives[id_] = active
+    return active  # type: ignore[no-any-return]
