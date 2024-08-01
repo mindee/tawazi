@@ -67,6 +67,11 @@ class BaseDAG(Generic[P, RVDAG]):
     The ExecNodes can be executed in parallel with the following restrictions:
         * Limited number of threads.
         * Parallelization constraint of each ExecNode (is_sequential attribute)
+        * Priority of each ExecNode (priority attribute)
+        * Specific Resource per ExecNode (resource attribute)
+    This Class has two flavors:
+        * DAG: for synchronous execution
+        * AsyncDAG: for asynchronous execution
 
     Args:
         exec_nodes: all the ExecNodes
@@ -83,9 +88,6 @@ class BaseDAG(Generic[P, RVDAG]):
     max_concurrency: int = 1
 
     def __post_init__(self) -> None:
-        # ExecNodes can be shared between Graphs, their call signatures might also be different
-        # NOTE: maybe this should be transformed into a property because there is a deepcopy for exec_nodes...
-        #  this means that there are different ExecNodes that are hanging around in the same instance of the DAG
         self.graph_ids = DiGraphEx.from_exec_nodes(
             input_nodes=self.input_uxns, exec_nodes=self.exec_nodes
         )
@@ -117,9 +119,7 @@ class BaseDAG(Generic[P, RVDAG]):
         Returns:
             List[ExecNode]: corresponding ExecNodes
         """
-        if isinstance(tag, Tag):
-            return [self.exec_nodes[xn_id] for xn_id in self.graph_ids.get_tagged_nodes(tag)]
-        raise TypeError(f"tag {tag} must be of Tag type. Got {type(tag)}")
+        return [self.exec_nodes[xn_id] for xn_id in self.graph_ids.get_tagged_nodes(tag)]
 
     def get_node_by_id(self, node_id: Identifier) -> ExecNode:
         """Get the ExecNode with the given id.
@@ -161,14 +161,8 @@ class BaseDAG(Generic[P, RVDAG]):
 
     # TODO: get node by usage (the order of call of an ExecNode)
 
-    # TODO: implement None for outputs to indicate a None output ? (this is not a prioritized feature)
-    # TODO: implement ellipsis for composing for the input & outputs
+    # TODO: implement ellipsis for composing with outputs
     # TODO: should we support kwargs when DAG.__call__ support kwargs?
-    # TODO: Maybe insert an ID into DAG that is related to the dependency describing function !? just like ExecNode
-    #  This will be necessary when we want to make a DAG containing DAGs besides ExecNodes
-    # NOTE: by doing this, we create a new ExecNode for each input.
-    #  Hence we loose all information related to the original ExecNode (tags, etc.)
-    #  Maybe a better way to do this is to transform the original ExecNode into an ArgExecNode
 
     def compose(
         self,
@@ -211,7 +205,7 @@ class BaseDAG(Generic[P, RVDAG]):
 
         Args:
             qualname (str): the name of the composed DAG
-            inputs (Alias | List[Alias]): the Inputs nodes whose results are provided.
+            inputs (ellipsis, Alias | List[Alias]): the Inputs nodes whose results are provided. Provide ... to specify that you will provide every argument of the original DAG.
             outputs (Alias | List[Alias]): the Output nodes that must execute last, The ones that will generate results
             is_async (bool | None): if True, the composed DAG will be an AsyncDAG, if False, it will be a DAG. Defaults to whatever the original DAG is.
             **kwargs (Dict[str, Any]): additional arguments to be passed to the DAG's constructor
@@ -264,7 +258,11 @@ class BaseDAG(Generic[P, RVDAG]):
         # 1. get input ids and output ids.
         #  Alias should correspond to a single ExecNode,
         #  otherwise an ambiguous situation exists, raise error
-        in_ids = _alias_or_aliases_to_ids(inputs)
+        in_ids = (
+            [uxn.id for uxn in self.input_uxns]
+            if inputs is ...  # type: ignore[comparison-overlap]
+            else _alias_or_aliases_to_ids(inputs)
+        )
         out_ids = _alias_or_aliases_to_ids(outputs)
 
         # 2.1 contains all the ids of the nodes that will be in the new DAG
@@ -792,7 +790,7 @@ class DAG(BaseDAG[P, RVDAG]):
 
 
 @dataclass
-class AsyncDAG(BaseDAG[P, RVDAG]):  #
+class AsyncDAG(BaseDAG[P, RVDAG]):
     async def setup(
         self,
         target_nodes: Optional[Sequence[Alias]] = None,
