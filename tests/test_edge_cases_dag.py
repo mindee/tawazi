@@ -14,7 +14,6 @@ from tawazi.node import ExecNode, UsageExecNode
 def shortcut_execute(dag: DAG[Any, Any], graph: DiGraphEx) -> Any:
     return sync_execute(
         results=dag.results,
-        active_nodes=dag.actives,
         exec_nodes=dag.exec_nodes,
         max_concurrency=dag.max_concurrency,
         graph=graph,
@@ -101,7 +100,6 @@ def test_circular_deps() -> None:
         DAG(
             qualname="test_circular_deps",
             results=StrictDict({}),
-            actives=StrictDict({}),
             exec_nodes=StrictDict({xn.id: xn for xn in [en_a, en_b, en_c]}),
             input_uxns=[],
             return_uxns=[],

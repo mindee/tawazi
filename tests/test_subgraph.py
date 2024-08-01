@@ -12,7 +12,6 @@ T = 1e-3
 def shortcut_execute(dag: DAG[Any, Any], graph: DiGraphEx) -> Any:
     return sync_execute(
         results=dag.results,
-        active_nodes=dag.actives,
         exec_nodes=dag.exec_nodes,
         max_concurrency=dag.max_concurrency,
         graph=graph,
