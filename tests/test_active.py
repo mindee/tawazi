@@ -139,3 +139,44 @@ def test_active_with_setup_node() -> None:
 def test_active_with_exclude_node() -> None:
     exec_ = pipe8.executor(exclude_nodes=[stub])
     assert exec_() is None
+
+
+@xn
+def xn1() -> int:
+    return 1
+
+
+def test_active_then_deactive() -> None:
+    @dag
+    def pipeline_no_setup(is_active: bool) -> int:
+        return xn1(twz_active=is_active)  # type: ignore[call-arg]
+
+    assert pipeline_no_setup(True) == 1
+    assert pipeline_no_setup(False) is None
+
+
+@xn(setup=True)
+def setup_xn1() -> int:
+    return 1
+
+
+def test_active_then_deactivate_setup() -> None:
+    @dag
+    def subpipeline_setup() -> int:
+        #
+        v = setup_xn1()
+        # use stub to force the scheduler to work
+        return stub(v)
+
+    @dag
+    def pipeline_setup(is_active: bool) -> int:
+        return subpipeline_setup(  # type: ignore[call-arg]
+            twz_active=is_active == True  # noqa: E712
+        )
+
+    # assert that setup works
+    assert pipeline_setup.setup() is None  # type: ignore[func-returns-value]
+
+    # assert pipeline_setup(True) == 1
+    # assert pipeline_setup(False) == None
+    # assert pipeline_setup(True) == 1

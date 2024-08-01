@@ -33,7 +33,7 @@ from tawazi.config import cfg
 from tawazi.consts import ARG_NAME_ACTIVATE, RVDAG, Identifier, P, Tag
 from tawazi.errors import TawaziTypeError, TawaziUsageError
 from tawazi.node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode, node
-from tawazi.node.node import LazyExecNode, make_axn_id
+from tawazi.node.node import LazyExecNode, make_active, make_axn_id
 from tawazi.profile import Profile
 
 from .digraph import DiGraphEx
@@ -45,19 +45,18 @@ def construct_subdag_arg_uxns(
 ) -> List[UsageExecNode]:
     """Construct UsageExecNodes from the arguments passed to a subdag."""
     # Construct default arguments
-    axns: List[UsageExecNode] = []
+    uxns: List[UsageExecNode] = []
     for i, arg in enumerate(args):
         # arg is a default value
         if not isinstance(arg, UsageExecNode):
             axn = ArgExecNode(node.make_axn_id(i, id_=to_subdag_id(qualname)))
-            # TODO: check for duplications!!
             node.exec_nodes[axn.id] = axn
             node.results[axn.id] = arg
             uxn = UsageExecNode(axn.id)
         else:
             uxn = arg
-        axns.append(uxn)
-    return axns
+        uxns.append(uxn)
+    return uxns
 
 
 @dataclass
@@ -689,9 +688,9 @@ class DAG(BaseDAG[P, RVDAG]):
 
         if description_context:
             logger.warning("Describing SubDAG {} in DAG", self)
-            all_current_ids = set(node.exec_nodes.keys())
 
-            # can't call the base describing function because composed DAGs can't be supported in that case
+            # NOTE: can't call the base describing function because composed DAGs can't be supported in that case
+            #  so must modify ExecNodes of SubDAG
             node.DAG_PREFIX.append(self.qualname)
 
             def to_subdag_id(id_: str) -> str:
@@ -704,6 +703,7 @@ class DAG(BaseDAG[P, RVDAG]):
                 *args, to_subdag_id=to_subdag_id, qualname=self.qualname
             )
 
+            registered_input_ids: List[str] = []
             # provided *args to the call is <= than input_uxns! because of defaults args
             for axn, uxn in zip(arg_uxns, input_uxns):  # strict=False
                 # a stub that fills the value of an input ExecNode with an arg of the subdag
@@ -720,17 +720,32 @@ class DAG(BaseDAG[P, RVDAG]):
                 val: UsageExecNode = stub(axn)
                 if val.id != uxn.id:
                     raise RuntimeError(f"Constructing SubDAG failed while linking {uxn.id}")
+                registered_input_ids.append(uxn.id)
 
+            # updating ids of results already registered in the DAG due to pipeline.setup and default args
             node.results.update(
                 StrictDict((to_subdag_id(id_), res) for id_, res in self.results.items())
             )
+            # updating values of UsageExecNodes of the actives that are already registered in the DAG
             node.actives.update(
                 StrictDict((to_subdag_id(id_), act) for id_, act in self.actives.items())
             )
 
-            registered_input_ids = {uxn.id for uxn in input_uxns if uxn.id in node.exec_nodes}
+            # only the ExecNodes of the SubDAG must be affected by the is_active
+            is_active = False if ARG_NAME_ACTIVATE not in kwargs else kwargs[ARG_NAME_ACTIVATE]
+
+            # if is_active:
+            #     added_ids = set(node.exec_nodes.keys()) - all_current_ids
+            #     for id_ in added_ids:
+            #         if node.exec_nodes[id_].active:
+
+            #         node.exec_nodes[id_].active = is_active
+            #         node.actives[id_] = is_active
+
+            # updating values of the ExecNodes with the new Ids only for the inputs that were changed!
             for id_, exec_node in self.exec_nodes.items():
                 new_id = to_subdag_id(id_)
+                # input ExecNode was already registered during step for zip
                 if new_id in registered_input_ids:
                     logger.debug(
                         "Skipping ExecNode {} because it is an already registered input", new_id
@@ -746,21 +761,22 @@ class DAG(BaseDAG[P, RVDAG]):
                     to_subdag_id(id_): UsageExecNode(to_subdag_id(uxn.id), uxn.key)
                     for id_, uxn in exec_node.kwargs.items()
                 }
-                node.exec_nodes[new_id] = exec_node.__class__(**values)
+                if exec_node.active:
+                    values["active"] = UsageExecNode(
+                        to_subdag_id(exec_node.active.id), exec_node.active.key
+                    )
 
-            is_active = kwargs.get(ARG_NAME_ACTIVATE)
-            if is_active is not None and not isinstance(is_active, (bool, UsageExecNode)):
-                raise TypeError(f"{ARG_NAME_ACTIVATE} must be a bool or a result of an ExecNode")
-            if is_active is not None:
-                added_ids = set(node.exec_nodes.keys()) - all_current_ids
-                for id_ in added_ids:
-                    if node.actives.get(id_):
+                if is_active is not False:
+                    if exec_node.active:
                         raise RuntimeError(
                             f"Trying to set active status for ExecNode {id_} in SubDAG {self.qualname} "
-                            f"ExecNode {id_} already has an is_active associated with it."
+                            f"ExecNode {id_} already has an activation (twz_active) associated with it."
                             "This feature will be supported in the future."
                         )
-                    node.actives[id_] = is_active
+                    values["active"] = make_active(new_id, **kwargs)
+
+                node.exec_nodes[new_id] = exec_node.__class__(**values)
+
             try:
                 # maybe support this later on
                 if self.return_uxns is None:
@@ -790,7 +806,7 @@ class DAG(BaseDAG[P, RVDAG]):
 
 
 @dataclass
-class AsyncDAG(BaseDAG[P, RVDAG]):
+class AsyncDAG(BaseDAG[P, RVDAG]):  #
     async def setup(
         self,
         target_nodes: Optional[Sequence[Alias]] = None,
