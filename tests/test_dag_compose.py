@@ -237,3 +237,13 @@ def test_kwargs_in_xn_composed() -> None:
 
     d: DAG[..., Tuple[int]] = dag_with_default_arg.compose("twinkle", [], [x])  # type: ignore[assignment]
     assert d() == (1,)
+
+
+@dag
+def complex_dag(a1: int, a2: int, a3: int) -> Tuple[int, int, int]:
+    return a1 + a2 + a3, a1 - a2 - a3, a1 * a2 * a3
+
+
+def test_provide_ellipsis_as_input() -> None:
+    composed = complex_dag.compose("twinkle", ..., ["_add<<1>>", "_sub<<1>>", "_mul<<1>>"])  # type: ignore[arg-type]
+    assert composed(1, 2, 3) == (6, -4, 6)
