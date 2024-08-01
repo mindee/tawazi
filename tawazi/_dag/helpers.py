@@ -3,7 +3,7 @@ import contextvars
 import functools
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy
-from typing import Any, Callable, Dict, List, Set, Tuple, TypeVar, Union
+from typing import Any, Callable, Dict, List, Set, Tuple, TypeVar
 
 from loguru import logger
 
@@ -18,26 +18,19 @@ K = TypeVar("K")
 V = TypeVar("V")
 
 
-def _xn_active_in_call(
-    xn: ExecNode,
-    results: Dict[Identifier, Any],
-    active_nodes: Dict[Identifier, Union[Any, UsageExecNode]],
-) -> bool:
+def _xn_active_in_call(xn: ExecNode, results: Dict[Identifier, Any]) -> bool:
     """Check if a node is active.
 
     Args:
         xn: the execnode
         results: dict containing the results of the execution
-        active_nodes: dict containing active data of all ExecNodes in current DAG
 
     Returns:
         is the node active
     """
-    active = active_nodes.get(xn.id, True)
-    # activation can occur according to a result of a previous node or a constant
-    if isinstance(active, UsageExecNode):
-        return bool(results[active.id])
-    return bool(active)
+    if xn.active is None:
+        return True
+    return bool(results[xn.active.id])
 
 
 def copy_non_setup_xns(x_nodes: StrictDict[str, ExecNode]) -> StrictDict[str, ExecNode]:
@@ -236,7 +229,6 @@ async def to_thread_in_executor(
 def sync_execute(
     exec_nodes: StrictDict[Identifier, ExecNode],
     results: StrictDict[Identifier, Any],
-    active_nodes: StrictDict[Identifier, Union[Any, UsageExecNode]],
     max_concurrency: int,
     graph: DiGraphEx,
 ) -> Tuple[
@@ -245,11 +237,7 @@ def sync_execute(
     """Look at the execute function for more information."""
     return asyncio.run(
         async_execute(
-            exec_nodes=exec_nodes,
-            results=results,
-            active_nodes=active_nodes,
-            max_concurrency=max_concurrency,
-            graph=graph,
+            exec_nodes=exec_nodes, results=results, max_concurrency=max_concurrency, graph=graph
         )
     )
 
@@ -258,7 +246,6 @@ async def async_execute(
     *,
     exec_nodes: StrictDict[Identifier, ExecNode],
     results: StrictDict[Identifier, Any],
-    active_nodes: StrictDict[Identifier, Union[Any, UsageExecNode]],
     max_concurrency: int,
     graph: DiGraphEx,
 ) -> Tuple[
@@ -271,7 +258,6 @@ async def async_execute(
     Args:
         exec_nodes: dictionary identifying ExecNodes.
         results: dictionary containing results of setup and constants
-        active_nodes: actives information of all ExecNodes
         max_concurrency: maximum number of threads to be used for the execution.
         graph: the graph ids to be executed
 
@@ -280,7 +266,6 @@ async def async_execute(
     """
     # 0.1 copy results because it will be modified here
     results = copy(results)
-    active_nodes = copy(active_nodes)
     profiles: StrictDict[Identifier, Profile] = StrictDict()
 
     # TODO: remove copy of ExecNodes when profiling and is_active are stored outside of ExecNode
@@ -373,7 +358,7 @@ async def async_execute(
         runnable_xns_ids.remove(xn.id)
 
         # 5.1 dynamic execution of a node
-        if not _xn_active_in_call(xn, results, active_nodes):
+        if not _xn_active_in_call(xn, results):
             logger.debug("Prune {} from the graph", xn.id)
             results[xn.id] = None
             runnable_xns_ids |= graph.remove_root_node(xn.id)

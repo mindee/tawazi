@@ -41,8 +41,6 @@ from .helpers import _lazy_xn_id, _validate_tuple, make_suffix
 exec_nodes: StrictDict[Identifier, "ExecNode"] = StrictDict()
 # a temporary variable to hold default values concerning the DAG's description
 results: StrictDict[Identifier, Any] = StrictDict()
-# TODO: I think actives can be removed!
-actives: StrictDict[Identifier, Union[bool, UsageExecNode]] = StrictDict()
 # Prefix prepended to the id of the ExecNodes inside a DAG
 # to avoid name conflicts when imbricating DAGs within each other
 DAG_PREFIX: List[str] = []
@@ -518,6 +516,5 @@ def make_active(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> Optional[
         return None
     active: Union[UsageExecNode, Any] = kwargs[ARG_NAME_ACTIVATE]
     if not isinstance(active, UsageExecNode):
-        active = make_default_value_uxn(id_, ARG_NAME_ACTIVATE, active)
-    actives[id_] = active
-    return active  # type: ignore[no-any-return]
+        return make_default_value_uxn(id_, ARG_NAME_ACTIVATE, active)
+    return active

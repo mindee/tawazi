@@ -80,7 +80,7 @@ failing_node_dict = {xn.id: xn for xn in failing_execnodes}
 
 @pytest.fixture
 def strict_dag() -> DAG[Any, Any]:
-    return DAG("mydag", StrictDict(), StrictDict(), node_dict, [], [], 2)
+    return DAG("mydag", StrictDict(), node_dict, [], [], 2)
 
 
 def test_dag_build(strict_dag: DAG[Any, Any]) -> None:

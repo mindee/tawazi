@@ -70,7 +70,6 @@ def __make_dag(
         return AsyncDAG(
             qualname=_func.__qualname__,
             results=node.results,
-            actives=node.actives,
             exec_nodes=node.exec_nodes,
             input_uxns=uxn_args,
             return_uxns=returned_usage_exec_nodes,
@@ -79,7 +78,6 @@ def __make_dag(
     return DAG(
         qualname=_func.__qualname__,
         results=node.results,
-        actives=node.actives,
         exec_nodes=node.exec_nodes,
         input_uxns=uxn_args,
         return_uxns=returned_usage_exec_nodes,
@@ -94,7 +92,6 @@ def _make_dag(
     #      make sure it is empty
     node.exec_nodes = StrictDict()
     node.results = StrictDict()
-    node.actives = StrictDict()
     node.DAG_PREFIX = []
 
     try:
@@ -105,7 +102,6 @@ def _make_dag(
         # node.* are global variables, their value is used in the DAG.
         node.exec_nodes = StrictDict()
         node.results = StrictDict()
-        node.actives = StrictDict()
         node.DAG_PREFIX = []
 
 

@@ -77,7 +77,6 @@ class BaseDAG(Generic[P, RVDAG]):
 
     qualname: str
     results: StrictDict[Identifier, Any]
-    actives: StrictDict[Identifier, Union[bool, UsageExecNode]]
     exec_nodes: StrictDict[Identifier, ExecNode]
     input_uxns: List[UsageExecNode]
     return_uxns: ReturnUXNsType
@@ -100,8 +99,6 @@ class BaseDAG(Generic[P, RVDAG]):
 
         if not isinstance(self.results, StrictDict):
             raise ValueError("results must be a StrictDict")
-        if not isinstance(self.actives, StrictDict):
-            raise ValueError("actives must be a StrictDict")
         if not isinstance(self.exec_nodes, StrictDict):
             raise ValueError("exec_nodes must be a StrictDict")
 
@@ -358,12 +355,9 @@ class BaseDAG(Generic[P, RVDAG]):
         # if a single value is returned make the output a single value
         out_uxns = _alias_or_aliases_to_uxns(outputs)
 
-        # 6. extract the results and the actives of only the remaining ExecNodes
+        # 6. extract the results of only the remaining ExecNodes
         results = StrictDict(
             (node_id, result) for node_id, result in self.results.items() if node_id in xn_dict
-        )
-        actives = StrictDict(
-            (xn_id, active) for xn_id, active in self.actives.items() if xn_id in xn_dict
         )
 
         # 7. return the composed DAG
@@ -373,7 +367,6 @@ class BaseDAG(Generic[P, RVDAG]):
             return DAG(
                 qualname=qualname,
                 results=results,
-                actives=actives,
                 exec_nodes=xn_dict,
                 input_uxns=in_uxns,
                 return_uxns=out_uxns,
@@ -382,7 +375,6 @@ class BaseDAG(Generic[P, RVDAG]):
         return AsyncDAG(
             qualname=qualname,
             results=results,
-            actives=actives,
             exec_nodes=xn_dict,
             input_uxns=in_uxns,
             return_uxns=out_uxns,
@@ -618,7 +610,6 @@ class DAG(BaseDAG[P, RVDAG]):
         _, self.results, _ = sync_execute(
             exec_nodes=self.exec_nodes,
             results=self.results,
-            active_nodes=self.actives,
             max_concurrency=self.max_concurrency,
             graph=graph,
         )
@@ -649,7 +640,6 @@ class DAG(BaseDAG[P, RVDAG]):
         exec_nodes, results, profiles = sync_execute(
             exec_nodes=self.exec_nodes,
             results=results,
-            active_nodes=self.actives,
             max_concurrency=self.max_concurrency,
             graph=subgraph,
         )
@@ -726,10 +716,6 @@ class DAG(BaseDAG[P, RVDAG]):
             node.results.update(
                 StrictDict((to_subdag_id(id_), res) for id_, res in self.results.items())
             )
-            # updating values of UsageExecNodes of the actives that are already registered in the DAG
-            node.actives.update(
-                StrictDict((to_subdag_id(id_), act) for id_, act in self.actives.items())
-            )
 
             # only the ExecNodes of the SubDAG must be affected by the is_active
             is_active = False if ARG_NAME_ACTIVATE not in kwargs else kwargs[ARG_NAME_ACTIVATE]
@@ -740,7 +726,6 @@ class DAG(BaseDAG[P, RVDAG]):
             #         if node.exec_nodes[id_].active:
 
             #         node.exec_nodes[id_].active = is_active
-            #         node.actives[id_] = is_active
 
             # updating values of the ExecNodes with the new Ids only for the inputs that were changed!
             for id_, exec_node in self.exec_nodes.items():
@@ -836,7 +821,6 @@ class AsyncDAG(BaseDAG[P, RVDAG]):  #
         _, self.results, _ = await async_execute(
             exec_nodes=self.exec_nodes,
             results=self.results,
-            active_nodes=self.actives,
             max_concurrency=self.max_concurrency,
             graph=graph,
         )
@@ -868,7 +852,6 @@ class AsyncDAG(BaseDAG[P, RVDAG]):  #
         exec_nodes, results, profiles = await async_execute(
             exec_nodes=self.exec_nodes,
             results=results,
-            active_nodes=self.actives,
             max_concurrency=self.max_concurrency,
             graph=subgraph,
         )
