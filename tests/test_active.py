@@ -160,23 +160,25 @@ def setup_xn1() -> int:
     return 1
 
 
-def test_active_then_deactivate_setup() -> None:
-    @dag
-    def subpipeline_setup() -> int:
-        #
-        v = setup_xn1()
-        # use stub to force the scheduler to work
-        return stub(v)
+@dag
+def subpipeline_setup() -> int:
+    #
+    v = setup_xn1()
+    # use stub to force the scheduler to work
+    return stub(v)
 
-    @dag
-    def pipeline_setup(is_active: bool) -> int:
-        return subpipeline_setup(  # type: ignore[call-arg]
-            twz_active=is_active == True  # noqa: E712
-        )
 
+@dag
+def pipeline_setup(is_active: bool) -> int:
+    return subpipeline_setup(twz_active=is_active == True)  # type: ignore[call-arg]  # noqa: E712
+
+
+def test_subdag_with_setup() -> None:
     # assert that setup works
     assert pipeline_setup.setup() is None  # type: ignore[func-returns-value]
 
-    # assert pipeline_setup(True) == 1
-    # assert pipeline_setup(False) == None
-    # assert pipeline_setup(True) == 1
+
+def test_subdag_with_setup_active_then_deactive() -> None:
+    assert pipeline_setup(True) == 1
+    assert pipeline_setup(False) is None
+    assert pipeline_setup(True) == 1

@@ -35,8 +35,7 @@ class DiGraphEx(nx.DiGraph):
         input_ids = [uxn.id for uxn in input_nodes]
         for node in exec_nodes.values():
             # add node and edges
-            graph.add_node(node.id)
-            graph.add_edges_from([(dep.id, node.id) for dep in node.dependencies])
+            graph.add_exec_node(node)
 
             # add tag, setup and debug
             if node.tag:
@@ -66,6 +65,11 @@ class DiGraphEx(nx.DiGraph):
         graph.assign_compound_priority()
 
         return graph
+
+    def add_exec_node(self, xn: ExecNode) -> None:
+        """Add an ExecNode and its dependencies to the graph."""
+        self.add_node(xn.id)
+        self.add_edges_from([(dep.id, xn.id) for dep in xn.dependencies])
 
     def make_subgraph(
         self,
@@ -124,6 +128,14 @@ class DiGraphEx(nx.DiGraph):
         }
         self.remove_node(root_node)
         return generated_root_nodes
+
+    def remove_any_root_node(self) -> Identifier:
+        """Removes any root node and returns the removed root node."""
+        for node, degree in self.in_degree:
+            if degree == 0:
+                self.remove_node(node)
+                return node  # type: ignore[no-any-return]
+        raise ValueError("No root node to remove.")
 
     @property
     def leaf_nodes(self) -> List[Identifier]:
