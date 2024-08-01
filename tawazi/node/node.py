@@ -360,6 +360,11 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
     The original function is kept to be called during the scheduling phase when calling the DAG.
     """
 
+    def __post_init__(self) -> None:
+        """Post init to validate attributes."""
+        super().__post_init__()
+        self._validate_dependencies()
+
     # in reality it returns UsageExecNode:
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> RVXN:
         """Record the dependencies in a global variable to be called later in DAG.
@@ -410,13 +415,14 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
 
         new_lxn: LazyExecNode[P, RVXN] = LazyExecNode(**values)
 
-        new_lxn._validate_dependencies()
-
         exec_nodes[new_lxn.id] = new_lxn
 
         return new_lxn._usage_exec_node  # type: ignore[return-value]
 
     def _validate_dependencies(self) -> None:
+        # only validate dependencies if the exec_nodes_lock is locked
+        if not exec_nodes_lock.locked():
+            return
         for dep in self.dependencies:
             # if ExecNode is not a debug node, all its dependencies must not be debug node
             if not self.debug and exec_nodes[dep.id].debug:

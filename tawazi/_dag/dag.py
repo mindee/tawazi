@@ -453,7 +453,7 @@ class BaseDAG(Generic[P, RVDAG]):
             target_nodes=target_nodes, exclude_nodes=exclude_nodes, root_nodes=root_nodes
         )
 
-        # 3. remove setup nodes
+        # 3. remove non setup nodes
         graph.remove_nodes_from(
             [node_id for node_id in graph if node_id not in self.graph_ids.setup_nodes]
         )
@@ -720,15 +720,14 @@ class DAG(BaseDAG[P, RVDAG]):
             # only the ExecNodes of the SubDAG must be affected by the is_active
             is_active = False if ARG_NAME_ACTIVATE not in kwargs else kwargs[ARG_NAME_ACTIVATE]
 
-            # if is_active:
-            #     added_ids = set(node.exec_nodes.keys()) - all_current_ids
-            #     for id_ in added_ids:
-            #         if node.exec_nodes[id_].active:
-
-            #         node.exec_nodes[id_].active = is_active
-
             # updating values of the ExecNodes with the new Ids only for the inputs that were changed!
-            for id_, exec_node in self.exec_nodes.items():
+            graph = DiGraphEx()
+            for xn in self.exec_nodes.values():
+                graph.add_exec_node(xn)
+            # must go by order because Dict doesn't respect the order of insertion
+            while len(graph):
+                id_ = graph.remove_any_root_node()
+                exec_node = self.exec_nodes[id_]
                 new_id = to_subdag_id(id_)
                 # input ExecNode was already registered during step for zip
                 if new_id in registered_input_ids:
@@ -736,6 +735,7 @@ class DAG(BaseDAG[P, RVDAG]):
                         "Skipping ExecNode {} because it is an already registered input", new_id
                     )
                     continue
+
                 values = asdict(exec_node)
                 values["id_"] = new_id
 
@@ -746,19 +746,20 @@ class DAG(BaseDAG[P, RVDAG]):
                     to_subdag_id(id_): UsageExecNode(to_subdag_id(uxn.id), uxn.key)
                     for id_, uxn in exec_node.kwargs.items()
                 }
-                if exec_node.active:
-                    values["active"] = UsageExecNode(
-                        to_subdag_id(exec_node.active.id), exec_node.active.key
-                    )
-
-                if is_active is not False:
+                if not exec_node.setup:
                     if exec_node.active:
-                        raise RuntimeError(
-                            f"Trying to set active status for ExecNode {id_} in SubDAG {self.qualname} "
-                            f"ExecNode {id_} already has an activation (twz_active) associated with it."
-                            "This feature will be supported in the future."
+                        values["active"] = UsageExecNode(
+                            to_subdag_id(exec_node.active.id), exec_node.active.key
                         )
-                    values["active"] = make_active(new_id, **kwargs)
+
+                    if is_active is not False:
+                        if exec_node.active:
+                            raise RuntimeError(
+                                f"Trying to set active status for ExecNode {id_} in SubDAG {self.qualname} "
+                                f"ExecNode {id_} already has an activation (twz_active) associated with it."
+                                "This feature will be supported in the future."
+                            )
+                        values["active"] = make_active(new_id, **kwargs)
 
                 node.exec_nodes[new_id] = exec_node.__class__(**values)
 
