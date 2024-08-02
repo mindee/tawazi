@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, List, Tuple, Union
 from tawazi._helpers import StrictDict
 from tawazi.consts import RVDAG, P
 from tawazi.node import ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode, node, wrap_in_uxns
+from tawazi.node.node import make_axn_id
 
 from .dag import DAG, AsyncDAG
 
@@ -45,11 +46,11 @@ def __make_dag(
     # 2.2 Construct non default arguments.
     # Corresponding values must be provided during usage
     args: List[ExecNode] = [
-        ArgExecNode(node.make_axn_id(arg_name, func=_func)) for arg_name in func_args
+        ArgExecNode(make_axn_id(_func.__qualname__, arg_name)) for arg_name in func_args
     ]
     # 2.2 Construct Default arguments.
     for arg_name, arg in func_default_args.items():
-        axn = ArgExecNode(node.make_axn_id(arg_name, func=_func))
+        axn = ArgExecNode(make_axn_id(_func.__qualname__, arg_name))
         args.append(axn)
         node.results[axn.id] = arg
 

@@ -139,7 +139,7 @@ class ExecNode:
         is_tag = isinstance(self.tag, Tag)
         is_tuple_tag = isinstance(self.tag, tuple) and all(isinstance(v, Tag) for v in self.tag)
         if not (is_none or is_tag or is_tuple_tag):
-            raise TypeError(
+            raise ValueError(
                 f"tag should be of type {TagOrTags} but {self.tag} of type {type(self.tag)} is provided"
             )
 
@@ -223,10 +223,6 @@ class ExecNode:
         logger.debug("Start executing {} with task {}", self.id, self.exec_function)
         profiles[self.id] = Profile(cfg.TAWAZI_PROFILE_ALL_NODES)
 
-        if self.executed(results):
-            logger.debug("Skipping execution of a pre-computed node {}", self.id)
-            return results[self.id]
-
         # 1. prepare args and kwargs for usage:
         args = [uxn.result(results) for uxn in self.args]
         kwargs = {
@@ -246,7 +242,7 @@ class ExecNode:
             except Exception as e:
                 if self.call_location:
                     raise TawaziBaseException(
-                        f"Error occurred while executing ExecNode at {self.call_location}"
+                        f"Error occurred while executing ExecNode {self.id} at {self.call_location}"
                     ) from e
 
                 raise e
@@ -259,13 +255,13 @@ class ExecNode:
         """Get Location where ExecNode was called."""
         frame = inspect.currentframe()
         # Traverse back the specified number of frames
-        for _ in range(self.call_location_frame):
-            if frame is None:
-                return ""
-            frame = frame.f_back
-
         if frame is None:
             return ""
+        for _ in range(self.call_location_frame):
+            frame = frame.f_back
+            if frame is None:
+                return ""
+
         frame_info = inspect.getframeinfo(frame)
         return f"{frame_info.filename}:{frame_info.lineno}"
 
@@ -317,41 +313,22 @@ class ArgExecNode(ExecNode):
         super().__init__(id_=id_, exec_function=raise_err, is_sequential=False)
 
 
-def make_axn_id(
-    name_or_order: Union[str, int],
-    xn: Optional[ExecNode] = None,
-    func: Optional[Callable[[Any], Any]] = None,
-    id_: Optional[Identifier] = None,
-) -> Identifier:
+def make_axn_id(id_: Identifier, name_or_order: Union[str, int]) -> Identifier:
     """Makes ArgExecNode id.
 
     Args:
+        id_ (Optional[Identifier], optional): id of an ExecNode to which the corresopnding ArgExecNode is attached. Defaults to None.
         name_or_order (Union[str, int]): name of the Argument in case of KWarg or order of the Argument in case of an arg
             For example Python's builtin sorted function takes 3 arguments (iterable, key, reverse).
                 1. If called like this: sorted([1,2,3]) then [1,2,3] will be of type ArgExecNode with an order=0
                 2. If called like this: sorted(iterable=[4,5,6]) then [4,5,6] will be of
                     type ArgExecNode with a name="iterable"
-        xn (Optional[ExecNode], optional): ExecNode to which the corresponding ArgExecNode is attached. Defaults to None.
-        func (Optional[Callable[[Any], Any]], optional): DAG to which the corresponding ArgExecNode is attached. Defaults to None.
-        id_ (Optional[Identifier], optional): id of an ExecNode to which the corresopnding ArgExecNode is attached. Defaults to None.
-
-    Raises:
-        TypeError: if type parameter is passed (Internal)
 
     Returns:
         Identifier: Id of the ArgExecNode
     """
-    if isinstance(xn, ExecNode):
-        base_id = xn.id
-    elif callable(func):
-        base_id = func.__qualname__
-    elif isinstance(id_, Identifier):
-        base_id = id_
-    else:
-        raise TypeError("ArgExecNode can only be attached to a LazyExecNode or a Callable")
-
     suffix = make_suffix(name_or_order)
-    return f"{base_id}{ARG_NAME_SEP}{suffix}"
+    return f"{id_}{ARG_NAME_SEP}{suffix}"
 
 
 class LazyExecNode(ExecNode, Generic[P, RVXN]):
@@ -473,7 +450,7 @@ def make_default_value_uxn(
     id_: Identifier, name_or_order: Union[str, int], default_value: Any
 ) -> UsageExecNode:
     """Make a default ArgExecNode and its corresponding UsageExecNode."""
-    xn = ArgExecNode(make_axn_id(name_or_order=name_or_order, id_=id_))
+    xn = ArgExecNode(make_axn_id(id_, name_or_order))
     exec_nodes[xn.id] = xn
     results[xn.id] = default_value
     return UsageExecNode(xn.id)
