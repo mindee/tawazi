@@ -54,7 +54,7 @@ def copy_non_setup_xns(x_nodes: StrictDict[str, ExecNode]) -> StrictDict[str, Ex
 
 
 def get_highest_priority_node(
-    graph: DiGraphEx, runnable_xns_ids: Set[str], xns_dict: Dict[Identifier, ExecNode]
+    graph: DiGraphEx, runnable_xns_ids: Set[Identifier], xns_dict: Dict[Identifier, ExecNode]
 ) -> ExecNode:
     """Get the node with the highest priority.
 
@@ -66,16 +66,12 @@ def get_highest_priority_node(
     Returns:
         the node with the highest priority
     """
-    highest_priority_node, _ = max(
-        [
-            (node, priority)
-            for node, priority in graph.nodes(data="compound_priority")
-            if node in runnable_xns_ids
-        ],
-        key=lambda x: x[1],
+    nodes = graph.nodes
+    highest_priority_id, _ = max(
+        [(id_, nodes[id_]["compound_priority"]) for id_ in runnable_xns_ids], key=lambda x: x[1]
     )
 
-    return xns_dict[highest_priority_node]
+    return xns_dict[highest_priority_id]
 
 
 class BiDict(Dict[K, V]):
