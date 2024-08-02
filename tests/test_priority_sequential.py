@@ -100,3 +100,29 @@ def test_sequentiality() -> None:
         assert ind_d > ind_b, f"during {_i}th iteration"
         assert ind_b > ind_a, f"during {_i}th iteration"
         assert ind_c > ind_a, f"during {_i}th iteration"
+
+
+def test_sequentiality_awaits_for_others_to_finish() -> None:
+    # this test validates that when an is_sequential node launches, all other tests aren't run in parallel until it finishes
+    global priority_sequential_comp_str
+    priority_sequential_comp_str = "done"
+
+    @xn(is_sequential=True)
+    def a() -> bool:
+        global priority_sequential_comp_str
+        return priority_sequential_comp_str == "done"
+
+    @xn
+    def fill() -> None:
+        global priority_sequential_comp_str
+        priority_sequential_comp_str = ""
+        sleep(T)
+        priority_sequential_comp_str = "done"
+
+    @dag(max_concurrency=10)
+    def d() -> bool:
+        for _i in range(100):
+            fill()
+        return a()
+
+    assert d() is True
