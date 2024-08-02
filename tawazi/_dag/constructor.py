@@ -1,4 +1,5 @@
 import inspect
+import warnings
 from typing import Any, Callable, Dict, List, Tuple, Union
 
 from tawazi._helpers import StrictDict
@@ -96,6 +97,9 @@ def _make_dag(
 
     try:
         return __make_dag(_func, max_concurrency, is_async)
+    except NameError as e:
+        warnings.warn("Are you trying to do recursion?", stacklevel=3)
+        raise e
     # clean up even in case an error is raised during dag construction
     finally:
         # 5. Clean global variable

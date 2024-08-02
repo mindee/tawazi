@@ -1,8 +1,9 @@
+import asyncio
 from copy import deepcopy
-from typing import Any, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 
 import pytest
-from tawazi import DAG, dag, xn
+from tawazi import DAG, AsyncDAG, dag, xn
 
 
 @xn
@@ -44,6 +45,32 @@ def test_basic_compose() -> None:
     assert composed_dag(0) == 1
     assert linear_pipe(0) == 4
     assert composed_dag(0) == 1
+
+
+@pytest.mark.parametrize(
+    "force_async,dag_class,expected_class",
+    [
+        (None, DAG, DAG),
+        (None, AsyncDAG, AsyncDAG),
+        (True, DAG, AsyncDAG),
+        (False, DAG, DAG),
+        (True, AsyncDAG, AsyncDAG),
+        (False, AsyncDAG, DAG),
+    ],
+)
+def test_compose_different_combinations(
+    force_async: Optional[bool],
+    dag_class: Union[DAG[Any, Any], AsyncDAG[Any, Any]],
+    expected_class: Union[DAG[Any, Any], AsyncDAG[Any, Any]],
+) -> None:
+    my_linear_pipe = deepcopy(linear_pipe)
+    my_linear_pipe.__class__ = dag_class  # type: ignore[assignment]
+    composed_linear_pipe = my_linear_pipe.compose("twinkle", a, b, is_async=force_async)
+    assert isinstance(composed_linear_pipe, expected_class)  # type: ignore[arg-type]
+    if expected_class == DAG:
+        assert composed_linear_pipe(0) == 1
+    else:
+        assert asyncio.run(composed_linear_pipe(0)) == 1  # type: ignore[arg-type]
 
 
 def test_full_pipe() -> None:
@@ -148,7 +175,10 @@ def test_input_successor_output() -> None:
     with pytest.raises(
         ValueError, match="Either declare them as inputs or modify the requests outputs."
     ):
-        _ = diamond_pipe.compose("twinkle", z, [x, y])
+        with pytest.warns(
+            UserWarning, match="is not used to produce any of the requested outputs."
+        ):
+            _ = diamond_pipe.compose("twinkle", z, [x, y])
 
 
 def test_input_successor_input() -> None:
@@ -160,7 +190,10 @@ def test_inputs_outputs_overlapping() -> None:
     with pytest.raises(
         ValueError, match="Either declare them as inputs or modify the requests outputs."
     ):
-        _ = linear_pipe.compose("twinkle", a, a)
+        with pytest.warns(
+            UserWarning, match="is not used to produce any of the requested outputs."
+        ):
+            _ = linear_pipe.compose("twinkle", a, a)
 
 
 def test_inputs_empty_outputs_empty() -> None:

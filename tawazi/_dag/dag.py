@@ -358,9 +358,7 @@ class BaseDAG(Generic[P, RVDAG]):
             (node_id, result) for node_id, result in self.results.items() if node_id in xn_dict
         )
 
-        # 7. return the composed DAG
-        # ignore[arg-type] because the type of the kwargs is not known
-
+        # 7. return the composed DAG/AsyncDAG
         if is_async is False or (is_async is None and isinstance(self, DAG)):
             return DAG(
                 qualname=qualname,
@@ -457,50 +455,6 @@ class BaseDAG(Generic[P, RVDAG]):
         )
         return graph
 
-    def executor(
-        self,
-        target_nodes: Optional[Sequence[Alias]] = None,
-        exclude_nodes: Optional[Sequence[Alias]] = None,
-        root_nodes: Optional[Sequence[Alias]] = None,
-        cache_deps_of: Optional[Sequence[Alias]] = None,
-        cache_in: str = "",
-        from_cache: str = "",
-    ) -> Union["DAGExecution[P, RVDAG]", "AsyncDAGExecution[P, RVDAG]"]:
-        """Generates a DAGExecution for the DAG.
-
-        Args:
-            target_nodes: the nodes to execute, excluding all nodes that can be excluded
-            exclude_nodes: the nodes to exclude from the execution
-            root_nodes: these nodes and their children will be included in the execution
-            cache_deps_of: which nodes to cache the dependencies of
-            cache_in: the path to the file where to cache
-            from_cache: the cache
-
-        Returns:
-            the DAGExecution object associated with the dag
-        """
-        if not isinstance(self, DAG) and not isinstance(self, AsyncDAG):
-            raise TypeError("executor can only be called on a DAG or an AsyncDAG")
-        if isinstance(self, AsyncDAG):
-            return AsyncDAGExecution(
-                dag=self,
-                target_nodes=target_nodes,
-                exclude_nodes=exclude_nodes,
-                root_nodes=root_nodes,
-                cache_deps_of=cache_deps_of,
-                cache_in=cache_in,
-                from_cache=from_cache,
-            )
-        return DAGExecution(
-            dag=self,
-            target_nodes=target_nodes,
-            exclude_nodes=exclude_nodes,
-            root_nodes=root_nodes,
-            cache_deps_of=cache_deps_of,
-            cache_in=cache_in,
-            from_cache=from_cache,
-        )
-
     def config_from_dict(self, config: Dict[str, Any]) -> None:
         """Allows reconfiguring the parameters of the nodes from a dictionary.
 
@@ -578,6 +532,38 @@ class BaseDAG(Generic[P, RVDAG]):
 @dataclass
 class DAG(BaseDAG[P, RVDAG]):
     """SyncDAG implementation of the BaseDAG."""
+
+    def executor(
+        self,
+        target_nodes: Optional[Sequence[Alias]] = None,
+        exclude_nodes: Optional[Sequence[Alias]] = None,
+        root_nodes: Optional[Sequence[Alias]] = None,
+        cache_deps_of: Optional[Sequence[Alias]] = None,
+        cache_in: str = "",
+        from_cache: str = "",
+    ) -> "DAGExecution[P, RVDAG]":
+        """Generates a DAGExecution for the DAG.
+
+        Args:
+            target_nodes: the nodes to execute, excluding all nodes that can be excluded
+            exclude_nodes: the nodes to exclude from the execution
+            root_nodes: these nodes and their children will be included in the execution
+            cache_deps_of: which nodes to cache the dependencies of
+            cache_in: the path to the file where to cache
+            from_cache: the cache
+
+        Returns:
+            the DAGExecution object associated with the dag
+        """
+        return DAGExecution(
+            dag=self,
+            target_nodes=target_nodes,
+            exclude_nodes=exclude_nodes,
+            root_nodes=root_nodes,
+            cache_deps_of=cache_deps_of,
+            cache_in=cache_in,
+            from_cache=from_cache,
+        )
 
     def setup(
         self,
@@ -705,9 +691,7 @@ class DAG(BaseDAG[P, RVDAG]):
                     call_location_frame=2,
                 )
                 # register this LazyExecNode in the dict
-                val: UsageExecNode = stub(axn)
-                if val.id != uxn.id:
-                    raise RuntimeError(f"Constructing SubDAG failed while linking {uxn.id}")
+                _val: UsageExecNode = stub(axn)
                 registered_input_ids.append(uxn.id)
 
             # updating ids of results already registered in the DAG due to pipeline.setup and default args
@@ -745,13 +729,13 @@ class DAG(BaseDAG[P, RVDAG]):
                     for id_, uxn in exec_node.kwargs.items()
                 }
                 if not exec_node.setup:
-                    if exec_node.active:
+                    if exec_node.active is not None:
                         values["active"] = UsageExecNode(
                             to_subdag_id(exec_node.active.id), exec_node.active.key
                         )
 
                     if is_active is not False:
-                        if exec_node.active:
+                        if exec_node.active is not None:
                             raise RuntimeError(
                                 f"Trying to set active status for ExecNode {id_} in SubDAG {self.qualname} "
                                 f"ExecNode {id_} already has an activation (twz_active) associated with it."
@@ -791,6 +775,38 @@ class DAG(BaseDAG[P, RVDAG]):
 
 @dataclass
 class AsyncDAG(BaseDAG[P, RVDAG]):
+    def executor(
+        self,
+        target_nodes: Optional[Sequence[Alias]] = None,
+        exclude_nodes: Optional[Sequence[Alias]] = None,
+        root_nodes: Optional[Sequence[Alias]] = None,
+        cache_deps_of: Optional[Sequence[Alias]] = None,
+        cache_in: str = "",
+        from_cache: str = "",
+    ) -> "AsyncDAGExecution[P, RVDAG]":
+        """Generates a AsyncDAGExecution for the current AsyncDAG.
+
+        Args:
+            target_nodes: the nodes to execute, excluding all nodes that can be excluded
+            exclude_nodes: the nodes to exclude from the execution
+            root_nodes: these nodes and their children will be included in the execution
+            cache_deps_of: which nodes to cache the dependencies of
+            cache_in: the path to the file where to cache
+            from_cache: the cache
+
+        Returns:
+            the DAGExecution object associated with the dag
+        """
+        return AsyncDAGExecution(
+            dag=self,
+            target_nodes=target_nodes,
+            exclude_nodes=exclude_nodes,
+            root_nodes=root_nodes,
+            cache_deps_of=cache_deps_of,
+            cache_in=cache_in,
+            from_cache=from_cache,
+        )
+
     async def setup(
         self,
         target_nodes: Optional[Sequence[Alias]] = None,
