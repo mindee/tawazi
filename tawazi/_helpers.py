@@ -14,6 +14,31 @@ def ordinal(numb: int) -> str:
 
     Returns:
         str: "0th", "1st", "2nd", etc...
+
+    >>> ordinal(0)
+    '0th'
+    >>> ordinal(1)
+    '1st'
+    >>> ordinal(2)
+    '2nd'
+    >>> ordinal(3)
+    '3rd'
+    >>> ordinal(4)
+    '4th'
+    >>> ordinal(10)
+    '10th'
+    >>> ordinal(11)
+    '11th'
+    >>> ordinal(21)
+    '21st'
+    >>> ordinal(22)
+    '22nd'
+    >>> ordinal(23)
+    '23rd'
+    >>> ordinal(24)
+    '24th'
+    >>> ordinal(113)
+    '113th'
     """
     if numb < 20:  # determining suffix for < 20
         if numb == 1:
@@ -72,7 +97,15 @@ V = TypeVar("V")
 
 
 class StrictDict(Dict[T, V]):
-    """A Dict that raises an error if key already used."""
+    """A Dict that raises an error if key already used.
+
+    >>> d = StrictDict({1: 2, 2: 3})
+    >>> d[3] = 4
+    >>> d[3] = 5
+    Traceback (most recent call last):
+    ...
+    KeyError: 'key: 3, is already occupied by 4'
+    """
 
     def __setitem__(self, key: T, value: V) -> None:
         if key in self:
