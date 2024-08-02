@@ -1,3 +1,4 @@
+import asyncio
 from copy import deepcopy
 from functools import reduce
 from typing import Any
@@ -7,7 +8,15 @@ from tawazi import dag, xn
 from tawazi.errors import TawaziBaseException, TawaziUsageError
 
 
-def test_pipeline() -> None:
+def run_pipeline(*args: Any, pipeline: Any, is_async: bool) -> None:
+    if is_async:
+        asyncio.run(pipeline(*args))
+    else:
+        pipeline(*args)
+
+
+@pytest.mark.parametrize("is_async", [True, False])
+def test_pipeline(is_async: bool) -> None:
     var_setup_counter = 0
     var_op1_counter = 0
 
@@ -25,26 +34,26 @@ def test_pipeline() -> None:
         var_op1_counter += 1
         return len(a_str)
 
-    @dag
+    @dag(is_async=is_async)
     def pipeline(in1: str, in2: str) -> int:
         a_str = setup_op("in1")
         return op1(a_str)
 
-    @dag
+    @dag(is_async=is_async)
     def pipeline2(in2: str) -> int:
         a_str = setup_op("mid_path")
         return op1(a_str)
 
-    pipeline("s1", "s2")
+    run_pipeline("s1", "s2", pipeline=pipeline, is_async=is_async)
     assert var_setup_counter == 1
     assert var_op1_counter == 1
 
-    pipeline("s3", "s4")
+    run_pipeline("s3", "s4", pipeline=pipeline, is_async=is_async)
 
     assert var_setup_counter == 1
     assert var_op1_counter == 2
 
-    pipeline2("s5")
+    run_pipeline("s5", pipeline=pipeline2, is_async=is_async)
 
     assert var_setup_counter == 2
     assert var_op1_counter == 3
@@ -207,7 +216,8 @@ def test_dependencies_subgraph() -> None:
     assert var_op12 == 0
 
 
-def test_pipeline_setup_method() -> None:
+@pytest.mark.parametrize("is_async", [True, False])
+def test_pipeline_setup_method(is_async: bool) -> None:
     var_setup_op1 = 0
     var_setup_op2 = 0
     var_op1 = 0
@@ -252,7 +262,7 @@ def test_pipeline_setup_method() -> None:
         var_op12 += 1
         return "op12"
 
-    @dag
+    @dag(is_async=is_async)
     def pipe_setup_deps() -> str:
         sop1_r = setup_op1(twz_tag="setup1")  # type: ignore[call-arg]
         sop2_r = setup_op2(sop1_r, twz_tag="setup2")  # type: ignore[call-arg]
@@ -263,13 +273,13 @@ def test_pipeline_setup_method() -> None:
     # test runninig setup without arguments
     pipe = deepcopy(pipe_setup_deps)
     clean()
-    pipe.setup()
+    run_pipeline(pipeline=pipe.setup, is_async=is_async)
     assert var_setup_op1 == 1
     assert var_setup_op2 == 1
     assert var_op1 == 0
     assert var_op2 == 0
     assert var_op12 == 0
-    pipe()
+    run_pipeline(pipeline=pipe, is_async=is_async)
 
     assert var_setup_op1 == 1
     assert var_setup_op2 == 1
@@ -280,13 +290,13 @@ def test_pipeline_setup_method() -> None:
     # test running setup targeting a setup node
     pipe = deepcopy(pipe_setup_deps)
     clean()
-    pipe.setup(target_nodes=["setup1"])
+    run_pipeline(pipeline=lambda: pipe.setup(target_nodes=["setup1"]), is_async=is_async)
     assert var_setup_op1 == 1
     assert var_setup_op2 == 0
     assert var_op1 == 0
     assert var_op2 == 0
     assert var_op12 == 0
-    pipe()
+    run_pipeline(pipeline=pipe, is_async=is_async)
     assert var_setup_op1 == 1
     assert var_setup_op2 == 1
     assert var_op1 == 1
@@ -296,13 +306,13 @@ def test_pipeline_setup_method() -> None:
     # test running setup targeting a dependencies of setup nodes
     pipe = deepcopy(pipe_setup_deps)
     clean()
-    pipe.setup(target_nodes=["setup2"])
+    run_pipeline(pipeline=lambda: pipe.setup(target_nodes=["setup2"]), is_async=is_async)
     assert var_setup_op1 == 1
     assert var_setup_op2 == 1
     assert var_op1 == 0
     assert var_op2 == 0
     assert var_op12 == 0
-    pipe()
+    run_pipeline(pipeline=pipe, is_async=is_async)
     assert var_setup_op1 == 1
     assert var_setup_op2 == 1
     assert var_op1 == 1
@@ -312,14 +322,14 @@ def test_pipeline_setup_method() -> None:
     # test running setup targeting a non setup node
     pipe = deepcopy(pipe_setup_deps)
     clean()
-    pipe.setup(target_nodes=["twinkle toes"])
+    run_pipeline(pipeline=lambda: pipe.setup(target_nodes=["twinkle toes"]), is_async=is_async)
     assert var_setup_op1 == 1
     assert var_setup_op2 == 0
     assert var_op1 == 0
     assert var_op2 == 0
     assert var_op12 == 0
     exec_ = pipe.executor(target_nodes=["twinkle toes"])
-    exec_()
+    run_pipeline(pipeline=exec_, is_async=is_async)
     assert var_setup_op1 == 1
     assert var_setup_op2 == 0
     assert var_op1 == 1
