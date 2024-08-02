@@ -2,8 +2,6 @@
 from time import perf_counter, process_time, thread_time
 from typing import Any
 
-from tawazi.errors import TawaziTypeError
-
 
 class Profile:
     """Profile records execution time of Tawazi ExecNodes."""
@@ -76,7 +74,7 @@ class Profile:
         """Equality operator.
 
         Args:
-            __o (object): The other Profile object.
+            __o (Profile): The other Profile object.
 
         Raises:
             TawaziTypeError: If the other object is not an instance of Profile.
@@ -85,7 +83,7 @@ class Profile:
             bool: Whether both are equal.
         """
         if not isinstance(__o, Profile):
-            raise TawaziTypeError(f"{__o} is not an instance of Profile")
+            return NotImplemented
 
         return (
             self.abs_exec_time == __o.abs_exec_time
@@ -97,7 +95,7 @@ class Profile:
         """Less than operator.
 
         Args:
-            __o (object): The other Profile object.
+            __o (Profile): The other Profile object.
 
         Raises:
             TawaziTypeError: if the other object is not an instance of Profile.
@@ -106,6 +104,5 @@ class Profile:
             bool: Whether this Profile is less than the other.
         """
         if not isinstance(__o, Profile):
-            raise TawaziTypeError(f"{__o} is not an instance of Profile")
-
+            return NotImplemented
         return self.abs_exec_time < __o.abs_exec_time

@@ -42,15 +42,6 @@ class UsageExecNode:
         new.key.append(key)
         return new
 
-    @property
-    def is_indexable(self) -> bool:
-        """Whether UsageExecNode is used with an index.
-
-        Returns:
-            bool: whether the ExecNode is indexable
-        """
-        return bool(self.key)
-
     def result(self, results: Dict[Identifier, Any]) -> Any:
         """Extract the result of the ExecNode corresponding to used key(s).
 

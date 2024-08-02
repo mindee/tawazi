@@ -49,7 +49,7 @@ def construct_subdag_arg_uxns(
     for i, arg in enumerate(args):
         # arg is a default value
         if not isinstance(arg, UsageExecNode):
-            axn = ArgExecNode(node.make_axn_id(i, id_=to_subdag_id(qualname)))
+            axn = ArgExecNode(make_axn_id(to_subdag_id(qualname), i))
             node.exec_nodes[axn.id] = axn
             node.results[axn.id] = arg
             uxn = UsageExecNode(axn.id)
@@ -332,7 +332,7 @@ class BaseDAG(Generic[P, RVDAG]):
         )
 
         # change input ExecNodes to ArgExecNodes
-        new_in_ids = [make_axn_id(old_id, id_="composed") for old_id in in_ids]
+        new_in_ids = [make_axn_id("composed", old_id) for old_id in in_ids]
         for old_id, new_id in zip(in_ids, new_in_ids):
             logger.debug("changing Composed-DAG's input {} into ArgExecNode", new_id)
             xn_dict[new_id] = ArgExecNode(new_id)
@@ -630,7 +630,8 @@ class DAG(BaseDAG[P, RVDAG]):
 
         # set DAG.results to the obtained value from setup ExecNodes
         for node_id, result in results.items():
-            if self.exec_nodes[node_id].setup and self.results.get(node_id) is None:
+            xn = self.exec_nodes[node_id]
+            if xn.setup and not xn.executed(self.results):
                 logger.debug("Setting result of setup ExecNode {} to {}", node_id, result)
                 logger.debug("Future executions will use this result.")
                 self.results[node_id] = result
@@ -873,7 +874,10 @@ class AsyncDAG(BaseDAG[P, RVDAG]):
 
         # set DAG.results to the obtained value from setup ExecNodes
         for node_id, result in results.items():
-            if self.exec_nodes[node_id].setup and self.results.get(node_id) is None:
+            xn = self.exec_nodes[node_id]
+            if xn.setup and not xn.executed(self.results):
+                logger.debug("Setting result of setup ExecNode {} to {}", node_id, result)
+                logger.debug("Future executions will use this result.")
                 self.results[node_id] = result
 
         return exec_nodes, results, profiles

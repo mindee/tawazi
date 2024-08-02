@@ -4,6 +4,7 @@ from typing import Any
 import pytest
 from tawazi import dag, xn
 from tawazi.errors import TawaziUsageError
+from tawazi.node.node import ExecNode
 
 
 @xn
@@ -100,3 +101,61 @@ def test_call_directly_with_ignore() -> None:
         assert 15 == f8(1, 2, 3, foo=4, bar=5)
     with warnings.catch_warnings():
         assert 4 == f4(1)
+
+
+def test_non_kwarg_decoration() -> None:
+    with pytest.raises(TypeError, match="0 is not a callable. Did you use a non-keyword argument?"):
+
+        @xn(0)  # type: ignore[call-overload]
+        def bla() -> int:
+            return 1
+
+
+def test_wrong_tag_type() -> None:
+    with pytest.raises(ValueError, match="tag should be of type"):
+
+        @xn(tag=0)
+        def bla() -> int:
+            return 1
+
+
+def test_wrong_priority_type() -> None:
+    with pytest.raises(ValueError, match="priority must be an int"):
+
+        @xn(priority="0")  # type: ignore[call-overload]
+        def bla() -> int:
+            return 1
+
+
+def test_wrong_resource_type() -> None:
+    with pytest.raises(ValueError, match="resource must be of type"):
+
+        @xn(resource="main-thread")  # type: ignore[call-overload]
+        def bla() -> int:
+            return 1
+
+
+def test_wrong_args_and_kwargs() -> None:
+    with pytest.raises(ValueError, match="args must be of type UsageExecNode"):
+        ExecNode(args=(1,))  # type: ignore[arg-type]
+
+
+def test_wrong_kwargs() -> None:
+    with pytest.raises(ValueError, match="kwargs must be of type UsageExecNode"):
+        ExecNode(kwargs={1: 1})  # type: ignore[dict-item]
+
+
+def test_wrong_unpack_type() -> None:
+    with pytest.raises(ValueError, match="unpack_to must be a positive int or None"):
+
+        @xn(unpack_to=1.0)  # type: ignore[call-overload]
+        def bla() -> int:
+            return 1
+
+
+def test_negative_unpack_type() -> None:
+    with pytest.raises(ValueError, match="unpack_to must be a positive int or None"):
+
+        @xn(unpack_to=-1)
+        def bla() -> int:
+            return 1

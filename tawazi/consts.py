@@ -32,6 +32,9 @@ class NoValType:
     >>> assert NoVal1 is deepcopy(NoVal1)
     >>> assert NoVal1 is copy(NoVal1)
     >>> assert NoVal1 != NoVal1
+    >>> assert bool(NoVal1) is False
+    >>> assert repr(NoVal1) == "NoVal"
+    >>> assert hash(NoVal1) == id(NoVal1)
     """
 
     _instance = None
