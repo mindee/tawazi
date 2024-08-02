@@ -66,10 +66,10 @@ def get_highest_priority_node(
     Returns:
         the node with the highest priority
     """
+    # avoids recreating the nodes dict every time
     nodes = graph.nodes
-    highest_priority_id, _ = max(
-        [(id_, nodes[id_]["compound_priority"]) for id_ in runnable_xns_ids], key=lambda x: x[1]
-    )
+
+    highest_priority_id = max(runnable_xns_ids, key=lambda id_: nodes[id_]["compound_priority"])
 
     return xns_dict[highest_priority_id]
 
