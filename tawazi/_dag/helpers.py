@@ -89,6 +89,9 @@ class BiDict(Dict[K, V]):
     >>> b[3] = 'three'
     >>> b.inverse['three']
     3
+    >>> b[3] = 'threeeee'
+    >>> b.inverse['threeeee']
+    3
     >>> b[4] = 'one'
     Traceback (most recent call last):
     ...
@@ -98,6 +101,10 @@ class BiDict(Dict[K, V]):
     >>> b[4] = 'one'
     >>> b.inverse['one']
     4
+    >>> BiDict({1: 2, 3: 2})
+    Traceback (most recent call last):
+    ...
+    ValueError: Value 2 is already in the BiDict
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
