@@ -145,6 +145,13 @@ def dag(
 
 @overload
 def dag(
+    declare_dag_function: Callable[P, RVDAG], *, max_concurrency: int = 1, is_async: bool = False
+) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
+    ...
+
+
+@overload
+def dag(
     *, max_concurrency: int = 1, is_async: Literal[False] = False
 ) -> Callable[[Callable[P, RVDAG]], DAG[P, RVDAG]]:
     ...
@@ -154,6 +161,16 @@ def dag(
 def dag(
     *, max_concurrency: int = 1, is_async: Literal[True] = True
 ) -> Callable[[Callable[P, RVDAG]], AsyncDAG[P, RVDAG]]:
+    ...
+
+
+@overload
+def dag(
+    *, max_concurrency: int = 1, is_async: bool = False
+) -> Union[
+    Callable[[Callable[P, RVDAG]], DAG[P, RVDAG]],
+    Callable[[Callable[P, RVDAG]], AsyncDAG[P, RVDAG]],
+]:
     ...
 
 
