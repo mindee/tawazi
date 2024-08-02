@@ -197,7 +197,7 @@ class BaseDAG(Generic[P, RVDAG]):
         ...     res = z(x(1), y(1))
         ...     b = unwanted_xn()
         ...     return a, res, b
-        >>> composed_dag = pipe.compose([x, y], z)
+        >>> composed_dag = pipe.compose("twinkle", [x, y], z)
         >>> assert composed_dag(1, 1) == 2.0
         >>> # composed_dag: DAG[[int, str], float] = pipe.compose([x, y], [z])  # optional typing of the returned DAG!
         >>> # assert composed_dag(1, 1) == 2.0  # type checked!
