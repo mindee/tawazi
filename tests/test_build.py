@@ -97,7 +97,7 @@ def test_setting_execnode_id_should_fail() -> None:
 
 
 def test_execnodes() -> None:
-    with pytest.raises(NameError):
+    with pytest.raises(NameError), pytest.warns(UserWarning, match="recursion"):
 
         @dag
         def pipe() -> None:

@@ -164,3 +164,36 @@ def test_kwarg_in_xn() -> None:
         return subdag()
 
     assert my_dag() == 1
+
+
+@dag
+def subdag_active(v: int, activate: bool) -> int:
+    return x2(v=v, twz_active=activate)  # type: ignore[call-arg]
+
+
+def test_active_in_subdag() -> None:
+    @dag
+    def my_dag(v: int, activate: bool) -> int:
+        return subdag_active(v, activate)
+
+    assert my_dag(1, True) == 1
+    assert my_dag(1, False) is None
+    assert my_dag(1, True) == 1
+    assert my_dag(1, False) is None
+
+
+def test_active_in_subdag_and_active_in_dag() -> None:
+    with pytest.raises(RuntimeError, match="already has an activation"):
+
+        @dag
+        def my_dag(v: int, activate: bool, activate_subdag: bool) -> int:
+            return subdag_active(v, activate, twz_active=activate_subdag)  # type: ignore[call-arg]
+
+
+def test_recursive() -> None:
+    with pytest.raises(NameError):
+        with pytest.warns(UserWarning, match="Are you trying to do recursion?"):
+
+            @dag
+            def rec() -> None:
+                return rec()

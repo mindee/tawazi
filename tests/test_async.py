@@ -16,8 +16,9 @@ async def test_sync_in_async() -> None:
     def pipeline() -> str:
         return sync_xn()
 
-    with pytest.raises(RuntimeError, match="cannot be called from a running event loop"):
-        assert pipeline() == "sync"
+    with pytest.warns(RuntimeWarning, match="was never awaited"):
+        with pytest.raises(RuntimeError, match="cannot be called from a running event loop"):
+            assert pipeline() == "sync"
 
 
 @xn
@@ -41,7 +42,8 @@ async def test_async_in_async() -> None:
 
 
 def test_async_in_sync_without_await() -> None:
-    assert asyncio.iscoroutine(pipeline())
+    with pytest.warns(RuntimeWarning, match="was never awaited"):
+        assert asyncio.iscoroutine(pipeline())
 
 
 @xn(resource=Resource.thread_async)
