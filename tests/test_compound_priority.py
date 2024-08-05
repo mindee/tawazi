@@ -56,7 +56,7 @@ def dependency_describer() -> None:
     "node, expected_priority", [("a", 4), ("b", 2), ("c", 1), ("d", 1), ("e", 1)]
 )
 def test_compound_priority(node: str, expected_priority: int) -> None:
-    assert dependency_describer.graph_ids.nodes(data="compound_priority")[node] == expected_priority
+    assert dependency_describer.graph_ids.compound_priority[node] == expected_priority
 
 
 def test_compound_priority_execution() -> None:

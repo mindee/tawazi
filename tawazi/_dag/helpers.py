@@ -53,27 +53,6 @@ def copy_non_setup_xns(x_nodes: StrictDict[str, ExecNode]) -> StrictDict[str, Ex
     return x_nodes_copy
 
 
-def get_highest_priority_node(
-    graph: DiGraphEx, runnable_xns_ids: Set[Identifier], xns_dict: Dict[Identifier, ExecNode]
-) -> ExecNode:
-    """Get the node with the highest priority.
-
-    Args:
-        graph: the graph with nodes ids.
-        runnable_xns_ids: the nodes whitelisted for running
-        xns_dict: the mapping between nodes ids and execnodes
-
-    Returns:
-        the node with the highest priority
-    """
-    # avoids recreating the nodes dict every time
-    nodes = graph.nodes
-
-    highest_priority_id = max(runnable_xns_ids, key=lambda id_: nodes[id_]["compound_priority"])
-
-    return xns_dict[highest_priority_id]
-
-
 class BiDict(Dict[K, V]):
     """A bidirectional dictionary that raises an error if two keys are mapped to the same value.
 
@@ -336,7 +315,8 @@ async def async_execute(
             continue
 
         # 4.1 choose the most prioritized node to run
-        xn = get_highest_priority_node(graph, runnable_xns_ids, exec_nodes)
+        highest_priority_id = max(runnable_xns_ids, key=lambda id_: graph.compound_priority[id_])
+        xn = exec_nodes[highest_priority_id]
 
         logger.info("{} will run!", xn.id)
 
