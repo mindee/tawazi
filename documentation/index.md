@@ -597,16 +597,16 @@ def pipe(x):
   # you can also write `v3 = f3(x, twz_active=(x > 1) & (x > 0))`
   v3 = f3(x, twz_active=and_(x > 1, x > 0))
 
-  # subsequent usages only execute if the previous `ExecNode` is executed otherwise returns None
+  # When twz_active is False, the ExecNode is not executed and the result is None
   r1 = wrap_dict(v1)
   r2 = wrap_dict(v2)
   r3 = wrap_dict(v3)
 
   return r1, r2, r3
 
-assert pipe(-1) == (None, {"value": 0}, None)
-assert pipe(2) == ({"value": 5}, None, {"value": 8})
-assert pipe(0) == (None, None, None)
+assert pipe(-1) == ({"value": None}, {"value": 0}, {"value": None})
+assert pipe(2) == ({"value": 5}, {"value": None}, {"value": 8})
+assert pipe(0) == ({"value": None}, {"value": None}, {"value": None})
 ```
 
 
@@ -698,7 +698,7 @@ def pipe(x, y, z, w):
 
 assert pipe(2,3,4,5) == 50
 # declare a sub-dag that only depends on v1, y, z and produces v3
-sub_dag = pipe.compose(inputs=["add_v1", "pipe>!>y", "pipe>!>z"], outputs="add_v3")
+sub_dag = pipe.compose(qualname="my_composed_dag", inputs=["add_v1", "pipe>!>y", "pipe>!>z"], outputs="add_v3")
 assert sub_dag(2,3,4) == 9
 # notice that for inputs, we provide the return value of the ExecNode (return value of ExecNode tagged "add_v1")
 # but for the outputs, we indicate the the ExecNode whose return value must return.
