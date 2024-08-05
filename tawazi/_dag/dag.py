@@ -503,8 +503,10 @@ class BaseDAG(Generic[P, RVDAG]):
         if "max_concurrency" in config:
             self.max_concurrency = config["max_concurrency"]
 
-        # we might have changed the priority of some nodes we need to recompute the compound prio
-        self.graph_ids.assign_compound_priority()
+        # we might have changed the priority of some nodes we need to recompute the DiGraph
+        self.graph_ids = DiGraphEx.from_exec_nodes(
+            input_nodes=self.input_uxns, exec_nodes=self.exec_nodes
+        )
 
     def config_from_yaml(self, config_path: str) -> None:
         """Allows reconfiguring the parameters of the nodes from a YAML file.

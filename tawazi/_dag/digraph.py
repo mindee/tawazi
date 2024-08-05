@@ -1,8 +1,9 @@
 """Module containing the definition of a Directed Graph Extension of networkx.DiGraph."""
 import time
+from collections import defaultdict
 from copy import deepcopy
 from itertools import chain
-from typing import Dict, Iterable, List, Optional, Sequence, Set, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Union
 
 import networkx as nx
 from networkx import NetworkXNoCycle, NetworkXUnfeasible, find_cycle
@@ -16,6 +17,15 @@ from tawazi.node import ExecNode, UsageExecNode
 
 class DiGraphEx(nx.DiGraph):
     """Extends the DiGraph with some methods."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+
+        # Access to nodes data is very slow, using dict is faster
+        self.tag: Dict[Identifier, Optional[List[Tag]]] = defaultdict(lambda: None)
+        self.debug: Dict[Identifier, bool] = defaultdict(lambda: False)
+        self.setup: Dict[Identifier, bool] = defaultdict(lambda: False)
+        self.compound_priority: Dict[Identifier, int] = defaultdict(lambda: 0)
 
     @classmethod
     def from_exec_nodes(
@@ -32,24 +42,21 @@ class DiGraphEx(nx.DiGraph):
         """
         graph = DiGraphEx()
 
-        # avoid recreating the graph every time this is accessed
-        nodes = graph.nodes
-
         input_ids = [uxn.id for uxn in input_nodes]
         for node in exec_nodes.values():
             # add node and edges
             graph.add_exec_node(node)
 
-            # add tag, setup and debug
+            # add tag, debug, setup and priority
             if node.tag:
                 if isinstance(node.tag, Tag):
-                    nodes[node.id]["tag"] = [node.tag]
+                    graph.tag[node.id] = [node.tag]
                 else:
-                    nodes[node.id]["tag"] = [t for t in node.tag]
+                    graph.tag[node.id] = [t for t in node.tag]
 
-            nodes[node.id]["debug"] = node.debug
-            nodes[node.id]["setup"] = node.setup
-            nodes[node.id]["compound_priority"] = node.priority
+            graph.debug[node.id] = node.debug
+            graph.setup[node.id] = node.setup
+            graph.compound_priority[node.id] = node.priority
 
             # validate setup ExecNodes
             if node.setup and any(dep.id in input_ids for dep in node.dependencies):
@@ -156,7 +163,7 @@ class DiGraphEx(nx.DiGraph):
         Returns:
             the debug nodes
         """
-        return [node for node, debug in self.nodes(data="debug") if debug]
+        return [id_ for id_, debug in self.debug.items() if debug]
 
     @property
     def setup_nodes(self) -> List[Identifier]:
@@ -165,7 +172,7 @@ class DiGraphEx(nx.DiGraph):
         Returns:
             the setup nodes
         """
-        return [node for node, setup in self.nodes(data="setup") if setup]
+        return [id_ for id_, setup in self.setup.items() if setup]
 
     @property
     def tags(self) -> Set[str]:
@@ -174,7 +181,7 @@ class DiGraphEx(nx.DiGraph):
         Returns:
             A set of tags
         """
-        return set(chain(*(tags for _, tags in self.nodes(data="tag"))))
+        return set(chain(*(tags for tags in self.tag.values())))  # type: ignore[arg-type]
 
     @property
     def topologically_sorted(self) -> List[Identifier]:
@@ -194,7 +201,7 @@ class DiGraphEx(nx.DiGraph):
         Returns:
             a list of nodes
         """
-        return [xn for xn, tags in self.nodes(data="tag") if tags is not None and tag in tags]
+        return [xn for xn, tags in self.tag.items() if tags is not None and tag in tags]
 
     def single_node_successors(self, node_id: Identifier) -> List[Identifier]:
         """Get all the successors of a node with a depth first search.
@@ -285,8 +292,15 @@ class DiGraphEx(nx.DiGraph):
         else:
             nodes_to_include = list(set(self.nodes) - set(self.debug_nodes))
 
+        # TODO: optimize this part by avoiding the copy of the graph which costing 40ms for findoc currently
+        #  it can be done by reconstructing the graph instead of destroying it in the scheduler
         # networkx typing problem
-        return original_graph.subgraph(nodes_to_include).copy()  # type: ignore[no-any-return]
+        new_graph = original_graph.subgraph(nodes_to_include).copy()
+        new_graph.tag = self.tag
+        new_graph.debug = self.debug
+        new_graph.setup = self.setup
+        new_graph.compound_priority = self.compound_priority
+        return new_graph  # type: ignore[no-any-return]
 
     def minimal_induced_subgraph(self, nodes: List[Identifier]) -> Self:
         """Get the minimal induced subgraph containing the provided nodes.
@@ -358,12 +372,12 @@ class DiGraphEx(nx.DiGraph):
         while leaf_ids:
             next_leaf_ids = set()
             for leaf_id in leaf_ids:
-                compound_priority = self.nodes(data="compound_priority")[leaf_id]
+                compound_priority = self.compound_priority[leaf_id]
 
                 # for parent nodes, this loop won't execute
                 for parent_id in self.predecessors(leaf_id):
                     # increment the compound_priority of the parent node by the leaf priority
-                    self.nodes[parent_id]["compound_priority"] += compound_priority
+                    self.compound_priority[parent_id] += compound_priority
 
                     next_leaf_ids.add(parent_id)
             leaf_ids = next_leaf_ids
