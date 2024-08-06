@@ -1,3 +1,4 @@
+import asyncio
 import os
 from functools import partial
 from typing import Any, Tuple
@@ -8,6 +9,7 @@ from tawazi import DAG, dag, xn
 from tawazi._dag.digraph import DiGraphEx
 from tawazi._dag.helpers import sync_execute
 from tawazi._helpers import StrictDict
+from tawazi.errors import TawaziUsageError
 from tawazi.node import ExecNode, UsageExecNode
 
 
@@ -131,3 +133,16 @@ def test_kwargs_in_local_defined_dag() -> None:
         return a(c="twinkle toes")
 
     assert my_dag() == "a"
+
+
+@pytest.mark.parametrize("is_async", [True, False])
+def test_kwargs_passed_to_dag(is_async: bool) -> None:
+    @dag(is_async=is_async)
+    def my_dag(c: str) -> str:
+        return a(c)
+
+    with pytest.raises(TawaziUsageError, match="currently DAG does not support keyword arguments"):
+        if is_async:
+            asyncio.run(my_dag(c="twinkle toes"))  # type: ignore[arg-type]
+        else:
+            my_dag(c="twinkle toes")
