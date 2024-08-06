@@ -197,3 +197,16 @@ def test_recursive() -> None:
             @dag
             def rec() -> None:
                 return rec()
+
+
+def test_active_argument_passing_argument() -> None:
+    @dag
+    def subdag(x: Any) -> Any:
+        return x
+
+    @dag
+    def my_dag(x: Any) -> Any:
+        return subdag(x, twz_active=x > 0)  # type: ignore[call-arg]
+
+    assert my_dag(1) == 1
+    assert my_dag(-1) is None

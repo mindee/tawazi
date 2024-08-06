@@ -354,7 +354,7 @@ async def async_execute(
             exec_future_sync = executor.submit(xn.execute, results=results, profiles=profiles)
             conc_running.add(exec_future_sync)
             conc_futures[xn.id] = exec_future_sync
-        elif xn.resource == Resource.thread_async:
+        elif xn.resource == Resource.async_thread:
             exec_future_async = asyncio.ensure_future(
                 to_thread_in_executor(xn.execute, executor, results=results, profiles=profiles)
             )

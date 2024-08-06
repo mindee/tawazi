@@ -67,7 +67,7 @@ def test_priority() -> None:
         "c": {"priority": 2, "is_sequential": False},
         "d": {"priority": 1, "is_sequential": False},
     }
-    my_dag.config_from_dict(conf)
+    my_dag.config_from_dict({"nodes": conf})
 
     for _i in range(100):
         priority_sequential_comp_str = ""
@@ -84,7 +84,7 @@ def test_sequentiality() -> None:
         "d": {"priority": 1, "is_sequential": False},
         "e": {"priority": 1, "is_sequential": True},
     }
-    my_seq_dag.config_from_dict(conf)
+    my_seq_dag.config_from_dict({"nodes": conf})
     for _i in range(100):
         # Sequentiality test
         priority_sequential_comp_str = ""

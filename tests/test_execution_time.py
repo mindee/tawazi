@@ -37,7 +37,7 @@ def test_timing() -> None:
 
 
 def test_timing_async_threaded() -> None:
-    @xn(resource=Resource.thread_async)
+    @xn(resource=Resource.async_thread)
     def sleep_sync_async_thread() -> str:
         sleep(T)
         return "twinkle"
