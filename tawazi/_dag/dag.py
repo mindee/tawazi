@@ -181,6 +181,8 @@ class BaseDAG(Generic[P, RVDAG]):
         or a `Sequence` of `Alias`es in which case a Tuple of the values are returned.
         If outputs are specified as [], () is returned.
         The syntax is the following:
+
+        ```python
         >>> from tawazi import dag, xn, DAG
         >>> from typing import Tuple, Any
         >>> @xn
@@ -201,7 +203,7 @@ class BaseDAG(Generic[P, RVDAG]):
         >>> assert composed_dag(1, 1) == 2.0
         >>> # composed_dag: DAG[[int, str], float] = pipe.compose([x, y], [z])  # optional typing of the returned DAG!
         >>> # assert composed_dag(1, 1) == 2.0  # type checked!
-
+        ```
 
         Args:
             qualname (str): the name of the composed DAG

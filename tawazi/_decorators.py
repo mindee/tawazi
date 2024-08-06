@@ -3,7 +3,9 @@
 The user should use the decorators `@dag` and `@xn` to create Tawazi objects `DAG` and `ExecNode`.
 """
 import functools
-from typing import Any, Callable, Literal, Optional, Union, overload
+from typing import Any, Callable, Optional, Union, overload
+
+from typing_extensions import Literal
 
 from tawazi import AsyncDAG
 from tawazi._dag import DAG, safe_make_dag

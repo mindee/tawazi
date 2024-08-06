@@ -7,5 +7,6 @@
 ::: tawazi.Resource
     options:
         members:
-            - thread
-            - main
+        - main_thread
+        - thread
+        - async_thread

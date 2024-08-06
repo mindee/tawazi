@@ -146,11 +146,11 @@ def wait_for_finished_nodes(
 async def wait_for_finished_nodes_async(
     return_when: str,
     graph: DiGraphEx,
-    futures: BiDict[Identifier, asyncio.Future[Any]],
-    done: Set[asyncio.Future[Any]],
-    running: Set[asyncio.Future[Any]],
+    futures: BiDict[Identifier, "asyncio.Future[Any]"],
+    done: Set["asyncio.Future[Any]"],
+    running: Set["asyncio.Future[Any]"],
     runnable_xns_ids: Set[Identifier],
-) -> Tuple[Set[asyncio.Future[Any]], Set[asyncio.Future[Any]], Set[Identifier]]:
+) -> Tuple[Set["asyncio.Future[Any]"], Set["asyncio.Future[Any]"], Set[Identifier]]:
     """Wait for the finished futures before pruning them from the graph.
 
     Args:
@@ -184,10 +184,10 @@ async def wait_for_finished_nodes_async(
 async def to_thread_in_executor(
     func: Callable[..., Any],
     executor: ThreadPoolExecutor,
-    /,
+    # /, # support for python3.7
     *args: Tuple[Any],
     **kwargs: Dict[str, Any],
-) -> asyncio.Future[Any]:
+) -> "asyncio.Future[Any]":
     """A modified copy of asyncio.to_thread.
 
     Asynchronously run function *func* in a separate thread.
@@ -262,9 +262,9 @@ async def async_execute(
     conc_done: Set["Future[Any]"] = set()
     conc_running: Set["Future[Any]"] = set()
 
-    async_futures: BiDict[Identifier, asyncio.Future[Any]] = BiDict()
-    async_done: Set[asyncio.Future[Any]] = set()
-    async_running: Set[asyncio.Future[Any]] = set()
+    async_futures: BiDict[Identifier, "asyncio.Future[Any]"] = BiDict()
+    async_done: Set["asyncio.Future[Any]"] = set()
+    async_running: Set["asyncio.Future[Any]"] = set()
 
     def running_threads() -> int:
         return len(conc_running) + len(async_running)
