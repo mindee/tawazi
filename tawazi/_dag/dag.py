@@ -673,6 +673,9 @@ class DAG(BaseDAG[P, RVDAG]):
             def to_subdag_id(id_: str) -> str:
                 return ".".join(node.DAG_PREFIX + [id_])
 
+            # only the ExecNodes of the SubDAG must be affected by the is_active
+            is_active = False if ARG_NAME_ACTIVATE not in kwargs else kwargs[ARG_NAME_ACTIVATE]
+
             input_uxns = [UsageExecNode(to_subdag_id(uxn.id), uxn.key) for uxn in self.input_uxns]
 
             # provided args to the subdag
@@ -694,16 +697,14 @@ class DAG(BaseDAG[P, RVDAG]):
                     call_location_frame=2,
                 )
                 # register this LazyExecNode in the dict
-                _val: UsageExecNode = stub(axn)
+                # pass kwargs to pass in the twz_active!
+                _val: UsageExecNode = stub(axn, **kwargs)
                 registered_input_ids.append(uxn.id)
 
             # updating ids of results already registered in the DAG due to pipeline.setup and default args
             node.results.update(
                 StrictDict((to_subdag_id(id_), res) for id_, res in self.results.items())
             )
-
-            # only the ExecNodes of the SubDAG must be affected by the is_active
-            is_active = False if ARG_NAME_ACTIVATE not in kwargs else kwargs[ARG_NAME_ACTIVATE]
 
             # updating values of the ExecNodes with the new Ids only for the inputs that were changed!
             graph = DiGraphEx()

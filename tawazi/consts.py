@@ -131,7 +131,7 @@ class Resource(str, Enum):
     # supported behavior following a raised error
     main_thread: str = "main-thread"
     thread: str = "thread"
-    thread_async: str = "async-thread"
+    async_thread: str = "async-thread"
     # process: str = "process"  # Reserved for the future
     # sub_interpreter: str = "sub-interpreter"  # Reserved for the future
 

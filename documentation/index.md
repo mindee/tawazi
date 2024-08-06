@@ -7,12 +7,12 @@ In [Tawazi](https://pypi.org/project/tawazi/), there 3 Classes that will be mani
 `ExecNode` can take arguments and return values to be used as arguments in another object of type `ExecNode`.
 
 
-1. `DAG`: a wrapper around a function that defines a dag dependency.
-This function should only contain calls to objects of type `ExecNode`.<p></p>
+1. `DAG` / `AsyncDAG`: a wrapper around a function that defines a dag dependency.
+This function should only contain calls to objects of type `ExecNode` or to other `DAG`.<p></p>
 **Hint:** Calling normal Python functions inside a `DAG` is not supported.
 
 
-1. `DAGExecution`: an instance related to `DAG` for advanced usage.
+1. `DAGExecution` / `AsyncDAGExecution`: an instance related to `DAG` for advanced usage.
 It can execute a `DAG` and keeps information about the last execution.
 It allows checking all `ExecNode`s results, running subgraphs, caching `DAG` executions and more (c.f. section below for usage documentation).
 
@@ -108,7 +108,7 @@ assert pipeline(10) == 10
 ```
 
 ### **DAG component's Parallelism**
-You can use Tawazi to make your non CPU-Bound code Faster
+You can use Tawazi to make your non CPU-Bound code run in parallel.
 
 <!--pytest-codeblocks:cont-->
 
@@ -179,12 +179,12 @@ assert pipeline() == 3
 # run pipeline with passed parameters
 assert pipeline(1) == 4
 ```
-Currently, you cannot pass in named parameters to the `DAG` (will be supported in future releases).
+Currently, you cannot pass in keyword arguments to the `DAG` (will be supported in future releases).
 
-**Hint:** This should not be confused with passing keyworded arguments to `ExecNode`s which is possible
+**Hint:** This should not be confused with passing keyworded arguments to `ExecNode`s which is possible.
 
 
-A `DAG`-decorated function can support returning multiple values from a pipeline via tuples, lists or dicts (depth of 1).
+A `DAG`-decorated function can support returning multiple values from a pipeline via tuples, lists or dicts (depth of 1 only).
 
 <!--pytest-codeblocks:cont-->
 
@@ -210,7 +210,7 @@ assert pipeline_dict() == {"foo": 2, "bar": 5}
 
 ### **Return types for an `ExecNode`**
 
-`ExecNode` can support rendering multiple values
+`ExecNode` supports returning multiple values via: 
 
 1. For objects of type `Tuple` and `List` in Python, you need to specify the unpacking number
 <!--pytest-codeblocks:cont-->
@@ -228,14 +228,14 @@ def replicate_list(val):
 
 @dag
 def pipeline():
-  v1, v2, v3, v4 = replicate_tuple(1)
-  v5, v6, v7, v8 = replicate_list(v4)
+  v1, v2, v3, v4 = replicate_tuple(1)  # notice unpacked values here
+  v5, v6, v7, v8 = replicate_list(v4)  # and here
   return v1, v2, v3, v4, v5, v6, v7, v8
 
 
 assert pipeline() == (1, 2, 3, 4, 4, 5, 6, 7)
 ```
-1. Or via indexing (`Dict` or `List` etc.):
+2. Or via indexing (`Dict` or `List` etc.):
 <!--pytest-codeblocks:cont-->
 
 ```python
@@ -254,9 +254,9 @@ def incr(val):
 @dag
 def pipeline(val):
   d = gen_dict(val)
-  l = gen_list(d["k1"])
-  inc_val = incr(l[0])
-  inc_val_2 = incr(d["nested_list"][1])
+  l = gen_list(d["k1"])  # indexing a dict
+  inc_val = incr(l[0])  # indexing a list / tuple
+  inc_val_2 = incr(d["nested_list"][1])  # indexing a list / tuple
   return d, l, inc_val, inc_val_2
 
 d, l, inc_val, inc_val_2 = pipeline(123)
@@ -489,7 +489,7 @@ dx = pipeline.executor()
 ```
 You can run a subgraph of your pipeline: Make a `DAGExecution` from your `DAG` and use `target_nodes` parameter to specify which `ExecNode` to run.
 
-The DAG will execute until the specified `ExecNode`s and all other `ExecNode`s will be skipped.
+The `DAG` will execute until the specified `ExecNode`s are executed and all other `ExecNode`s will be skipped.
 
 <!--pytest-codeblocks:cont-->
 
@@ -497,28 +497,31 @@ The DAG will execute until the specified `ExecNode`s and all other `ExecNode`s w
 pipe_exec = pipeline.executor(target_nodes=[b])
 pipe_exec()
 ```
-You can use the `__qualname__` of the decorated function as an Identifier.
+In order to specify your target nodes, you can use what is called an `Alias` of the ExecNode.
+it can be its `__qualname__` or its `tag` or a reference to the `ExecNode` itself.
+
+For example using `__qualname__`:
 <!--pytest-codeblocks:cont-->
 
 ```python
 pipe_exec = pipeline.executor(target_nodes=["b"])
 pipe_exec()
 ```
-You can use the tag of an ExecNode
+Or using its `tag`:
 <!--pytest-codeblocks:cont-->
 
 ```python
 pipe_exec = pipeline.executor(target_nodes=["c_node"])
 pipe_exec()
 ```
-You can use the calling tag to distinguish the 1st call of g from the 2nd call!
+Or using its calling tag to distinguish the 1st call of g from the 2nd call:
 <!--pytest-codeblocks:cont-->
 
 ```python
 pipe_exec = pipeline.executor(target_nodes=["byebye"])
 pipe_exec()
 ```
-You can even pass in the `ExecNode`s themselves and mix identifiers types
+Or using a reference to itself. You can mixt the Alias types too:
 <!--pytest-codeblocks:cont-->
 
 ```python
@@ -528,10 +531,9 @@ pipe_exec()
 ```
 !!! warning
 
-    Because `DAGExecution` instances are mutable, they are non thread-safe. This is unlike `DAG` which is ThreadSafe
+    Because `DAGExecution` instances are mutable, they are non thread-safe. This is unlike `DAG` which is ThreadSafe. Create a DAGExecution per thread if you want to run the same `DAG` in parallel.
 
-Additionally, you can build a subgraph with the paths you want to include by declaring the root nodes where those paths 
-begin, with the `root_nodes` argument:
+Additionally, you can build a subgraph with the paths you want to include by declaring the root nodes where those paths begin, with the `root_nodes` argument:
 
 <!--pytest-codeblocks:cont-->
 ```python
@@ -554,6 +556,7 @@ def my_print(x):
 @dag
 def pipe(x, y):
   x,y = gen_data(x), gen_data(y)
+  # notice the +,-,* operations are applied directly to ExecNode's results
   return -x, -y, x+y, x*y
 assert pipe(1, 2) == (-4, -9, 13, 36)
 ```
@@ -571,7 +574,7 @@ def pipe(x: bool, y: bool):
 assert pipe(True, False) == (False, True)
 ```
 ### **Conditional Execution**
-Currently, conditional statements are not supported in `DAG`. However, `ExecNode`s can be executed conditionally by passing a `bool` to the added parameter `twz_active`. This parameter can be a constant or a result of an execution of other `ExecNode` in the `DAG`. Since basic boolean operations are implemented on `UsageExecNode`s, you can use bitwise operations (`&`, `or`) to simulate `and`, `or`; however this is not recommended, please use the provided `and_`, `or_` and `not_` `ExecNode`s instead.
+`ExecNode`s can be executed conditionally by passing a `bool` to the added parameter `twz_active`. This parameter can be a constant or a result of an execution of other `ExecNode` in the `DAG`. Since basic boolean operations are implemented on `UsageExecNode`s, you can use bitwise operations (`&`, `or`) to simulate `and`, `or`; however this is not recommended, please use the provided `and_`, `or_` and `not_` `ExecNode`s instead.
 
 <!--pytest-codeblocks:cont-->
 
@@ -597,16 +600,12 @@ def pipe(x):
   # you can also write `v3 = f3(x, twz_active=(x > 1) & (x > 0))`
   v3 = f3(x, twz_active=and_(x > 1, x > 0))
 
-  # When twz_active is False, the ExecNode is not executed and the result is None
-  r1 = wrap_dict(v1)
-  r2 = wrap_dict(v2)
-  r3 = wrap_dict(v3)
+  # When twz_active is False, the ExecNode is not executed and returns None
+  return v1, v2, v3
 
-  return r1, r2, r3
-
-assert pipe(-1) == ({"value": None}, {"value": 0}, {"value": None})
-assert pipe(2) == ({"value": 5}, {"value": None}, {"value": 8})
-assert pipe(0) == ({"value": None}, {"value": None}, {"value": None})
+assert pipe(-1) == (None, 0, None)
+assert pipe(2) == (5, None, 8)
+assert pipe(0) == (None, None, None)
 ```
 
 
@@ -671,7 +670,7 @@ assert res_c == "A + B = C"
 You can compose a sub-`DAG` from your original `DAG`. This is useful if you want to reuse a part of your `DAG`.
 Using the `DAG.compose` method, you provide the inputs and the outputs of the composed sub-`DAG`. Order is kept.
 
-Inputs and outputs are communicated via either the `ExecNode` reference or the tag/id of the `ExecNode`.
+Inputs and outputs are communicated using `Alias`: either the `ExecNode` reference or the tag/id (`__qualname__`) of the `ExecNode`.
 Any ambiguity will raise an `Error`.
 
 !!! warning
@@ -704,14 +703,84 @@ assert sub_dag(2,3,4) == 9
 # but for the outputs, we indicate the the ExecNode whose return value must return.
 ```
 
+### **SubDAG Execution**
+
+You can execute a DAG inside another DAG. This can be useful if you want have a logical separation of your code. 
+
+<!--pytest-codeblocks:cont-->
+
+```python
+@xn
+def add(x, y):
+  return x + y
+
+@dag
+def sub_dag(x):
+  return add(x, 1)  
+
+@dag
+def main_dag(x):
+  return sub_dag(x)
+
+assert main_dag(2) == 3
+
+```
+
+It also can be used with conditional execution to run a subgraph only if a condition is met.
+
+<!--pytest-codeblocks:cont-->
+
+```python
+@xn
+def print_positive(x):
+  assert x > 0
+  print(f"{x} is positive")
+
+
+@xn
+def print_negative(x):
+  assert x < 0
+  print(f"{x} is negative")
+
+
+@dag
+def sub_dag_positive(x):
+  print_positive(x)
+  return x
+
+
+@dag
+def sub_dag_negative(x):
+  print_negative(x)
+  return x
+
+
+@dag 
+def main_dag(x):
+  v1 = sub_dag_positive(x, twz_active=x > 0)
+  v2 = sub_dag_negative(x, twz_active=x < 0)
+  return v1, v2
+
+
+# prints 1 is positive
+# doesn't print 1 is negative because not executed
+assert main_dag(1) == (1, None)
+
+# doesn't print -1 is positive because not executed
+# prints -1 is negative
+assert main_dag(-1) == (None, -1)
+
+```
+
 
 ### **Resource Usage for Execution**
 
 You can control the resource used to run a specific `ExecNode`. By default, all `ExecNode`s run in threads inside a ThreadPoolExecutor.
-This can be changed by setting the `resource` parameter of the `ExecNode`. Currently only two values are supported: 
+This can be changed by setting the `resource` parameter of the `ExecNode`. The following resources are available:
 
-1. "thread": Run the `ExecNode` inside a thread (default).
 1. "main-thread": Run the `ExecNode` inside the main thread without Pickling the data to pass it to the threads etc.
+1. "thread": Run the `ExecNode` inside a thread (default).
+1. "async-thread": Run the `ExecNode` inside an asyncio thread.
 
 <!--pytest-codeblocks:cont-->
 
@@ -729,19 +798,56 @@ def run_in_thread(main_thread_id):
   assert main_thread_id != threading.get_ident()
   print(f"I am running in a thread with thread id {threading.get_ident()}")
 
+@xn(resource=Resource.async_thread)
+def run_in_async_thread(main_thread_id):
+  assert main_thread_id != threading.get_ident()
+  print(f"I am running in an async thread with thread id {threading.get_ident()}")
+
 @dag
 def dag_with_resource(main_thread_id):
   run_in_main_thread(main_thread_id)
   run_in_thread(main_thread_id)
+  run_in_async_thread(main_thread_id)
 
 dag_with_resource(threading.get_ident())
 
 ```
-You can also set the default resource for all `ExecNode`s by setting the environment variable `TAWAZI_DEFAULT_RESOURCE` to either "thread" or "main-thread".
+
+You can also set the default resource for all `ExecNode`s by setting the environment variable `TAWAZI_DEFAULT_RESOURCE` to either "thread" or "main-thread" or "async-thread".
+
+
+### **AsyncDAG**
+You can run make an `AsyncDAG` instead of a normal _Sync_ DAG. This is useful if you want to run your `DAG` in an async context. The `AsyncDAG` behaves exactly like a normal `DAG` but has the advantage of giving the hand to the event loop if your code in the `ExecNode`s releases the GIL.
+
+**NOTE**: Your ExecNode should use the "async-thread" resource to give the hand to the event loop. Otherwise, the event loop will be blocked.
+
+<!--pytest-codeblocks:cont-->
+
+
+```python
+# will be awaited in the AsyncDAG's scheduler.
+@xn(resource=Resource.async_thread)
+def add_async(x, y):
+  return x + y
+
+@dag(is_async=True)
+def my_async_dag(x):
+  return add(x, 1)
+
+import asyncio
+import numpy as np
+
+# using numpy in the example to show that the event loop is not blocked!
+#  because numpy releases the GIL.
+res = asyncio.run(my_async_dag(np.zeros(1000)))
+assert (res == np.ones(1000)).all()
+
+```
 
 ## **Limitations**
 1. All code inside a dag descriptor function must be either an @xn decorated functions calls and arguments passed arguments. Otherwise the behavior of the DAG might be unpredictable
 1. Because the main function serves only for the purpose of describing the dependencies, the code that it executes should only describe dependencies. Hence when debugging your code, it will be impossible to view the data movement inside this function. However, you can debug code inside of a node.
+1. You can only execute a `DAG` in a sync context, i.e. it shouldn't be executed inside a running event loop because tawazi uses an internal event loop. If you want to run it in an async context, transform your `DAG` into an `AsyncDAG` and await it. 
 1. MyPy typing is supported. However, for certain cases it is not currently possible to support typing: (`twz_tag`, `twz_active`, `twz_unpack_to` etc.). This is because of pep612's limitation for [concatenating-keyword-parameters](https://peps.python.org/pep-0612/#concatenating-keyword-parameters). As a workaround, you can currently add `**kwargs` to your original function declaring that it can accept keyworded arguments. However none of the inline tawazi specific parameters (`twz_*`) parameters will be passed to your function:
 <!--pytest-codeblocks:cont-->
 

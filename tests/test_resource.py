@@ -66,7 +66,7 @@ def test_main_thread_sequential_exec_node() -> None:
 
 
 def test_async_threaded_in_sync() -> None:
-    @xn(resource=Resource.thread_async)
+    @xn(resource=Resource.async_thread)
     def async_threaded_xn() -> Literal["async_threaded"]:
         return "async_threaded"
 
