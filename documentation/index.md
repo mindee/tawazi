@@ -848,6 +848,7 @@ assert (res == np.ones(1000)).all()
 1. All code inside a dag descriptor function must be either an @xn decorated functions calls and arguments passed arguments. Otherwise the behavior of the DAG might be unpredictable
 1. Because the main function serves only for the purpose of describing the dependencies, the code that it executes should only describe dependencies. Hence when debugging your code, it will be impossible to view the data movement inside this function. However, you can debug code inside of a node.
 1. You can only execute a `DAG` in a sync context, i.e. it shouldn't be executed inside a running event loop because tawazi uses an internal event loop. If you want to run it in an async context, transform your `DAG` into an `AsyncDAG` and await it. 
+1. You can only run a SyncDAG inside another DAG. You can't run an AsyncDAG inside a SyncDAG!
 1. MyPy typing is supported. However, for certain cases it is not currently possible to support typing: (`twz_tag`, `twz_active`, `twz_unpack_to` etc.). This is because of pep612's limitation for [concatenating-keyword-parameters](https://peps.python.org/pep-0612/#concatenating-keyword-parameters). As a workaround, you can currently add `**kwargs` to your original function declaring that it can accept keyworded arguments. However none of the inline tawazi specific parameters (`twz_*`) parameters will be passed to your function:
 <!--pytest-codeblocks:cont-->
 

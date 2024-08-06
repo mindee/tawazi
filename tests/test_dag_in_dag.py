@@ -1,7 +1,8 @@
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import pytest
 from tawazi import dag, xn
+from typing_extensions import Literal
 
 
 @xn

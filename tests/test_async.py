@@ -1,9 +1,9 @@
 import asyncio
 from time import sleep, time
-from typing import Literal
 
 import pytest
 from tawazi import AsyncDAGExecution, Resource, dag, xn
+from typing_extensions import Literal
 
 
 @pytest.mark.asyncio

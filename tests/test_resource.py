@@ -1,8 +1,9 @@
 import threading
 from time import sleep, time
-from typing import Literal, Tuple
+from typing import Tuple
 
 from tawazi import Resource, dag, xn
+from typing_extensions import Literal
 
 T = 0.1
 

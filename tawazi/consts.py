@@ -119,13 +119,16 @@ RVXN = TypeVar("RVXN", covariant=True)
 class Resource(str, Enum):
     """The Resource to use launching ExecNodes inside the DAG scheduler a DAG.
 
+    ```md
     Resource can be either:
-    1. "thread": Launch the ExecNode in a thread (Default)
-    2. "main-thread": Launch the ExecNode inside the main thread, directly inside the main scheduler.
+    1. "main-thread": Launch the ExecNode inside the main thread, directly inside the main scheduler.
+    2. "thread": Launch the ExecNode in a thread (Default)
+    3. "async-thread": Launch the ExecNode in an async thread and await it
 
     Notice that when "main-thread" is used, some of the scheduler functionalities stop working as previously expected:
     1. No new ExecNode will be launched during the execution of the corresponding ExecNode
     2. If timeout is set on the corresponding ExecNode, it is not guaranteed to work properly.
+    ```
     """
 
     # supported behavior following a raised error
