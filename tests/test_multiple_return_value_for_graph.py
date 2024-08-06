@@ -1,13 +1,8 @@
-from typing import Dict, List, Tuple, TypeVar, Union
+from typing import Dict, List, Tuple, Union
 
-from tawazi import dag, xn
+from tawazi import dag
 
-T = TypeVar("T")
-
-
-@xn
-def a(v: T) -> T:
-    return v
+from .common import stub
 
 
 def test_no_return() -> None:
@@ -21,7 +16,7 @@ def test_no_return() -> None:
 def test_return_single() -> None:
     @dag
     def pipe() -> str:
-        return a("twinkle")
+        return stub("twinkle")
 
     assert pipe() == "twinkle"
 
@@ -29,7 +24,7 @@ def test_return_single() -> None:
 def test_return_tuple() -> None:
     @dag
     def pipe() -> Tuple[str, str, str]:
-        res = a("tata")
+        res = stub("tata")
         return res, res, res
 
     assert pipe() == ("tata", "tata", "tata")
@@ -38,7 +33,7 @@ def test_return_tuple() -> None:
 def test_return_list() -> None:
     @dag
     def pipe() -> List[str]:
-        res = a("tata")
+        res = stub("tata")
         return [res, res, res]
 
     assert pipe() == ["tata", "tata", "tata"]
@@ -47,7 +42,7 @@ def test_return_list() -> None:
 def test_return_dict() -> None:
     @dag
     def pipe() -> Dict[str, str]:
-        res = a("tata")
+        res = stub("tata")
         return {"1": res, "2": res, "3": res}
 
     assert pipe() == {"1": "tata", "2": "tata", "3": "tata"}
@@ -56,15 +51,10 @@ def test_return_dict() -> None:
 def test_return_dict2() -> None:
     @dag
     def pipe(a_const: int = 123) -> Dict[Union[str, int], Union[str, int]]:
-        res = a("tata")
+        res = stub("tata")
         return {1: res, "2": res, "input_value": a_const}
 
     assert pipe() == {1: "tata", "2": "tata", "input_value": 123}
-
-
-@xn
-def stub(x: T) -> T:
-    return x
 
 
 def test_return_single_const() -> None:

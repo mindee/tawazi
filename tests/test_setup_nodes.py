@@ -1,4 +1,3 @@
-import asyncio
 from copy import deepcopy
 from functools import reduce
 from typing import Any
@@ -7,12 +6,7 @@ import pytest
 from tawazi import dag, xn
 from tawazi.errors import TawaziBaseException, TawaziUsageError
 
-
-def run_pipeline(*args: Any, pipeline: Any, is_async: bool) -> None:
-    if is_async:
-        asyncio.run(pipeline(*args))
-    else:
-        pipeline(*args)
+from .common import run_pipeline
 
 
 @pytest.mark.parametrize("is_async", [True, False])

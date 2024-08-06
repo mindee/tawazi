@@ -104,3 +104,25 @@ def test_execnodes() -> None:
             a()
             # purposefully an undefined ExecNode
             b_()  # type: ignore[name-defined] # noqa: F821
+
+
+def test_wrong_type_max_concurrency() -> None:
+    with pytest.raises(ValueError, match="max_concurrency must be an int"):
+        DAG("mydag", StrictDict(), node_dict, [], [], "2")  # type: ignore[arg-type]
+
+
+def test_negative_max_concurrency() -> None:
+    with pytest.raises(
+        ValueError, match="Invalid maximum number of threads! Must be a positive integer"
+    ):
+        DAG("mydag", StrictDict(), node_dict, [], [], -2)
+
+
+def test_wrong_type_results() -> None:
+    with pytest.raises(ValueError, match="results must be a StrictDict"):
+        DAG("mydag", {}, node_dict, [], [], 2)  # type: ignore[arg-type]
+
+
+def test_wrong_type_exec_nodes() -> None:
+    with pytest.raises(ValueError, match="exec_nodes must be a StrictDict"):
+        DAG("mydag", StrictDict(), {}, [], [], 2)  # type: ignore[arg-type]

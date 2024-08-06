@@ -752,9 +752,6 @@ class DAG(BaseDAG[P, RVDAG]):
                 node.exec_nodes[new_id] = exec_node.__class__(**values)
 
             try:
-                # maybe support this later on
-                if self.return_uxns is None:
-                    raise RuntimeError("SubDAG must have return values")
                 if isinstance(self.return_uxns, UsageExecNode):
                     return UsageExecNode(to_subdag_id(self.return_uxns.id), self.return_uxns.key)  # type: ignore[return-value]
 
@@ -770,7 +767,9 @@ class DAG(BaseDAG[P, RVDAG]):
                         k: UsageExecNode(to_subdag_id(uxn.id), uxn.key)
                         for k, uxn in self.return_uxns.items()
                     }
-                raise RuntimeError("Unknown Error! while constructing SubDAG")
+                raise RuntimeError(
+                    "SubDAG must have return values as a single value, tuple, list or dict."
+                )
             finally:
                 node.DAG_PREFIX.pop()
 
@@ -1027,6 +1026,27 @@ class BaseDAGExecution(Generic[P, RVDAG]):
                 to_cache_results = results
             pickle.dump(to_cache_results, f, protocol=pickle.HIGHEST_PROTOCOL, fix_imports=False)
 
+    def _pre_call(self) -> None:
+        if self.executed:
+            raise TawaziUsageError("DAGExecution object has already been executed.")
+
+        if self.from_cache:
+            with open(self.from_cache, "rb") as f:
+                cached_results = pickle.load(f)  # noqa: S301
+            for node in self.cached_nodes:
+                self.results = cached_results[node.id]
+
+    def _post_call(self) -> RVDAG:
+        # mark as executed. Important for the next step
+        self.executed = True
+
+        # 3. cache in the graph results
+        if self.cache_in:
+            self._cache_results(self.results)
+
+        # 3. extract the returned value/values
+        return get_return_values(self.dag.return_uxns, self.results)  # type: ignore[return-value]
+
 
 @dataclass
 class DAGExecution(BaseDAGExecution[P, RVDAG]):
@@ -1054,29 +1074,14 @@ class DAGExecution(BaseDAGExecution[P, RVDAG]):
         Returns:
             RVDAG: the return value of the DAG's Execution
         """
-        if self.executed:
-            raise TawaziUsageError("DAGExecution object has already been executed.")
-
-        if self.from_cache:
-            with open(self.from_cache, "rb") as f:
-                cached_results = pickle.load(f)  # noqa: S301
-            for node in self.cached_nodes:
-                self.results = cached_results[node.id]
+        self._pre_call()
 
         # 2. Execute the scheduler
         self.xn_dict, self.results, self.profiles = self.dag.run_subgraph(
             self.graph, self.results, *args
         )
 
-        # mark as executed. Important for the next step
-        self.executed = True
-
-        # 3. cache in the graph results
-        if self.cache_in:
-            self._cache_results(self.results)
-
-        # 3. extract the returned value/values
-        return get_return_values(self.dag.return_uxns, self.results)  # type: ignore[return-value]
+        return self._post_call()
 
 
 class AsyncDAGExecution(BaseDAGExecution[P, RVDAG]):
@@ -1104,26 +1109,11 @@ class AsyncDAGExecution(BaseDAGExecution[P, RVDAG]):
         Returns:
             RVDAG: the return value of the DAG's Execution
         """
-        if self.executed:
-            raise TawaziUsageError("DAGExecution object has already been executed.")
-
-        if self.from_cache:
-            with open(self.from_cache, "rb") as f:
-                cached_results = pickle.load(f)  # noqa: S301
-            for node in self.cached_nodes:
-                self.results = cached_results[node.id]
+        self._pre_call()
 
         # 2. Execute the scheduler
         self.xn_dict, self.results, self.profiles = await self.dag.run_subgraph(
             self.graph, self.results, *args
         )
 
-        # mark as executed. Important for the next step
-        self.executed = True
-
-        # 3. cache in the graph results
-        if self.cache_in:
-            self._cache_results(self.results)
-
-        # 3. extract the returned value/values
-        return get_return_values(self.dag.return_uxns, self.results)  # type: ignore[return-value]
+        return self._post_call()

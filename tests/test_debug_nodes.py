@@ -1,9 +1,11 @@
 from logging import Logger
-from typing import Any, List, TypeVar
+from typing import Any, List
 
 import pytest
 from tawazi import dag, xn
 from tawazi.errors import TawaziBaseException
+
+from .common import stub
 
 logger = Logger(name="mylogger", level="ERROR")
 
@@ -12,13 +14,6 @@ my_len_has_ran = False
 is_positive_len_has_ran = False
 print_share_var = None
 inc_shared_var = 0
-
-T = TypeVar("T")
-
-
-@xn
-def stub(img: T) -> T:
-    return img
 
 
 @xn(debug=True)

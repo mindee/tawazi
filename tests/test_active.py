@@ -1,14 +1,9 @@
-from typing import Any, Optional, Tuple, TypeVar
+from typing import Any, Optional, Tuple
 
 import pytest
 from tawazi import and_, dag, xn
 
-T = TypeVar("T")
-
-
-@xn
-def stub(x: T) -> T:
-    return x
+from .common import stub
 
 
 @xn
