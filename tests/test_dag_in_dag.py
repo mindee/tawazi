@@ -193,7 +193,7 @@ def test_active_in_subdag_and_active_in_dag() -> None:
 
 def test_recursive() -> None:
     with pytest.raises(NameError):
-        with pytest.warns(UserWarning, match="Are you trying to do recursion?"):
+        with pytest.warns(UserWarning, match="Recursion is not supported for DAGs"):
 
             @dag
             def rec() -> None:

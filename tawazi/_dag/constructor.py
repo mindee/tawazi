@@ -36,9 +36,10 @@ def get_args_and_default_args(func: Callable[..., Any]) -> Tuple[List[str], Dict
     return args, default_args
 
 
-def __make_dag(
+def make_dag(
     _func: Callable[P, RVDAG], max_concurrency: int, is_async: bool
 ) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
+    """Make a DAG or AsyncDAG from the function that describes the DAG."""
     # 2. make ExecNodes corresponding to the arguments of the ExecNode
     # 2.1 get the names of the arguments and the default values
     func_args, func_default_args = get_args_and_default_args(_func)
@@ -87,9 +88,10 @@ def __make_dag(
     )
 
 
-def _make_dag(
+def wrap_make_dag(
     _func: Callable[P, RVDAG], max_concurrency: int, is_async: bool
 ) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
+    """Clean up before and after making the DAG."""
     # 1. node.exec_nodes contains all the ExecNodes that concern the DAG being built at the moment.
     #      make sure it is empty
     node.exec_nodes = StrictDict()
@@ -97,9 +99,10 @@ def _make_dag(
     node.DAG_PREFIX = []
 
     try:
-        return __make_dag(_func, max_concurrency, is_async)
+        return make_dag(_func, max_concurrency, is_async)
     except NameError as e:
-        warnings.warn("Are you trying to do recursion?", stacklevel=3)
+        if _func.__name__ in e.args[0]:
+            warnings.warn("Recursion is not supported for DAGs", stacklevel=3)
         raise e
     # clean up even in case an error is raised during dag construction
     finally:
@@ -110,7 +113,7 @@ def _make_dag(
         node.DAG_PREFIX = []
 
 
-def safe_make_dag(
+def threadsafe_make_dag(
     _func: Union[Callable[P, RVDAG]], max_concurrency: int, is_async: bool
 ) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
     """Make DAG or AsyncDAG form the function that describes the DAG.
@@ -118,4 +121,4 @@ def safe_make_dag(
     Thread safe and cleans after itself.
     """
     with node.exec_nodes_lock:
-        return _make_dag(_func, max_concurrency, is_async)
+        return wrap_make_dag(_func, max_concurrency, is_async)
