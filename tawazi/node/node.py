@@ -265,6 +265,14 @@ class ExecNode:
         frame_info = inspect.getframeinfo(frame)
         return f"{frame_info.filename}:{frame_info.lineno}"
 
+    def _conf_to_values(self, conf: Dict[str, Any]) -> Dict[str, Any]:
+        values = dataclasses.asdict(self)
+        values["args"] = self.args
+        values["kwargs"] = self.kwargs
+        values["is_sequential"] = conf.get("is_sequential", self.is_sequential)
+        values["priority"] = conf.get("priority", self.priority)
+        return values  # ignore: typing[no-any-return]
+
 
 class ReturnExecNode(ExecNode):
     """ExecNode corresponding to a constant Return value of a DAG."""

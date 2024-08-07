@@ -197,7 +197,7 @@ async def to_thread_in_executor(
     allowing context variables from the main thread to be accessed in the
     separate thread.
 
-    Return a coroutine that can be awaited to get the eventual result of *func*.
+    Return a coroutine that can be awaited to get the result of *func*.
     """
     loop = asyncio.get_running_loop()
     ctx = contextvars.copy_context()

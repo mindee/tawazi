@@ -1,4 +1,4 @@
-from .constructor import safe_make_dag
+from .constructor import threadsafe_make_dag
 from .dag import DAG, AsyncDAG, AsyncDAGExecution, DAGExecution
 
-__all__ = ["DAG", "DAGExecution", "AsyncDAG", "AsyncDAGExecution", "safe_make_dag"]
+__all__ = ["DAG", "DAGExecution", "AsyncDAG", "AsyncDAGExecution", "threadsafe_make_dag"]

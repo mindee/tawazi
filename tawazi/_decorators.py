@@ -8,7 +8,7 @@ from typing import Any, Callable, Optional, Union, overload
 from typing_extensions import Literal
 
 from tawazi import AsyncDAG
-from tawazi._dag import DAG, safe_make_dag
+from tawazi._dag import DAG, threadsafe_make_dag
 
 from .config import cfg
 from .consts import RVDAG, RVXN, P, Resource, TagOrTags
@@ -213,7 +213,7 @@ def dag(
     # wrapper used to support parametrized and non parametrized decorators
     def intermediate_wrapper(_func: Callable[P, RVDAG]) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
         # 0. Protect against multiple threads declaring many DAGs at the same time
-        d = safe_make_dag(_func, max_concurrency, is_async)
+        d = threadsafe_make_dag(_func, max_concurrency, is_async)
         functools.update_wrapper(d, _func)
         return d
 

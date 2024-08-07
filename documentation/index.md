@@ -8,7 +8,7 @@ In [Tawazi](https://pypi.org/project/tawazi/), there 3 Classes that will be mani
 
 
 1. `DAG` / `AsyncDAG`: a wrapper around a function that defines a dag dependency.
-This function should only contain calls to objects of type `ExecNode` or to other `DAG`.<p></p>
+This function should only contain calls to objects of type `ExecNode` or `DAG`.<p></p>
 **Hint:** Calling normal Python functions inside a `DAG` is not supported.
 
 
@@ -210,7 +210,7 @@ assert pipeline_dict() == {"foo": 2, "bar": 5}
 
 ### **Return types for an `ExecNode`**
 
-`ExecNode` supports returning multiple values via: 
+`ExecNode` supports returning multiple values: 
 
 1. For objects of type `Tuple` and `List` in Python, you need to specify the unpacking number
 <!--pytest-codeblocks:cont-->
@@ -521,7 +521,7 @@ Or using its calling tag to distinguish the 1st call of g from the 2nd call:
 pipe_exec = pipeline.executor(target_nodes=["byebye"])
 pipe_exec()
 ```
-Or using a reference to itself. You can mixt the Alias types too:
+Or using a reference to itself. You can mix the Alias types too:
 <!--pytest-codeblocks:cont-->
 
 ```python
@@ -531,7 +531,7 @@ pipe_exec()
 ```
 !!! warning
 
-    Because `DAGExecution` instances are mutable, they are non thread-safe. This is unlike `DAG` which is ThreadSafe. Create a DAGExecution per thread if you want to run the same `DAG` in parallel.
+    Because `DAGExecution` instances are mutable, they are not thread-safe. This is unlike `DAG` which is ThreadSafe. Create a DAGExecution per thread if you want to run the same `DAG` in parallel.
 
 Additionally, you can build a subgraph with the paths you want to include by declaring the root nodes where those paths begin, with the `root_nodes` argument:
 

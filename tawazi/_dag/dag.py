@@ -1,5 +1,4 @@
 """module containing DAG and DAGExecution which are the containers that run ExecNodes in Tawazi."""
-import dataclasses
 import json
 import pickle
 import warnings
@@ -57,6 +56,14 @@ def construct_subdag_arg_uxns(
             uxn = arg
         uxns.append(uxn)
     return uxns
+
+
+def detect_duplicates(expanded_config: List[Tuple[Identifier, Any]]) -> None:
+    duplicates = [
+        id for id, count in Counter([id for id, _ in expanded_config]).items() if count > 1
+    ]
+    if duplicates:
+        raise ValueError(f"trying to set two configs for nodes {duplicates}.")
 
 
 @dataclass
@@ -334,7 +341,7 @@ class BaseDAG(Generic[P, RVDAG]):
         )
 
         # change input ExecNodes to ArgExecNodes
-        new_in_ids = [make_axn_id("composed", old_id) for old_id in in_ids]
+        new_in_ids = [make_axn_id(qualname, old_id) for old_id in in_ids]
         for old_id, new_id in zip(in_ids, new_in_ids):
             logger.debug("changing Composed-DAG's input {} into ArgExecNode", new_id)
             xn_dict[new_id] = ArgExecNode(new_id)
@@ -457,6 +464,15 @@ class BaseDAG(Generic[P, RVDAG]):
         )
         return graph
 
+    def _expand_config(
+        self, config_nodes: Dict[Union[Tag, Identifier], Any]
+    ) -> List[Tuple[Identifier, Any]]:
+        expanded_config = []
+        for alias, conf_node in config_nodes.items():
+            ids = self.alias_to_ids(alias)
+            expanded_config.extend([(id, conf) for id, conf in zip(ids, len(ids) * [conf_node])])
+        return expanded_config
+
     def config_from_dict(self, config: Dict[str, Any]) -> None:
         """Allows reconfiguring the parameters of the nodes from a dictionary.
 
@@ -467,39 +483,12 @@ class BaseDAG(Generic[P, RVDAG]):
         Raises:
             ValueError: if two nodes are configured by the provided config (which is ambiguous)
         """
-
-        def node_values(n: ExecNode, conf: Dict[str, Any]) -> Dict[str, Any]:
-            values = dataclasses.asdict(n)
-            values["args"] = n.args
-            values["kwargs"] = n.kwargs
-            values["is_sequential"] = conf.get("is_sequential", n.is_sequential)
-            values["priority"] = conf.get("priority", n.priority)
-            return values  # ignore: typing[no-any-return]
-
-        def expand_config(
-            config_nodes: Dict[Union[Tag, Identifier], Any]
-        ) -> List[Tuple[Identifier, Any]]:
-            expanded_config = []
-            for alias, conf_node in config_nodes.items():
-                ids = self.alias_to_ids(alias)
-                expanded_config.extend(
-                    [(id, conf) for id, conf in zip(ids, len(ids) * [conf_node])]
-                )
-            return expanded_config
-
-        def detect_duplicates(expanded_config: List[Tuple[Identifier, Any]]) -> None:
-            duplicates = [
-                id for id, count in Counter([id for id, _ in expanded_config]).items() if count > 1
-            ]
-            if duplicates:
-                raise ValueError(f"trying to set two configs for nodes {duplicates}.")
-
         if "nodes" in config:
-            expanded_config = expand_config(config["nodes"])
+            expanded_config = self._expand_config(config["nodes"])
             detect_duplicates(expanded_config)
             for node_id, conf_node in expanded_config:
                 node = self.get_node_by_id(node_id)
-                values = node_values(node, conf_node)
+                values = node._conf_to_values(conf_node)
                 self.exec_nodes.force_set(node_id, node.__class__(**values))
 
         if "max_concurrency" in config:
@@ -720,7 +709,7 @@ class DAG(BaseDAG[P, RVDAG]):
                 # input ExecNode was already registered during step for zip
                 if new_id in registered_input_ids:
                     logger.debug(
-                        "Skipping ExecNode {} because it is an already registered input", new_id
+                        "Skipping ExecNode {} because the input is already registered", new_id
                     )
                     continue
 
@@ -880,8 +869,12 @@ class AsyncDAG(BaseDAG[P, RVDAG]):
         for node_id, result in results.items():
             xn = self.exec_nodes[node_id]
             if xn.setup and not xn.executed(self.results):
-                logger.debug("Setting result of setup ExecNode {} to {}", node_id, result)
-                logger.debug("Future executions will use this result.")
+                logger.debug(
+                    "Setting result of setup ExecNode {} to {}"
+                    "Future executions will use this result.",
+                    node_id,
+                    result,
+                )
                 self.results[node_id] = result
 
         return exec_nodes, results, profiles
