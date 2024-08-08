@@ -295,7 +295,11 @@ class ReturnExecNode(ExecNode):
             TypeError: if type parameter is passed (Internal)
         """
         suffix = make_suffix(name_or_order)
-        super().__init__(id_=f"{func}{RETURN_NAME_SEP}{suffix}", is_sequential=False)
+        super().__init__(
+            id_=f"{func}{RETURN_NAME_SEP}{suffix}",
+            is_sequential=False,
+            resource=Resource.main_thread,
+        )
 
 
 class ArgExecNode(ExecNode):
@@ -321,7 +325,9 @@ class ArgExecNode(ExecNode):
 
         raise_err = make_raise_arg_error(base_id, suffix)
 
-        super().__init__(id_=id_, exec_function=raise_err, is_sequential=False)
+        super().__init__(
+            id_=id_, exec_function=raise_err, is_sequential=False, resource=Resource.main_thread
+        )
 
 
 def make_axn_id(id_: Identifier, name_or_order: Union[str, int]) -> Identifier:
