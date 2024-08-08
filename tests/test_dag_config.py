@@ -78,3 +78,15 @@ def test_conf_dag_via_tag() -> None:
     d.config_from_dict(tag_cfg)
     assert d.max_concurrency == 3
     assert d.get_node_by_id("a").priority == 256
+
+
+def test_with_twz_active() -> None:
+    @dag
+    def my_dag() -> str:
+        var_a = a(1234, twz_active=True)  # type: ignore[call-arg]
+        return b(var_a, "poulpe")
+
+    my_dag.config_from_dict(
+        {"nodes": {"a": {"priority": 42, "is_sequential": False}}, "max_concurrency": 3}
+    )
+    assert my_dag() == "1234poulpe"

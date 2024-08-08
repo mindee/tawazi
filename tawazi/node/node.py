@@ -267,8 +267,11 @@ class ExecNode:
 
     def _conf_to_values(self, conf: Dict[str, Any]) -> Dict[str, Any]:
         values = dataclasses.asdict(self)
+        # copy the values of ExecNode that are also dataclass
         values["args"] = self.args
         values["kwargs"] = self.kwargs
+        values["active"] = self.active
+        # modify the values of ExecNode that should be modified
         values["is_sequential"] = conf.get("is_sequential", self.is_sequential)
         values["priority"] = conf.get("priority", self.priority)
         return values  # ignore: typing[no-any-return]
