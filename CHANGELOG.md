@@ -1,11 +1,23 @@
 # Changelog
 
 ## Unreleased
+
+## v0.4.0 (2024-08-09)
+
+### Improvements
 * :recycle: big overhaul to the dag interface
 * :recycle: rely on networkx for most of the graph-related computations
 * :sparkles: root nodes implementation (see documentation for further explanation)
 * :memo: improve documentation and remove most of the outdated comments
-* :recycle: remove a lot of unnecessary code
+* :sparkles: added AsyncDAG / AsyncDAGExecution to execute DAG in async context
+* :sparkles: added Async-Threaded resource
+* :sparkles: added feature of running DAG in DAG
+* :sparkles: Include Line Number pointing to the location where the DAG made the error!
+* :sparkles: Support Ellipsis for DAG.compose' input
+* :zap: Optimize ArgExecNode and ReturnExecNode by using main-thread instead of DEFAULT_THREAD
+
+### Bug Fixes
+* :bug: fix twz_active behavior. If twz_active is False, the node returns None
 
 ## v0.3.4 (2024-03-14)
 
