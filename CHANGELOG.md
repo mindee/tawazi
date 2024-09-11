@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## v0.4.1 (2024-09-11)
+
+### Improvements
+* :recycle: use dynamic node construction instead of static one
+
 ## v0.4.0 (2024-08-09)
 
 ### Improvements
