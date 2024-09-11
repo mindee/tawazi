@@ -489,7 +489,7 @@ class BaseDAG(Generic[P, RVDAG]):
             for node_id, conf_node in expanded_config:
                 node = self.get_node_by_id(node_id)
                 values = node._conf_to_values(conf_node)
-                self.exec_nodes.force_set(node_id, node.__class__(**values))
+                self.exec_nodes.force_set(node_id, type(node)(**values))
 
         if "max_concurrency" in config:
             self.max_concurrency = config["max_concurrency"]
@@ -738,7 +738,7 @@ class DAG(BaseDAG[P, RVDAG]):
                             )
                         values["active"] = make_active(new_id, **kwargs)
 
-                node.exec_nodes[new_id] = exec_node.__class__(**values)
+                node.exec_nodes[new_id] = type(exec_node)(**values)
 
             try:
                 if isinstance(self.return_uxns, UsageExecNode):
