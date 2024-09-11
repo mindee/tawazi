@@ -408,7 +408,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         # 4. construct error message to point the user
         values["call_location"] = self.get_call_location()
 
-        new_lxn: LazyExecNode[P, RVXN] = LazyExecNode(**values)
+        new_lxn: LazyExecNode[P, RVXN] = type(self)(**values)
 
         exec_nodes[new_lxn.id] = new_lxn
 
