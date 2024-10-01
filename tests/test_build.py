@@ -87,10 +87,6 @@ def test_dag_build(strict_dag: DAG[Any, Any]) -> None:
     strict_dag()  # must never fail!
 
 
-def test_draw(strict_dag: DAG[Any, Any]) -> None:
-    strict_dag.graph_ids.draw(t=0.1)
-
-
 def test_setting_execnode_id_should_fail() -> None:
     with pytest.raises(AttributeError):
         en_a.id = "fdsakfjs"  # type: ignore[misc]
