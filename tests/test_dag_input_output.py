@@ -48,3 +48,8 @@ def test_pipeline_args_input_not_provided() -> None:
 
     with pytest.raises(TawaziArgumentException):
         pipe()  # type: ignore[call-arg]
+
+
+@pytest.mark.parametrize("include_args", [True, False])
+def test_draw(include_args: bool) -> None:
+    declare_dag_function.draw(include_args=include_args, view=False)

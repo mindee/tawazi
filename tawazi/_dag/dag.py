@@ -93,6 +93,7 @@ class BaseDAG(Generic[P, RVDAG]):
     input_uxns: List[UsageExecNode]
     return_uxns: ReturnUXNsType
     max_concurrency: int = 1
+    graph_ids: DiGraphEx = field(init=False)
 
     def __post_init__(self) -> None:
         self.graph_ids = DiGraphEx.from_exec_nodes(
@@ -110,6 +111,41 @@ class BaseDAG(Generic[P, RVDAG]):
             raise ValueError("results must be a StrictDict")
         if not isinstance(self.exec_nodes, StrictDict):
             raise ValueError("exec_nodes must be a StrictDict")
+
+    def draw(
+        self, *, include_args: bool = False, filename: Optional[str] = None, view: bool = True
+    ) -> None:
+        """Draws the Networkx directed graph.
+
+        Args:
+            include_args: whether to include the arguments or not
+            filename: the name of the file to save the graph to
+            view: whether to view the graph or not
+        """
+        from graphviz import Digraph
+
+        dot = Digraph()
+
+        for node_id in self.graph_ids.nodes():
+            node = self.get_node_by_id(node_id)
+            is_arg = isinstance(node, ArgExecNode)
+            if is_arg and not include_args:
+                continue
+
+            dot.node(node_id)
+            if is_arg:
+                dot.node(node_id, label=f"{node_id}")
+            else:
+                path_to_file, line_number = node.call_location.split(":")
+
+                dot.node(node_id, label=f"{node_id} #L{line_number}", URL="file://" + path_to_file)
+
+        for edge in self.graph_ids.edges():
+            if isinstance(self.get_node_by_id(edge[0]), ArgExecNode) and not include_args:
+                continue
+            dot.edge(edge[0], edge[1])
+
+        dot.render(filename, view=view)
 
     # getters
     def get_nodes_by_tag(self, tag: Tag) -> List[ExecNode]:

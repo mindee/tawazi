@@ -25,7 +25,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "matplotlib>=3.5.3",
+    "numpy",
+    "graphviz",
     "pytest>=7.1.2",
     "pytest-asyncio",
     "pytest-mock",
@@ -61,7 +62,7 @@ strict_equality = true
 # --strict end
 
 [[tool.mypy.overrides]]
-module = "matplotlib.*,networkx.*,yaml.*,multiprocessing_on_dill.*,pathos.*"
+module = "graphviz.*,networkx.*,yaml.*,multiprocessing_on_dill.*,pathos.*"
 ignore_missing_imports = true
 
 [tool.black]

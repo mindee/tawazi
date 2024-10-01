@@ -1,9 +1,8 @@
 """Module containing the definition of a Directed Graph Extension of networkx.DiGraph."""
-import time
 from collections import defaultdict
 from copy import deepcopy
 from itertools import chain
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Set
 
 import networkx as nx
 from networkx import NetworkXNoCycle, NetworkXUnfeasible, find_cycle
@@ -381,21 +380,3 @@ class DiGraphEx(nx.DiGraph):
 
                     next_leaf_ids.add(parent_id)
             leaf_ids = next_leaf_ids
-
-    def draw(self, k: float = 0.8, t: Union[float, int] = 3) -> None:
-        """Draws the Networkx directed graph.
-
-        Args:
-            k (float): parameter for the layout of the graph, the higher, the further the nodes apart. Defaults to 0.8.
-            t (int): time to display in seconds. Defaults to 3.
-        """
-        import matplotlib.pyplot as plt
-
-        # TODO: use graphviz instead! it is much more elegant
-
-        pos = nx.spring_layout(self, seed=42069, k=k, iterations=20)
-        nx.draw(self, pos, with_labels=True)
-        plt.ion()
-        plt.show()
-        time.sleep(t)
-        plt.close()
