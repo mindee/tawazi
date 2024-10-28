@@ -1,9 +1,10 @@
 """Module for helper functions."""
+
 from typing import Any, Callable, Dict, NoReturn, TypeVar
 
 import yaml
 
-from tawazi.errors import TawaziArgumentException
+from tawazi.errors import TawaziArgumentError
 
 
 def ordinal(numb: int) -> str:
@@ -72,7 +73,7 @@ def make_raise_arg_error(func_name: str, arg_name: str) -> Callable[[], NoReturn
     # declare a local function that will raise an error in the scheduler if
     # the user doesn't pass in This ArgExecNode as argument to the Attached LazyExecNode
     def local_func() -> NoReturn:
-        raise TawaziArgumentException(func_name, arg_name)
+        raise TawaziArgumentError(func_name, arg_name)
 
     return local_func
 

@@ -3,7 +3,7 @@ from typing import Any, List
 
 import pytest
 from tawazi import dag, xn
-from tawazi.errors import TawaziBaseException
+from tawazi.errors import TawaziError
 
 from .common import stub
 
@@ -91,7 +91,7 @@ def test_interdependant_debug_nodes() -> None:
 
 
 def test_wrongly_defined_pipeline() -> None:
-    with pytest.raises(TawaziBaseException):
+    with pytest.raises(TawaziError):
 
         @dag
         def pipeline(img: List[Any]) -> int:

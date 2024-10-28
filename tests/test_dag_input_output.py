@@ -2,7 +2,7 @@ from typing import List, Tuple
 
 import pytest
 from tawazi import dag, xn
-from tawazi.errors import TawaziArgumentException, TawaziBaseException
+from tawazi.errors import TawaziArgumentError, TawaziError
 
 
 @xn
@@ -29,7 +29,7 @@ def test_pipeline_input_output_skipping_default_params() -> None:
 
 
 def test_pipeline_input_output_missing_argument() -> None:
-    with pytest.raises(TawaziBaseException):
+    with pytest.raises(TawaziError):
         declare_dag_function()  # type: ignore[call-arg]
 
 
@@ -46,7 +46,7 @@ def test_pipeline_args_input_not_provided() -> None:
     def pipe(in1: int, in2: int, in3: int, in4: int) -> Tuple[int, ...]:
         return op1(in1), op1(in2), op1(in3), op1(in4)
 
-    with pytest.raises(TawaziArgumentException):
+    with pytest.raises(TawaziArgumentError):
         pipe()  # type: ignore[call-arg]
 
 

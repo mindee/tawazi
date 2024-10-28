@@ -3,7 +3,7 @@ from typing import Any
 
 import pytest
 from tawazi import dag, xn
-from tawazi.errors import TawaziBaseException
+from tawazi.errors import TawaziError
 
 
 @xn
@@ -25,7 +25,7 @@ def test_raise_error_location() -> None:
     pipe_lineno = inspect.getsourcelines(pipe)[1]
 
     with pytest.raises(
-        TawaziBaseException,
+        TawaziError,
         match=f"Error occurred while executing ExecNode faulty_function at {pipe_path}:{pipe_lineno + 1}",
     ):
         dag_pipe()
