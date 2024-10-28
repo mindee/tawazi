@@ -1,7 +1,7 @@
 """Module for custom errors raised by Tawazi."""
 
 
-class TawaziBaseException(BaseException):
+class TawaziBaseException(Exception):
     """BaseException of Tawazi from which all other exceptions inherit."""
 
     pass
