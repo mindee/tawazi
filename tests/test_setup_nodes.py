@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 from tawazi import dag, xn
-from tawazi.errors import TawaziBaseException, TawaziUsageError
+from tawazi.errors import TawaziError, TawaziUsageError
 
 from .common import run_pipeline
 
@@ -62,7 +62,7 @@ def test_bad_declaration() -> None:
     def setup_op(non_setup_result: Any) -> bool:
         return False
 
-    with pytest.raises(TawaziBaseException):
+    with pytest.raises(TawaziError):
 
         @dag
         def bad_pipe() -> None:

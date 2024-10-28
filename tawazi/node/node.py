@@ -1,4 +1,5 @@
 """Module describing ExecNode Class and subclasses (The basic building Block of a DAG."""
+
 import dataclasses
 import functools
 import inspect
@@ -31,7 +32,7 @@ from tawazi.consts import (
     TagOrTags,
     XNOutsideDAGCall,
 )
-from tawazi.errors import TawaziBaseException, TawaziUsageError
+from tawazi.errors import TawaziError, TawaziUsageError
 from tawazi.node.uxn import UsageExecNode
 from tawazi.profile import Profile
 
@@ -241,7 +242,7 @@ class ExecNode:
                 results[self.id] = self.exec_function(*args, **kwargs)
             except Exception as e:
                 if self.call_location:
-                    raise TawaziBaseException(
+                    raise TawaziError(
                         f"Error occurred while executing ExecNode {self.id} at {self.call_location}"
                     ) from e
 
@@ -421,7 +422,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
         for dep in self.dependencies:
             # if ExecNode is not a debug node, all its dependencies must not be debug node
             if not self.debug and exec_nodes[dep.id].debug:
-                raise TawaziBaseException(f"Non debug node {self} depends on debug node {dep}")
+                raise TawaziError(f"Non debug node {self} depends on debug node {dep}")
 
             # if ExecNode is a setup node, all its dependencies should be either:
             # 1. setup nodes
@@ -429,7 +430,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
             # 3. Arguments passed directly to the PipeLine (ArgExecNode)
             accepted_case = exec_nodes[dep.id].setup or isinstance(exec_nodes[dep.id], ArgExecNode)
             if self.setup and not accepted_case:
-                raise TawaziBaseException(f"setup node {self} depends on non setup node {dep}")
+                raise TawaziError(f"setup node {self} depends on non setup node {dep}")
 
     @property
     def _usage_exec_node(self) -> Union[Tuple[UsageExecNode, ...], UsageExecNode]:
