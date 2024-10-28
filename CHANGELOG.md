@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## v0.5.0 (2024-10-28)
+
+### Breaking Changes
+* :sparkles: draw a DAG using graphviz
+* :boom: change TawaziBaseException to TawaziError
+
+### Bug Fixes
+* :bug: inherit from Exception instead of BaseException
+
 ## v0.4.1 (2024-09-11)
 
 ### Improvements
