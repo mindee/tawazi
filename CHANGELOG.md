@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## v0.5.1 (2024-10-31)
+
+### Changes
+* :heavy_minus_sign: compatible with pydantic v1 and v2
+
 ## v0.5.0 (2024-10-28)
 
 ### Breaking Changes
