@@ -5,7 +5,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "tawazi"
-version = "0.5.1"
+version = "0.5.2"
 description = "This library helps you execute a set of functions in a Directed Acyclic Graph (DAG) dependency structure in parallel in a production environment."
 authors = [{name = "Mindee", email = "contact@mindee.com"}]
 maintainers = [

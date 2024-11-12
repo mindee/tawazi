@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## v0.5.2 (2024-11-12)
+
+### Bug Fixes
+* :bug: typing with py310 Union |
+
 ## v0.5.1 (2024-10-31)
 
 ### Changes
