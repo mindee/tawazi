@@ -1,3 +1,4 @@
+import sys
 from typing import Dict, List, Tuple
 
 import pytest
@@ -219,3 +220,35 @@ def test_mrv_unpack_to_with_list_type() -> None:
         return r1, r2, r3, list_v
 
     assert pipe() == (1, 2, 3, [1, 2, 3])
+
+
+# if python version is 3.10 or higher, include this function
+if sys.version_info >= (3, 10):
+    from typing import Union
+
+    from tawazi import xn
+
+    union_type = Union[tuple[float, int], tuple[float, float]]
+    py311_union_type = tuple[float, int] | tuple[float, float]
+
+    @xn(unpack_to=2)
+    def union_py39(x: float, integer: bool = False) -> union_type:
+        return x, x / 2 if not integer else int(x / 2)
+
+    @dag
+    def dag_union_py39(x):
+        return union_py39(x)
+
+    def test_unpacking_union() -> None:
+        assert 1, 1 / 2 == dag_union_py39(1)
+
+    @xn(unpack_to=2)
+    def union_py310(x: float, integer: bool = False) -> py311_union_type:
+        return x, x / 2 if not integer else int(x / 2)
+
+    @dag
+    def dag_union_py310(x):
+        return union_py310(x)
+
+    def test_unpacking_union_py310() -> None:
+        assert 2, 1 == dag_union_py310(2)

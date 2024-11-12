@@ -22,6 +22,8 @@ def _validate_tuple(func: Callable[..., Any], unpack_to: int) -> Optional[bool]:
     if isinstance(r_type, str):
         # eval is safe to use because the user is providing the typing and evaluating it locally
         r_type = eval(r_type, func.__globals__)  # noqa: PGH001,S307 # nosec B307
+    if not hasattr(r_type, "__origin__"):
+        return None
     is_tuple = r_type.__origin__ is tuple
     if not is_tuple:
         return None
