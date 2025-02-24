@@ -14,11 +14,23 @@ from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, Union
 
 from tawazi._helpers import StrictDict, make_raise_arg_error
 from tawazi.config import cfg
-from tawazi.consts import (ARG_NAME_ACTIVATE, ARG_NAME_SEP, ARG_NAME_TAG,
-                           ARG_NAME_UNPACK_TO, RESERVED_KWARGS,
-                           RETURN_NAME_SEP, RVXN, USE_SEP_END, USE_SEP_START,
-                           Identifier, P, Resource, Tag, TagOrTags,
-                           XNOutsideDAGCall)
+from tawazi.consts import (
+    ARG_NAME_ACTIVATE,
+    ARG_NAME_SEP,
+    ARG_NAME_TAG,
+    ARG_NAME_UNPACK_TO,
+    RESERVED_KWARGS,
+    RETURN_NAME_SEP,
+    RVXN,
+    USE_SEP_END,
+    USE_SEP_START,
+    Identifier,
+    P,
+    Resource,
+    Tag,
+    TagOrTags,
+    XNOutsideDAGCall,
+)
 from tawazi.errors import TawaziError, TawaziUsageError
 from tawazi.node.uxn import UsageExecNode
 from tawazi.profile import Profile
@@ -228,9 +240,11 @@ class ExecNode:
             # 2.1 write the result
             try:
                 results[self.id] = self.exec_function(*args, **kwargs)
-            except Exception as e:
+            except Exception:
                 if self.call_location:
-                    logger.warning(f"Error occurred while executing ExecNode {self.id} at {self.call_location}")
+                    logger.warning(
+                        f"Error occurred while executing ExecNode {self.id} at {self.call_location}"
+                    )
                 raise
 
         # 3. useless return value

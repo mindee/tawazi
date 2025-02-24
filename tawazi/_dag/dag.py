@@ -8,8 +8,20 @@ from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from itertools import chain
 from pathlib import Path
-from typing import (Any, Callable, Dict, Generic, Iterable, List, NoReturn,
-                    Optional, Sequence, Set, Tuple, Union)
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    NoReturn,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import networkx as nx
 import yaml
@@ -19,14 +31,12 @@ from tawazi._helpers import StrictDict, UniqueKeyLoader
 from tawazi.config import cfg
 from tawazi.consts import ARG_NAME_ACTIVATE, RVDAG, Identifier, P, Tag
 from tawazi.errors import TawaziTypeError, TawaziUsageError
-from tawazi.node import (Alias, ArgExecNode, ExecNode, ReturnUXNsType,
-                         UsageExecNode, node)
+from tawazi.node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode, node
 from tawazi.node.node import LazyExecNode, make_active, make_axn_id
 from tawazi.profile import Profile
 
 from .digraph import DiGraphEx
-from .helpers import (async_execute, extend_results_with_args,
-                      get_return_values, sync_execute)
+from .helpers import async_execute, extend_results_with_args, get_return_values, sync_execute
 
 logger = logging.getLogger(__name__)
 

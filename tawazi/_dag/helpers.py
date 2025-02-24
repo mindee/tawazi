@@ -2,8 +2,7 @@ import asyncio
 import contextvars
 import functools
 import logging
-from concurrent.futures import (ALL_COMPLETED, FIRST_COMPLETED, Future,
-                                ThreadPoolExecutor, wait)
+from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy
 from typing import Any, Callable, Dict, List, Set, Tuple, TypeVar
 
