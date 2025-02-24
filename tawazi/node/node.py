@@ -3,6 +3,7 @@
 import dataclasses
 import functools
 import inspect
+import logging
 import warnings
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -10,8 +11,6 @@ from functools import partial
 from threading import Lock
 from types import MethodType
 from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, Union
-
-from loguru import logger
 
 from tawazi._helpers import StrictDict, make_raise_arg_error
 from tawazi.config import cfg
@@ -38,6 +37,7 @@ from tawazi.profile import Profile
 
 from .helpers import _lazy_xn_id, _validate_tuple, make_suffix
 
+logger = logging.getLogger(__name__)
 # a temporary variable used to pass in exec_nodes to the DAG during building
 exec_nodes: StrictDict[Identifier, "ExecNode"] = StrictDict()
 # a temporary variable to hold default values concerning the DAG's description
@@ -240,13 +240,12 @@ class ExecNode:
             # 2.1 write the result
             try:
                 results[self.id] = self.exec_function(*args, **kwargs)
-            except Exception as e:
+            except Exception:
                 if self.call_location:
-                    raise TawaziError(
+                    logger.warning(
                         f"Error occurred while executing ExecNode {self.id} at {self.call_location}"
-                    ) from e
-
-                raise e
+                    )
+                raise
 
         # 3. useless return value
         logger.debug("Finished executing {} with task {}", self.id, self.exec_function)

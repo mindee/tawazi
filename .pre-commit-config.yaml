@@ -33,7 +33,6 @@ repos:
         args: []
         additional_dependencies:
           - pydantic
-          - loguru # to be removed when loguru is removed
           - pytest
           - numpy
 
