@@ -14,7 +14,7 @@ maintainers = [
 ]
 license = {file = "LICENSE" }
 readme = "README.md"
-requires-python=">=3.7,<4"
+requires-python=">=3.9,<4"
 dependencies = [
     "networkx>=2,<4",
     "pydantic",
@@ -50,7 +50,7 @@ pydantic1 = ["pydantic>=1.0.0,<2"]
 addopts = "--pdbcls=IPython.terminal.debugger:TerminalPdb --cov-report=term-missing:skip-covered  --cov-report=lcov:cov.info --junit-xml=pytest-junit.xml --cov=tawazi"
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.9"
 # --strict
 disallow_any_generics = true
 disallow_untyped_defs = true

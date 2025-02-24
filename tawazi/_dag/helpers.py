@@ -184,7 +184,6 @@ async def wait_for_finished_nodes_async(
 async def to_thread_in_executor(
     func: Callable[..., Any],
     executor: ThreadPoolExecutor,
-    # /, # support for python3.7
     *args: Tuple[Any],
     **kwargs: Dict[str, Any],
 ) -> "asyncio.Future[Any]":
