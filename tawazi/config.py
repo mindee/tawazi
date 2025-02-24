@@ -5,15 +5,10 @@ from packaging.version import Version
 
 if Version(str(pydantic.VERSION)) < Version("2"):
     # pydantic v1
-    from pydantic import Field
-    from pydantic import validator as field_validator
     from pydantic.env_settings import BaseSettings
 else:
     # pydantic v2
-    from pydantic.v1 import Field  # type: ignore[assignment]
-    from pydantic.v1 import validator as field_validator  # type: ignore[assignment]
     from pydantic.v1.env_settings import BaseSettings
-
 
 from tawazi.consts import Resource, XNOutsideDAGCall
 
@@ -43,21 +38,6 @@ class Config(BaseSettings):
 
     # choose the default Resource to use to execute the ExecNodes
     TAWAZI_DEFAULT_RESOURCE: Resource = Resource.thread
-
-    # Logger settings
-    LOGURU_LEVEL: str = Field(default="PROD", env="TAWAZI_LOGGER_LEVEL")  # type: ignore[call-arg]
-    LOGURU_BACKTRACE: bool = Field(default=False, env="TAWAZI_LOGGER_BT")  # type: ignore[call-arg]
-    # Caution: to set to False if used in prod (exposes variable names)
-    LOGURU_DIAGNOSE: bool = Field(default=False, env="TAWAZI_LOGGER_DIAGNOSE")  # type: ignore[call-arg]
-
-    @field_validator("LOGURU_LEVEL")
-    def _validate_loguru_level(cls, v: str) -> str:  # noqa: N805
-        if v == "PROD":
-            from loguru import logger
-
-            logger.disable("tawazi")
-
-        return v
 
 
 cfg = Config()

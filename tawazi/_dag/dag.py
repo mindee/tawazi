@@ -1,5 +1,6 @@
 """module containing DAG and DAGExecution which are the containers that run ExecNodes in Tawazi."""
 import json
+import logging
 import pickle
 import warnings
 from collections import Counter
@@ -7,36 +8,27 @@ from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from itertools import chain
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generic,
-    Iterable,
-    List,
-    NoReturn,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Union,
-)
+from typing import (Any, Callable, Dict, Generic, Iterable, List, NoReturn,
+                    Optional, Sequence, Set, Tuple, Union)
 
 import networkx as nx
 import yaml
-from loguru import logger
 
 from tawazi import consts
 from tawazi._helpers import StrictDict, UniqueKeyLoader
 from tawazi.config import cfg
 from tawazi.consts import ARG_NAME_ACTIVATE, RVDAG, Identifier, P, Tag
 from tawazi.errors import TawaziTypeError, TawaziUsageError
-from tawazi.node import Alias, ArgExecNode, ExecNode, ReturnUXNsType, UsageExecNode, node
+from tawazi.node import (Alias, ArgExecNode, ExecNode, ReturnUXNsType,
+                         UsageExecNode, node)
 from tawazi.node.node import LazyExecNode, make_active, make_axn_id
 from tawazi.profile import Profile
 
 from .digraph import DiGraphEx
-from .helpers import async_execute, extend_results_with_args, get_return_values, sync_execute
+from .helpers import (async_execute, extend_results_with_args,
+                      get_return_values, sync_execute)
+
+logger = logging.getLogger(__name__)
 
 
 def construct_subdag_arg_uxns(
@@ -691,7 +683,7 @@ class DAG(BaseDAG[P, RVDAG]):
                 )
 
         if description_context:
-            logger.warning("Describing SubDAG {} in DAG", self)
+            logger.debug("Describing SubDAG {} in DAG", self)
 
             # NOTE: can't call the base describing function because composed DAGs can't be supported in that case
             #  so must modify ExecNodes of SubDAG

@@ -1,11 +1,11 @@
 import asyncio
 import contextvars
 import functools
-from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
+import logging
+from concurrent.futures import (ALL_COMPLETED, FIRST_COMPLETED, Future,
+                                ThreadPoolExecutor, wait)
 from copy import copy
 from typing import Any, Callable, Dict, List, Set, Tuple, TypeVar
-
-from loguru import logger
 
 from tawazi._dag.digraph import DiGraphEx
 from tawazi._helpers import StrictDict
@@ -14,6 +14,7 @@ from tawazi.errors import TawaziTypeError
 from tawazi.node import ExecNode, ReturnUXNsType, UsageExecNode
 from tawazi.profile import Profile
 
+logger = logging.getLogger(__name__)
 K = TypeVar("K")
 V = TypeVar("V")
 
@@ -318,7 +319,7 @@ async def async_execute(
         highest_priority_id = max(runnable_xns_ids, key=lambda id_: graph.compound_priority[id_])
         xn = exec_nodes[highest_priority_id]
 
-        logger.info("{} will run!", xn.id)
+        logger.debug("{} will run!", xn.id)
 
         # 4.2 if the current node must be run sequentially, wait for a running node to finish.
         # in that case we must prune the graph to re-check whether a new root node
