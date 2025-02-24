@@ -1,3 +1,5 @@
+import inspect
+import logging
 from typing import Any
 
 import pytest
@@ -17,9 +19,19 @@ def pipe() -> int:
 dag_pipe = dag(pipe)
 
 
-def test_raise_error_location() -> None:
+def test_raise_error_location(caplog: Any) -> None:
+    # path and line no of function pipe
+    pipe_path = inspect.getsourcefile(pipe)
+    pipe_lineno = inspect.getsourcelines(pipe)[1]
     with pytest.raises(ValueError):
         dag_pipe()
+    assert caplog.record_tuples == [
+        (
+            "tawazi.node.node",
+            logging.WARNING,
+            f"Error occurred while executing ExecNode faulty_function at {pipe_path}:{pipe_lineno + 1}",
+        )
+    ]
 
 
 class NoneReturner:
