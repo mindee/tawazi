@@ -1,6 +1,6 @@
 from copy import deepcopy
 from time import sleep, time
-from typing import Any, Tuple
+from typing import Any
 
 import numpy as np
 import tawazi
@@ -37,7 +37,7 @@ def setop() -> Any:
 
 
 @dag
-def pipe(t: float) -> Tuple[float, float, Any]:
+def pipe(t: float) -> tuple[float, float, Any]:
     return sleeper(t), worker(t), setop()
 
 

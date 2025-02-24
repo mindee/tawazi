@@ -1,6 +1,5 @@
 import threading
 from time import sleep, time
-from typing import Tuple
 
 from tawazi import Resource, dag, xn
 from typing_extensions import Literal
@@ -22,7 +21,7 @@ def test_main_thread_resource_thread_name() -> None:
         return 2
 
     @dag
-    def pipe() -> Tuple[int, int]:
+    def pipe() -> tuple[int, int]:
         return xn1(), xn2()
 
     assert pipe() == (1, 2)
@@ -44,7 +43,7 @@ def test_main_thread_resource_computation_time() -> None:
         return 2
 
     @dag(max_concurrency=2)
-    def pipe() -> Tuple[int, int]:
+    def pipe() -> tuple[int, int]:
         return xn1(), xn2()
 
     t0 = time()

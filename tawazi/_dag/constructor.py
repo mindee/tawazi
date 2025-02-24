@@ -1,6 +1,6 @@
 import inspect
 import warnings
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Union
 
 from tawazi._helpers import StrictDict
 from tawazi.consts import RVDAG, P
@@ -10,7 +10,7 @@ from tawazi.node.node import make_axn_id
 from .dag import DAG, AsyncDAG
 
 
-def get_args_and_default_args(func: Callable[..., Any]) -> Tuple[List[str], Dict[str, Any]]:
+def get_args_and_default_args(func: Callable[..., Any]) -> tuple[list[str], dict[str, Any]]:
     """Retrieves the arguments names and the default arguments of a function.
 
     Args:
@@ -46,7 +46,7 @@ def make_dag(
 
     # 2.2 Construct non default arguments.
     # Corresponding values must be provided during usage
-    args: List[ExecNode] = [
+    args: list[ExecNode] = [
         ArgExecNode(make_axn_id(_func.__qualname__, arg_name)) for arg_name in func_args
     ]
     # 2.2 Construct Default arguments.

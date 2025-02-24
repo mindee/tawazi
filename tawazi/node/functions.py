@@ -1,20 +1,21 @@
 """Helpers for node subpackage that use both ExecNode and UsageExecNode."""
 
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple, Union
+from collections.abc import Iterable, Iterator
+from typing import Any, Callable, Optional, Union
 
 from . import node
 from .node import ReturnExecNode
 from .uxn import UsageExecNode
 
 ReturnUXNsType = Union[
-    None, UsageExecNode, Tuple[UsageExecNode, ...], List[UsageExecNode], Dict[str, UsageExecNode]
+    None, UsageExecNode, tuple[UsageExecNode, ...], list[UsageExecNode], dict[str, UsageExecNode]
 ]
 
 
 def _wrap_in_iterator_helper(
     func: Callable[..., Any], r_val: Iterable[Any]
 ) -> Iterator[UsageExecNode]:
-    l_uxn: List[UsageExecNode] = []
+    l_uxn: list[UsageExecNode] = []
     for i, v in enumerate(r_val):
         if not isinstance(v, UsageExecNode):
             xn = ReturnExecNode(func, i)
@@ -28,22 +29,22 @@ def _wrap_in_iterator_helper(
     return iter(l_uxn)
 
 
-def _wrap_in_list(func: Callable[..., Any], r_val: Any) -> Optional[List[UsageExecNode]]:
+def _wrap_in_list(func: Callable[..., Any], r_val: Any) -> Optional[list[UsageExecNode]]:
     if not isinstance(r_val, list):
         return None
     return list(_wrap_in_iterator_helper(func, r_val))
 
 
-def _wrap_in_tuple(func: Callable[..., Any], r_val: Any) -> Optional[Tuple[UsageExecNode, ...]]:
+def _wrap_in_tuple(func: Callable[..., Any], r_val: Any) -> Optional[tuple[UsageExecNode, ...]]:
     if not isinstance(r_val, tuple):
         return None
     return tuple(_wrap_in_iterator_helper(func, r_val))
 
 
-def _wrap_in_dict(func: Callable[..., Any], r_val: Any) -> Optional[Dict[str, UsageExecNode]]:
+def _wrap_in_dict(func: Callable[..., Any], r_val: Any) -> Optional[dict[str, UsageExecNode]]:
     if not isinstance(r_val, dict):
         return None
-    d_uxn: Dict[str, UsageExecNode] = {}
+    d_uxn: dict[str, UsageExecNode] = {}
     for k, v in r_val.items():
         if not isinstance(v, UsageExecNode):
             xn = ReturnExecNode(func, k)

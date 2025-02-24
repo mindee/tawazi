@@ -1,6 +1,6 @@
 import asyncio
 from copy import deepcopy
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 import pytest
 from tawazi import DAG, AsyncDAG, dag, xn
@@ -100,7 +100,7 @@ def z(x: int, y: Union[str, int]) -> float:
 
 
 @dag
-def xyz_pipe() -> Tuple[int, float, int]:
+def xyz_pipe() -> tuple[int, float, int]:
     a = unwanted_xn()
     res = z(x(1), y(1))
     b = unwanted_xn()
@@ -129,7 +129,7 @@ def test_input_insufficient_to_produce_output() -> None:
 
 def test_input_more_sufficient_to_produce_output() -> None:
     @dag
-    def diamond_pipe(v: Union[int, str]) -> Tuple[float, int]:
+    def diamond_pipe(v: Union[int, str]) -> tuple[float, int]:
         v1 = x(v)
         v2 = x(v1)
         v3 = y(v1)
@@ -148,7 +148,7 @@ def test_input_more_sufficient_to_produce_empty_output() -> None:
     with pytest.warns(
         UserWarning, match="Input ExecNode x is not used to produce any of the requested outputs."
     ):
-        sub: DAG[[int], Tuple[()]] = diamond_pipe.compose("twinkle", x, [])  # type: ignore[assignment]
+        sub: DAG[[int], tuple[()]] = diamond_pipe.compose("twinkle", x, [])  # type: ignore[assignment]
         assert sub(2) == ()
 
 
@@ -165,7 +165,7 @@ def test_duplicate_tag_in_inputs() -> None:
 
 
 def test_multiple_return_value() -> None:
-    sub: DAG[[int], Tuple[int, int, str, float]] = diamond_pipe.compose(
+    sub: DAG[[int], tuple[int, int, str, float]] = diamond_pipe.compose(
         "twinkle", ["diamond_pipe>!>v"], ["x", "x<<1>>", "y", "z"]  # type: ignore[assignment]
     )
     assert sub(2) == (2, 2, "2", 4.0)
@@ -197,7 +197,7 @@ def test_inputs_outputs_overlapping() -> None:
 
 
 def test_inputs_empty_outputs_empty() -> None:
-    dag_compose: DAG[[], Tuple[()]] = linear_pipe.compose("twinkle", [], [])  # type: ignore[assignment]
+    dag_compose: DAG[[], tuple[()]] = linear_pipe.compose("twinkle", [], [])  # type: ignore[assignment]
     assert dag_compose() == ()
 
 
@@ -235,7 +235,7 @@ def setop() -> str:
 
 
 @dag
-def diamond_pipe_setop(v: int) -> Tuple[str, int]:
+def diamond_pipe_setop(v: int) -> tuple[str, int]:
     s = setop()
     v1 = y(s)
     return v1, x(v)
@@ -268,12 +268,12 @@ def test_kwargs_in_xn_composed() -> None:
     def dag_with_default_arg() -> int:
         return x(v=1)
 
-    d: DAG[..., Tuple[int]] = dag_with_default_arg.compose("twinkle", [], [x])  # type: ignore[assignment]
+    d: DAG[..., tuple[int]] = dag_with_default_arg.compose("twinkle", [], [x])  # type: ignore[assignment]
     assert d() == (1,)
 
 
 @dag
-def complex_dag(a1: int, a2: int, a3: int) -> Tuple[int, int, int]:
+def complex_dag(a1: int, a2: int, a3: int) -> tuple[int, int, int]:
     return a1 + a2 + a3, a1 - a2 - a3, a1 * a2 * a3
 
 

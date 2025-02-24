@@ -4,7 +4,7 @@ import functools
 import logging
 from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from copy import copy
-from typing import Any, Callable, Dict, List, Set, Tuple, TypeVar
+from typing import Any, Callable, TypeVar
 
 from tawazi._dag.digraph import DiGraphEx
 from tawazi._helpers import StrictDict
@@ -18,7 +18,7 @@ K = TypeVar("K")
 V = TypeVar("V")
 
 
-def _xn_active_in_call(xn: ExecNode, results: Dict[Identifier, Any]) -> bool:
+def _xn_active_in_call(xn: ExecNode, results: dict[Identifier, Any]) -> bool:
     """Check if a node is active.
 
     Args:
@@ -53,7 +53,7 @@ def copy_non_setup_xns(x_nodes: StrictDict[str, ExecNode]) -> StrictDict[str, Ex
     return x_nodes_copy
 
 
-class BiDict(Dict[K, V]):
+class BiDict(dict[K, V]):
     """A bidirectional dictionary that raises an error if two keys are mapped to the same value.
 
     >>> b = BiDict({1: 'one', 2: 'two'})
@@ -84,7 +84,7 @@ class BiDict(Dict[K, V]):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.inverse: Dict[V, K] = {}
+        self.inverse: dict[V, K] = {}
         for key, value in self.items():
             if value in self.inverse:
                 raise ValueError(f"Value {value} is already in the BiDict")
@@ -109,10 +109,10 @@ def wait_for_finished_nodes(
     return_when: str,
     graph: DiGraphEx,
     futures: BiDict[Identifier, "Future[Any]"],
-    done: Set["Future[Any]"],
-    running: Set["Future[Any]"],
-    runnable_xns_ids: Set[Identifier],
-) -> Tuple[Set["Future[Any]"], Set["Future[Any]"], Set[Identifier]]:
+    done: set["Future[Any]"],
+    running: set["Future[Any]"],
+    runnable_xns_ids: set[Identifier],
+) -> tuple[set["Future[Any]"], set["Future[Any]"], set[Identifier]]:
     """Wait for the finished futures before pruning them from the graph.
 
     Args:
@@ -147,10 +147,10 @@ async def wait_for_finished_nodes_async(
     return_when: str,
     graph: DiGraphEx,
     futures: BiDict[Identifier, "asyncio.Future[Any]"],
-    done: Set["asyncio.Future[Any]"],
-    running: Set["asyncio.Future[Any]"],
-    runnable_xns_ids: Set[Identifier],
-) -> Tuple[Set["asyncio.Future[Any]"], Set["asyncio.Future[Any]"], Set[Identifier]]:
+    done: set["asyncio.Future[Any]"],
+    running: set["asyncio.Future[Any]"],
+    runnable_xns_ids: set[Identifier],
+) -> tuple[set["asyncio.Future[Any]"], set["asyncio.Future[Any]"], set[Identifier]]:
     """Wait for the finished futures before pruning them from the graph.
 
     Args:
@@ -184,8 +184,8 @@ async def wait_for_finished_nodes_async(
 async def to_thread_in_executor(
     func: Callable[..., Any],
     executor: ThreadPoolExecutor,
-    *args: Tuple[Any],
-    **kwargs: Dict[str, Any],
+    *args: tuple[Any],
+    **kwargs: dict[str, Any],
 ) -> "asyncio.Future[Any]":
     """A modified copy of asyncio.to_thread.
 
@@ -212,7 +212,7 @@ def sync_execute(
     results: StrictDict[Identifier, Any],
     max_concurrency: int,
     graph: DiGraphEx,
-) -> Tuple[
+) -> tuple[
     StrictDict[Identifier, ExecNode], StrictDict[Identifier, Any], StrictDict[Identifier, Profile]
 ]:
     """Look at the execute function for more information."""
@@ -229,7 +229,7 @@ async def async_execute(
     results: StrictDict[Identifier, Any],
     max_concurrency: int,
     graph: DiGraphEx,
-) -> Tuple[
+) -> tuple[
     StrictDict[Identifier, ExecNode], StrictDict[Identifier, Any], StrictDict[Identifier, Profile]
 ]:
     """Thread safe execution of the DAG.
@@ -257,13 +257,13 @@ async def async_execute(
     graph.remove_nodes_from([id_ for id_ in graph if id_ in results])
 
     # 0.3 create variables related to futures
-    conc_futures: BiDict[Identifier, "Future[Any]"] = BiDict()
-    conc_done: Set["Future[Any]"] = set()
-    conc_running: Set["Future[Any]"] = set()
+    conc_futures: BiDict[Identifier, Future[Any]] = BiDict()
+    conc_done: set[Future[Any]] = set()
+    conc_running: set[Future[Any]] = set()
 
-    async_futures: BiDict[Identifier, "asyncio.Future[Any]"] = BiDict()
-    async_done: Set["asyncio.Future[Any]"] = set()
-    async_running: Set["asyncio.Future[Any]"] = set()
+    async_futures: BiDict[Identifier, asyncio.Future[Any]] = BiDict()
+    async_done: set[asyncio.Future[Any]] = set()
+    async_running: set[asyncio.Future[Any]] = set()
 
     def running_threads() -> int:
         return len(conc_running) + len(async_running)
@@ -386,7 +386,7 @@ async def async_execute(
     return exec_nodes, results, profiles
 
 
-def get_return_values(return_uxns: ReturnUXNsType, results: Dict[Identifier, Any]) -> RVTypes:
+def get_return_values(return_uxns: ReturnUXNsType, results: dict[Identifier, Any]) -> RVTypes:
     """Extract the return value/values from the output of the DAG's scheduler!
 
     Args:
@@ -416,7 +416,7 @@ def get_return_values(return_uxns: ReturnUXNsType, results: Dict[Identifier, Any
 
 
 def extend_results_with_args(
-    results: StrictDict[Identifier, Any], input_uxns: List[UsageExecNode], *args: Any
+    results: StrictDict[Identifier, Any], input_uxns: list[UsageExecNode], *args: Any
 ) -> StrictDict[Identifier, Any]:
     """Extends the results of dict with the values provided by args.
 

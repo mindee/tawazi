@@ -1,4 +1,4 @@
-from typing import Any, List, Set
+from typing import Any
 
 import pytest
 from tawazi import DAG, dag, xn
@@ -91,7 +91,7 @@ def dag_describer() -> None:
     "target_nodes, expected_nodes",
     [(["a"], {"a"}), (["b"], {"a", "b"}), (["c"], {"a", "c"}), (["d"], {"a", "c", "d"})],
 )
-def test_scheduled_nodes(target_nodes: List[str], expected_nodes: Set[str]) -> None:
+def test_scheduled_nodes(target_nodes: list[str], expected_nodes: set[str]) -> None:
     executor = dag_describer.executor(target_nodes=target_nodes)
     assert expected_nodes == set(executor.graph.nodes)
 
@@ -105,7 +105,7 @@ def test_scheduled_nodes(target_nodes: List[str], expected_nodes: Set[str]) -> N
         (["b", "c", "e", "h", "g"], "abcegh"),
     ],
 )
-def test_dag_subgraph(nodes_ids: List[str], expected_nodes: str) -> None:
+def test_dag_subgraph(nodes_ids: list[str], expected_nodes: str) -> None:
     global subgraph_comp_str
     subgraph_comp_str = ""
     graph = dag_describer.graph_ids.make_subgraph(nodes_ids)

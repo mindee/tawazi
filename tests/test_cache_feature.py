@@ -1,7 +1,7 @@
 import os
 import pickle
 from pathlib import Path
-from typing import Any, List, Tuple
+from typing import Any
 
 import numpy as np
 import pytest
@@ -16,7 +16,7 @@ def conditional_assert(result: Any, expected: Any) -> None:
         assert result is None
 
 
-def validate(_cache_path: str, _cache_deps_of: List[Any]) -> None:
+def validate(_cache_path: str, _cache_deps_of: list[Any]) -> None:
     with open(_cache_path, "rb") as f:
         cached_results = pickle.load(f)  # noqa: S301
     for xn_ in _cache_deps_of:
@@ -69,7 +69,7 @@ def avg_array(array: Any) -> Any:
 
 
 @dag
-def pipe() -> Tuple[Any, Any, Any, Any]:
+def pipe() -> tuple[Any, Any, Any, Any]:
     zeros_res = generate_large_zeros_array()
     ones_res = incr_large_array(zeros_res)
     ones_res2 = pass_large_array(ones_res)
@@ -140,7 +140,7 @@ def test_running_cached_dag(cache_path: str, zeros: Any, ones: Any, avg: Any) ->
         ),
     ],
 )
-def test_cache_read_write(target_nodes: List[ExecNode], expected_results: List[Any]) -> None:
+def test_cache_read_write(target_nodes: list[ExecNode], expected_results: list[Any]) -> None:
     cache_path = "tests/cache_results/test_cache_read_write.pkl"
     if Path(cache_path).is_file():
         os.remove(cache_path)

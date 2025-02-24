@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from functools import partial
 from threading import Lock
 from types import MethodType
-from typing import Any, Callable, Dict, Generic, List, Optional, Tuple, Union
+from typing import Any, Callable, Generic, Optional, Union
 
 from tawazi._helpers import StrictDict, make_raise_arg_error
 from tawazi.config import cfg
@@ -44,14 +44,14 @@ exec_nodes: StrictDict[Identifier, "ExecNode"] = StrictDict()
 results: StrictDict[Identifier, Any] = StrictDict()
 # Prefix prepended to the id of the ExecNodes inside a DAG
 # to avoid name conflicts when imbricating DAGs within each other
-DAG_PREFIX: List[str] = []
+DAG_PREFIX: list[str] = []
 exec_nodes_lock = Lock()
 
 # multiple ways of identifying an XN
 Alias = Union[Tag, Identifier, "ExecNode"]
 
 
-def count_occurrences(id_: str, exec_nodes: Dict[str, "ExecNode"]) -> int:
+def count_occurrences(id_: str, exec_nodes: dict[str, "ExecNode"]) -> int:
     """Count the number of occurrences of an id in exec_nodes.
 
     Avoids counting the ids of the arguments passed to previously called ExecNodes.
@@ -117,8 +117,8 @@ class ExecNode:
     call_location: str = ""
     call_location_frame: int = 2
 
-    args: List[UsageExecNode] = field(default_factory=list)  # args or []
-    kwargs: Dict[Identifier, UsageExecNode] = field(default_factory=dict)  # kwargs or {}
+    args: list[UsageExecNode] = field(default_factory=list)  # args or []
+    kwargs: dict[Identifier, UsageExecNode] = field(default_factory=dict)  # kwargs or {}
     # TODO: make this a list of UsageExecNode to implement the And operation for the twz_active in SUBdag and in SUPdag
     active: Optional[UsageExecNode] = None
 
@@ -183,7 +183,7 @@ class ExecNode:
         """
         return f"{self.__class__.__name__} {self.id} ~ | <{hex(id(self))}>"
 
-    def executed(self, results: Dict[Identifier, Any]) -> bool:
+    def executed(self, results: dict[Identifier, Any]) -> bool:
         """Returns whether this ExecNode was executed or not."""
         return self.id in results
 
@@ -194,7 +194,7 @@ class ExecNode:
 
     # TODO: make it cached_property because once this property is read, it should'nt be changed
     @property
-    def dependencies(self) -> List[UsageExecNode]:
+    def dependencies(self) -> list[UsageExecNode]:
         """The List of ExecNode dependencies of This ExecNode.
 
         Returns:
@@ -211,7 +211,7 @@ class ExecNode:
 
         return deps
 
-    def execute(self, results: Dict[Identifier, Any], profiles: Dict[Identifier, Profile]) -> Any:
+    def execute(self, results: dict[Identifier, Any], profiles: dict[Identifier, Profile]) -> Any:
         """Execute the ExecNode inside of a DAG.
 
         Args:
@@ -265,7 +265,7 @@ class ExecNode:
         frame_info = inspect.getframeinfo(frame)
         return f"{frame_info.filename}:{frame_info.lineno}"
 
-    def _conf_to_values(self, conf: Dict[str, Any]) -> Dict[str, Any]:
+    def _conf_to_values(self, conf: dict[str, Any]) -> dict[str, Any]:
         values = dataclasses.asdict(self)
         # copy the values of ExecNode that are also dataclass
         values["args"] = self.args
@@ -432,7 +432,7 @@ class LazyExecNode(ExecNode, Generic[P, RVXN]):
                 raise TawaziError(f"setup node {self} depends on non setup node {dep}")
 
     @property
-    def _usage_exec_node(self) -> Union[Tuple[UsageExecNode, ...], UsageExecNode]:
+    def _usage_exec_node(self) -> Union[tuple[UsageExecNode, ...], UsageExecNode]:
         """Makes the corresponding UsageExecNode(s).
 
         Note:
@@ -473,7 +473,7 @@ def make_default_value_uxn(
     return UsageExecNode(xn.id)
 
 
-def make_args(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> List[UsageExecNode]:
+def make_args(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> list[UsageExecNode]:
     """Constructs the positional arguments for an ExecNode."""
     xn_args = []
 
@@ -493,7 +493,7 @@ def make_args(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> List[UsageE
 
 def make_kwargs(
     id_: Identifier, *args: P.args, **kwargs: P.kwargs
-) -> Dict[Identifier, UsageExecNode]:
+) -> dict[Identifier, UsageExecNode]:
     """Constructs the keyword arguments for an ExecNode."""
     xn_kwargs = {}
     # **kwargs contain either

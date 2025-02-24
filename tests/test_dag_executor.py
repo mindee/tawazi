@@ -1,5 +1,5 @@
 from logging import Logger
-from typing import Any, List, Tuple
+from typing import Any
 
 import pytest
 from tawazi import dag, xn
@@ -35,7 +35,7 @@ def xn3(in1: int, in2: int) -> int:
 
 
 @dag
-def pipe(in1: int, in2: int) -> Tuple[int, int, int]:
+def pipe(in1: int, in2: int) -> tuple[int, int, int]:
     r1 = xn1(in1)
     r2 = xn2(in2)
     r3 = xn3(r1, r2)
@@ -43,7 +43,7 @@ def pipe(in1: int, in2: int) -> Tuple[int, int, int]:
 
 
 @dag
-def pipe_with_debug_and_setup(in1: int, in2: int) -> Tuple[int, int, int, int]:
+def pipe_with_debug_and_setup(in1: int, in2: int) -> tuple[int, int, int, int]:
     r1 = xn1(in1)
     r2 = xn2(in2)
     r3 = xn3(r1, r2)
@@ -94,7 +94,7 @@ def test_executed(executor: Any) -> None:
 
 
 @pytest.mark.parametrize("target_nodes", [None, [setop], [my_debug_node]])
-def test_executed_with_setup_nodes(target_nodes: List[ExecNode]) -> None:
+def test_executed_with_setup_nodes(target_nodes: list[ExecNode]) -> None:
     executor = pipe_with_debug_and_setup.executor(target_nodes=target_nodes)
     executor(1, 2)
     assert executor.executed

@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import pytest
 from tawazi import dag, xn
@@ -59,7 +59,7 @@ def g(s1: str, s2: str) -> str:
 
 
 @dag
-def pipe() -> Tuple[str, str, str, str]:
+def pipe() -> tuple[str, str, str, str]:
     f_ = f(e(a("")))
     b_ = b("")
     c_ = c(b_)
@@ -77,8 +77,8 @@ def pipe() -> Tuple[str, str, str, str]:
     ],
 )
 def test_exclude_nodes_combinations(
-    exclude_nodes: List[ExecNode],
-    expected_output: Tuple[Optional[str], ...],
+    exclude_nodes: list[ExecNode],
+    expected_output: tuple[Optional[str], ...],
     expected_exclude_nodes: str,
 ) -> None:
     global test_exclude_nodes
@@ -96,7 +96,7 @@ def test_with_setup_nodes() -> None:
         return s + "z"
 
     @dag
-    def pipe() -> Tuple[str, str, str, str]:
+    def pipe() -> tuple[str, str, str, str]:
         f_ = f(e(z_setup("")))
         b_ = b("")
         c_ = c(b_)
@@ -129,7 +129,7 @@ def test_with_debug_nodes() -> None:
     g_debug = xn(debug=True)(g.exec_function)
 
     @dag
-    def pipe() -> Tuple[str, str, str, str]:
+    def pipe() -> tuple[str, str, str, str]:
         f_ = f(e(a("")))
         b_ = b("")
         c_ = c_debug(b_)

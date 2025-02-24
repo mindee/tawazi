@@ -1,10 +1,8 @@
-from typing import List
-
 from tawazi import dag, xn
 
 
 @xn
-def abcd(i: int, b: List[str], cst: float = 0.1) -> int:
+def abcd(i: int, b: list[str], cst: float = 0.1) -> int:
     """doc of a"""
     return i
 
