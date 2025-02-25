@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.6.0 (2025-02-25)
+
 ### Changes
 
 * :recycle: drop loguru to be more generic and let the end application manage the logs
