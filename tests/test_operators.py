@@ -1,4 +1,4 @@
-from typing import Any, Tuple, cast
+from typing import Any, cast
 
 import pytest
 from tawazi import and_, dag, not_, or_, xn
@@ -606,7 +606,7 @@ def test_operator_imod_cst_uxn() -> None:
 
 def test_operator_divmod_uxn_uxn() -> None:
     @dag
-    def pipe(in1: int, in2: int) -> Tuple[int, int]:
+    def pipe(in1: int, in2: int) -> tuple[int, int]:
         return divmod(in1, in2)
 
     assert pipe(7, 3) == (2, 1)
@@ -614,7 +614,7 @@ def test_operator_divmod_uxn_uxn() -> None:
 
 def test_operator_divmod_uxn_cst() -> None:
     @dag
-    def pipe(in1: int) -> Tuple[int, int]:
+    def pipe(in1: int) -> tuple[int, int]:
         return divmod(in1, 3)
 
     assert pipe(7) == (2, 1)
@@ -622,7 +622,7 @@ def test_operator_divmod_uxn_cst() -> None:
 
 def test_operator_divmod_cst_uxn() -> None:
     @dag
-    def pipe(in1: int) -> Tuple[int, int]:
+    def pipe(in1: int) -> tuple[int, int]:
         return divmod(7, in1)
 
     assert pipe(3) == (2, 1)

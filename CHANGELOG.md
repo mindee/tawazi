@@ -7,6 +7,7 @@
 * :recycle: drop loguru to be more generic and let the end application manage the logs
 * :recycle: remove Tawazi error wrapping in node and raise original error
 * :boom: remove python 3.7 and 3.8
+* :recycle: typing in 3.9
 
 ## v0.5.2 (2024-11-12)
 

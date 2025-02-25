@@ -1,5 +1,5 @@
 from logging import Logger
-from typing import Any, List
+from typing import Any
 
 import pytest
 from tawazi import dag, xn
@@ -17,7 +17,7 @@ inc_shared_var = 0
 
 
 @xn(debug=True)
-def my_len(img: List[Any]) -> int:
+def my_len(img: list[Any]) -> int:
     len_img = len(img)
     global my_len_has_ran
     my_len_has_ran = True
@@ -44,7 +44,7 @@ def test_pipeline_with_debug_node() -> None:
     tawazi.config.cfg.RUN_DEBUG_NODES = True
 
     @dag
-    def pipeline(img: List[Any]) -> List[Any]:
+    def pipeline(img: list[Any]) -> list[Any]:
         img = stub(img)
         my_len(img)
         return img
@@ -61,7 +61,7 @@ def test_pipeline_without_debug_node() -> None:
     tawazi.config.cfg.RUN_DEBUG_NODES = False
 
     @dag
-    def pipeline(img: List[Any]) -> List[Any]:
+    def pipeline(img: list[Any]) -> list[Any]:
         img = stub(img)
         my_len(img)
         return img
@@ -79,7 +79,7 @@ def test_interdependant_debug_nodes() -> None:
     tawazi.config.cfg.RUN_DEBUG_NODES = True
 
     @dag
-    def pipeline(img: List[Any]) -> List[Any]:
+    def pipeline(img: list[Any]) -> list[Any]:
         img = stub(img)
         len_ = my_len(img)
         is_positive_len(len_)
@@ -94,7 +94,7 @@ def test_wrongly_defined_pipeline() -> None:
     with pytest.raises(TawaziError):
 
         @dag
-        def pipeline(img: List[Any]) -> int:
+        def pipeline(img: list[Any]) -> int:
             len_ = my_len(img)
             # wrongly defined dependency node!
             # a production node depends on a debug node!
@@ -194,7 +194,7 @@ def test_debug_node_depends_on_variable_and_constant() -> None:
         pass
 
     @dag
-    def pipeline(docs: Any) -> List[Any]:
+    def pipeline(docs: Any) -> list[Any]:
         example1(docs)
         example2(0, 0)
         example3(docs, 0)
@@ -217,7 +217,7 @@ def test_debug_node_with_setup() -> None:
         pass
 
     @dag
-    def pipeline(docs: Any) -> List[Any]:
+    def pipeline(docs: Any) -> list[Any]:
         example1(0)  # replace by example1(docs)
         example2(0, 0)
 

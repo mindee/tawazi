@@ -4,24 +4,12 @@ import logging
 import pickle
 import warnings
 from collections import Counter
+from collections.abc import Iterable, Sequence
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from itertools import chain
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generic,
-    Iterable,
-    List,
-    NoReturn,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Union,
-)
+from typing import Any, Callable, Generic, NoReturn, Optional, Union
 
 import networkx as nx
 import yaml
@@ -43,10 +31,10 @@ logger = logging.getLogger(__name__)
 
 def construct_subdag_arg_uxns(
     *args: Iterable[Union[UsageExecNode, Any]], to_subdag_id: Callable[[str], str], qualname: str
-) -> List[UsageExecNode]:
+) -> list[UsageExecNode]:
     """Construct UsageExecNodes from the arguments passed to a subdag."""
     # Construct default arguments
-    uxns: List[UsageExecNode] = []
+    uxns: list[UsageExecNode] = []
     for i, arg in enumerate(args):
         # arg is a default value
         if not isinstance(arg, UsageExecNode):
@@ -60,7 +48,7 @@ def construct_subdag_arg_uxns(
     return uxns
 
 
-def detect_duplicates(expanded_config: List[Tuple[Identifier, Any]]) -> None:
+def detect_duplicates(expanded_config: list[tuple[Identifier, Any]]) -> None:
     duplicates = [
         id for id, count in Counter([id for id, _ in expanded_config]).items() if count > 1
     ]
@@ -92,7 +80,7 @@ class BaseDAG(Generic[P, RVDAG]):
     qualname: str
     results: StrictDict[Identifier, Any]
     exec_nodes: StrictDict[Identifier, ExecNode]
-    input_uxns: List[UsageExecNode]
+    input_uxns: list[UsageExecNode]
     return_uxns: ReturnUXNsType
     max_concurrency: int = 1
     graph_ids: DiGraphEx = field(init=False)
@@ -150,7 +138,7 @@ class BaseDAG(Generic[P, RVDAG]):
         dot.render(filename, view=view)
 
     # getters
-    def get_nodes_by_tag(self, tag: Tag) -> List[ExecNode]:
+    def get_nodes_by_tag(self, tag: Tag) -> list[ExecNode]:
         """Get the ExecNodes with the given tag.
 
         Note: the returned ExecNode is not modified by any execution!
@@ -215,7 +203,7 @@ class BaseDAG(Generic[P, RVDAG]):
         inputs: Union[Alias, Sequence[Alias]],
         outputs: Union[Alias, Sequence[Alias]],
         is_async: Optional[bool] = None,
-        **kwargs: Dict[str, Any],
+        **kwargs: dict[str, Any],
     ) -> "Union[AsyncDAG[P, RVDAG], DAG[P, RVDAG]]":
         """Compose a new DAG using inputs and outputs ExecNodes (Experimental).
 
@@ -276,12 +264,12 @@ class BaseDAG(Generic[P, RVDAG]):
 
         def _alias_or_aliases_to_ids(
             alias_or_aliases: Union[Alias, Sequence[Alias]]
-        ) -> List[Identifier]:
+        ) -> list[Identifier]:
             if isinstance(alias_or_aliases, str) or isinstance(alias_or_aliases, ExecNode):
                 return [self._get_single_xn_by_alias(alias_or_aliases).id]
             return [self._get_single_xn_by_alias(a_id).id for a_id in alias_or_aliases]
 
-        def _raise_input_successor_of_input(pred: Identifier, succ: Set[Identifier]) -> NoReturn:
+        def _raise_input_successor_of_input(pred: Identifier, succ: set[Identifier]) -> NoReturn:
             raise ValueError(
                 f"Input ExecNodes {succ} depend on Input ExecNode {pred}."
                 f"this is ambiguous. Remove either one of them."
@@ -316,7 +304,7 @@ class BaseDAG(Generic[P, RVDAG]):
         set_xn_ids = set(in_ids + out_ids)
 
         # 2.2 all ancestors of the inputs
-        in_ids_ancestors: Set[Identifier] = self.graph_ids.ancestors_of_iter(in_ids)
+        in_ids_ancestors: set[Identifier] = self.graph_ids.ancestors_of_iter(in_ids)
 
         # 3. check edge cases
         # inputs should not be successors of inputs, otherwise (error)
@@ -327,7 +315,7 @@ class BaseDAG(Generic[P, RVDAG]):
                 _raise_input_successor_of_input(in_id, set(in_ids))
 
             # if in_id doesn't produce any of the wanted outputs, raise a warning!
-            descendants: Set[Identifier] = nx.descendants(self.graph_ids, in_id)
+            descendants: set[Identifier] = nx.descendants(self.graph_ids, in_id)
             if descendants.isdisjoint(out_ids):
                 warnings.warn(
                     f"Input ExecNode {in_id} is not used to produce any of the requested outputs."
@@ -342,7 +330,7 @@ class BaseDAG(Generic[P, RVDAG]):
         dag_inputs_ids = [uxn.id for uxn in self.input_uxns if uxn.id not in self.results]
 
         # 4.2 define helper function
-        def _add_missing_deps(candidate_id: Identifier, xn_ids: Set[Identifier]) -> None:
+        def _add_missing_deps(candidate_id: Identifier, xn_ids: set[Identifier]) -> None:
             """Adds missing dependency to the set of ExecNodes that will be in the new DAG.
 
             Note: uses nonlocal variable dag_inputs_ids
@@ -424,7 +412,7 @@ class BaseDAG(Generic[P, RVDAG]):
             **kwargs,  # type: ignore[arg-type]
         )
 
-    def alias_to_ids(self, alias: Alias) -> List[Identifier]:
+    def alias_to_ids(self, alias: Alias) -> list[Identifier]:
         """Extract an ExecNode ID from an Alias (Tag, ExecNode ID or ExecNode).
 
         Args:
@@ -462,7 +450,7 @@ class BaseDAG(Generic[P, RVDAG]):
             f"str or tuple identifying the node but provided {alias}"
         )
 
-    def get_multiple_nodes_aliases(self, nodes: Sequence[Alias]) -> List[Identifier]:
+    def get_multiple_nodes_aliases(self, nodes: Sequence[Alias]) -> list[Identifier]:
         """Ensure correct Identifiers from aliases.
 
         Args:
@@ -503,15 +491,15 @@ class BaseDAG(Generic[P, RVDAG]):
         return graph
 
     def _expand_config(
-        self, config_nodes: Dict[Union[Tag, Identifier], Any]
-    ) -> List[Tuple[Identifier, Any]]:
+        self, config_nodes: dict[Union[Tag, Identifier], Any]
+    ) -> list[tuple[Identifier, Any]]:
         expanded_config = []
         for alias, conf_node in config_nodes.items():
             ids = self.alias_to_ids(alias)
             expanded_config.extend([(id, conf) for id, conf in zip(ids, len(ids) * [conf_node])])
         return expanded_config
 
-    def config_from_dict(self, config: Dict[str, Any]) -> None:
+    def config_from_dict(self, config: dict[str, Any]) -> None:
         """Allows reconfiguring the parameters of the nodes from a dictionary.
 
         Args:
@@ -632,7 +620,7 @@ class DAG(BaseDAG[P, RVDAG]):
     # TODO: discuss whether we want to expose it or not
     def run_subgraph(
         self, subgraph: DiGraphEx, results: Optional[StrictDict[Identifier, Any]], *args: P.args
-    ) -> Tuple[
+    ) -> tuple[
         StrictDict[Identifier, ExecNode],
         StrictDict[Identifier, Any],
         StrictDict[Identifier, Profile],
@@ -712,7 +700,7 @@ class DAG(BaseDAG[P, RVDAG]):
                 *args, to_subdag_id=to_subdag_id, qualname=self.qualname
             )
 
-            registered_input_ids: List[str] = []
+            registered_input_ids: list[str] = []
             # provided *args to the call is <= than input_uxns! because of defaults args
             for axn, uxn in zip(arg_uxns, input_uxns):  # strict=False
                 # a stub that fills the value of an input ExecNode with an arg of the subdag
@@ -876,7 +864,7 @@ class AsyncDAG(BaseDAG[P, RVDAG]):
     # TODO: refactor this with previous method
     async def run_subgraph(
         self, subgraph: DiGraphEx, results: Optional[StrictDict[Identifier, Any]], *args: P.args
-    ) -> Tuple[
+    ) -> tuple[
         StrictDict[Identifier, ExecNode],
         StrictDict[Identifier, Any],
         StrictDict[Identifier, Profile],
@@ -977,11 +965,11 @@ class BaseDAGExecution(Generic[P, RVDAG]):
     cache_in: str = ""
     from_cache: str = ""
 
-    xn_dict: Dict[Identifier, ExecNode] = field(init=False, default_factory=dict)
+    xn_dict: dict[Identifier, ExecNode] = field(init=False, default_factory=dict)
     executed: bool = False
-    cached_nodes: List[ExecNode] = field(init=False, default_factory=list)
+    cached_nodes: list[ExecNode] = field(init=False, default_factory=list)
 
-    profiles: Dict[Identifier, Profile] = field(init=False, default_factory=dict)
+    profiles: dict[Identifier, Profile] = field(init=False, default_factory=dict)
 
     def __post_init__(self) -> None:
         """Dynamic construction of attributes."""
@@ -1035,7 +1023,7 @@ class BaseDAGExecution(Generic[P, RVDAG]):
         """Set results."""
         self._results = value
 
-    def _cache_results(self, results: Dict[Identifier, Any]) -> None:
+    def _cache_results(self, results: dict[Identifier, Any]) -> None:
         """Cache execution results.
 
         We are currently only storing the results of the execution,
@@ -1045,7 +1033,7 @@ class BaseDAGExecution(Generic[P, RVDAG]):
         Path(self.cache_in).parent.mkdir(parents=True, exist_ok=True)
         with open(self.cache_in, "wb") as f:
             if self.cache_deps_of is not None:
-                non_cacheable_ids: Set[Identifier] = set()
+                non_cacheable_ids: set[Identifier] = set()
                 for aliases in self.cache_deps_of:
                     ids = self.dag.alias_to_ids(aliases)
                     non_cacheable_ids = non_cacheable_ids.union(ids)

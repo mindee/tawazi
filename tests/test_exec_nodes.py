@@ -1,4 +1,4 @@
-from typing import Any, Tuple, Union
+from typing import Any, Union
 
 import pytest
 from tawazi import dag, xn
@@ -100,7 +100,7 @@ def test_xns_interface() -> None:
         return "e"
 
     @dag
-    def my_other_custom_dag() -> Tuple[Any, Any]:
+    def my_other_custom_dag() -> tuple[Any, Any]:
         vara = a()
         varb = b(vara)
         varc = c(vara)

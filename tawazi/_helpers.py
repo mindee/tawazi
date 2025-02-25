@@ -1,6 +1,6 @@
 """Module for helper functions."""
 
-from typing import Any, Callable, Dict, NoReturn, TypeVar
+from typing import Any, Callable, NoReturn, TypeVar
 
 import yaml
 
@@ -97,7 +97,7 @@ T = TypeVar("T")
 V = TypeVar("V")
 
 
-class StrictDict(Dict[T, V]):
+class StrictDict(dict[T, V]):
     """A Dict that raises an error if key already used.
 
     >>> d = StrictDict({1: 2, 2: 3})

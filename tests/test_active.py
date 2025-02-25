@@ -1,4 +1,4 @@
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 import pytest
 from tawazi import and_, dag, xn
@@ -24,28 +24,28 @@ def pipe2() -> Optional[int]:
 
 
 @dag
-def pipe3(x: int) -> Tuple[int, Optional[int]]:
+def pipe3(x: int) -> tuple[int, Optional[int]]:
     # if x is Truthy the value is returned
     y = stub(x, twz_active=x)  # type: ignore[call-arg]
     return x, y
 
 
 @dag
-def pipe4(x: str, y: str) -> Tuple[str, str, Optional[str], bool]:
+def pipe4(x: str, y: str) -> tuple[str, str, Optional[str], bool]:
     b = and_(x == "twinkle", y == "toes")
     z = stub(x, twz_active=b)  # type: ignore[call-arg]
     return x, y, z, b
 
 
 @dag
-def pipe5(x: int, y: int) -> Tuple[int, int, Optional[int], bool]:
+def pipe5(x: int, y: int) -> tuple[int, int, Optional[int], bool]:
     b = and_(x == 1, y == 2)
     z = stub(x, twz_active=b)  # type: ignore[call-arg]
     return x, y, z, b
 
 
 @dag
-def pipe6(x: int, y: int) -> Tuple[Optional[int], Optional[int], Optional[int], Optional[float]]:
+def pipe6(x: int, y: int) -> tuple[Optional[int], Optional[int], Optional[int], Optional[float]]:
     r1 = stub(x + y, twz_active=x + y > 0)  # type: ignore[call-arg]
     r2 = stub(x - y, twz_active=x - y > 0)  # type: ignore[call-arg]
     r3 = stub(x * y, twz_active=x * y > 0)  # type: ignore[call-arg]
@@ -57,7 +57,7 @@ def pipe6(x: int, y: int) -> Tuple[Optional[int], Optional[int], Optional[int], 
 @dag
 def pipe7(
     x: int, y: int
-) -> Tuple[
+) -> tuple[
     Optional[int], Optional[int], Optional[int], Optional[int], Optional[int], Optional[int]
 ]:
     a = stub(x, twz_active=x < 0)  # type: ignore[call-arg]

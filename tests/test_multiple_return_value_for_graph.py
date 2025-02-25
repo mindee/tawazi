@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Union
+from typing import Union
 
 from tawazi import dag
 
@@ -23,7 +23,7 @@ def test_return_single() -> None:
 
 def test_return_tuple() -> None:
     @dag
-    def pipe() -> Tuple[str, str, str]:
+    def pipe() -> tuple[str, str, str]:
         res = stub("tata")
         return res, res, res
 
@@ -32,7 +32,7 @@ def test_return_tuple() -> None:
 
 def test_return_list() -> None:
     @dag
-    def pipe() -> List[str]:
+    def pipe() -> list[str]:
         res = stub("tata")
         return [res, res, res]
 
@@ -41,7 +41,7 @@ def test_return_list() -> None:
 
 def test_return_dict() -> None:
     @dag
-    def pipe() -> Dict[str, str]:
+    def pipe() -> dict[str, str]:
         res = stub("tata")
         return {"1": res, "2": res, "3": res}
 
@@ -50,7 +50,7 @@ def test_return_dict() -> None:
 
 def test_return_dict2() -> None:
     @dag
-    def pipe(a_const: int = 123) -> Dict[Union[str, int], Union[str, int]]:
+    def pipe(a_const: int = 123) -> dict[Union[str, int], Union[str, int]]:
         res = stub("tata")
         return {1: res, "2": res, "input_value": a_const}
 
@@ -67,7 +67,7 @@ def test_return_single_const() -> None:
 
 def test_return_tuple_consts() -> None:
     @dag
-    def pipe() -> Tuple[str, str, str]:
+    def pipe() -> tuple[str, str, str]:
         return "v1", "v2", "v3"
 
     assert pipe() == ("v1", "v2", "v3")
@@ -75,7 +75,7 @@ def test_return_tuple_consts() -> None:
 
 def test_return_tuple_consts_uxn() -> None:
     @dag
-    def pipe() -> Tuple[str, str, str]:
+    def pipe() -> tuple[str, str, str]:
         return stub("v1"), "v2", stub("v3")
 
     assert pipe() == ("v1", "v2", "v3")
@@ -83,7 +83,7 @@ def test_return_tuple_consts_uxn() -> None:
 
 def test_return_list_consts() -> None:
     @dag
-    def pipe() -> List[str]:
+    def pipe() -> list[str]:
         return ["v1", "v2", "v3"]
 
     assert pipe() == ["v1", "v2", "v3"]
@@ -91,7 +91,7 @@ def test_return_list_consts() -> None:
 
 def test_return_list_consts_uxn() -> None:
     @dag
-    def pipe() -> List[str]:
+    def pipe() -> list[str]:
         return [stub("v1"), "v2", stub("v3")]
 
     assert pipe() == ["v1", "v2", "v3"]
@@ -99,7 +99,7 @@ def test_return_list_consts_uxn() -> None:
 
 def test_return_dict_consts() -> None:
     @dag
-    def pipe() -> Dict[str, str]:
+    def pipe() -> dict[str, str]:
         return {"r1": "v1", "r2": "v2", "r3": "r3"}
 
     assert pipe() == {"r1": "v1", "r2": "v2", "r3": "r3"}
@@ -107,7 +107,7 @@ def test_return_dict_consts() -> None:
 
 def test_return_dict_consts_uxn() -> None:
     @dag
-    def pipe() -> Dict[str, str]:
+    def pipe() -> dict[str, str]:
         return {"r1": "v1", "r2": stub("v2"), "r3": stub("r3")}
 
     assert pipe() == {"r1": "v1", "r2": "v2", "r3": "r3"}

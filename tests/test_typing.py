@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import pytest
 from tawazi import AsyncDAG, dag, xn
 
@@ -25,17 +23,17 @@ def function_with_multiple_parameters_and_return(x: int = 1, y: str = "2") -> in
 
 
 @xn
-def function_with_multiple_parameters_and_return2(x: int) -> Tuple[int, str]:
+def function_with_multiple_parameters_and_return2(x: int) -> tuple[int, str]:
     return x, str(x)
 
 
 @xn
-def pass_in_tuple(x: Tuple[int, str]) -> int:
+def pass_in_tuple(x: tuple[int, str]) -> int:
     return x[0] + int(x[1])
 
 
 @dag
-def pipe(input: int) -> Tuple[int, str]:
+def pipe(input: int) -> tuple[int, str]:
     _none = function_no_parameter()
     _none = function_with_parameter(1234)
     _var = function_with_multiple_parameters_and_return(123, "1234")
@@ -48,7 +46,7 @@ def pipe(input: int) -> Tuple[int, str]:
 
 
 @dag
-def pipe_configured(input: int) -> Tuple[int, str]:
+def pipe_configured(input: int) -> tuple[int, str]:
     _none = function_no_parameter()
     _none = function_with_parameter(1234)
     _var = function_with_multiple_parameters_and_return(123, "1234")

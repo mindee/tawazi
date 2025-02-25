@@ -3,14 +3,14 @@
 from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import reduce
-from typing import Any, Dict, List, NoReturn, Tuple, Union
+from typing import Any, NoReturn, Union
 
 from typing_extensions import Self
 
 from tawazi.consts import Identifier, NoValType
 
 # NOTE: None is hashable! In theory it can be used as a key in a dict!
-KeyType = Union[str, int, Tuple[Any, ...], None, NoValType]
+KeyType = Union[str, int, tuple[Any, ...], None, NoValType]
 
 
 # TODO: transform this logic into the ExecNode itself ?
@@ -22,7 +22,7 @@ class UsageExecNode:
     """
 
     id: Identifier
-    key: List[KeyType] = field(default_factory=list)
+    key: list[KeyType] = field(default_factory=list)
 
     # TODO: make type of key immutable or something hashable, that way
     #  we can directly build a nx DAG with nodes instead of node ids
@@ -42,7 +42,7 @@ class UsageExecNode:
         new.key.append(key)
         return new
 
-    def result(self, results: Dict[Identifier, Any]) -> Any:
+    def result(self, results: dict[Identifier, Any]) -> Any:
         """Extract the result of the ExecNode corresponding to used key(s).
 
         If no Value exists returns None.

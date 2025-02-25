@@ -76,7 +76,7 @@ line-length = 100
 ignore = ["E501", "S101"]
 src = ["src"]
 line-length = 100
-target-version = "py38"
+target-version = "py39"
 select = [
     "B",
     "D",

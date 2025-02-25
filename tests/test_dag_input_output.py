@@ -1,17 +1,15 @@
-from typing import List, Tuple
-
 import pytest
 from tawazi import dag, xn
 from tawazi.errors import TawaziArgumentError, TawaziError
 
 
 @xn
-def a(input_img: List[int], cst: int) -> int:
+def a(input_img: list[int], cst: int) -> int:
     return sum(input_img) + cst
 
 
 @dag
-def declare_dag_function(input_img: List[int], cst: int = 0) -> int:
+def declare_dag_function(input_img: list[int], cst: int = 0) -> int:
     return a(input_img, cst)
 
 
@@ -35,7 +33,7 @@ def test_pipeline_input_output_missing_argument() -> None:
 
 def test_pipeline_default_args_input_not_provided() -> None:
     @dag
-    def pipe(in1: int = 1, in2: int = 2, in3: int = 3, in4: int = 4) -> Tuple[int, ...]:
+    def pipe(in1: int = 1, in2: int = 2, in3: int = 3, in4: int = 4) -> tuple[int, ...]:
         return op1(in1), op1(in2), op1(in3), op1(in4)
 
     assert pipe() == (2, 3, 4, 5)
@@ -43,7 +41,7 @@ def test_pipeline_default_args_input_not_provided() -> None:
 
 def test_pipeline_args_input_not_provided() -> None:
     @dag
-    def pipe(in1: int, in2: int, in3: int, in4: int) -> Tuple[int, ...]:
+    def pipe(in1: int, in2: int, in3: int, in4: int) -> tuple[int, ...]:
         return op1(in1), op1(in2), op1(in3), op1(in4)
 
     with pytest.raises(TawaziArgumentError):

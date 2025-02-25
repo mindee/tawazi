@@ -1,6 +1,6 @@
 """Module containing constants used by Tawazi."""
 from enum import Enum, unique
-from typing import Any, Dict, List, Tuple, Type, TypeVar, Union
+from typing import Any, TypeVar, Union
 
 from typing_extensions import ParamSpec
 
@@ -39,7 +39,7 @@ class NoValType:
 
     _instance = None
 
-    def __new__(cls: Type["NoValType"]) -> "NoValType":
+    def __new__(cls: type["NoValType"]) -> "NoValType":
         """Constructor for NoValType.
 
         Returns:
@@ -84,7 +84,7 @@ class NoValType:
         """
         return self
 
-    def __deepcopy__(self, _prev: Dict[Any, Any]) -> "NoValType":
+    def __deepcopy__(self, _prev: dict[Any, Any]) -> "NoValType":
         """Deep copy NoVal.
 
         Args:
@@ -106,9 +106,9 @@ NoVal = NoValType()
 
 Identifier = str
 Tag = str  # anything immutable but not a sequence
-TagOrTags = Union[Tag, Tuple[Tag, ...]]  # a sequence of tags
+TagOrTags = Union[Tag, tuple[Tag, ...]]  # a sequence of tags
 
-RVTypes = Union[Any, Tuple[Any, ...], List[Any], Dict[str, Any]]
+RVTypes = Union[Any, tuple[Any, ...], list[Any], dict[str, Any]]
 P = ParamSpec("P")
 RVDAG = TypeVar("RVDAG", bound=RVTypes, covariant=True)
 

@@ -1,7 +1,7 @@
 import asyncio
 import os
 from functools import partial
-from typing import Any, Tuple
+from typing import Any
 
 import pytest
 from networkx import NetworkXUnfeasible
@@ -64,7 +64,7 @@ def test_dag_with_weird_nodes() -> None:
         return a + "_wow_" + b
 
     @dag
-    def my_dag() -> Tuple[Any, ...]:
+    def my_dag() -> tuple[Any, ...]:
         var_a = xn(partial(func, a="x"))(b="y")
         var_b = xn(partial(func, b="y"))(a="x")
         var_c = xn(lambda x: x)("e")
@@ -121,7 +121,7 @@ def test_non_pickalable_args() -> None:
         return in1 + in2
 
     @dag
-    def pipe() -> Tuple[Any, int]:
+    def pipe() -> tuple[Any, int]:
         return _a(os), _b(_a(10), _a())
 
     assert pipe() == (os, 13)

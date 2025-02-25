@@ -1,10 +1,8 @@
-from typing import List
-
 from tawazi import dag, xn
 
 
 @xn
-def op1(img: List[int]) -> int:
+def op1(img: list[int]) -> int:
     return sum(img)
 
 
@@ -14,7 +12,7 @@ def op2(op1: int) -> int:
 
 
 @xn
-def op4(img: List[int]) -> int:
+def op4(img: list[int]) -> int:
     return sum(img) ** 2
 
 
@@ -26,11 +24,11 @@ def op5(mean: float, std: float) -> float:
 def test_imbricated_dags() -> None:
     @xn
     @dag
-    def op3(img: List[int]) -> int:
+    def op3(img: list[int]) -> int:
         return op2(op1(img))
 
     @dag
-    def op6(img: List[int]) -> float:
+    def op6(img: list[int]) -> float:
         titi = op3(img)
         toto = op4(img)
 

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import pytest
 from tawazi import dag, xn
@@ -62,7 +62,7 @@ def test_pass_default_arg() -> None:
 
 def test_return_tuple() -> None:
     @dag
-    def d1() -> Tuple[int, int]:
+    def d1() -> tuple[int, int]:
         return x1(), x1()
 
     @dag
@@ -75,7 +75,7 @@ def test_return_tuple() -> None:
 
 def test_return_list() -> None:
     @dag
-    def d1() -> List[int]:
+    def d1() -> list[int]:
         return [x1(), x1()]
 
     @dag
@@ -88,7 +88,7 @@ def test_return_list() -> None:
 
 def test_return_dict() -> None:
     @dag
-    def d1() -> Dict[str, int]:
+    def d1() -> dict[str, int]:
         return {"a": x1(), "b": x1()}
 
     @dag
@@ -117,7 +117,7 @@ def test_is_active() -> None:
         return bool(v)
 
     @dag
-    def d2(v: int) -> Tuple[Optional[bool], Optional[int]]:
+    def d2(v: int) -> tuple[Optional[bool], Optional[int]]:
         res = d1(v, twz_active=v > 0)  # type: ignore[call-arg]
         b = to_bool(res)
         return b, res

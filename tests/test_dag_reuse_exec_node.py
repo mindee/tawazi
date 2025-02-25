@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from tawazi import dag, xn
 
 
@@ -9,7 +7,7 @@ def a(v: int) -> int:
 
 
 @dag
-def pipe() -> Tuple[int, int]:
+def pipe() -> tuple[int, int]:
     a_1 = a(1)
     a_2 = a(2)
 
@@ -28,7 +26,7 @@ def complex_function(a: int, b: int) -> int:
 
 
 @dag
-def pipe_reuse_with_positional_and_keyword_args() -> Tuple[int, int, int]:
+def pipe_reuse_with_positional_and_keyword_args() -> tuple[int, int, int]:
     a_1 = complex_function(1, 2)
     a_2 = complex_function(2, b=3)
     a_3 = complex_function(a=3, b=4)
