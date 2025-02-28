@@ -152,15 +152,19 @@ ctx_var: ContextVar[str] = ContextVar("ctx_var", default="twinkle")
 
 
 @pytest.mark.parametrize("resource", [Resource.main_thread, Resource.thread, Resource.async_thread])
-def test_context(resource: Resource) -> None:
+@pytest.mark.parametrize("is_async", [True, False])
+def test_context(resource: Resource, is_async: bool) -> None:
     ctx_var.set("toes")
 
     @xn(resource=resource)
     def validate_context() -> None:
         assert ctx_var.get() == "toes"
 
-    @dag
+    @dag(is_async=is_async)
     def validate_context_dag() -> None:
         validate_context()
 
-    validate_context_dag()
+    if is_async:
+        asyncio.run(validate_context_dag())  # type: ignore[arg-type]
+    else:
+        validate_context_dag()
