@@ -122,3 +122,15 @@ def test_dag_subgraph_non_existing_nodes_ids() -> None:
 def test_no_nodes_running_in_subgraph() -> None:
     exec_ = dag_describer.executor(target_nodes=[])
     assert exec_() is None
+
+
+def test_subgraph_return_constant() -> None:
+    @dag
+    def subgraph() -> int:
+        return 1
+
+    @dag
+    def graph() -> int:
+        return subgraph()
+
+    assert graph() == 1
