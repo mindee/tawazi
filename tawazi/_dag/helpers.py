@@ -187,7 +187,7 @@ Param = ParamSpec("Param")
 R = TypeVar("R")
 
 
-def context_kept(
+def preserve_context(
     func: Callable[Param, R], *args: Param.args, **kwargs: Param.kwargs
 ) -> Callable[..., R]:
     """Wrap a function to keep the context of parent."""
@@ -361,14 +361,14 @@ async def async_execute(
         # 5.2 submit the exec node to the executor
         if xn.resource == Resource.thread:
             exec_future_sync = executor.submit(
-                context_kept(xn.execute, results=results, profiles=profiles)
+                preserve_context(xn.execute, results=results, profiles=profiles)
             )
             conc_running.add(exec_future_sync)
             conc_futures[xn.id] = exec_future_sync
         elif xn.resource == Resource.async_thread:
             exec_future_async = asyncio.ensure_future(
                 to_thread_in_executor(
-                    context_kept(xn.execute, results=results, profiles=profiles), executor
+                    preserve_context(xn.execute, results=results, profiles=profiles), executor
                 )
             )
             logger.debug("Submitted ExecNode {} to the ThreadPool in async mode", xn.id)

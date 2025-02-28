@@ -6,7 +6,7 @@
 
 ### Changes
 
-* :recycle: factor subdag creation in a separate function
+* :recycle: refactor subdag creation in a separate function
 
 ### Bug Fixes
 
