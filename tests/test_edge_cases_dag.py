@@ -1,11 +1,12 @@
 import asyncio
 import os
+from contextvars import ContextVar
 from functools import partial
 from typing import Any
 
 import pytest
 from networkx import NetworkXUnfeasible
-from tawazi import DAG, dag, xn
+from tawazi import DAG, Resource, dag, xn
 from tawazi._dag.digraph import DiGraphEx
 from tawazi._dag.helpers import sync_execute
 from tawazi._helpers import StrictDict
@@ -84,8 +85,7 @@ def test_setup_debug_nodes() -> None:
     with pytest.raises(ValueError):
 
         @xn(debug=True, setup=True)
-        def a() -> None:
-            ...
+        def a() -> None: ...
 
 
 def test_circular_deps() -> None:
@@ -146,3 +146,21 @@ def test_kwargs_passed_to_dag(is_async: bool) -> None:
             asyncio.run(my_dag(c="twinkle toes"))  # type: ignore[arg-type]
         else:
             my_dag(c="twinkle toes")
+
+
+ctx_var: ContextVar[str] = ContextVar("ctx_var", default="twinkle")
+
+
+@pytest.mark.parametrize("resource", [Resource.main_thread, Resource.thread, Resource.async_thread])
+def test_context(resource: Resource) -> None:
+    ctx_var.set("toes")
+
+    @xn(resource=resource)
+    def validate_context() -> None:
+        assert ctx_var.get() == "toes"
+
+    @dag
+    def validate_context_dag() -> None:
+        validate_context()
+
+    validate_context_dag()
