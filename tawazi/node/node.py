@@ -476,7 +476,7 @@ def make_default_value_uxn(
     return UsageExecNode(xn.id)
 
 
-def make_args(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> list[UsageExecNode]:
+def make_args(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> list[UsageExecNode]:  # type: ignore[valid-type]
     """Constructs the positional arguments for an ExecNode."""
     xn_args = []
 
@@ -495,7 +495,7 @@ def make_args(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> list[UsageE
 
 
 def make_kwargs(
-    id_: Identifier, *args: P.args, **kwargs: P.kwargs
+    id_: Identifier, *args: P.args, **kwargs: P.kwargs  # type: ignore[valid-type]
 ) -> dict[Identifier, UsageExecNode]:
     """Constructs the keyword arguments for an ExecNode."""
     xn_kwargs = {}
@@ -514,7 +514,7 @@ def make_kwargs(
     return xn_kwargs
 
 
-def make_active(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> Optional[UsageExecNode]:
+def make_active(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> Optional[UsageExecNode]:  # type: ignore[valid-type]
     """Constructs the active argument for an ExecNode."""
     if ARG_NAME_ACTIVATE not in kwargs:
         return None

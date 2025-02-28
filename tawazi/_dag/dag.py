@@ -688,9 +688,6 @@ class DAG(BaseDAG[P, RVDAG]):
                 exec_function=lambda x: x,
                 resource=consts.Resource.main_thread,
                 args=[axn],
-                # during subdag construction,
-                # there are only three frames to get to the actual call site
-                call_location_frame=2,  # TODO: should be three not two!!
             )
             # register this LazyExecNode in the dict
             # pass kwargs to pass in the twz_active!

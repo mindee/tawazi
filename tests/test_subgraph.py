@@ -4,6 +4,7 @@ import pytest
 from tawazi import DAG, dag, xn
 from tawazi._dag.digraph import DiGraphEx
 from tawazi._dag.helpers import sync_execute
+from tawazi.errors import TawaziArgumentError
 
 subgraph_comp_str = ""
 T = 1e-3
@@ -134,3 +135,21 @@ def test_subgraph_return_constant() -> None:
         return subgraph()
 
     assert graph() == 1
+
+
+def sub_dag(v: Any) -> int:
+    return 1
+
+
+# declare dag separately from pipe function in order to use inspect correctly
+err_dag = dag(sub_dag)
+
+
+@dag
+def super_dag() -> None:
+    err_dag()  # type: ignore[call-arg]
+
+
+def test_raise_error_location() -> None:
+    with pytest.raises(TawaziArgumentError):
+        super_dag()
