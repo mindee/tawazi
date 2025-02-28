@@ -280,8 +280,11 @@ class ExecNode:
 class ReturnExecNode(ExecNode):
     """ExecNode corresponding to a constant Return value of a DAG."""
 
-    def __init__(self, func: Callable[..., Any], name_or_order: Union[str, int]):
-        """Constructor of ArgExecNode.
+    @classmethod
+    def from_function(
+        cls, func: Callable[..., Any], name_or_order: Union[str, int]
+    ) -> "ReturnExecNode":
+        """Maker of ArgExecNode.
 
         Args:
             func (Callable[..., Any]): The function (DAG describer) that this return is reattached to
@@ -295,7 +298,7 @@ class ReturnExecNode(ExecNode):
             TypeError: if type parameter is passed (Internal)
         """
         suffix = make_suffix(name_or_order)
-        super().__init__(
+        return ReturnExecNode(
             id_=f"{func}{RETURN_NAME_SEP}{suffix}",
             is_sequential=False,
             resource=Resource.main_thread,

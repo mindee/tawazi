@@ -1,4 +1,5 @@
 """Module containing constants used by Tawazi."""
+
 from enum import Enum, unique
 from typing import Any, TypeVar, Union
 
@@ -132,11 +133,11 @@ class Resource(str, Enum):
     """
 
     # supported behavior following a raised error
-    main_thread: str = "main-thread"
-    thread: str = "thread"
-    async_thread: str = "async-thread"
-    # process: str = "process"  # Reserved for the future
-    # sub_interpreter: str = "sub-interpreter"  # Reserved for the future
+    main_thread = "main-thread"
+    thread = "thread"
+    async_thread = "async-thread"
+    # process = "process"  # Reserved for the future
+    # sub_interpreter = "sub-interpreter"  # Reserved for the future
 
 
 # ImmutableType = Union[str, int, float, bool, Tuple[ImmutableType]]  # doesn't work because of cyclic typing
@@ -146,6 +147,6 @@ class Resource(str, Enum):
 class XNOutsideDAGCall(str, Enum):
     """The strategy to use when an ExecNode is called outside a DAG."""
 
-    warning: str = "warning"  # raise a warning a single time
-    error: str = "error"  # raise an error and stop DAG description
-    ignore: str = "ignore"  # do nothing
+    warning = "warning"  # raise a warning a single time
+    error = "error"  # raise an error and stop DAG description
+    ignore = "ignore"  # do nothing

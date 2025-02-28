@@ -1,4 +1,5 @@
 """module containing DAG and DAGExecution which are the containers that run ExecNodes in Tawazi."""
+
 import json
 import logging
 import pickle
@@ -263,7 +264,7 @@ class BaseDAG(Generic[P, RVDAG]):
         # the input's ID which is not a stable Alias yet
 
         def _alias_or_aliases_to_ids(
-            alias_or_aliases: Union[Alias, Sequence[Alias]]
+            alias_or_aliases: Union[Alias, Sequence[Alias]],
         ) -> list[Identifier]:
             if isinstance(alias_or_aliases, str) or isinstance(alias_or_aliases, ExecNode):
                 return [self._get_single_xn_by_alias(alias_or_aliases).id]
@@ -282,7 +283,7 @@ class BaseDAG(Generic[P, RVDAG]):
             )
 
         def _alias_or_aliases_to_uxns(
-            alias_or_aliases: Union[Alias, Sequence[Alias]]
+            alias_or_aliases: Union[Alias, Sequence[Alias]],
         ) -> ReturnUXNsType:
             if isinstance(alias_or_aliases, str) or isinstance(alias_or_aliases, ExecNode):
                 return UsageExecNode(self._get_single_xn_by_alias(alias_or_aliases).id)
@@ -618,7 +619,7 @@ class DAG(BaseDAG[P, RVDAG]):
         )
 
     # TODO: discuss whether we want to expose it or not
-    def run_subgraph(
+    def run_subgraph(  # type: ignore[valid-type]
         self, subgraph: DiGraphEx, results: Optional[StrictDict[Identifier, Any]], *args: P.args
     ) -> tuple[
         StrictDict[Identifier, ExecNode],
@@ -862,7 +863,7 @@ class AsyncDAG(BaseDAG[P, RVDAG]):
         return
 
     # TODO: refactor this with previous method
-    async def run_subgraph(
+    async def run_subgraph(  # type: ignore[valid-type]
         self, subgraph: DiGraphEx, results: Optional[StrictDict[Identifier, Any]], *args: P.args
     ) -> tuple[
         StrictDict[Identifier, ExecNode],
