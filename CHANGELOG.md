@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## v0.6.1 (2025-03-03)
+
+### Changes
+
+* :recycle: factor subdag creation in a separate function
+
+### Bug Fixes
+
+* :bug: forward context from main thread to the thread pool
+* :bug: make subdag work with constant returned values
+
 ## v0.6.0 (2025-02-25)
 
 ### Changes
