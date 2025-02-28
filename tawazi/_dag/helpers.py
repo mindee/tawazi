@@ -6,6 +6,8 @@ from concurrent.futures import ALL_COMPLETED, FIRST_COMPLETED, Future, ThreadPoo
 from copy import copy
 from typing import Any, Callable, TypeVar
 
+from typing_extensions import ParamSpec
+
 from tawazi._dag.digraph import DiGraphEx
 from tawazi._helpers import StrictDict
 from tawazi.consts import Identifier, Resource, RVTypes
@@ -181,27 +183,35 @@ async def wait_for_finished_nodes_async(
     return done, running, runnable_xns_ids
 
 
+Param = ParamSpec("Param")
+R = TypeVar("R")
+
+
+def context_kept(
+    func: Callable[Param, R], *args: Param.args, **kwargs: Param.kwargs
+) -> Callable[..., R]:
+    """Wrap a function to keep the context of parent."""
+    ctx = contextvars.copy_context()
+    return functools.partial(ctx.run, func, *args, **kwargs)
+
+
 async def to_thread_in_executor(
-    func: Callable[..., Any],
-    executor: ThreadPoolExecutor,
-    *args: tuple[Any],
-    **kwargs: dict[str, Any],
+    func: Callable[..., Any], executor: ThreadPoolExecutor
 ) -> "asyncio.Future[Any]":
     """A modified copy of asyncio.to_thread.
 
     Asynchronously run function *func* in a separate thread.
+    Uses the same thread pool executor for all threads.
+    Doesn't handle passing the context from parent to child thread.
 
-    Any *args and **kwargs supplied for this function are directly passed
-    to *func*. Also, the current :class:`contextvars.Context` is propagated,
-    allowing context variables from the main thread to be accessed in the
-    separate thread.
+    Args:
+        func: The function to run in the thread.
+        executor: The executor to use.
 
     Return a coroutine that can be awaited to get the result of *func*.
     """
     loop = asyncio.get_running_loop()
-    ctx = contextvars.copy_context()
-    func_call = functools.partial(ctx.run, func, *args, **kwargs)
-    return await loop.run_in_executor(executor, func_call)
+    return await loop.run_in_executor(executor, func)
 
 
 ################
@@ -350,12 +360,16 @@ async def async_execute(
 
         # 5.2 submit the exec node to the executor
         if xn.resource == Resource.thread:
-            exec_future_sync = executor.submit(xn.execute, results=results, profiles=profiles)
+            exec_future_sync = executor.submit(
+                context_kept(xn.execute, results=results, profiles=profiles)
+            )
             conc_running.add(exec_future_sync)
             conc_futures[xn.id] = exec_future_sync
         elif xn.resource == Resource.async_thread:
             exec_future_async = asyncio.ensure_future(
-                to_thread_in_executor(xn.execute, executor, results=results, profiles=profiles)
+                to_thread_in_executor(
+                    context_kept(xn.execute, results=results, profiles=profiles), executor
+                )
             )
             logger.debug("Submitted ExecNode {} to the ThreadPool in async mode", xn.id)
             async_running.add(exec_future_async)

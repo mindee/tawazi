@@ -18,7 +18,7 @@ def _wrap_in_iterator_helper(
     l_uxn: list[UsageExecNode] = []
     for i, v in enumerate(r_val):
         if not isinstance(v, UsageExecNode):
-            xn = ReturnExecNode(func, i)
+            xn = ReturnExecNode.from_function(func, i)
             uxn = UsageExecNode(xn.id)
             l_uxn.append(uxn)
 
@@ -47,7 +47,7 @@ def _wrap_in_dict(func: Callable[..., Any], r_val: Any) -> Optional[dict[str, Us
     d_uxn: dict[str, UsageExecNode] = {}
     for k, v in r_val.items():
         if not isinstance(v, UsageExecNode):
-            xn = ReturnExecNode(func, k)
+            xn = ReturnExecNode.from_function(func, k)
             uxn = UsageExecNode(xn.id)
             d_uxn[k] = uxn
 
@@ -60,7 +60,7 @@ def _wrap_in_dict(func: Callable[..., Any], r_val: Any) -> Optional[dict[str, Us
 
 def _wrap_in_uxn(func: Callable[..., Any], r_val: Any) -> UsageExecNode:
     if not isinstance(r_val, UsageExecNode):
-        xn = ReturnExecNode(func, 0)
+        xn = ReturnExecNode.from_function(func, 0)
         node.exec_nodes[xn.id] = xn
         node.results[xn.id] = r_val
         return UsageExecNode(xn.id)

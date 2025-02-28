@@ -15,7 +15,7 @@ def pipe() -> int:
     return faulty_function()
 
 
-# declare dag separatly from pipe function in order to use inspect correctly
+# declare dag separately from pipe function in order to use inspect correctly
 dag_pipe = dag(pipe)
 
 
