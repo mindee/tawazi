@@ -1,4 +1,5 @@
 """Module helper to profile execution time of Tawazi ExecNodes."""
+
 from time import perf_counter, process_time, thread_time
 from typing import Any
 

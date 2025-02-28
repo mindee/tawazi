@@ -1,4 +1,5 @@
 """Module to implement built-in operators on UsageExecNode."""
+
 from typing import Any, Callable
 
 from tawazi.config import cfg

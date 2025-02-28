@@ -2,6 +2,7 @@
 
 The user should use the decorators `@dag` and `@xn` to create Tawazi objects `DAG` and `ExecNode`.
 """
+
 import functools
 from typing import Any, Callable, Optional, Union, overload
 
@@ -16,8 +17,7 @@ from .node import LazyExecNode
 
 
 @overload
-def xn(func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]:
-    ...
+def xn(func: Callable[P, RVXN]) -> LazyExecNode[P, RVXN]: ...
 
 
 @overload
@@ -31,8 +31,7 @@ def xn(
     setup: bool = False,
     unpack_to: Optional[int] = None,
     resource: Resource = cfg.TAWAZI_DEFAULT_RESOURCE,
-) -> LazyExecNode[P, RVXN]:
-    ...
+) -> LazyExecNode[P, RVXN]: ...
 
 
 @overload
@@ -45,8 +44,7 @@ def xn(
     setup: bool = False,
     unpack_to: Optional[int] = None,
     resource: Resource = cfg.TAWAZI_DEFAULT_RESOURCE,
-) -> Callable[[Callable[P, RVXN]], LazyExecNode[P, RVXN]]:
-    ...
+) -> Callable[[Callable[P, RVXN]], LazyExecNode[P, RVXN]]: ...
 
 
 def xn(
@@ -121,8 +119,7 @@ def xn(
 
 
 @overload
-def dag(declare_dag_function: Callable[P, RVDAG]) -> DAG[P, RVDAG]:
-    ...
+def dag(declare_dag_function: Callable[P, RVDAG]) -> DAG[P, RVDAG]: ...
 
 
 @overload
@@ -131,8 +128,7 @@ def dag(
     *,
     max_concurrency: int = 1,
     is_async: Literal[False] = False,
-) -> DAG[P, RVDAG]:
-    ...
+) -> DAG[P, RVDAG]: ...
 
 
 @overload
@@ -141,29 +137,25 @@ def dag(
     *,
     max_concurrency: int = 1,
     is_async: Literal[True] = True,
-) -> AsyncDAG[P, RVDAG]:
-    ...
+) -> AsyncDAG[P, RVDAG]: ...
 
 
 @overload
 def dag(
     declare_dag_function: Callable[P, RVDAG], *, max_concurrency: int = 1, is_async: bool = False
-) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]:
-    ...
+) -> Union[DAG[P, RVDAG], AsyncDAG[P, RVDAG]]: ...
 
 
 @overload
 def dag(
     *, max_concurrency: int = 1, is_async: Literal[False] = False
-) -> Callable[[Callable[P, RVDAG]], DAG[P, RVDAG]]:
-    ...
+) -> Callable[[Callable[P, RVDAG]], DAG[P, RVDAG]]: ...
 
 
 @overload
 def dag(
     *, max_concurrency: int = 1, is_async: Literal[True] = True
-) -> Callable[[Callable[P, RVDAG]], AsyncDAG[P, RVDAG]]:
-    ...
+) -> Callable[[Callable[P, RVDAG]], AsyncDAG[P, RVDAG]]: ...
 
 
 @overload
@@ -172,8 +164,7 @@ def dag(
 ) -> Union[
     Callable[[Callable[P, RVDAG]], DAG[P, RVDAG]],
     Callable[[Callable[P, RVDAG]], AsyncDAG[P, RVDAG]],
-]:
-    ...
+]: ...
 
 
 def dag(
