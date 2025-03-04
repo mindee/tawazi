@@ -280,8 +280,11 @@ class ExecNode:
 class ReturnExecNode(ExecNode):
     """ExecNode corresponding to a constant Return value of a DAG."""
 
-    def __init__(self, func: Callable[..., Any], name_or_order: Union[str, int]):
-        """Constructor of ArgExecNode.
+    @classmethod
+    def from_function(
+        cls, func: Callable[..., Any], name_or_order: Union[str, int]
+    ) -> "ReturnExecNode":
+        """Maker of ArgExecNode.
 
         Args:
             func (Callable[..., Any]): The function (DAG describer) that this return is reattached to
@@ -295,7 +298,7 @@ class ReturnExecNode(ExecNode):
             TypeError: if type parameter is passed (Internal)
         """
         suffix = make_suffix(name_or_order)
-        super().__init__(
+        return ReturnExecNode(
             id_=f"{func}{RETURN_NAME_SEP}{suffix}",
             is_sequential=False,
             resource=Resource.main_thread,
@@ -473,7 +476,7 @@ def make_default_value_uxn(
     return UsageExecNode(xn.id)
 
 
-def make_args(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> list[UsageExecNode]:
+def make_args(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> list[UsageExecNode]:  # type: ignore[valid-type]
     """Constructs the positional arguments for an ExecNode."""
     xn_args = []
 
@@ -492,7 +495,7 @@ def make_args(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> list[UsageE
 
 
 def make_kwargs(
-    id_: Identifier, *args: P.args, **kwargs: P.kwargs
+    id_: Identifier, *args: P.args, **kwargs: P.kwargs  # type: ignore[valid-type]
 ) -> dict[Identifier, UsageExecNode]:
     """Constructs the keyword arguments for an ExecNode."""
     xn_kwargs = {}
@@ -511,7 +514,7 @@ def make_kwargs(
     return xn_kwargs
 
 
-def make_active(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> Optional[UsageExecNode]:
+def make_active(id_: Identifier, *args: P.args, **kwargs: P.kwargs) -> Optional[UsageExecNode]:  # type: ignore[valid-type]
     """Constructs the active argument for an ExecNode."""
     if ARG_NAME_ACTIVATE not in kwargs:
         return None

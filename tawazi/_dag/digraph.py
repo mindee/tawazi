@@ -1,4 +1,5 @@
 """Module containing the definition of a Directed Graph Extension of networkx.DiGraph."""
+
 from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from copy import deepcopy

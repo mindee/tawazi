@@ -1,4 +1,5 @@
 """Node related Classes and functions."""
+
 # import extend to execute its code
 from . import extend  # noqa: F401
 from .functions import ReturnUXNsType, wrap_in_uxns

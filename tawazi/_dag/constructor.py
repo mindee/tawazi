@@ -64,7 +64,7 @@ def make_dag(
     # NOTE: Only ordered parameters are supported at the moment!
     #  No **kwargs!! Only positional Arguments
     # used to be fetch the results at the end of the computation
-    returned_val: Any = _func(*uxn_args)  # type: ignore[arg-type]
+    returned_val: Any = _func(*uxn_args)  # type: ignore[call-arg,arg-type]
 
     returned_usage_exec_nodes: ReturnUXNsType = wrap_in_uxns(_func, returned_val)
 
