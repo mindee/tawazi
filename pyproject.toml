@@ -20,11 +20,13 @@ dependencies = [
     "pydantic",
     "PyYaml>=6",
     "typing_extensions>=4.4.0",
-    "packaging",
-    "graphviz"
+    "packaging"
 ]
 
 [project.optional-dependencies]
+graphviz = ["graphviz"]
+
+
 dev = [
     "numpy",
     "pytest>=7.1.2",
