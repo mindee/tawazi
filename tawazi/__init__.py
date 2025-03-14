@@ -7,7 +7,7 @@ from ._object_helpers import and_, not_, or_
 from .config import cfg
 from .consts import Resource
 
-__version__ = "0.6.1"
+__version__ = "0.6.2"
 
 __all__ = [
     "AsyncDAG",
