@@ -19,13 +19,16 @@ dependencies = [
     "networkx>=2,<4",
     "pydantic",
     "PyYaml>=6",
-    "typing_extensions>=4.4.0"
+    "typing_extensions>=4.4.0",
+    "packaging"
 ]
 
 [project.optional-dependencies]
+graphviz = ["graphviz"]
+
+
 dev = [
     "numpy",
-    "graphviz",
     "pytest>=7.1.2",
     "pytest-asyncio",
     "pytest-mock",

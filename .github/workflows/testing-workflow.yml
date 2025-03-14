@@ -46,7 +46,7 @@ jobs:
         set -o pipefail
         sudo apt install -y graphviz
         pip install pip flit wheel --upgrade
-        flit install -s --deps develop
+        flit install -s --deps=develop --extras=graphviz
 
     - name: Test documentation
       run: |

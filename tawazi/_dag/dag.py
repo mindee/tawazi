@@ -113,7 +113,11 @@ class BaseDAG(Generic[P, RVDAG]):
             filename: the name of the file to save the graph to
             view: whether to view the graph or not
         """
-        from graphviz import Digraph
+        try:
+            from graphviz import Digraph
+        except ModuleNotFoundError as e:
+            logger.exception("Please install graphviz to use this method.")
+            raise e
 
         dot = Digraph()
 
