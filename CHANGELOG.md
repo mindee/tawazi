@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+* :bug: solve missing package packaging.
+* :recycle: add graphviz as an extra.
+
 ## v0.6.1 (2025-03-03)
 
 ### Changes
