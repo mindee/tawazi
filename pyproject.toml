@@ -6,20 +6,41 @@ build-backend = "flit_core.buildapi"
 [project]
 name = "tawazi"
 dynamic = ["version", "description"]
-authors = [{name = "Mindee", email = "contact@mindee.com"}]
+authors = [{ name = "Mindee", email = "contact@mindee.com" }]
 maintainers = [
-    {name = "Bashir Abdel Wahed"},
-    {name = "Matthias Cremieux"}
+    { name = "Bashir Abdel Wahed" },
+    { name = "Matthias Cremieux" },
+    { name = "Maxime Churin" },
 ]
-license = {file = "LICENSE" }
+license = { file = "LICENSE" }
 readme = "README.md"
-requires-python=">=3.9,<4"
+requires-python = ">=3.9,<4"
 dependencies = [
     "networkx>=2,<4",
     "pydantic",
     "PyYaml>=6",
     "typing_extensions>=4.4.0",
-    "packaging"
+    "packaging",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: OS Independent",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+    "Typing :: Typed",
 ]
 
 [project.optional-dependencies]
@@ -35,7 +56,7 @@ dev = [
     "pytest-codeblocks",
     "pre-commit",
     "multiprocessing_on_dill",
-    "pathos"
+    "pathos",
 ]
 
 doc = [
@@ -43,7 +64,7 @@ doc = [
     "mike==1.1.2",
     "mkdocs-exclude==1.0.2",
     "mkdocs-material==9.2.6",
-    "mkdocstrings-python"
+    "mkdocstrings-python",
 ]
 
 pydantic1 = ["pydantic>=1.0.0,<2"]
@@ -92,7 +113,7 @@ select = [
     "T20",
     "TID",
     "W",
-    "RET"
+    "RET",
 ]
 
 [tool.ruff.per-file-ignores]
