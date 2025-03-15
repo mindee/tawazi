@@ -43,6 +43,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 keywords = ["parallel", "DAG", "scheduler", "Python"]
+urls = { "GitHub" = "https://github.com/mindee/tawazi", "Documentation" = "https://mindee.github.io/tawazi/" }
 
 [project.optional-dependencies]
 graphviz = ["graphviz"]
