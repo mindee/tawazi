@@ -42,6 +42,7 @@ classifiers = [
     "Topic :: Utilities",
     "Typing :: Typed",
 ]
+keywords = ["parallel", "DAG", "scheduler", "Python"]
 
 [project.optional-dependencies]
 graphviz = ["graphviz"]
