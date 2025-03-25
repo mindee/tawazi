@@ -269,7 +269,7 @@ def test_kwargs_in_xn_composed() -> None:
         return x(v=1)
 
     d: DAG[..., tuple[int]] = dag_with_default_arg.compose("twinkle", [], [x])  # type: ignore[assignment]
-    assert d() == (1,)
+    assert d() == 1  # type: ignore[comparison-overlap]
 
 
 @dag
@@ -280,3 +280,8 @@ def complex_dag(a1: int, a2: int, a3: int) -> tuple[int, int, int]:
 def test_provide_ellipsis_as_input() -> None:
     composed = complex_dag.compose("twinkle", ..., ["_add<<1>>", "_sub<<1>>", "_mul<<1>>"])  # type: ignore[arg-type]
     assert composed(1, 2, 3) == (6, -4, 6)
+
+
+def test_provide_ellipsis_as_output() -> None:
+    composed = linear_pipe.compose("twinkle", c, ...)  # type: ignore[arg-type]
+    assert composed(0) == 1

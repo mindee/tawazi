@@ -286,14 +286,15 @@ class BaseDAG(Generic[P, RVDAG]):
                 f"Either declare them as inputs or modify the requests outputs."
             )
 
-        def _alias_or_aliases_to_uxns(
-            alias_or_aliases: Union[Alias, Sequence[Alias]],
-        ) -> ReturnUXNsType:
-            if isinstance(alias_or_aliases, str) or isinstance(alias_or_aliases, ExecNode):
-                return UsageExecNode(self._get_single_xn_by_alias(alias_or_aliases).id)
-            return tuple(
-                UsageExecNode(self._get_single_xn_by_alias(a_id).id) for a_id in alias_or_aliases
-            )
+        def _alias_to_uxns(alias: Union[Alias, Sequence[Alias]]) -> ReturnUXNsType:
+            if isinstance(alias, str) or isinstance(alias, ExecNode):
+                return UsageExecNode(self._get_single_xn_by_alias(alias).id)
+
+            if isinstance(alias, list):
+                # handle the case of a single execnode in an iterable
+                if len(alias) == 1:
+                    return UsageExecNode(self._get_single_xn_by_alias(alias[0]).id)
+            return tuple(UsageExecNode(self._get_single_xn_by_alias(a_id).id) for a_id in alias)
 
         # 1. get input ids and output ids.
         #  Alias should correspond to a single ExecNode,
@@ -303,7 +304,11 @@ class BaseDAG(Generic[P, RVDAG]):
             if inputs is ...  # type: ignore[comparison-overlap]
             else _alias_or_aliases_to_ids(inputs)
         )
-        out_ids = _alias_or_aliases_to_ids(outputs)
+        out_ids = (
+            self.graph_ids.get_multiple_reachable_leaves(in_ids)
+            if outputs is ...  # type: ignore[comparison-overlap]
+            else _alias_or_aliases_to_ids(outputs)
+        )
 
         # 2.1 contains all the ids of the nodes that will be in the new DAG
         set_xn_ids = set(in_ids + out_ids)
@@ -391,7 +396,7 @@ class BaseDAG(Generic[P, RVDAG]):
         # 5.3 make the inputs and outputs UXNs for the composed DAG
         in_uxns = [UsageExecNode(xn_id) for xn_id in new_in_ids]
         # if a single value is returned make the output a single value
-        out_uxns = _alias_or_aliases_to_uxns(outputs)
+        out_uxns = _alias_to_uxns(out_ids)
 
         # 6. extract the results of only the remaining ExecNodes
         results = StrictDict(

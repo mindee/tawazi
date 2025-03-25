@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* :sparkles: Support ellipsis as outputs for dag composition.
+
 ## v0.6.2 (2025-03-14)
 
 * :bug: solve missing package packaging.
